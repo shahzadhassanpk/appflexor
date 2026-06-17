@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { useState } from "react";
-import ReactTags from "react-tag-autocomplete";
+import { ReactTags } from "react-tag-autocomplete";
 import axios from "axios";
 import { API_URL } from "../../../../../../Config";
 import "./style.css";

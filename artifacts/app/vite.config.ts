@@ -57,7 +57,11 @@ export default defineConfig({
       { find: /^plotly\.js$/, replacement: path.resolve(import.meta.dirname, "src/__stubs__/plotly.js") },
       { find: /^react-plotlyjs$/, replacement: path.resolve(import.meta.dirname, "src/__stubs__/react-plotlyjs.js") },
     ],
-    dedupe: ["react", "react-dom"],
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "react-dom/client", "react-router-dom", "react-redux", "redux"],
+  },
+  optimizeDeps: {
+    include: ["react", "react-dom", "react/jsx-runtime"],
+    force: false,
   },
   root: path.resolve(import.meta.dirname),
   build: {
