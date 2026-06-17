@@ -75,12 +75,9 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
-<<<<<<< HEAD
-=======
   # Force all packages to use the same React instance (prevents "Invalid hook call" duplicate-React crashes)
   react: "19.1.0"
   react-dom: "19.1.0"
->>>>>>> a9f11ccabec603523e899507567e9dd5c08d8ba1
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"

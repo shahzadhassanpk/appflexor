@@ -28,12 +28,9 @@ if (!basePath) {
 
 export default defineConfig({
   base: basePath,
-<<<<<<< HEAD
-=======
   define: {
     global: "globalThis",
   },
->>>>>>> a9f11ccabec603523e899507567e9dd5c08d8ba1
   plugins: [
     react(),
     tailwindcss(),
@@ -53,13 +50,6 @@ export default defineConfig({
       : []),
   ],
   resolve: {
-<<<<<<< HEAD
-    alias: {
-      "@": path.resolve(import.meta.dirname, "src"),
-      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
-    },
-    dedupe: ["react", "react-dom"],
-=======
     alias: [
       { find: "@", replacement: path.resolve(import.meta.dirname, "src") },
       { find: "@assets", replacement: path.resolve(import.meta.dirname, "..", "..", "attached_assets") },
@@ -72,7 +62,6 @@ export default defineConfig({
   optimizeDeps: {
     include: ["react", "react-dom", "react/jsx-runtime"],
     force: false,
->>>>>>> a9f11ccabec603523e899507567e9dd5c08d8ba1
   },
   root: path.resolve(import.meta.dirname),
   build: {
@@ -87,8 +76,6 @@ export default defineConfig({
     fs: {
       strict: true,
     },
-<<<<<<< HEAD
-=======
     proxy: {
       "/app/service": {
         target: "https://demo.step2agility.com",
@@ -122,7 +109,6 @@ export default defineConfig({
         secure: true,
       },
     },
->>>>>>> a9f11ccabec603523e899507567e9dd5c08d8ba1
   },
   preview: {
     port,
