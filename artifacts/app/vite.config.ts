@@ -69,6 +69,39 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    proxy: {
+      "/app/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+      },
+      "/file/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+      },
+      "/im/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+        ws: true,
+      },
+      "/monitor/app/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+      },
+      "/bpm/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+      },
+      "/es/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
   preview: {
     port,
