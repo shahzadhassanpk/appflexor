@@ -1,36 +1,37 @@
-# [Project name]
+# Appflexor
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A developer-first app platform landing page — sharp, modern welcome screen built with React + Vite.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/appflexor run dev` — run the frontend (uses PORT env var)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: React 18 + Vite + Tailwind CSS v4
+- Routing: wouter
+- UI: shadcn/ui components, lucide-react icons
+- Fonts: Bricolage Grotesque, Inter, JetBrains Mono (Google Fonts)
+- Animations: framer-motion, tw-animate-css
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/appflexor/src/pages/home.tsx` — Welcome/landing page (primary file)
+- `artifacts/appflexor/src/App.tsx` — Router and app shell
+- `artifacts/appflexor/src/index.css` — Theme (HSL CSS custom properties, light + dark)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Frontend-only: no database, no API server, no OpenAPI spec needed
+- All CSS custom properties (colors, radius, shadows) defined in `index.css` `:root` and `.dark` blocks
+- Google Fonts imported as the very first line of `index.css` (PostCSS requirement)
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Appflexor welcome screen — a rich, scroll-worthy single-page landing with hero section, features, code snippets, and CTA. Targets developers; dark/light theme; responsive layout.
 
 ## User preferences
 
@@ -38,7 +39,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Google Font `@import url(...)` must be the very first line in `index.css` — PostCSS fails silently if placed after other rules
+- CSS color variables use space-separated HSL values without `hsl()` wrapper: `--primary: 250 84% 60%;`
 
 ## Pointers
 
