@@ -1,0 +1,38 @@
+#contacts .activeCell{
+    background-color: #f3f3f3 !important;
+}
+#contacts .cont-table .padding {
+    padding: 12px 5px !important;
+    font-size: 13px;
+}
+
+#contacts .cont-table p,.s2a-table-heading h6{
+    border: 1px solid lightgrey;
+    padding: 5px;
+    margin: 0px;
+}
+#contacts .cont-table p{
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 13px;
+    min-height: 46px;
+}
+#contacts .col-sm-6 h6{
+    padding: 8px 5px !important;
+}
+#contacts .s2a-table-heading h6{
+    background-color: #dff0d8;
+}
+#contacts .table .repeat:hover{
+    background-color: #eaeaea;
+}
+#contacts .del-btn{
+    padding: 0px !important;
+}
+#contacts .del-btn-sm{
+    padding-bottom: 7px !important;
+}
+#contacts .btn-info{
+    color: white;
+}

@@ -1,0 +1,9 @@
+.removeBtn:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.file{
+    max-width: 100% !important;
+    width: 100% !important;
+}
