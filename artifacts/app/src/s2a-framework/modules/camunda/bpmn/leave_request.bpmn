@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0smltbw" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.9.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.18.0">
+  <bpmn:process id="Process_04vdpt2" name="leave_request" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Submit">
+      <bpmn:extensionElements />
+      <bpmn:outgoing>Flow_0p0uzck</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gateway_0po0kv0">
+      <bpmn:incoming>Flow_0e6z9up</bpmn:incoming>
+      <bpmn:outgoing>Flow_0uquzod</bpmn:outgoing>
+      <bpmn:outgoing>Flow_19v1rzi</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0uquzod" sourceRef="Gateway_0po0kv0" targetRef="Activity_080wfms">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"> ${status== 'rejected'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_19v1rzi" sourceRef="Gateway_0po0kv0" targetRef="Activity_0eoa8xy">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"> ${status== 'approved'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="Event_06iwcli">
+      <bpmn:incoming>Flow_08y4clp</bpmn:incoming>
+      <bpmn:incoming>Flow_0v0p5uq</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_08y4clp" sourceRef="Activity_080wfms" targetRef="Event_06iwcli" />
+    <bpmn:sequenceFlow id="Flow_0v0p5uq" sourceRef="Activity_0eoa8xy" targetRef="Event_06iwcli" />
+    <bpmn:sequenceFlow id="Flow_0p0uzck" sourceRef="StartEvent_1" targetRef="Activity_1cj7bli" />
+    <bpmn:sequenceFlow id="Flow_0e6z9up" sourceRef="Activity_1cj7bli" targetRef="Gateway_0po0kv0" />
+    <bpmn:userTask id="Activity_1cj7bli" name="Approval">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="status">submitted</camunda:inputParameter>
+          <camunda:outputParameter name="status">${status}</camunda:outputParameter>
+        </camunda:inputOutput>
+        <camunda:taskListener expression=" ${task.execution.setVariable(&#39;taskCompletedBy&#39;, task.assignee)}" event="complete" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0p0uzck</bpmn:incoming>
+      <bpmn:outgoing>Flow_0e6z9up</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:scriptTask id="Activity_0eoa8xy" name="Approved" scriptFormat="JavaScript">
+      <bpmn:incoming>Flow_19v1rzi</bpmn:incoming>
+      <bpmn:outgoing>Flow_0v0p5uq</bpmn:outgoing>
+      <bpmn:script>print('*** application approved')</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:serviceTask id="Activity_080wfms" name="Rejected" camunda:type="external" camunda:topic="testWorker">
+      <bpmn:incoming>Flow_0uquzod</bpmn:incoming>
+      <bpmn:outgoing>Flow_08y4clp</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_04vdpt2">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="180" y="202" width="35" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0po0kv0_di" bpmnElement="Gateway_0po0kv0" isMarkerVisible="true">
+        <dc:Bounds x="495" y="152" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_06iwcli_di" bpmnElement="Event_06iwcli">
+        <dc:Bounds x="632" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0996tx4_di" bpmnElement="Activity_1cj7bli">
+        <dc:Bounds x="290" y="137" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_080b020_di" bpmnElement="Activity_0eoa8xy">
+        <dc:Bounds x="600" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0fa3b2i_di" bpmnElement="Activity_080wfms">
+        <dc:Bounds x="600" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0uquzod_di" bpmnElement="Flow_0uquzod">
+        <di:waypoint x="520" y="152" />
+        <di:waypoint x="520" y="100" />
+        <di:waypoint x="600" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19v1rzi_di" bpmnElement="Flow_19v1rzi">
+        <di:waypoint x="520" y="202" />
+        <di:waypoint x="520" y="290" />
+        <di:waypoint x="600" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08y4clp_di" bpmnElement="Flow_08y4clp">
+        <di:waypoint x="650" y="140" />
+        <di:waypoint x="650" y="182" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0v0p5uq_di" bpmnElement="Flow_0v0p5uq">
+        <di:waypoint x="650" y="250" />
+        <di:waypoint x="650" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0p0uzck_di" bpmnElement="Flow_0p0uzck">
+        <di:waypoint x="215" y="177" />
+        <di:waypoint x="290" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0e6z9up_di" bpmnElement="Flow_0e6z9up">
+        <di:waypoint x="390" y="177" />
+        <di:waypoint x="495" y="177" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
