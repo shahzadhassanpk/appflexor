@@ -15,7 +15,6 @@ import ModalBox from "../../Modal/Modal";
 import { tryToParse } from "../../../modules/data-management/form-builder/Forms/FormViewer/utils";
 import Messsage from "../../Subscription Message/Messsage";
 import { SubscriptionAllowViewer } from "../../../utils/utils";
-import { config } from "dotenv";
 import RecordTable from "./RecordTable";
 
 export default function ReactPivottable(props) {
