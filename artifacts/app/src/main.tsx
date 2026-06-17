@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
-// import App from "./App";
+import { BrowserRouter } from "react-router-dom";
 import S2aApp from "./s2a-framework/S2aApp";
 import "./index.css";
 
-createRoot(document.getElementById("root")!).render(<S2aApp />);
+createRoot(document.getElementById("root")!).render(
+  <BrowserRouter basename="/app">
+    <S2aApp />
+  </BrowserRouter>
+);
