@@ -1,0 +1,16 @@
+.valign-top {
+    vertical-align: top;
+}
+
+.valign-mid {
+    vertical-align: middle;
+}
+
+.valign-bottom {
+    vertical-align: bottom;
+}
+
+.gjs-row,
+.gjs-cell {
+    padding: 0px !important;
+}
