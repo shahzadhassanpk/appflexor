@@ -1,6 +1,10 @@
 import axios from "axios";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+<<<<<<< HEAD
 import ReactTags from "react-tag-autocomplete";
+=======
+import { ReactTags } from "react-tag-autocomplete";
+>>>>>>> a9f11ccabec603523e899507567e9dd5c08d8ba1
 import { API_URL } from "../../../../../../Config";
 import { toastEmitter } from "../../../../../../components/Toastify/Toastify";
 function TagList(props) {

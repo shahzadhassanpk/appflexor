@@ -21,6 +21,7 @@ class ErrorBoundary extends React.Component {
             return (
                 <div>
                     <h2>Something went wrong.</h2>
+<<<<<<< HEAD
                     <link
                         rel="stylesheet"
                         href="#"
@@ -29,6 +30,16 @@ class ErrorBoundary extends React.Component {
                         }}>
                         Try refresh
                     </link>
+=======
+                    <a
+                        href="#"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            window.location.reload();
+                        }}>
+                        Try refresh
+                    </a>
+>>>>>>> a9f11ccabec603523e899507567e9dd5c08d8ba1
                     {/* {this.state.error && this.state.error.toString()} */}
                 </div>
             );

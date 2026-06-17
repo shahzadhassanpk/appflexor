@@ -28,6 +28,12 @@ if (!basePath) {
 
 export default defineConfig({
   base: basePath,
+<<<<<<< HEAD
+=======
+  define: {
+    global: "globalThis",
+  },
+>>>>>>> a9f11ccabec603523e899507567e9dd5c08d8ba1
   plugins: [
     react(),
     tailwindcss(),
@@ -47,11 +53,26 @@ export default defineConfig({
       : []),
   ],
   resolve: {
+<<<<<<< HEAD
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
       "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
     },
     dedupe: ["react", "react-dom"],
+=======
+    alias: [
+      { find: "@", replacement: path.resolve(import.meta.dirname, "src") },
+      { find: "@assets", replacement: path.resolve(import.meta.dirname, "..", "..", "attached_assets") },
+      { find: /^plotly\.js\/dist\/plotly-cartesian$/, replacement: path.resolve(import.meta.dirname, "src/__stubs__/plotly-cartesian.js") },
+      { find: /^plotly\.js$/, replacement: path.resolve(import.meta.dirname, "src/__stubs__/plotly.js") },
+      { find: /^react-plotlyjs$/, replacement: path.resolve(import.meta.dirname, "src/__stubs__/react-plotlyjs.js") },
+    ],
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "react-dom/client", "react-router-dom", "react-redux", "redux"],
+  },
+  optimizeDeps: {
+    include: ["react", "react-dom", "react/jsx-runtime"],
+    force: false,
+>>>>>>> a9f11ccabec603523e899507567e9dd5c08d8ba1
   },
   root: path.resolve(import.meta.dirname),
   build: {
@@ -66,6 +87,42 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+<<<<<<< HEAD
+=======
+    proxy: {
+      "/app/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+      },
+      "/file/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+      },
+      "/im/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+        ws: true,
+      },
+      "/monitor/app/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+      },
+      "/bpm/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+      },
+      "/es/service": {
+        target: "https://demo.step2agility.com",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+>>>>>>> a9f11ccabec603523e899507567e9dd5c08d8ba1
   },
   preview: {
     port,
