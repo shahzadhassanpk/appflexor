@@ -50,13 +50,13 @@ export default defineConfig({
       : []),
   ],
   resolve: {
-    alias: {
-      "@": path.resolve(import.meta.dirname, "src"),
-      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
-      "plotly.js": path.resolve(import.meta.dirname, "src/__stubs__/plotly.js"),
-      "plotly.js/dist/plotly-cartesian": path.resolve(import.meta.dirname, "src/__stubs__/plotly-cartesian.js"),
-      "react-plotlyjs": path.resolve(import.meta.dirname, "src/__stubs__/react-plotlyjs.js"),
-    },
+    alias: [
+      { find: "@", replacement: path.resolve(import.meta.dirname, "src") },
+      { find: "@assets", replacement: path.resolve(import.meta.dirname, "..", "..", "attached_assets") },
+      { find: /^plotly\.js\/dist\/plotly-cartesian$/, replacement: path.resolve(import.meta.dirname, "src/__stubs__/plotly-cartesian.js") },
+      { find: /^plotly\.js$/, replacement: path.resolve(import.meta.dirname, "src/__stubs__/plotly.js") },
+      { find: /^react-plotlyjs$/, replacement: path.resolve(import.meta.dirname, "src/__stubs__/react-plotlyjs.js") },
+    ],
     dedupe: ["react", "react-dom"],
   },
   root: path.resolve(import.meta.dirname),

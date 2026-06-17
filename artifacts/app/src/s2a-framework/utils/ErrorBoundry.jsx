@@ -21,14 +21,14 @@ class ErrorBoundary extends React.Component {
             return (
                 <div>
                     <h2>Something went wrong.</h2>
-                    <link
-                        rel="stylesheet"
+                    <a
                         href="#"
-                        onClick={() => {
+                        onClick={(e) => {
+                            e.preventDefault();
                             window.location.reload();
                         }}>
                         Try refresh
-                    </link>
+                    </a>
                     {/* {this.state.error && this.state.error.toString()} */}
                 </div>
             );
