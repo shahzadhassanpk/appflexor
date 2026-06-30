@@ -1,4 +1,4 @@
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -19,15 +19,17 @@ export default defineConfig({
             },
         },
     ],
-    base:"/app/",
+    base: "/app/",
     server: {
         port: 3000,
+        allowedHosts: ["local.com", "demo.local.com"],
+
         // open: "/public/index.html"
     },
     root: "./",
     build: {
-        base:"/app/",
         outDir: "build",
+        sourcemap: true,
     },
     publicDir: "public",
     define: {

@@ -1,1 +1,1 @@
-pnpm --filter @workspace/app run dev
+pnpm --filter @workspace/appflexor run dev
