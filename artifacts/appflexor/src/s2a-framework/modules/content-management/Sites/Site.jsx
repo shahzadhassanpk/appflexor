@@ -18,7 +18,7 @@ import {
 import ModalComponent from "../../../components/Modal/Modal";
 import SearchItem from "../../../components/Searching/SearchItem";
 import { toastEmitter } from "../../../components/Toastify/Toastify";
-import { COLOR_PALETTE } from "../../../theme/advance/Layout/ColorPalette";
+import { COLOR_PALETTE } from "../../../theme/tailwind/Layout/ColorPalette";
 import {
     deleteItem,
     filterArrayByTerms,

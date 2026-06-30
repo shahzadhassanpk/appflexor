@@ -13,10 +13,10 @@ import { AppContext } from "../AppContext";
 import { IFrame } from "./components/IFrame/Iframe";
 import RenderStartProcess from "./components/RenderStartProcess/RenderStartProcess";
 import RenderStepProcess from "./components/RenderStepProcess/RenderStepProcess";
-import Forget from "./theme/advance/Pages/Forget";
-import Login from "./theme/advance/Pages/Login";
-import NotFound from "./theme/advance/Pages/NotFoundPage";
-import SignUp from "./theme/advance/Pages/SignUp";
+import Forget from "./theme/tailwind/Pages/Forget";
+import Login from "./theme/tailwind/Pages/Login";
+import NotFound from "./theme/tailwind/Pages/NotFoundPage";
+import SignUp from "./theme/tailwind/Pages/SignUp";
 import PageFormViewer from "./components/RenderForm/PageFormViewer";
 import ContentManagement from "./modules/content-management/ContentManagement";
 
@@ -49,11 +49,11 @@ import { isEmpty } from "./modules/data-management/form-builder/Forms/FormViewer
 import ProcessConfiguration from "./modules/process-configuration/ProcessConfiguration";
 import SiteAdministration from "./modules/site-administrater/SiteAdministrater";
 import UserManagement from "./modules/user-management/UserManagement";
-import SignUpSubscription from "./theme/advance/Pages/SignUpSubscription";
-import UserProfile from "./theme/advance/Pages/UserProfile";
+import SignUpSubscription from "./theme/tailwind/Pages/SignUpSubscription";
+import UserProfile from "./theme/tailwind/Pages/UserProfile";
 import StripeSubscription from "./modules/subscription/payment";
 import { ErrorBoundary } from "./utils/ErrorBoundry";
-import Welcome from "./theme/advance/Pages/Welcome";
+import Welcome from "./theme/tailwind/Pages/Welcome";
 
 function AppRoutes({
     errorMessage,

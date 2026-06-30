@@ -31,7 +31,7 @@ import Scroll from "../../../../components/Scroll/Scroll";
 import { toastEmitter } from "../../../../components/Toastify/Toastify";
 import useLogger from "../../../../components/hooks/useLogger";
 import { CONTENT_STATUS, NAVBAR_STATE } from "../../../../contants";
-import BrandLogoMini from "../../../../theme/advance/Layout/BrandLogoMini";
+import BrandLogoMini from "../../../../theme/tailwind/Layout/BrandLogoMini";
 import { JsonToCsv, formatDateTimeForUserView } from "../../../../utils/utils";
 import {
     isEmpty,

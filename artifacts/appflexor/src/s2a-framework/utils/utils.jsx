@@ -17,7 +17,7 @@ import { toastEmitter } from "../components/Toastify/Toastify";
 import { tryToParse } from "../modules/data-management/form-builder/Forms/FormViewer/utils";
 import CryptoJS from "crypto-js";
 import axios from "axios";
-import UserProfile from "../theme/advance/Pages/UserProfile";
+import UserProfile from "../theme/tailwind/Pages/UserProfile";
 /*
 const DATE_FORMAT_FOR_DATABASE = "YYYY-MM-DD";
 const DATE_FORMAT_FOR_USER_VIEW = "ddd DD, MMM YYYY";
