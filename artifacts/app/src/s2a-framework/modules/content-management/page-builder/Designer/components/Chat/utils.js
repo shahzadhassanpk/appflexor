@@ -1,3 +1,0 @@
-const sentMessage = () => {};
-
-export { sentMessage };
