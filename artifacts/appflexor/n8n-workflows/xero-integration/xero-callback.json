@@ -1,0 +1,259 @@
+{
+  "name": "xero-callback",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "xero-auth/callback",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4db4c019-1492-4a9d-89f5-2198b2ea6d39",
+      "name": "Webhook - Xero Callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        208,
+        -144
+      ],
+      "webhookId": "bc285422-aa3a-4c6e-b745-7da450219575"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.c_token_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "authorization_code"
+            },
+            {
+              "name": "code",
+              "value": "={{ $json.query.code }}"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "={{$json.c_redirect_uri}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        656,
+        -48
+      ],
+      "id": "c1029f81-ab73-4c6b-9e92-37734d264deb",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "3lxwi22599t42rdd",
+          "name": "Xero credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "http://bookkeeping.dev.com/app/page/setup",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        336,
+        -288
+      ],
+      "id": "d59983ee-3a28-45d9-bb2b-e6ef51082085",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let state = $('Webhook - Xero Callback').item.json.query.state.split(',');\nlet id = state[1];\nlet request = {\n  tenant_id: state[0],\n  data: []\n};\nlet record = {\n    formId: \"integration\",\n    entity: \"integration\",\n    action: \"update\",\n    id: id,\n    formData: {\n      ...$json,\n      id: id\n    }\n  }\nrequest.data.push(record);\nreturn request;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        -48
+      ],
+      "id": "e5bacdbf-89d8-48b9-acc4-6becf1d4beae",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://cloud.dev.com/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "=1d59ea80-22ba-4475-96db-13127f668971"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1008,
+        -48
+      ],
+      "id": "2892c7cd-4e8a-4bc0-b34f-417a4999c0df",
+      "name": "HTTP Request1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from app_fd_integration where id='{{ $json.id }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        752,
+        -272
+      ],
+      "id": "2d3864c3-6db0-41f9-901d-f0b0fd2002e3",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "Lvt4SVtabm6bBoOn",
+          "name": "tenant_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let state = item.json.query.state.split(',');\nreturn {id:state[1], datasource:state[0]}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        -272
+      ],
+      "id": "a212839b-71d8-4a44-875c-be18c219d4da",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        464,
+        -48
+      ],
+      "id": "fbea1b69-337a-465f-8376-3ba0a23b942f",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Xero Callback": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5ffbf38f-622e-4851-b431-c88352358253",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "3M1nXNfGzlCsUPC6",
+  "tags": []
+}

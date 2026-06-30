@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_06jbqv4" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:collaboration id="Collaboration_1bm549q">
+    <bpmn:participant id="Participant_1uy7rnc" name="dms_logs_create_trigger" processRef="dms_logs_create_trigger" />
+  </bpmn:collaboration>
+  <bpmn:process id="dms_logs_create_trigger" name="Create trigger" isExecutable="true" camunda:historyTimeToLive="10">
+    <bpmn:laneSet id="LaneSet_0wyzsvd">
+      <bpmn:lane id="Lane_1azc5nj">
+        <bpmn:flowNodeRef>Activity_0yejn89</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_140ag81</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1mheyaw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1wcsoyw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1ub2ft6</bpmn:flowNodeRef>
+        <bpmn:childLaneSet id="LaneSet_0c5z7p0" />
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="Flow_1gh9o2n" sourceRef="StartEvent_1" targetRef="Gateway_140ag81" />
+    <bpmn:sequenceFlow id="Flow_17p0t0p" name="Other than Delete" sourceRef="Gateway_140ag81" targetRef="Activity_0yejn89">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${action ne 'DELETE'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0i9tbuy" name="Delete" sourceRef="Gateway_140ag81" targetRef="Activity_1mheyaw">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${action == 'DELETE'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Activity_0yejn89" name="trigger" camunda:type="external" camunda:topic="EXECUTE_TRIGGERS">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="triggers">[
+    {
+        "key": "dms.trigger.update.audit",
+        "serviceParams": 
+[${action},${username},${execution.processBusinessKey}]
+   }
+]
+</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_17p0t0p</bpmn:incoming>
+      <bpmn:outgoing>Flow_06djs1x</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_140ag81">
+      <bpmn:incoming>Flow_1gh9o2n</bpmn:incoming>
+      <bpmn:outgoing>Flow_17p0t0p</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0i9tbuy</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:startEvent id="StartEvent_1" name="start">
+      <bpmn:extensionElements />
+      <bpmn:outgoing>Flow_1gh9o2n</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Activity_1mheyaw" name="trigger" camunda:type="external" camunda:topic="EXECUTE_TRIGGERS">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="triggers">[
+    {
+        "key": "dms.trigger.delete.audit",
+        "serviceParams": 
+[${action},${username},${execution.processBusinessKey}]
+   }
+]
+</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0i9tbuy</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o9hm5b</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_1wcsoyw" name="end">
+      <bpmn:incoming>Flow_06djs1x</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_06djs1x" sourceRef="Activity_0yejn89" targetRef="Event_1wcsoyw" />
+    <bpmn:sequenceFlow id="Flow_0o9hm5b" sourceRef="Activity_1mheyaw" targetRef="Event_1ub2ft6" />
+    <bpmn:endEvent id="Event_1ub2ft6" name="end">
+      <bpmn:incoming>Flow_0o9hm5b</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1bm549q">
+      <bpmndi:BPMNShape id="Participant_1uy7rnc_di" bpmnElement="Participant_1uy7rnc" isHorizontal="true">
+        <dc:Bounds x="129" y="52" width="600" height="250" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1azc5nj_di" bpmnElement="Lane_1azc5nj" isHorizontal="true">
+        <dc:Bounds x="159" y="52" width="570" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1p9pl1h_di" bpmnElement="Activity_0yejn89">
+        <dc:Bounds x="400" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_140ag81_di" bpmnElement="Gateway_140ag81" isMarkerVisible="true">
+        <dc:Bounds x="285" y="155" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="192" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="198" y="138" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1dnfhp8_di" bpmnElement="Activity_1mheyaw">
+        <dc:Bounds x="400" y="200" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1wcsoyw_di" bpmnElement="Event_1wcsoyw">
+        <dc:Bounds x="542" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="550.5" y="78" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ub2ft6_di" bpmnElement="Event_1ub2ft6">
+        <dc:Bounds x="542" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="551" y="265" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1gh9o2n_di" bpmnElement="Flow_1gh9o2n">
+        <di:waypoint x="228" y="180" />
+        <di:waypoint x="285" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17p0t0p_di" bpmnElement="Flow_17p0t0p">
+        <di:waypoint x="310" y="155" />
+        <di:waypoint x="310" y="120" />
+        <di:waypoint x="400" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="306" y="103" width="87" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0i9tbuy_di" bpmnElement="Flow_0i9tbuy">
+        <di:waypoint x="310" y="205" />
+        <di:waypoint x="310" y="240" />
+        <di:waypoint x="400" y="240" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="326" y="220" width="32" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06djs1x_di" bpmnElement="Flow_06djs1x">
+        <di:waypoint x="500" y="120" />
+        <di:waypoint x="542" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o9hm5b_di" bpmnElement="Flow_0o9hm5b">
+        <di:waypoint x="500" y="240" />
+        <di:waypoint x="542" y="240" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_14pzvhk" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:collaboration id="Collaboration_16phca1">
+    <bpmn:participant id="Participant_0s7nf84" name="Kafka Producer" processRef="kafka-producer" />
+  </bpmn:collaboration>
+  <bpmn:process id="kafka-producer" name="Kafka Producer" isExecutable="true" camunda:historyTimeToLive="1">
+    <bpmn:startEvent id="Event_0x2lwvp">
+      <bpmn:outgoing>Flow_17ao32z</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="Event_1s61owf">
+      <bpmn:incoming>Flow_18p5jam</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Activity_0rplbod" name="Process File" camunda:type="external" camunda:topic="kafka-producer">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="kafka-message">kafka-test</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_17ao32z</bpmn:incoming>
+      <bpmn:outgoing>Flow_0vrbidy</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Activity_1t8us63" name="Review Data" camunda:formKey="kafka-producer">
+      <bpmn:incoming>Flow_0vrbidy</bpmn:incoming>
+      <bpmn:outgoing>Flow_18p5jam</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_17ao32z" sourceRef="Event_0x2lwvp" targetRef="Activity_0rplbod" />
+    <bpmn:sequenceFlow id="Flow_18p5jam" sourceRef="Activity_1t8us63" targetRef="Event_1s61owf" />
+    <bpmn:sequenceFlow id="Flow_0vrbidy" sourceRef="Activity_0rplbod" targetRef="Activity_1t8us63" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_16phca1">
+      <bpmndi:BPMNShape id="Participant_0s7nf84_di" bpmnElement="Participant_0s7nf84" isHorizontal="true">
+        <dc:Bounds x="129" y="90" width="600" height="250" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0844red" bpmnElement="Event_0x2lwvp">
+        <dc:Bounds x="241" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1s61owf_di" bpmnElement="Event_1s61owf">
+        <dc:Bounds x="651" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ly77ib_di" bpmnElement="Activity_0rplbod">
+        <dc:Bounds x="329" y="190" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1wze0y3_di" bpmnElement="Activity_1t8us63">
+        <dc:Bounds x="489" y="190" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_17ao32z_di" bpmnElement="Flow_17ao32z">
+        <di:waypoint x="277" y="230" />
+        <di:waypoint x="329" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18p5jam_di" bpmnElement="Flow_18p5jam">
+        <di:waypoint x="589" y="230" />
+        <di:waypoint x="651" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vrbidy_di" bpmnElement="Flow_0vrbidy">
+        <di:waypoint x="429" y="230" />
+        <di:waypoint x="489" y="230" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

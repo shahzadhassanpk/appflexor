@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1aeej5p" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:collaboration id="Collaboration_0p7wtn1">
+    <bpmn:participant id="Participant_0yl415n" name="Partner Joining" processRef="partner_joining" />
+  </bpmn:collaboration>
+  <bpmn:process id="partner_joining" name="Partner Joining" isExecutable="true" camunda:historyTimeToLive="10">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_00eukxs</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Activity_0p9c4xx" name="Notify Join" camunda:type="external" camunda:topic="SEND_EMAIL">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="emailKey">partner.join</camunda:inputParameter>
+          <camunda:inputParameter name="serviceParams">${execution.processBusinessKey}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_00eukxs</bpmn:incoming>
+      <bpmn:outgoing>Flow_1dqxwag</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_16s1zbb" name="Notify Approval" camunda:type="external" camunda:topic="SEND_EMAIL">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="emailKey">partner.approval</camunda:inputParameter>
+          <camunda:inputParameter name="serviceParams">${execution.processBusinessKey}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1uytv6u</bpmn:incoming>
+      <bpmn:outgoing>Flow_0603i43</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_1a5ae6g">
+      <bpmn:incoming>Flow_0603i43</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="Activity_03mks2d" name="Approve / Reject" camunda:formKey="partner">
+      <bpmn:incoming>Flow_092ltoj</bpmn:incoming>
+      <bpmn:outgoing>Flow_1uytv6u</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_00eukxs" sourceRef="StartEvent_1" targetRef="Activity_0p9c4xx" />
+    <bpmn:sequenceFlow id="Flow_1dqxwag" sourceRef="Activity_0p9c4xx" targetRef="Activity_02yfezy" />
+    <bpmn:sequenceFlow id="Flow_1uytv6u" sourceRef="Activity_03mks2d" targetRef="Activity_16s1zbb" />
+    <bpmn:sequenceFlow id="Flow_0603i43" sourceRef="Activity_16s1zbb" targetRef="Event_1a5ae6g" />
+    <bpmn:sequenceFlow id="Flow_092ltoj" sourceRef="Activity_02yfezy" targetRef="Activity_03mks2d" />
+    <bpmn:userTask id="Activity_02yfezy" name="Review" camunda:formKey="partner">
+      <bpmn:incoming>Flow_1dqxwag</bpmn:incoming>
+      <bpmn:outgoing>Flow_092ltoj</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0p7wtn1">
+      <bpmndi:BPMNShape id="Participant_0yl415n_di" bpmnElement="Participant_0yl415n" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="968" height="220" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="223" y="180" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ebnz7x_di" bpmnElement="Activity_0p9c4xx">
+        <dc:Bounds x="301" y="158" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_170pplo_di" bpmnElement="Activity_16s1zbb">
+        <dc:Bounds x="750" y="158" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1a5ae6g_di" bpmnElement="Event_1a5ae6g">
+        <dc:Bounds x="902" y="180" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0luhi09_di" bpmnElement="Activity_03mks2d">
+        <dc:Bounds x="600" y="158" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0lof3x4_di" bpmnElement="Activity_02yfezy">
+        <dc:Bounds x="460" y="158" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_00eukxs_di" bpmnElement="Flow_00eukxs">
+        <di:waypoint x="259" y="198" />
+        <di:waypoint x="301" y="198" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1dqxwag_di" bpmnElement="Flow_1dqxwag">
+        <di:waypoint x="401" y="198" />
+        <di:waypoint x="460" y="198" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1uytv6u_di" bpmnElement="Flow_1uytv6u">
+        <di:waypoint x="700" y="198" />
+        <di:waypoint x="750" y="198" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0603i43_di" bpmnElement="Flow_0603i43">
+        <di:waypoint x="850" y="198" />
+        <di:waypoint x="902" y="198" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_092ltoj_di" bpmnElement="Flow_092ltoj">
+        <di:waypoint x="560" y="198" />
+        <di:waypoint x="600" y="198" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

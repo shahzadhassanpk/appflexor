@@ -1,0 +1,393 @@
+{
+  "name": "Run Data Ingestion",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1040,
+        -384
+      ],
+      "id": "918cff07-6253-4117-a6e2-6334bcb2a363",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://172.17.0.1:8089/engine-rest/external-task/fetchAndLock",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"workerId\": \"data-ingestion\",\n  \"maxTasks\": 1,\n  \"usePriority\": true,\n  \"topics\": [\n    {\n      \"topicName\": \"data_ingestion\",\n      \"lockDuration\": 60000\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -800,
+        -384
+      ],
+      "id": "ba6595ee-08cd-40c9-a69b-053e62666698",
+      "name": "Fetch and Lock"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "aee3e274-e902-43d8-859a-7dd4f1d802d6",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -256,
+        -224
+      ],
+      "id": "c0c6459d-cc8f-41ad-bdd3-ddbed84c0c1c",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select w.id, p.id as project, w.name\n  from project p\n  join shared_workflow s on s.\"projectId\"=p.id\n  join workflow_entity w on w.id=s.\"workflowId\"\nwhere p.id='{{ $json.project }}' and w.service_key='data_ingestion'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -448,
+        -64
+      ],
+      "id": "5428560a-fe02-455b-861d-5edeac6bcd12",
+      "name": "Identify Automation",
+      "credentials": {
+        "postgres": {
+          "id": "mgf8dGHuiQctckn3",
+          "name": "N8N DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "aee3e274-e902-43d8-859a-7dd4f1d802d6",
+              "leftValue": "={{ $json.project }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -656,
+        64
+      ],
+      "id": "29e2f8e8-ace3-4293-8765-a8803b20586c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select n.c_project as project, s.c_status as status, s.c_datasource as datasource from app_fd_subscription s\n  join app_fd_n8n_subscription n on n.c_subscription=s.id \n  where s.c_datasource='{{ $json.tenantId }}' and s.c_status='ACTIVE'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -624,
+        -288
+      ],
+      "id": "70970755-a76d-4ab4-b581-c4a385c5579f",
+      "name": "Validate Request1",
+      "credentials": {
+        "postgres": {
+          "id": "M1zMiMp1bMIK6h94",
+          "name": "Cloud DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        144,
+        -256
+      ],
+      "id": "d9f8cc4b-f8e0-445a-accc-4a4396d3b5f8",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\n\nfor (const item of $input.all()) {\n  items.push({\n    json: {\n      taskId: item.json.id,\n      processInstanceId: item.json.processInstanceId,\n      datasource:item.json.tenantId,\n      businessKey:item.json.businessKey,\n      data_file: item.json.variables.data_file.value,\n      body: {\n        workerId: \"data-ingestion\",\n        variables: {\n          ...item.json.variables, // spread existing variables\n          subject: { value: item.json.variables.data_file.value, type: \"String\" },\n          result: { value: \"done\", type: \"String\" }, // add or overwrite\n        },\n      },\n    },\n  });\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        128
+      ],
+      "id": "959534a2-5c19-4443-8713-05bcde62b582",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        384,
+        -64
+      ],
+      "id": "bf861553-63f6-483a-aa7d-3721da7d2b13",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://172.17.0.1:8089/engine-rest/external-task/{{ $json.taskId }}/complete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        576,
+        -64
+      ],
+      "id": "8ab1a227-0837-485b-a55d-7f751ce491ef",
+      "name": "Complete Task",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Iq5Igg2R7I54fZsU",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Iq5Igg2R7I54fZsU",
+          "cachedResultName": "Accounting — Workflow Data Ingestion 1.2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        128
+      ],
+      "id": "075da5dc-76b0-413a-9243-2b6648cc696d",
+      "name": "Call 'Workflow Data Ingestion 1.2'"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch and Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch and Lock": {
+      "main": [
+        [
+          {
+            "node": "Validate Request1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Identify Automation": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Identify Automation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Validate Request1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Call 'Workflow Data Ingestion 1.2'",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Complete Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Workflow Data Ingestion 1.2'": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "executionTimeout": -1
+  },
+  "versionId": "763d05d4-a26c-4ce9-8f11-7e91f6730c61",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "wn7VSCnw0scem4Qf",
+  "tags": []
+}

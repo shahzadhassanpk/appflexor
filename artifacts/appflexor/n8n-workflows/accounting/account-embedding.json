@@ -1,0 +1,279 @@
+{
+  "name": "account-embedding",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        -32
+      ],
+      "id": "e52ef2a6-123b-4960-a34f-f68f7983004c",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from app_fd_chart_of_accounts\nwhere c_integration = $1",
+        "options": {
+          "queryReplacement": "={{ $json.integration }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -112,
+        -48
+      ],
+      "id": "5cd6d011-2748-4249-b558-8def673e2c27",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $('Prepare Data').item.json.text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "type",
+                "value": "={{ $('Prepare Data').item.json.meta.type }}"
+              },
+              {
+                "name": "org_id",
+                "value": "={{ $('Prepare Data').item.json.meta.org_id }}"
+              },
+              {
+                "name": "account_id",
+                "value": "={{ $('Prepare Data').item.json.meta.account_id }}"
+              },
+              {
+                "name": "integration",
+                "value": "={{ $('Prepare Data').item.json.meta.integration }}"
+              },
+              {
+                "name": "name",
+                "value": "={{ $('Prepare Data').item.json.meta.name }}"
+              },
+              {
+                "name": "code",
+                "value": "={{ $('Prepare Data').item.json.meta.code }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        384,
+        160
+      ],
+      "id": "d1231d15-aca0-4c6d-8194-54c5acdc969e",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "classification_embeddings",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        256,
+        -48
+      ],
+      "id": "f63375be-30eb-49c8-b2e1-deaa77e57275",
+      "name": "Insert Embeddings",
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const datasource = $('When clicking ‘Execute workflow’').first().json.datasource;\nreturn items.map(c => {\n  return {\n    datasource, \n    text:c.json.c_text,\n    meta:{name:c.json.c_name, code:c.json.c_code, type:'account', org_id:c.json.c_org_id, account_id:c.json.c_external_id, integration:c.json.c_integration}\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -48
+      ],
+      "id": "1bd0a302-dab1-4536-a250-34bad3467b7b",
+      "name": "Prepare Data"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        176,
+        160
+      ],
+      "id": "8ce50424-f17f-4756-9f2d-b0fa8972b5dc",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "qW5kp4Rk8410Q1xV",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "delete from classification_embeddings\nwhere metadata->>'integration'=$1 and metadata->>'type'='account'",
+        "options": {
+          "queryReplacement": "={{ $json.integration }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -448,
+        -176
+      ],
+      "id": "adc6fc6a-e0a0-4bc3-9682-4b87c834d0ad",
+      "name": "Remove Existing",
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -304,
+        -48
+      ],
+      "id": "ea6c7e14-73ef-4ef4-a487-5f5430d88ebc",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {
+          "datasource": "tenantshst00105",
+          "integration": "6d72e2ba-e543-45a0-bc0b-43d9eab18c60"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Remove Existing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert Embeddings",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "Insert Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert Embeddings",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Existing": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d9a740e1-1cf7-4d0b-ad1f-9f1945992193",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "389RPtLR91rprwPD",
+  "tags": []
+}

@@ -1,0 +1,1160 @@
+{
+  "name": "Email Data Ingestion 1.1",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.subject}}",
+              "operation": "contains",
+              "value2": "Bill"
+            }
+          ]
+        }
+      },
+      "id": "245ed87f-d5c2-4ac7-8314-23cfb779bb51",
+      "name": "If Vendor Bill",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -576
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "={{$json.fileKey}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        368,
+        -416
+      ],
+      "id": "d8f0e320-b865-4db1-b647-9029c7d3f342",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a data extraction and classification engine.  \nYour task is to read text and extract structured data in valid JSON format.  \n\nRules:\n- Always include a top-level field `document_type` with one of:\n  [\"vendor_bill\", \"customer_invoice\", \"bank_statement\", \"creditcard_statement\"].\n- Always return valid JSON only (no markdown, no explanation).\n- If a field is missing, return it as null.\n- Normalize numbers (275.00 not $275.00).\n- All dates must be in the format YYYY-MM-DD (example: 2025-10-02).\n- Always extract currency as a three-letter ISO code (e.g., USD, GBP, EUR, PKR, AUD).\n  - From symbol (e.g., $, £, €, ₨).\n  - Or from ISO code/abbreviation in text (e.g., USD, GBP, EUR, PKR).\n  - Or from currency words (e.g., US Dollars, Pounds Sterling, Pakistani Rupees).\n- For vendor bills and customer invoices:\n  - Extract invoice fields and line_items.\n  - Calculate `due_date` = `invoice_date` + `payment_terms_days`.\n  - Extract `payment_terms_days` as a number from terms like \"Net 30\".\n  - Extract both invoice-level and line-item-level taxes.\n  - Prefer trading name (T/AS …) if available for `vendor_name` or `customer_name`.\n- For bank statements:\n  - Extract `bank_name`, `account_number`, `statement_period`, and an array of `transactions`.\n  - Transactions include: { date, description, debit, credit, balance }.\n- For credit card statements:\n  - Extract `cardholder_name`, `card_number_last4`, `statement_period`, and an array of `transactions`.\n  - Transactions include: { date, merchant, amount, currency }.\n",
+              "role": "system"
+            },
+            {
+              "content": "=You are a data extraction and classification engine.  \nYour task is to read text and extract structured data in valid JSON format.  \n\nRules:\n- Always include a top-level field `document_type` with one of:\n  [\"vendor_bill\", \"customer_invoice\", \"bank_statement\", \"creditcard_statement\"].\n- Always return valid JSON only (no markdown, no explanation).\n- If a field is missing, return it as null.\n- Normalize numbers (275.00 not $275.00).\n- All dates must be in the format YYYY-MM-DD (example: 2025-10-02).\n- Always extract currency as a three-letter ISO code (e.g., USD, GBP, EUR, PKR, AUD).\n  - From symbol (e.g., $, £, €, ₨).\n  - Or from ISO code/abbreviation in text (e.g., USD, GBP, EUR, PKR).\n  - Or from currency words (e.g., US Dollars, Pounds Sterling, Pakistani Rupees).\n- For vendor bills and customer invoices:\n  - Extract invoice fields and line_items.\n  - Calculate `due_date` = `invoice_date` + `payment_terms_days`.\n  - Extract `payment_terms_days` as a number from terms like \"Net 30\".\n  - Extract both invoice-level and line-item-level taxes.\n  - Prefer trading name (T/AS …) if available for `vendor_name` or `customer_name`.\n- For bank statements:\n  - Extract `bank_name`, `account_number`, `statement_period`, and an array of `transactions`.\n  - Transactions include: { date, description, debit, credit, balance, txn_type }.\n- For credit card statements:\n  - Extract `cardholder_name`, `card_number_last4`, `statement_period`, and an array of `transactions`.\n  - Transactions include: { date, description, amount, currency, txn_type }.\n- Must add a line_number field to each line item or transaction to maintain their order (starting from 1 and incrementing by 1).\n- Extract both billing_address and shipping_address as single-line strings, Concatenate available parts separated by commas, Skip any missing parts (no extra commas), formatted like:\n  - \"billing_address\": \"Street, City, State, Postal Code, Country\"\n  - \"shipping_address\": \"Street, City, State, Postal Code, Country\"\n- For bank_statement and creditcard_statement transactions, infer txn_type based on description keywords or context:\n  - PURCHASE → words like POS, STORE, MERCHANT, PAYMENT, CARD SWIPE\n  - CHARGES → FEE, SERVICE CHARGE, INTEREST, BANK FEE, LATE FEE\n  - TRANSFER → TRANSFER, DEPOSIT, FUND TRANSFER, REVERSAL\n  - CHEQUE → CHEQUE, CHK, CHECK NO\n  - WITHDRAWAL → ATM, CASH WITHDRAWAL\n  - DEPOSIT → CASH DEPOSIT, SALARY, REFUND, PAYMENT RECEIVED\n  - OTHER → if unclear or not matched above\n\nExtract the structured data as JSON from the text below.  \nIdentify whether it is a vendor_bill, customer_invoice, bank_statement, or creditcard_statement.  \n\nFor vendor_bill or customer_invoice, return:\n{\n  \"document_type\": \"vendor_bill | customer_invoice\",\n  \"vendor_name\": \"...\",\n  \"customer_name\": \"...\",\n  \"invoice_number\": \"...\",\n  \"invoice_date\": \"...\",\n  \"due_date\": \"...\",\n  \"payment_terms_days\": 30,\n  \"total_amount\": 123.45,\n  \"currency\": \"USD\",\n  \"tax_amount\": 12.34,\n  \"tax_rate\": 10.00,\n  \"billing_address\": \"123 Main St, Springfield, IL, 62704, USA\",\n  \"shipping_address\": \"456 Elm St, Springfield, IL, 62705, USA\",\n  \"line_items\": [\n    { \"line_number\": 1, \"description\": \"...\", \"quantity\": 1, \"unit_price\": 100.00, \"amount\": 100.00, \"tax_amount\": 10.00, \"tax_rate\": 10.00 },\n    { \"line_number\": 2, \"description\": \"...\", \"quantity\": 2, \"unit_price\": 50.00, \"amount\": 100.00, \"tax_amount\": 10.00, \"tax_rate\": 10.00 }\n  ]\n}\n\nFor bank_statement, return:\n{\n  \"document_type\": \"bank_statement\",\n  \"currency\": \"USD\",\n  \"bank_name\": \"...\",\n  \"account_number\": \"...\",\n  \"start_date\": \"...\", \n  \"end_date\": \"...\"\n  \"transactions\": [\n    { \"line_number\": 1, \"txn_date\": \"...\", \"description\": \"...\", \"debit\": 50.00, \"credit\": null, \"balance\": 950.00, \"txn_type\": \"\" },\n    { \"line_number\": 2, \"txn_date\": \"...\", \"description\": \"...\", \"debit\": null, \"credit\": 100.00, \"balance\": 1050.00, \"txn_type\": \"\"}\n  ]\n}\n\nFor creditcard_statement, return:\n{\n  \"document_type\": \"creditcard_statement\",\n  \"currency\": \"USD\",\n  \"cardholder_name\": \"...\",\n  \"card_number_last4\": \"...\",\n  \"start_date\": \"...\", \n  \"end_date\": \"...\"},\n  \"transactions\": [\n    { \"line_number\": 1, \"txn_date\": \"...\", \"description\": \"...\", \"amount\": 75.00, \"currency\": \"USD\", \"txn_type\": \"\"},\n    { \"line_number\": 2, \"txn_date\": \"...\", \"description\": \"...\", \"amount\": 120.00, \"currency\": \"USD\", \"txn_type\": \"\"}\n  ]\n}\n\nText:\n{{$json.text}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -112,
+        -160
+      ],
+      "id": "a782c61a-a196-43e1-b9ed-1f1b4b7b8652",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "tHMu2yE3KwDhuI8e",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.step2agility.com/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "=1d59ea80-22ba-4475-96db-13127f668971"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        304,
+        592
+      ],
+      "id": "edb80625-6240-4655-a56f-a3afc5807278",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        192,
+        -176
+      ],
+      "id": "7f24d02b-becc-4bcf-8649-52d8136d885e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// External dependencies\nconst uuid = require('uuid');\n\nlet results = [];\n\nfor (const item of $input.all()) {\n  // Generate one business key per file\n  const business_key = uuid.v4();\n\n  // Find binary key (e.g. 'data', 'attachment_0', etc.)\n  const binaryKeys = Object.keys(item.binary || {});\n  if (binaryKeys.length === 0) continue;\n\n  const key = binaryKeys[0];\n  const binaryData = item.binary[key];\n\n  // Get base64 file content\n  const base64Content = binaryData.data || null;\n\n  // Parse extracted document content\n  let data = JSON.parse(item.json.message.content);\n\n  // Attach business_key to the document\n  data.business_key = business_key;\n\n  // Attach business_key to all transactions (if any)\n  if (Array.isArray(data.transactions)) {\n    data.transactions = data.transactions.map(tx => ({\n      ...tx,\n      business_key\n    }));\n  }\n\n  // Push output\n  results.push({\n    json: {\n      business_key,  // unique per file\n      data,          // extracted + enriched JSON\n      fileName: item.json.fileName || binaryData.fileName,\n      mimeType: item.json.mimeType || binaryData.mimeType,\n      text: item.json.text || \"\",     // from Extract from File\n      content: base64Content          // base64 string of file\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -176
+      ],
+      "id": "4f8d4a3b-4f56-4424-8667-134e532fb4c7",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let text = (item.json.text?item.json.text:item.json.data)\n  item.json.text = text;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        -768
+      ],
+      "id": "3f350bf3-8f8d-4f67-820e-44419d6a95c2",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "42f1d6da-0fd3-4981-b47c-53337c6810e2",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        -432
+      ],
+      "id": "6f472b77-1687-4ce7-bb57-32e3bcb4060c",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://172.17.0.1:9998/tika",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.mimeType }}"
+            },
+            {
+              "name": "Accept",
+              "value": "text/plain"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "={{$json.fileKey}}",
+        "options": {}
+      },
+      "id": "924575e2-72a9-4fe2-9e27-11849bbc7c69",
+      "name": "OCR Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        400,
+        -896
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "57a4f1bc-4155-451f-ae04-90ec3d929313",
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "image/png",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "cc6c4542-0d0b-45ef-81f4-713dd6b078e1",
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "image/jpeg",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -64,
+        -880
+      ],
+      "id": "44cc281c-138c-464c-895b-5becb7fdc6f6",
+      "name": "If Image"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "57a4f1bc-4155-451f-ae04-90ec3d929313",
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "image/png",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "cc6c4542-0d0b-45ef-81f4-713dd6b078e1",
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        160,
+        -400
+      ],
+      "id": "29801e11-2bc4-4c87-ba68-cba9ab7698f5",
+      "name": "If PDF"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT metadata->>'partner' as partner, metadata->>'category' as category,\n  metadata->>'rule' as keywords\nFROM classification_embeddings\nWHERE metadata->>'company_id' = '86eddc20-b966-49a7-afe9-277ab66203cf'\nORDER BY embedding <=> $1::vector\nlimit 3",
+        "additionalFields": {
+          "queryParams": "=embedding"
+        }
+      },
+      "id": "cffc1adc-ceaf-48fd-84f9-3041c44d511f",
+      "name": "Find Rules (pgvector)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        928,
+        320
+      ],
+      "executeOnce": false,
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const embedding = $json.data[0].embedding;\n\nreturn {embedding};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        320
+      ],
+      "id": "bbd052cc-0ffd-4dfd-a3d2-9921f8e60dc9",
+      "name": "Get Embeddings"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "rules",
+        "include": "specifiedFields",
+        "fieldsToInclude": "keywords",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        320
+      ],
+      "id": "d170abbf-e6a3-4eec-8bb3-7f67625a993a",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4o-mini",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "=You are a financial transaction classification assistant.  \nYour job is to classify transactions into the correct partner and category.  \n\nYou will receive:  \n- A JSON object describing the transaction.  \n- A list of known classification rules retrieved from a database (partner, category, and keywords).  \n\nRules:  \n1. Use the rules and their keywords as the primary source of truth.  \n2. Match transaction `name` or `ref` to rules using keyword similarity.  \n3. If multiple rules match, pick the one with the closest meaning.  \n4. If no rules match, return `\"partner\": \"Unknown\", \"category\": \"Unclassified\"`.  \n5. **Always respond with raw JSON only. Do not include any text, explanation, or Markdown code fences.**"
+            },
+            {
+              "content": "=Classify the following transaction using the provided rules.\n\nTransaction: \n{{ JSON.stringify($item(0).$node[\"Loop Over Items\"].json) }}\n\n\nCandidate Rules: \n{{ $json.rules.map((item, i)=>(i+1) + \". \" +item.keywords).join('\\n\\n')}}\n\nRespond with only JSON in the format: {   \"partner\": \"...\",   \"category\": \"...\" }"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "806d04db-3ae3-4f30-a3ad-02c17f46f7e2",
+      "name": "Classify with GPT",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        320
+      ],
+      "executeOnce": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "tHMu2yE3KwDhuI8e",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        336,
+        304
+      ],
+      "id": "1afce462-874e-408d-8308-e63a6ca3f7b4",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "Replace Me",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        320
+      ],
+      "id": "9b3b728e-3b1c-49bd-89f9-0b73fae37525"
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = JSON.parse($json.message.content);\nconst currentItem = $item(0).$node[\"Loop Over Items\"].json;\n  currentItem.category = content.category;\n  currentItem.partner = content.partner;\nreturn currentItem;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        320
+      ],
+      "id": "cfd3a6f9-13cc-4c89-a012-7f8f0a995acb",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "jsCode": "let results = [];\n\nfor (const item of $input.all()) {\n  for (const key of Object.keys(item.binary)) {\n    const binaryData = item.binary[key];\n    const text = Buffer.from(binaryData.data, 'base64').toString('utf8');\n\n    results.push({\n      json: {\n        fileKey: key,\n        text,\n        fileName: binaryData.fileName || null,\n        mimeType: binaryData.mimeType || null,\n      },\n      binary: {\n        [key]: binaryData, // keep binary for Extract from File\n      },\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -768
+      ],
+      "id": "f438ccd5-171a-43ba-bd89-12996f783b29",
+      "name": "Extract Statement"
+    },
+    {
+      "parameters": {
+        "jsCode": "let results = [];\n\nfor (const item of $input.all()) {\n  for (const key of Object.keys(item.binary)) {\n    const binaryData = item.binary[key];\n\n    results.push({\n      json: {\n        fileKey: key,\n        fileName: binaryData.fileName || null,\n        mimeType: binaryData.mimeType || null,\n      },\n      binary: {\n        [key]: binaryData, // keep binary for Extract from File\n      },\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -592
+      ],
+      "id": "18b69241-bd5a-406c-ac8a-b292b17c0529",
+      "name": "Extract Bill"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4427af25-933d-4423-b40c-a6fc39860fef",
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "text/csv",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        128,
+        -752
+      ],
+      "id": "0cc0b6b8-babc-44ca-8e3c-318187090269",
+      "name": "If CSV"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4427af25-933d-4423-b40c-a6fc39860fef",
+              "leftValue": "={{ $json.data.document_type }}",
+              "rightValue": "bank_statement",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "8e807546-4383-44e5-9da2-1df0c2b43dbf",
+              "leftValue": "={{ $json.data.document_type }}",
+              "rightValue": "creditcard_statement",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -304,
+        128
+      ],
+      "id": "b9ffd51d-50f4-4ac9-b866-2537be92c569",
+      "name": "If Statement"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.step2agility.com/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "=1d59ea80-22ba-4475-96db-13127f668971"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1008,
+        96
+      ],
+      "id": "3f35824f-1728-4d8b-b44d-60270a56624a",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"text-embedding-3-small\",\n  \"input\": \"={{$json[\"name\"]}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        320
+      ],
+      "id": "9640bbe3-0d13-4605-8474-12d1d9b34428",
+      "name": "HTTP Request1",
+      "executeOnce": false,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "jGpFNPZFl6Lr1A7k",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// =============================\n// Extract binary + metadata for all doc types\n// =============================\n\n// Parse incoming JSON payload (AI extracted data + file info)\nconst _data = $json.data;\n\n// Ensure document_type is provided by AI or fall back\nconst document_type = _data.document_type || \"unknown_document\";\n\n// Build document name (try different fields depending on type)\nlet docRef = _data.invoice_number || _data.statement_number || _data.reference || $json.fileName;\nlet partyName = _data.vendor_name || _data.customer_name || _data.bank_name || _data.document_type;\nconst document_name = document_type=='bank_statement'?`${_data.account_number}-(${_data.start_date})`:`${partyName}/${docRef}`;\n\n// Initialize request payload\nlet request = {\n  tenant_id: \"tenantshst00105\",\n  data: []\n};\n\n// -----------------------------\n// Build Form Data & File Data\n// -----------------------------\nlet formData = {\n  ..._data,\n  id: \"new\",\n  document_type,\n  document_name,\n  data_file: $json.fileName,\n  file_text: $json.text\n};\n\nlet fileData = [\n  {\n    fileName: $json.fileName,\n    content: $json.content // base64\n  }\n];\n\n// Extract line items / transactions if available\nlet { line_items = [], transactions = [] } = formData;\ndelete formData.line_items;\ndelete formData.transactions;\n\n// -----------------------------\n// Push Main Document\n// -----------------------------\nrequest.data.push({\n  formId: \"documents\",\n  entity: \"documents\",\n  action: \"update\",\n  id: \"new\",\n  formData,\n  fileData\n});\n\n// -----------------------------\n// Return Final Request\n// -----------------------------\nreturn request;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        112
+      ],
+      "id": "9e9ccf9e-4ced-4456-b64c-ebca8d0c0e29",
+      "name": "Prepare Data2"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let data = $json;\nreturn {\n    formId: \"document_lines\",\n    entity: \"document_lines\",\n    action: \"update\",\n    id: \"new\",\n    formData: {\n      ...data,\n      id: \"new\"\n    }\n  }"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        320
+      ],
+      "id": "3a6904d7-3308-443d-a055-65e0782b993f",
+      "name": "Prepare Data3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nlet request = {\n  tenant_id: \"tenantshst00105\",\n  data: []\n};\nfor (const item of $input.all()) {\n  request.data.push(item.json);\n}\n\nreturn request;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        192
+      ],
+      "id": "af639501-f810-4d09-80b1-0fec211d0803",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = [];\n\nfor (const item of $input.all()) {\n  result.push(...item.json.data.transactions)\n}\n\nreturn result;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        304
+      ],
+      "id": "388a20ae-63ce-426a-b673-cb6c70aad28b",
+      "name": "Prepare Statement",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// =============================\n// Extract binary + metadata for all doc types\n// =============================\n\n// Parse incoming JSON payload (AI extracted data + file info)\nconst _data = $json.data;\nconst business_key = $json.business_key;\n\n// Ensure document_type is provided by AI or fall back\nconst document_type = _data.document_type || \"unknown_document\";\n\n// Build document name (try different fields depending on type)\nlet docRef = _data.invoice_number || _data.statement_number || _data.reference || $json.fileName;\nlet partyName = _data.vendor_name || _data.customer_name || _data.bank_name || _data.document_type;\nconst document_name = `${docRef} / ${partyName}`;\n\n// Initialize request payload\nlet request = {\n  tenant_id: \"tenantshst00105\",\n  data: []\n};\n\n// -----------------------------\n// Build Form Data & File Data\n// -----------------------------\nlet formData = {\n  ..._data,\n  business_key,\n  id: \"new\",\n  document_type,\n  document_name,\n  data_file: $json.fileName,\n  file_text: $json.text\n};\n\nlet fileData = [\n  {\n    fileName: $json.fileName,\n    content: $json.content // base64\n  }\n];\n\n// Extract line items / transactions if available\nlet { line_items = [], transactions = [] } = formData;\ndelete formData.line_items;\ndelete formData.transactions;\n\n// -----------------------------\n// Push Main Document\n// -----------------------------\nrequest.data.push({\n  formId: \"documents\",\n  entity: \"documents\",\n  action: \"update\",\n  id: \"new\",\n  formData,\n  fileData\n});\n\n// -----------------------------\n// Push Document Lines\n// -----------------------------\n// Vendor bills / invoices → use line_items\nline_items.forEach(item => {\n  request.data.push({\n    formId: \"document_lines\",\n    entity: \"document_lines\",\n    action: \"update\",\n    id: \"new\",\n    formData: {\n      ...item,\n      business_key,\n      id: \"new\"\n    }\n  });\n});\n\n// -----------------------------\n// Return Final Request\n// -----------------------------\nreturn request;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        592
+      ],
+      "id": "a69af40b-fc7e-44ca-a7ad-d43617229be8",
+      "name": "Prepare Invoice Data"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        576,
+        -432
+      ],
+      "id": "fe1414bc-3298-4fcc-b77d-eb89ccd2c38f",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "downloadAttachments": true,
+        "options": {
+          "forceReconnect": 60
+        }
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.1,
+      "position": [
+        -688,
+        -576
+      ],
+      "id": "caae6917-2bac-4c38-97ce-4334f4ff8c61",
+      "name": "Email Trigger (IMAP)",
+      "credentials": {
+        "imap": {
+          "id": "DMZlrkkhlXhoK8Tn",
+          "name": "support@step2agility.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  let raw = item.json.text ? item.json.text : item.json.data;\n\n  const clean = raw\n    .replace(/[ \\t]+/g, \" \") // collapse spaces & tabs\n    .replace(/\\n\\s*\\n+/g, \"\\n\") // collapse multiple newlines\n    .replace(/[,]+/g, \",\") // clean up extra commas\n    .trim();\n\n  const preview = clean.toLowerCase().substring(0, 3000);\n  item.json.preview = preview;\n\n  item.json.text = clean;\n  item.json.document_hint = {};\n}\n\nreturn $input.all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        -768
+      ],
+      "id": "6a7ccfe7-750e-4763-b1f3-88bc14de862b",
+      "name": "Clean Text"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4o-mini",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "=You are an expert financial document classifier and metadata extractor.  \nYour task is to read a text snippet from an OCR or raw financial document and identify its document type and summary fields.\n\nYou must always produce a **valid JSON object only** — no markdown, no comments, no extra text.\n\nSupported document types:\n- \"bank_statement\"\n- \"creditcard_statement\"\n- \"vendor_bill\"\n- \"customer_invoice\"\n\nRules:\n- If uncertain between \"vendor_bill\" and \"customer_invoice\", choose based on keywords:\n  - “Invoice To”, “Customer”, “Sale” → customer_invoice\n  - “Bill From”, “Vendor”, “Supplier”, “Payable To” → vendor_bill\n- If keywords like “Transaction”, “Balance”, “Deposit”, “Withdrawal”, “Account Number”, “Statement Period” appear → bank_statement\n- If keywords like “Card Number”, “Credit Card”, “Purchases”, “Payment Due”, “Cardholder” appear → creditcard_statement\n\nOutput rules:\n- Output must be **strict JSON** only (no explanation).\n- Dates must use ISO format: YYYY-MM-DD.\n- Numbers must be numeric (no currency symbols or commas).\n- If a field is missing or uncertain, set it to `null`.\n\nExpected JSON fields by type:\n1. **bank_statement**\n   ```json\n   {\n     \"document_type\": \"bank_statement\",\n     \"currency\": \"USD\",\n     \"bank_name\": \"Wells Fargo\",\n     \"account_number\": \"123456789\",\n     \"start_date\": \"2025-09-01\",\n     \"end_date\": \"2025-09-30\"\n   }\n2. vendor_bill\n{\n  \"document_type\": \"vendor_bill\",\n  \"vendor_name\": \"Acme Supplies Ltd\",\n  \"purchase_order\": \"PO-123\",\n  \"invoice_number\": \"INV-00234\",\n  \"invoice_date\": \"2025-09-15\",\n  \"due_date\": \"2025-10-15\",\n  \"payment_terms_days\": 30,\n  \"total_amount\": 450.00,\n  \"currency\": \"USD\"\n}\n\n3. customer_invoice\n{\n  \"document_type\": \"customer_invoice\",\n  \"customer_name\": \"ABC Retail Co\",\n  \"invoice_number\": \"INV-1056\",\n  \"invoice_date\": \"2025-09-05\",\n  \"due_date\": \"2025-10-05\",\n  \"payment_terms_days\": 30,\n  \"total_amount\": 2750.00,\n  \"currency\": \"USD\"\n}\n\n4. creditcard_statement\n{\n  \"document_type\": \"creditcard_statement\",\n  \"cardholder_name\": \"John Doe\",\n  \"card_last4\": \"5678\",\n  \"start_date\": \"2025-08-10\",\n  \"end_date\": \"2025-09-09\",\n  \"currency\": \"USD\"\n}\n\n"
+            },
+            {
+              "content": "=Detect the document type and extract a summary of key fields from the following text.\n\nReturn **only valid JSON** according to the format for that document type.\n\nText:\n{{ $json.preview }}\n"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "a35b1ea1-f71b-408c-a18a-ebb3a499da95",
+      "name": "Detect Type",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        -768
+      ],
+      "executeOnce": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "tHMu2yE3KwDhuI8e",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $node[\"Clean Text\"].json;\nlet _ai = JSON.parse($json.message.content);\ndata.document_summary = _ai\nreturn data;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        -768
+      ],
+      "id": "c32367fe-e5f2-44bf-8304-b278736a3083",
+      "name": "Parse Summar"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If Vendor Bill": {
+      "main": [
+        [
+          {
+            "node": "Extract Bill",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If Statement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        []
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Clean Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OCR Image": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Image": {
+      "main": [
+        [
+          {
+            "node": "OCR Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Rules (pgvector)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Find Rules (pgvector)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Classify with GPT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify with GPT": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Me": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Statement": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Bill": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If CSV": {
+      "main": [
+        [
+          {
+            "node": "Extract Statement",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Statement": {
+      "main": [
+        [
+          {
+            "node": "Prepare Statement",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Data2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Invoice Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Get Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data3": {
+      "main": [
+        [
+          {
+            "node": "Replace Me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        []
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Statement": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Invoice Data": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "If Vendor Bill",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Text": {
+      "main": [
+        [
+          {
+            "node": "Detect Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Type": {
+      "main": [
+        [
+          {
+            "node": "Parse Summar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Summar": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "3d78345b-4772-4d92-9551-7f2b4e8775d8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "cuYOedbzKm9V4OR6",
+  "tags": []
+}

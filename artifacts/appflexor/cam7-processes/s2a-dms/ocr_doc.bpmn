@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0sn34hg" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:collaboration id="Collaboration_0nt5ksl">
+    <bpmn:participant id="indexing_doc" name="Document OCR &#38; Indexing" processRef="ocr_doc" />
+    <bpmn:textAnnotation id="TextAnnotation_0gnj9zh">
+      <bpmn:text>OCR</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="TextAnnotation_0pezud8">
+      <bpmn:text>Generative AI</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="TextAnnotation_1y8buwy">
+      <bpmn:text>Image + Meta</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_14jiidk" associationDirection="None" sourceRef="Activity_04pgk63" targetRef="TextAnnotation_0gnj9zh" />
+    <bpmn:association id="Association_0r8fkxh" associationDirection="None" sourceRef="Activity_0m7jqm8" targetRef="TextAnnotation_0pezud8" />
+    <bpmn:association id="Association_1t039nd" associationDirection="None" sourceRef="Activity_1cbjc2q" targetRef="TextAnnotation_1y8buwy" />
+  </bpmn:collaboration>
+  <bpmn:process id="ocr_doc" name="Document OCR &#38; Indexing" isExecutable="true" camunda:historyTimeToLive="10">
+    <bpmn:laneSet id="LaneSet_0hoekhc">
+      <bpmn:lane id="Lane_1s1rrvb" name="QA">
+        <bpmn:flowNodeRef>Activity_1cbjc2q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1mi2r0v</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0534tui</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_05bljr3" name="Capture">
+        <bpmn:flowNodeRef>Activity_0m7jqm8</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_04pgk63</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_16zvhdr</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="Flow_1qig5za" sourceRef="Activity_1mi2r0v" targetRef="Event_0534tui" />
+    <bpmn:sequenceFlow id="Flow_1kih1yr" sourceRef="StartEvent_1" targetRef="Activity_16zvhdr" />
+    <bpmn:sequenceFlow id="Flow_19q4bzb" sourceRef="Activity_16zvhdr" targetRef="Activity_04pgk63" />
+    <bpmn:sequenceFlow id="Flow_1bz6sn9" sourceRef="Activity_04pgk63" targetRef="Activity_0m7jqm8" />
+    <bpmn:sequenceFlow id="Flow_136le6q" sourceRef="Activity_1cbjc2q" targetRef="Activity_1mi2r0v" />
+    <bpmn:sequenceFlow id="Flow_02qk7ko" sourceRef="Activity_0m7jqm8" targetRef="Activity_1cbjc2q" />
+    <bpmn:endEvent id="Event_0534tui" name="Document Indexed">
+      <bpmn:incoming>Flow_1qig5za</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Activity_1mi2r0v" name="Elastic Serach Indexing" camunda:type="external" camunda:topic="INDEXING_WORKER">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="queries">{
+	"dataKeys": [
+		{
+			"serviceParams": [${execution.processBusinessKey}],
+			"dataKey": "dms_document",
+			"serviceKey": "dms.index.doc",
+			"mode": "formData"
+		}
+	]
+}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_136le6q</bpmn:incoming>
+      <bpmn:outgoing>Flow_1qig5za</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_16zvhdr" name="Load Data" camunda:type="external" camunda:topic="EXECUTE_QUERIES">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="queries">{
+    dataKeys: [
+                {
+                    serviceParams: [${execution.processBusinessKey}],
+                    dataKey: "formData",
+                    serviceKey: "fetch.doc.details",
+                    mode: "formData"
+                }
+            ]           
+}</camunda:inputParameter>
+        </camunda:inputOutput>
+        <camunda:executionListener event="end">
+          <camunda:script scriptFormat="javascript">var responseObj = JSON.parse(formData);
+execution.setVariable("file", responseObj[0].content);
+execution.setVariable("prompt", responseObj[0].meta_prompt);
+execution.setVariable("form_key", responseObj[0].form_key);</camunda:script>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1kih1yr</bpmn:incoming>
+      <bpmn:outgoing>Flow_19q4bzb</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:startEvent id="StartEvent_1" name="Upload Doc">
+      <bpmn:outgoing>Flow_1kih1yr</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Activity_04pgk63" name="Extract Text" camunda:type="external" camunda:topic="TIKA_WORKER">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_19q4bzb</bpmn:incoming>
+      <bpmn:outgoing>Flow_1bz6sn9</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_0m7jqm8" name="Extract Meta" camunda:type="external" camunda:topic="OLLAMA_WORKER">
+      <bpmn:incoming>Flow_1bz6sn9</bpmn:incoming>
+      <bpmn:outgoing>Flow_02qk7ko</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Activity_1cbjc2q" name="Quality Review" camunda:formKey="${form_key}">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_02qk7ko</bpmn:incoming>
+      <bpmn:outgoing>Flow_136le6q</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0nt5ksl">
+      <bpmndi:BPMNShape id="Participant_12t30ae_di" bpmnElement="indexing_doc" isHorizontal="true">
+        <dc:Bounds x="160" y="40" width="770" height="440" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_05bljr3_di" bpmnElement="Lane_05bljr3" isHorizontal="true">
+        <dc:Bounds x="190" y="40" width="740" height="210" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1s1rrvb_di" bpmnElement="Lane_1s1rrvb" isHorizontal="true">
+        <dc:Bounds x="190" y="250" width="740" height="230" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0pbqmcr_di" bpmnElement="Activity_1cbjc2q">
+        <dc:Bounds x="330" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0fb1jrp_di" bpmnElement="Activity_0m7jqm8">
+        <dc:Bounds x="790" y="120" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1og0ihu_di" bpmnElement="Activity_04pgk63">
+        <dc:Bounds x="560" y="120" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="232" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="221" y="185" width="58" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1sbtkmu_di" bpmnElement="Activity_16zvhdr">
+        <dc:Bounds x="370" y="120" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0w9wv4x_di" bpmnElement="Activity_1mi2r0v">
+        <dc:Bounds x="560" y="370" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0534tui_di" bpmnElement="Event_0534tui">
+        <dc:Bounds x="802" y="392" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="794" y="435" width="52" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_02qk7ko_di" bpmnElement="Flow_02qk7ko">
+        <di:waypoint x="840" y="200" />
+        <di:waypoint x="840" y="310" />
+        <di:waypoint x="390" y="310" />
+        <di:waypoint x="390" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_136le6q_di" bpmnElement="Flow_136le6q">
+        <di:waypoint x="430" y="410" />
+        <di:waypoint x="560" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1bz6sn9_di" bpmnElement="Flow_1bz6sn9">
+        <di:waypoint x="660" y="160" />
+        <di:waypoint x="790" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19q4bzb_di" bpmnElement="Flow_19q4bzb">
+        <di:waypoint x="470" y="160" />
+        <di:waypoint x="560" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1kih1yr_di" bpmnElement="Flow_1kih1yr">
+        <di:waypoint x="268" y="160" />
+        <di:waypoint x="370" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1qig5za_di" bpmnElement="Flow_1qig5za">
+        <di:waypoint x="660" y="410" />
+        <di:waypoint x="802" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0gnj9zh_di" bpmnElement="TextAnnotation_0gnj9zh">
+        <dc:Bounds x="680" y="70" width="70" height="30" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0pezud8_di" bpmnElement="TextAnnotation_0pezud8">
+        <dc:Bounds x="820" y="70" width="100" height="30" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1y8buwy_di" bpmnElement="TextAnnotation_1y8buwy">
+        <dc:Bounds x="270" y="300" width="100" height="30" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1t039nd_di" bpmnElement="Association_1t039nd">
+        <di:waypoint x="355" y="370" />
+        <di:waypoint x="329" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0r8fkxh_di" bpmnElement="Association_0r8fkxh">
+        <di:waypoint x="856" y="120" />
+        <di:waypoint x="864" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_14jiidk_di" bpmnElement="Association_14jiidk">
+        <di:waypoint x="630" y="120" />
+        <di:waypoint x="680" y="96" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

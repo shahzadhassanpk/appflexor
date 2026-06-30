@@ -1,0 +1,182 @@
+{
+  "name": "Execute Trigger",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -480,
+        -16
+      ],
+      "id": "a76c2ecb-cf32-47a9-8302-6f2d00d27cdb",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://172.17.0.1:8089/engine-rest/external-task/fetchAndLock",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"workerId\": \"EXECUTE_TRIGGERS\",\n  \"maxTasks\": 1,\n  \"usePriority\": true,\n  \"topics\": [\n    {\n      \"topicName\": \"EXECUTE_TRIGGERS\",\n      \"lockDuration\": 6000\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -288,
+        -16
+      ],
+      "id": "e5cc2837-e934-4c3c-8f7e-407361824894",
+      "name": "Fetch and Lock"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://172.17.0.1:8089/engine-rest/external-task/{{ $json.taskId }}/complete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        112,
+        224
+      ],
+      "id": "8a2665ec-7572-4a2b-b881-7853c6ac3ed9",
+      "name": "Complete Task",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\n\nfor (const item of $input.all()) {\n\n  const raw = item.json.variables.triggers.value;\n\n  // Parse JSON safely\n  let parsed;\n  try {\n    parsed = JSON.parse(raw);\n  } catch (e) {\n    throw new Error(\"Invalid triggers JSON: \" + raw);\n  }\n\n  // triggers may be either:\n  // { dataKeys: [...] }  OR  [...]\n  const triggers = parsed;\n\n  const formatted = triggers.map(t => ({\n    serviceKey: t.serviceKey,\n    serviceParams: Array.isArray(t.serviceParams)\n      ? t.serviceParams.join(\",\")   // \"A;B\"\n      : t.serviceParams || \"\"        // fallback\n  }));\n\n  items.push({\n    tenant_id: item.json.variables.tenantId.value,\n    taskId: $input.first().json.id,\n    executeUpdate: formatted\n  });\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        -16
+      ],
+      "id": "d46fdf98-8f1f-44e3-8b8c-d3d6fc1812d7",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.step2agility.com/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "3d221242-de5e-4dfa-b464-fa0938b0d463"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"tenant_id\": \"{{ $json.tenant_id }}\",\n  \"data\": [\n    {\n      \"action\": \"trigger\",\n\t\t\t\"id\":\"NA\",\n\t\t\t\"executeUpdate\":\n\t\t\t\t{{ $json.executeUpdate.toJsonString() }}\n\t\t\t\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        112,
+        -16
+      ],
+      "id": "34ecdca4-0c8e-4c5c-998b-2427342f74ed",
+      "name": "Execute Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\n\nfor (const item of $input.all()) {\n  const request = {\n    taskId: $('Fetch and Lock').first().json.id,\n    workerId: \"EXECUTE_TRIGGERS\",\n    tenantId: $('Fetch and Lock').first().json.tenantId,\n    variables: {}\n  };\n  items.push(request);\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        224
+      ],
+      "id": "5bc50c38-3421-4e7f-be17-dc666d1c8c26",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch and Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch and Lock": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Execute Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Complete Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4d43d770-c269-4497-8d89-bf506d4b6b3b",
+  "meta": {
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "TMfTOuV5ajXWuebd",
+  "tags": []
+}

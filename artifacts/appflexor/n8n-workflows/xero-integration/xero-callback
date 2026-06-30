@@ -1,0 +1,70 @@
+{
+  "name": "Xero OAuth Callback Receiver",
+  "nodes": [
+    {
+      "id": "WebhookCallback",
+      "name": "Webhook - Xero Callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [300, 300],
+      "parameters": {
+        "path": "xero/callback",
+        "httpMethod": "GET",
+        "responseMode": "onReceived",
+        "responseData": "OK"
+      }
+    },
+    {
+      "id": "ExchangeToken",
+      "name": "Exchange Code for Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [600, 300],
+      "parameters": {
+        "url": "https://identity.xero.com/connect/token",
+        "method": "POST",
+        "authentication": "body",
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={\n  \"grant_type\": \"authorization_code\",\n  \"code\": \"{{$json[\"code\"]}}\",\n  \"redirect_uri\": \"YOUR_REDIRECT_URI\",\n  \"client_id\": \"YOUR_XERO_CLIENT_ID\",\n  \"client_secret\": \"YOUR_XERO_CLIENT_SECRET\"\n}"
+      }
+    },
+    {
+      "id": "SaveToken",
+      "name": "Save OAuth Token → PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO xero_oauth_tokens(company_id, access_token, refresh_token, expires_in, created_at)\nVALUES ('company_123', '{{$json[\"access_token\"]}}', '{{$json[\"refresh_token\"]}}', {{$json[\"expires_in\"]}}, NOW())\nON CONFLICT (company_id)\nDO UPDATE SET access_token=EXCLUDED.access_token,\nrefresh_token=EXCLUDED.refresh_token,\nexpires_in=EXCLUDED.expires_in,\ncreated_at=NOW();",
+        "postgres": "YOUR_DB_CONNECTION_ID"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Xero Callback": {
+      "main": [
+        [
+          {
+            "node": "Exchange Code for Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange Code for Token": {
+      "main": [
+        [
+          {
+            "node": "Save OAuth Token → PostgreSQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "triggerCount": 0
+}

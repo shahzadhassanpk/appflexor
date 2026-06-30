@@ -1,0 +1,259 @@
+{
+  "name": "qbo-callback",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.c_token_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "authorization_code"
+            },
+            {
+              "name": "code",
+              "value": "={{ $json.query.code }}"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "={{$json.c_redirect_uri}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        240
+      ],
+      "id": "0acee512-8cc4-4fa8-b1a5-af3f030cc1e1",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "00PgeCC1KdEPxmFf",
+          "name": "qbo credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "http://bookkeeping.dev.com/app/page/setup?tab_code=integration",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c77c3f25-a455-4539-b789-f111bcca65a8",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let state = $('Webhook - QBO Callback').item.json.query.state.split(',');\nlet realmId = $('Webhook - QBO Callback').item.json.query.realmId;\nlet id = state[1];\nlet request = {\n  tenant_id: state[0],\n  data: []\n};\nlet record = {\n    formId: \"integration\",\n    entity: \"integration\",\n    action: \"update\",\n    id: id,\n    formData: {\n      ...$json,\n      realmId:realmId,\n      id: id\n    }\n  }\nrequest.data.push(record);\nreturn request;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        240
+      ],
+      "id": "8082f231-a82e-4843-a03c-faa8532782ea",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CLOUD_URL}}/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "=1d59ea80-22ba-4475-96db-13127f668971"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        240
+      ],
+      "id": "d46d2d17-218b-435e-bf39-8fa3715fbbdc",
+      "name": "HTTP Request1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from app_fd_integration where id='{{ $json.id }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        416,
+        16
+      ],
+      "id": "7918f61a-ccae-4455-9db0-751cf66e1c8a",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let state = item.json.query.state.split(',');\nlet realmId = item.json.query.realmId;\nreturn {id:state[1], datasource:state[0], realmId: realmId}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        16
+      ],
+      "id": "31f065a8-90d6-4fcc-85b6-377dab60e7d2",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        240
+      ],
+      "id": "b8d8be1e-32bb-450c-87fc-276d6b22b210",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "path": "qbo-auth/callback",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "68470099-2f47-4fec-9c7c-3d82a1229bbb",
+      "name": "Webhook - QBO Callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        144
+      ],
+      "webhookId": "bc285422-aa3a-4c6e-b745-7da450219575"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - QBO Callback": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bf3327b3-9b93-4797-b863-0967bf67877a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "AzRcgrQ46L4x2gUP",
+  "tags": []
+}

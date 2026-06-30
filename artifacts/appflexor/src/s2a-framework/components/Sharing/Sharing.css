@@ -1,0 +1,32 @@
+.share-dialog .fa-whatsapp {
+    color: green;
+}
+
+.share-dialog .fa-twitter {
+    color: #4896e6;
+}
+
+.share-dialog .fa-facebook {
+    color: #4267B2;
+}
+
+.share-dialog .fa-google {
+    color: orange;
+}
+
+.share-dialog .col-sm-6 {
+    width: 49%;
+    margin: 2px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 2px grey;
+    padding: 8px;
+    cursor: pointer;
+}
+
+.share-dialog .pen-url {
+    background-color: #c1c1c1;
+    padding: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

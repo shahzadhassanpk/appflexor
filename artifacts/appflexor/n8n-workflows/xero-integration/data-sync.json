@@ -1,0 +1,155 @@
+{
+  "nodes": [
+    {
+      "id": "0",
+      "name": "Prepare Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [200, 200],
+      "credentials": {
+        "postgres": {
+          "id": "Postgres",
+          "name": "Postgres"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS xero_contacts (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  company_id UUID NOT NULL,\n  xero_contact_id TEXT UNIQUE,\n  name TEXT,\n  email TEXT,\n  phone TEXT,\n  is_customer BOOLEAN,\n  is_vendor BOOLEAN,\n  updated_at TIMESTAMP DEFAULT NOW(),\n  raw_json JSONB\n);\n\nCREATE TABLE IF NOT EXISTS xero_accounts (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  company_id UUID NOT NULL,\n  xero_account_id TEXT UNIQUE,\n  code TEXT,\n  name TEXT,\n  type TEXT,\n  class TEXT,\n  bank_account_number TEXT,\n  updated_at TIMESTAMP DEFAULT NOW(),\n  raw_json JSONB\n);\n\nCREATE INDEX IF NOT EXISTS idx_xero_contact_id ON xero_contacts(xero_contact_id);\nCREATE INDEX IF NOT EXISTS idx_xero_account_id ON xero_accounts(xero_account_id);\n"
+      }
+    },
+    {
+      "id": "1",
+      "name": "Get Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [450, 100],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "Xero OAuth2 API",
+          "name": "Xero OAuth2 API"
+        }
+      },
+      "parameters": {
+        "url": "https://api.xero.com/api.xro/2.0/Contacts",
+        "method": "GET",
+        "headers": {
+          "xero-tenant-id": "YOUR_TENANT_ID"
+        }
+      }
+    },
+    {
+      "id": "2",
+      "name": "Process Contacts Array",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [700, 100],
+      "parameters": {
+        "operation": "splitItems",
+        "items": "={{$json[\"Contacts\"]}}"
+      }
+    },
+    {
+      "id": "3",
+      "name": "Upsert Contacts",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [950, 100],
+      "credentials": {
+        "postgres": {
+          "id": "Postgres",
+          "name": "Postgres"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO xero_contacts (company_id, xero_contact_id, name, email, phone, is_customer, is_vendor, raw_json)\nVALUES ('YOUR_COMPANY_ID', '={{$json[\"ContactID\"]}}', '={{$json[\"Name\"]}}', '={{$json[\"EmailAddress\"]}}', '={{$json[\"Phones\"][0][\"PhoneNumber\"] || \"\"}}', {{$json[\"IsCustomer\"]}}, {{$json[\"IsSupplier\"]}}, '{{JSON.stringify($json)}}'::jsonb)\nON CONFLICT (xero_contact_id)\nDO UPDATE SET\n  name = EXCLUDED.name,\n  email = EXCLUDED.email,\n  phone = EXCLUDED.phone,\n  is_customer = EXCLUDED.is_customer,\n  is_vendor = EXCLUDED.is_vendor,\n  raw_json = EXCLUDED.raw_json,\n  updated_at = NOW();"
+      }
+    },
+    {
+      "id": "4",
+      "name": "Get Accounts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [450, 400],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "Xero OAuth2 API",
+          "name": "Xero OAuth2 API"
+        }
+      },
+      "parameters": {
+        "url": "https://api.xero.com/api.xro/2.0/Accounts",
+        "method": "GET",
+        "headers": {
+          "xero-tenant-id": "YOUR_TENANT_ID"
+        }
+      }
+    },
+    {
+      "id": "5",
+      "name": "Process Accounts Array",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [700, 400],
+      "parameters": {
+        "operation": "splitItems",
+        "items": "={{$json[\"Accounts\"]}}"
+      }
+    },
+    {
+      "id": "6",
+      "name": "Upsert Accounts",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [950, 400],
+      "credentials": {
+        "postgres": {
+          "id": "Postgres",
+          "name": "Postgres"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO xero_accounts (company_id, xero_account_id, code, name, type, class, bank_account_number, raw_json)\nVALUES ('YOUR_COMPANY_ID', '={{$json[\"AccountID\"]}}', '={{$json[\"Code\"]}}', '={{$json[\"Name\"]}}', '={{$json[\"Type\"]}}', '={{$json[\"Class\"]}}', '={{$json[\"BankAccountNumber\"] || \"\"}}', '{{JSON.stringify($json)}}'::jsonb)\nON CONFLICT (xero_account_id)\nDO UPDATE SET\n  code = EXCLUDED.code,\n  name = EXCLUDED.name,\n  type = EXCLUDED.type,\n  class = EXCLUDED.class,\n  bank_account_number = EXCLUDED.bank_account_number,\n  raw_json = EXCLUDED.raw_json,\n  updated_at = NOW();"
+      }
+    }
+  ],
+  "connections": {
+    "Prepare Database": {
+      "main": [
+        [
+          { "node": "Get Contacts", "type": "main", "index": 0 },
+          { "node": "Get Accounts", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Get Contacts": {
+      "main": [
+        [
+          { "node": "Process Contacts Array", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Process Contacts Array": {
+      "main": [
+        [
+          { "node": "Upsert Contacts", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Get Accounts": {
+      "main": [
+        [
+          { "node": "Process Accounts Array", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Process Accounts Array": {
+      "main": [
+        [
+          { "node": "Upsert Accounts", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  }
+}

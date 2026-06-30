@@ -1,0 +1,397 @@
+{
+  "name": "lead-scrap",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        -48
+      ],
+      "id": "84b226cc-944f-43a2-8de7-eb5859447c1d",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://serpapi.com/search.json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "9a3f3b42d830d76f544c948152027d4be832e8ee722f0f7becd67d8099c62f7b"
+            },
+            {
+              "name": "q",
+              "value": "={{ $json.keywords }}"
+            },
+            {
+              "name": "engine",
+              "value": "google_maps"
+            },
+            {
+              "name": "location",
+              "value": "={{ $json.city }}, {{ $json.state }}, {{ $json.country }}"
+            },
+            {
+              "name": "type",
+              "value": "search"
+            },
+            {
+              "name": "z",
+              "value": "13"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -368,
+        -160
+      ],
+      "id": "76d6c013-71ef-42e5-bec8-2517c9979c88",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    batch.id, \n    batch.c_keywords as keywords,\n    city.c_name AS city, \n    city.c_state AS state, \n    country.c_name AS country\nFROM app_fd_lead_batch AS batch\nJOIN app_fd_city AS city \n    ON batch.c_city LIKE CONCAT('%', city.id::text, '%')\nJOIN app_fd_country AS country \n    ON country.id = city.c_country::uuid\nwhere batch.c_is_active='true'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -640,
+        -48
+      ],
+      "id": "8691ac87-60d0-415e-913c-99c09f821de3",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "NqmoTfHBhjI7zeA9",
+          "name": "S2A_DM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -144,
+        -64
+      ],
+      "id": "bf16f94a-0e47-4246-86f7-d78cfc24292f",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractLeads(serpApiResponse, batchMeta) {\n  const {\n    search_metadata,\n    search_parameters,\n    local_results = []\n  } = serpApiResponse;\n\n  return local_results.map(item => ({\n    // id: \"new\",\n    batch_id: batchMeta.batch_id,              // e.g. AUSTIN_TX_RE_2025_WK3\n    search_id: search_metadata.id,\n    keyword: search_parameters.q,\n    city: batchMeta.city,\n    state: batchMeta.state,\n    country: batchMeta.country,\n\n    title: item.title || null,\n    place_id: item.place_id,                   // UNIQUE KEY\n    data_cid: item.data_cid || null,\n\n    rating: item.rating || null,\n    reviews: item.reviews || 0,\n\n    phone: item.phone || null,\n    website: item.website || null,\n    address: item.address || null,\n\n    latitude: item.gps_coordinates?.latitude || null,\n    longitude: item.gps_coordinates?.longitude || null,\n\n    categories: item.types || [],\n    is_open: item.open_state?.toLowerCase().includes(\"open\") || false,\n\n    scraped_at: new Date().toISOString()\n  }));\n}\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nlet response = [];\nfor (const item of $input.all()) {\n  const batchMeta = {\n    source : 'google',\n    batch_id: item.json.id,\n    city: item.json.city,\n    state: item.json.state,\n    country: item.json.country\n  };\n  const leads = extractLeads(item.json, batchMeta);\n  response.push(...leads);\n}\n\nreturn response;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        -64
+      ],
+      "id": "0ad3fd64-5467-4175-ba56-e05b006393d8",
+      "name": "Extract Leads"
+    },
+    {
+      "parameters": {
+        "jsCode": "function tagLeadByScore(score) {\n  if (score >= 80) {\n    return {\n      lead_tag: \"HOT\",\n      lead_stage: \"Direct Outreach\",\n      priority: 1\n    };\n  }\n\n  if (score >= 40) {\n    return {\n      lead_tag: \"WARM\",\n      lead_stage: \"Email + LinkedIn\",\n      priority: 2\n    };\n  }\n\n  if (score >= 20) {\n    return {\n      lead_tag: \"COLD\",\n      lead_stage: \"Nurture\",\n      priority: 3\n    };\n  }\n\n  return {\n    lead_tag: \"LOW\",\n    lead_stage: \"Skip\",\n    priority: 4\n  };\n}\n\nfunction calculateLeadScore(lead) {\n  const rating = lead.rating || 1;\n  const reviews = lead.reviews || 0;\n\n  const ratingScore = rating;\n  const reviewScore = Math.log10(reviews + 1) * 10;\n  const websiteMultiplier = lead.website ? 1.3 : 0.7;\n\n  const score = ratingScore * reviewScore * websiteMultiplier;\n\n  return Math.round(score);\n}\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.lead_score  = calculateLeadScore(item.json);\n  const score = Number(item.json.lead_score) || 0;\n  const tags = tagLeadByScore(score);\n  item.json.lead_tag = tags.lead_tag;\n  item.json.lead_stage = tags.lead_stage;\n  item.json.priority = tags.priority;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        160
+      ],
+      "id": "4de2f3d0-86c4-48ba-b4fb-78fb7933cfd5",
+      "name": "Score Leads"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a7a2bfa0-ab09-4808-a395-f560c27ec55c",
+              "leftValue": "={{ $json.lead_score }}",
+              "rightValue": 20,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -592,
+        288
+      ],
+      "id": "d27bc84d-805f-420e-a270-de4793b89068",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.step2agility.com/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "=1d59ea80-22ba-4475-96db-13127f668971"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        256
+      ],
+      "id": "149a4080-4335-48f7-9dc4-6e9e647d5430",
+      "name": "Post Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "function preparePost(data){\n  const _item = {\n    formId: \"lead\",\n    entity: \"lead\",\n    action: \"update\",\n    id: \"new\",\n    formData: {\n      id: \"new\",\n      ...data\n    },\n  };\n  return _item;\n}\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nlet response = [];\nfor (const item of $input.all()) {\n  let data = preparePost(item.json);\n  response.push(data);\n}\n\n// console.log(JSON.stringify(response));\n\nreturn response;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        256
+      ],
+      "id": "f637c171-ef50-4728-b76e-a4cdf7ca9b11",
+      "name": "Prepare Data"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "place_id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -32,
+        256
+      ],
+      "id": "2235dc7e-cbb9-42d7-9a11-c141462550f2",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare the request object\nlet request = {\n  tenant_id: \"tenantshst00108\",\n  saveOrUpdate: \"Yes\",\n  data: $input.all().map(item => item.json), // extract only the JSON of each item\n};\n\n// Return as single item so n8n can use it\nreturn [{ json: request }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        256
+      ],
+      "id": "3f17d68f-fd3b-4ddd-b8ab-0cf4ee8124dc",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id, c_place_id as place_id from \napp_fd_lead where c_place_id=$1",
+        "options": {
+          "queryReplacement": "={{ $json.place_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -272,
+        176
+      ],
+      "id": "42739c2c-5234-45e3-a929-67231c97bdff",
+      "name": "Check if Exist",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "NqmoTfHBhjI7zeA9",
+          "name": "S2A_DM"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {}
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Extract Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Leads": {
+      "main": [
+        [
+          {
+            "node": "Score Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Leads": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Check if Exist",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Post Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Exist": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b90610e3-27f0-4efa-9757-f412508053bf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "QLq22oIIOU3pXXs8",
+  "tags": []
+}
