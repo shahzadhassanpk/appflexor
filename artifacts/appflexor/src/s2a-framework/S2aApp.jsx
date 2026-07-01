@@ -9,9 +9,9 @@ import { ContainerToast } from "./components/Toastify/Toastify";
 import { setThemeColor } from "./modules/content-management/Sites/Site";
 import { tryToParse } from "./modules/data-management/form-builder/Forms/FormViewer/utils";
 import { staticAdminModuleFeatures, staticAdminModules } from "./staticMenu";
-import Breadcrumb from "./theme/tailwind/Layout/BreadCrumb";
-import Footer from "./theme/tailwind/Layout/Footer";
-import { Layout, MENU } from "./theme/tailwind/Layout/Layout";
+import Breadcrumb from "./theme/advance/Layout/BreadCrumb";
+import Footer from "./theme/advance/Layout/Footer";
+import { Layout, MENU } from "./theme/advance/Layout/Layout";
 import { ErrorBoundary } from "./utils/ErrorBoundry";
 import CookieConsent, { Cookies } from "react-cookie-consent";
 import { checkIfComponentIsAuthorized } from "./utils/utils";
@@ -248,27 +248,22 @@ function S2aApp() {
     }
 
     function getCurrentWidthAndHeight() {
-        const largeQuery = window.matchMedia("(min-width: 992px)");
-        const mediumQuery = window.matchMedia("(min-width: 576px)");
-
         function checkWidth() {
-            if (largeQuery.matches) {
+            if (window.innerWidth >= 992) {
                 setScreenView("lg");
-            } else if (mediumQuery.matches) {
+            } else if (window.innerWidth < 992 && window.innerWidth >= 576) {
                 setScreenView("md");
-            } else {
+            } else if (window.innerWidth < 576) {
                 setScreenView("sm");
             }
         }
 
         checkWidth();
 
-        largeQuery.addEventListener("change", checkWidth);
-        mediumQuery.addEventListener("change", checkWidth);
+        window.addEventListener("resize", checkWidth);
 
         return () => {
-            largeQuery.removeEventListener("change", checkWidth);
-            mediumQuery.removeEventListener("change", checkWidth);
+            window.removeEventListener("resize", checkWidth);
         };
     }
 
@@ -1035,7 +1030,9 @@ function S2aApp() {
         <ErrorBoundary>
             <div className={`s2a-layout ${isEmbeded ? "embeded" : ""}`}>
                 <ContainerToast />
-                <main className="s2a-main s2a-shell-main">
+                <main
+                    id="main"
+                    className="s2a-main">
                     {(tenantSubscription?.id || !isAuthorized) && (
                         <AppContext.Provider
                             value={{
