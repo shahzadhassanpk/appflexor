@@ -205,7 +205,7 @@ export default function Signup() {
 
         {/* ══ LEFT PANEL ══ */}
         <div className="hidden lg:flex" style={{
-          width: "45%", minHeight: "100vh", background: "#ffffff",
+          width: "55%", minHeight: "100vh", background: "#ffffff",
           flexDirection: "column", position: "relative", overflow: "hidden",
         }}>
           {/* Subtle dot pattern */}
@@ -298,9 +298,9 @@ export default function Signup() {
 
         {/* ══ RIGHT PANEL (form) ══ */}
         <div style={{
-          flex: 1, background: "#ffffff",
+          flex: 1, background: "#fff",
           display: "flex", flexDirection: "column",
-          borderLeft: "1px solid #f3f4f6",
+          borderLeft: "1px solid #e5e7eb",
           overflowY: "auto",
         }}>
           <div style={{
