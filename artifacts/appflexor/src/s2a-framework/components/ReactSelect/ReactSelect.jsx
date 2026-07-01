@@ -34,7 +34,7 @@ function ReactSelect(props) {
         disabled = false,
         withIcons = false,
         isSearchable = true,
-        width="100%",
+        width = "100%",
     } = props;
     const colourStyles = {
         container: provider => ({
@@ -121,24 +121,37 @@ function ReactSelect(props) {
 
     return (
         <>
-        <Select
-            placeholder={placeholder}
-            onChange={(newValue, action) => handleChange(newValue, action)}
-            getOptionLabel={option => {
-                if (fieldLabel) return option[fieldLabel];
-                return option.label;
-            }}
-            getOptionValue={option => {
-                if (fieldValue) return option[fieldValue];
-                return option.value;
-            }}
-            value={isMulti ? selectedOptions : selectedOption}
-            options={options}
-            isMulti={isMulti}
-            isDisabled={disabled}
-            styles={colourStyles}
-            isSearchable={isSearchable}
-        />
+            <Select
+                placeholder={placeholder}
+                onChange={(newValue, action) => handleChange(newValue, action)}
+                getOptionLabel={option => {
+                    if (fieldLabel) return option[fieldLabel];
+                    return option.label;
+                }}
+                getOptionValue={option => {
+                    if (fieldValue) return option[fieldValue];
+                    return option.value;
+                }}
+                value={isMulti ? selectedOptions : selectedOption}
+                options={options}
+                isMulti={isMulti}
+                isDisabled={disabled}
+                styles={colourStyles}
+                isSearchable={isSearchable}
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+                styles={{
+                    ...colourStyles,
+                    menuPortal: (base) => ({
+                        ...base,
+                        zIndex: 9999,
+                    }),
+                    menu: (base) => ({
+                        ...base,
+                        zIndex: 9999,
+                    }),
+                }}
+            />
         </>
     );
 }

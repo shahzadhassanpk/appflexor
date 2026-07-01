@@ -248,22 +248,27 @@ function S2aApp() {
     }
 
     function getCurrentWidthAndHeight() {
+        const largeQuery = window.matchMedia("(min-width: 992px)");
+        const mediumQuery = window.matchMedia("(min-width: 576px)");
+
         function checkWidth() {
-            if (window.innerWidth >= 992) {
+            if (largeQuery.matches) {
                 setScreenView("lg");
-            } else if (window.innerWidth < 992 && window.innerWidth >= 576) {
+            } else if (mediumQuery.matches) {
                 setScreenView("md");
-            } else if (window.innerWidth < 576) {
+            } else {
                 setScreenView("sm");
             }
         }
 
         checkWidth();
 
-        window.addEventListener("resize", checkWidth);
+        largeQuery.addEventListener("change", checkWidth);
+        mediumQuery.addEventListener("change", checkWidth);
 
         return () => {
-            window.removeEventListener("resize", checkWidth);
+            largeQuery.removeEventListener("change", checkWidth);
+            mediumQuery.removeEventListener("change", checkWidth);
         };
     }
 
@@ -1030,9 +1035,7 @@ function S2aApp() {
         <ErrorBoundary>
             <div className={`s2a-layout ${isEmbeded ? "embeded" : ""}`}>
                 <ContainerToast />
-                <main
-                    id="main"
-                    className="s2a-main">
+                <main className="s2a-main s2a-shell-main">
                     {(tenantSubscription?.id || !isAuthorized) && (
                         <AppContext.Provider
                             value={{
