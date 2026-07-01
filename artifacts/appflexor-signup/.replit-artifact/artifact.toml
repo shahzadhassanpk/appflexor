@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/signup/"
+title = "Appflexor Signup"
+version = "1.0.0"
+id = "artifacts/appflexor-signup"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/signup/" ]
+localPort = 18327
+
+[services.development]
+run = "pnpm --filter @workspace/appflexor-signup run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/appflexor-signup", "run", "build" ]
+publicDir = "artifacts/appflexor-signup/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18327"
+BASE_PATH = "/signup/"

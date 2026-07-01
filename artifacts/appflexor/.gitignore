@@ -7,9 +7,6 @@
 node_modules/
 dist/
 build/
-CamundaConfig.jsx
-
-CamundaConfig.jsx
 
 # Compiled Java class files
 *.class
@@ -55,7 +52,6 @@ Thumbs.db
 
 classtocss_apply.css
 classtocss_global.css
-src/s2a-framework/modules/camunda/CamundaConfig.jsx
 build.zip
 
 # Ignore .env files

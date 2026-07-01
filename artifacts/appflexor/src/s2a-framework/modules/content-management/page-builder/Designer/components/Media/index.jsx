@@ -107,8 +107,6 @@ function Media(props) {
         let obj = document.getElementById(componentData.id);
         let height = obj.contentWindow.document.documentElement.scrollHeight;
         obj.style.height = height + "px";
-        // console.log("************* height:" + height);
-        //obj.contentWindow.top = obj;
     }
     const { height, width } = props && props.component && props.component.data;
 
@@ -131,7 +129,6 @@ function Media(props) {
                                     msallowfullscreen="msallowfullscreen"
                                     oallowfullscreen="oallowfullscreen"
                                     webkitallowfullscreen="webkitallowfullscreen"
-                                    
                                     src={
                                         componentData.url
                                             ? componentData.url + "?autoplay=1"
@@ -217,14 +214,6 @@ function Media(props) {
                                 </span>
                             </div>
                         )}
-
-                        {/* <div className="">
-                            <div
-                                className="position-absolute top-0 start-0 pointer"
-                                onClick={() => setShow(true)}>
-                                <i className="m-2 fa-regular fa-pen-to-square d-block"></i>{" "}
-                            </div>
-                        </div> */}
                     </div>
                 )}
 
@@ -311,22 +300,8 @@ function UpdateProps({ setShow }) {
             value = event.target.value;
         }
 
-        // old
-        // setInputField((prev) => ({
-        //     ...prev,
-        //     [name]: value,
-        // }));
-
-        // new
         let _inputField = { ...inputField, [name]: value };
         setInputField(_inputField);
-
-        // let _components = { ...context.components };
-
-        // let tempData = _components[currentComponent.id].data;
-        // tempData = { ...tempData, ..._inputField };
-        // _components[currentComponent.id].data = tempData;
-        // context.setComponents(_components);
     };
 
     const handleUpdateComponentData = () => {
@@ -374,10 +349,6 @@ function UpdateProps({ setShow }) {
                         </button>
                     </div>
                 </div>
-                {/* <p>
-                    Following extension are supported:<br></br> .wav, .mp3,
-                    .mp4, .mpg, .wmv, and .avi.
-                </p> */}
             </div>
         </ErrorBoundary>
     );
