@@ -28,8 +28,8 @@ body.dark {
     --text-placeholder: #64748b;
 
     /* Accent */
-    --accent-primary: #38bdf8;
-    --accent-primary-hover: #0ea5e9;
+    --accent-primary: #2563eb;
+    --accent-primary-hover: #1d4ed8;
 
     /* Status */
     --success: #22c55e;
