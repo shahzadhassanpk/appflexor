@@ -7,9 +7,6 @@
 node_modules/
 dist/
 build/
-CamundaConfig.jsx
-
-CamundaConfig.jsx
 
 # Compiled Java class files
 *.class
