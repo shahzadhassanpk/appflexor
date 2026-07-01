@@ -10,3 +10,25 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* Signup left panel — dark navy gradient forced */
+.signup-left-panel {
+  background: linear-gradient(160deg, #1a1a3e 0%, #0f0f2d 100%) !important;
+  color: #ffffff !important;
+}
+.signup-left-panel * {
+  color: inherit;
+}
+.signup-white-text {
+  color: #ffffff !important;
+}
+.signup-muted-text {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+.signup-purple-text {
+  color: #a78bfa !important;
+}
+.signup-feature-card {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-radius: 10px !important;
+}
