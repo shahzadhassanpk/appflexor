@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logoSrc from "../assets/appflexor-logo.png";
 
 const EMPLOYEES_OPTIONS = [
   "1-10",
@@ -25,17 +26,8 @@ const COUNTRIES = [
 
 function AppflexorLogo({ dark = false }: { dark?: boolean }) {
   return (
-    <div className="flex items-center gap-2">
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <path
-          d="M16 2L4 28h5.6L16 13.6 22.4 28H28L16 2z"
-          fill={dark ? "#fff" : "#6C5CE7"}
-        />
-        <path
-          d="M10.4 28h11.2l-5.6-12.4L10.4 28z"
-          fill={dark ? "rgba(255,255,255,0.4)" : "rgba(108,92,231,0.4)"}
-        />
-      </svg>
+    <div className="flex items-center gap-2.5">
+      <img src={logoSrc} alt="Appflexor" className="w-10 h-10 object-contain" />
       <span
         className="text-xl font-bold tracking-tight"
         style={{ color: dark ? "#fff" : "#1a1a2e" }}
