@@ -142,19 +142,21 @@ function TopNavbar({
             } catch (e) {}
         }
 
-        const desktopQuery = window.matchMedia("(min-width: 992px)");
-
-        function checkWidth(event = desktopQuery) {
-            setWidth(event.matches ? "desktop" : "mobile");
+        function checkWidth() {
+            if (window.innerWidth > 991) {
+                setWidth("desktop");
+            } else if (window.innerWidth < 991) {
+                setWidth("mobile");
+            }
         }
 
-        checkWidth(desktopQuery);
+        checkWidth();
 
         window.addEventListener("scroll", checkHeight);
-        desktopQuery.addEventListener("change", checkWidth);
+        window.addEventListener("resize", checkWidth);
 
         return () => {
-            desktopQuery.removeEventListener("change", checkWidth);
+            window.removeEventListener("resize", checkWidth);
             window.removeEventListener("scroll", checkHeight);
         };
     }
