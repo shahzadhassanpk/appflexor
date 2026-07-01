@@ -136,7 +136,6 @@ function ReactSelect(props) {
                 options={options}
                 isMulti={isMulti}
                 isDisabled={disabled}
-                styles={colourStyles}
                 isSearchable={isSearchable}
                 menuPortalTarget={document.body}
                 menuPosition="fixed"
