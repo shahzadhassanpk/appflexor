@@ -1,0 +1,507 @@
+{
+  "name": "xero-data-post",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "return $json[0];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        32
+      ],
+      "id": "b11b3226-52fd-4ad5-a56f-bcd5eea7a6fe",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        304,
+        64
+      ],
+      "id": "5db562e7-fec2-4032-93ec-e5bf4bdc6ad3",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "https://api.xero.com/connections",
+        "options": {},
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.c_access_token }}"
+            }
+          ]
+        }
+      },
+      "id": "c1209fc9-e2c8-4493-a008-94a7713f9b11",
+      "name": "Get Tenant ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.xero.com/api.xro/2.0/Invoices",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xero-tenant-id",
+              "value": "={{ $json.tenantId }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Fetch Code').item.json.c_access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.xeroInvoice}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        320,
+        256
+      ],
+      "id": "e0eaa88a-af67-498e-8763-5c3f0af76a33",
+      "name": "Post Invoice"
+    },
+    {
+      "parameters": {
+        "jsCode": "let response = [];\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.datasource = item.json.tenantId;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        192
+      ],
+      "id": "a0264c18-b4d2-49b2-a9cd-829c054c68ed",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://172.17.0.1:8089/engine-rest/external-task/fetchAndLock",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"workerId\": \"findocx-post-document\",\n  \"maxTasks\": 1,\n  \"usePriority\": true,\n  \"topics\": [\n    {\n      \"topicName\": \"findocx-post-document\",\n      \"lockDuration\": 60000\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -912,
+        192
+      ],
+      "id": "4ace3a50-ff61-445e-895f-4f3693488cc0",
+      "name": "Fetch and Lock"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from app_fd_integration\nwhere c_external_system = 'xero'",
+        "additionalFields": {}
+      },
+      "id": "d602509c-dd13-4c39-a99d-60eefd130224",
+      "name": "Fetch Code",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        32
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://172.17.0.1:8089/engine-rest/external-task/{{$json.id}}/complete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\"workerId\":$json.workerId} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        464
+      ],
+      "id": "8bcd47c7-ca3b-4937-84f2-5ad106e4258b",
+      "name": "Complete Task",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -96,
+        672
+      ],
+      "id": "3f8999b7-f6fb-40f9-9b78-bcb85be7e8e3",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update app_fd_documents\n  set c_status='POSTED'\nWHERE id = $1;\n",
+        "additionalFields": {
+          "queryParams": "businessKey"
+        }
+      },
+      "id": "619e60a8-aee2-4c74-8274-a061fc147c39",
+      "name": "Update Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        112,
+        672
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -208,
+        464
+      ],
+      "id": "df0a9ca6-afe7-4cb9-b313-078d38990d18",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT d.*, ca.c_code as c_account_code\nFROM app_fd_documents d\nLEFT JOIN app_fd_chart_of_accounts ca on ca.c_external_id = d.c_account_id \nWHERE d.id = $1;\n",
+        "additionalFields": {
+          "queryParams": "businessKey"
+        }
+      },
+      "id": "ca8f5131-7d2e-448e-ac4f-7f70cdf007b6",
+      "name": "Get Document Details",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        192
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT dl.*\nFROM app_fd_document_lines dl\nWHERE dl.c_document_id = $1;\n",
+        "additionalFields": {
+          "queryParams": "businessKey"
+        }
+      },
+      "id": "fa4cf02a-c5a3-4c20-950e-79bd67166453",
+      "name": "Get Document Lines",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        256
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ------------------------------\n// Build Xero LineItem for a single record\n// ------------------------------\nfunction buildXeroLineItem(json) {\n    // Determine the correct amount\n    const amount = Number(json.c_amount || 0);\n\n    const taxAmount = Number(json.c_tax_amount || 0);\n    const taxRate = Number(json.c_tax_rate || 0);\n\n    return {\n        Description: json.c_description || \"\",\n        Quantity: Number(json.c_quantity) || 1,\n        UnitAmount: amount,\n        TaxType: taxRate > 0 ? \"OUTPUT\" : \"NONE\",\n        TaxAmount: taxAmount || undefined\n    };\n}\n\n// ------------------------------\n// n8n Mapping - Combine all line items into one array\n// ------------------------------\nconst allLineItems = $input.all().map(item => buildXeroLineItem(item.json));\n\nreturn [\n    {\n        json: {\n            xeroLineItems: allLineItems\n        }\n    }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        256
+      ],
+      "id": "b073c979-1f79-4b6d-bcb6-1167fcc8da7e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ------------------------------\n// Build Xero Invoice/Bill Object\n// ------------------------------\nfunction buildXeroInvoice(json) {\n    // Determine type: ACCREC = customer invoice, ACCPAY = supplier bill\n    const type = json.c_document_type === 'customer_invoice' ? 'ACCREC' : 'ACCPAY';\n\n    // Build the invoice/bill object\n    const invoice = {\n        Type: type,\n        Status: \"DRAFT\",\n        InvoiceNumber: json.c_invoice_number,\n        Date: json.c_invoice_date || new Date().toISOString().split('T')[0],\n        DueDate: json.c_due_date || json.c_invoice_date || new Date().toISOString().split('T')[0],\n        CurrencyCode: json.c_currency || 'USD',\n        Reference: json.c_document_name || \"\",\n        LineAmountTypes: json.c_tax_included_in_total==='true'? 'Inclusive' : 'Exclusive',\n        Contact: {\n            ContactID: json.c_document_type === 'customer_invoice' ? json.c_customer_id : json.c_supplier_id\n        },\n        LineItems: json.xeroLineItems.map(item => ({\n            Description: item.Description || \"\",\n            Quantity: item.Quantity || 1,\n            UnitAmount: item.UnitAmount || 0,\n            AccountCode: json.c_account_code || \"\", // Optional, if available\n            TaxType: item.TaxType || \"NONE\",\n            TaxAmount: item.TaxAmount || undefined\n        }))\n    };\n\n    return invoice;\n}\n\n// ------------------------------\n// n8n Mapping\n// ------------------------------\nreturn $input.all().map(item => {\n    item.json.xeroInvoice = buildXeroInvoice(item.json);\n    return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        80
+      ],
+      "id": "97a4372c-995c-44a3-95d1-99c8e7d7bba7",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1168,
+        192
+      ],
+      "id": "1c1ff7b1-e1a4-45e4-be84-4c7e54c54e0e",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Tenant ID": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get Document Details",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Code",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Get Document Lines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch and Lock": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Code": {
+      "main": [
+        [
+          {
+            "node": "Get Tenant ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Invoice": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Complete Task": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Update Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Complete Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Document Details": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get Document Lines": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Post Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch and Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c55017b0-b37f-4c7c-8da2-a65f92083ac7",
+  "meta": {
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "SSpYWuuSTweLLGNj",
+  "tags": []
+}

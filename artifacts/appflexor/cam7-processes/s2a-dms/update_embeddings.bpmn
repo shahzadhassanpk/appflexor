@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_11p1yui" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:collaboration id="Collaboration_0nrmt25">
+    <bpmn:participant id="Participant_0v02vws" name="Update Embeddings" processRef="update_embeddings" />
+  </bpmn:collaboration>
+  <bpmn:process id="update_embeddings" name="Update Embeddings" isExecutable="true" camunda:historyTimeToLive="10">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0r12s2v</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0x64jpg" sourceRef="Activity_08nvuis" targetRef="Event_0r28fda" />
+    <bpmn:endEvent id="Event_0r28fda">
+      <bpmn:incoming>Flow_0x64jpg</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0r12s2v" sourceRef="StartEvent_1" targetRef="Activity_08nvuis" />
+    <bpmn:serviceTask id="Activity_08nvuis" name="Update Rules" camunda:type="external" camunda:topic="update_embeddings">
+      <bpmn:incoming>Flow_0r12s2v</bpmn:incoming>
+      <bpmn:outgoing>Flow_0x64jpg</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0nrmt25">
+      <bpmndi:BPMNShape id="Participant_0v02vws_di" bpmnElement="Participant_0v02vws" isHorizontal="true">
+        <dc:Bounds x="129" y="70" width="600" height="250" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="192" y="159" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0r28fda_di" bpmnElement="Event_0r28fda">
+        <dc:Bounds x="472" y="159" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1dyak71_di" bpmnElement="Activity_08nvuis">
+        <dc:Bounds x="300" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0x64jpg_di" bpmnElement="Flow_0x64jpg">
+        <di:waypoint x="400" y="177" />
+        <di:waypoint x="472" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0r12s2v_di" bpmnElement="Flow_0r12s2v">
+        <di:waypoint x="228" y="177" />
+        <di:waypoint x="300" y="177" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

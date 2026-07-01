@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1ozpbfo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:collaboration id="colab_crm_add_contact">
+    <bpmn:participant id="Participant_15box9f" name="CRM Contact" processRef="crm_add_contact" />
+  </bpmn:collaboration>
+  <bpmn:process id="crm_add_contact" name="CRM Add Contact" isExecutable="true" camunda:historyTimeToLive="1">
+    <bpmn:sequenceFlow id="Flow_04mqvm8" sourceRef="StartEvent_1" targetRef="Activity_0wyagsx" />
+    <bpmn:endEvent id="Event_1o3gr94">
+      <bpmn:incoming>Flow_0ygitik</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0ygitik" sourceRef="Activity_0wyagsx" targetRef="Event_1o3gr94" />
+    <bpmn:userTask id="Activity_0wyagsx" name="Review Contact" camunda:formKey="crm_contact" camunda:assignee="admin">
+      <bpmn:incoming>Flow_04mqvm8</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ygitik</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:startEvent id="StartEvent_1" name="Add Contact" camunda:formKey="crm_contact">
+      <bpmn:outgoing>Flow_04mqvm8</bpmn:outgoing>
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="colab_crm_add_contact">
+      <bpmndi:BPMNShape id="Participant_15box9f_di" bpmnElement="Participant_15box9f" isHorizontal="true">
+        <dc:Bounds x="170" y="40" width="790" height="210" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1o3gr94_di" bpmnElement="Event_1o3gr94">
+        <dc:Bounds x="642" y="147" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_03l6g8v_di" bpmnElement="Activity_0wyagsx">
+        <dc:Bounds x="430" y="125" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="292" y="147" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="280" y="190" width="61" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_04mqvm8_di" bpmnElement="Flow_04mqvm8">
+        <di:waypoint x="328" y="165" />
+        <di:waypoint x="430" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ygitik_di" bpmnElement="Flow_0ygitik">
+        <di:waypoint x="530" y="165" />
+        <di:waypoint x="642" y="165" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

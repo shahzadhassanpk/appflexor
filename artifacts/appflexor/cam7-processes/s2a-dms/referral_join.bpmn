@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1aeej5p" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:collaboration id="Collaboration_0p7wtn1">
+    <bpmn:participant id="Participant_0yl415n" name="Partner Joining" processRef="partner_joining" />
+  </bpmn:collaboration>
+  <bpmn:process id="partner_joining" name="Partner Joining" isExecutable="true" camunda:historyTimeToLive="10">
+    <bpmn:sequenceFlow id="Flow_00eukxs" sourceRef="StartEvent_1" targetRef="Activity_0p9c4xx" />
+    <bpmn:sequenceFlow id="Flow_092ltoj" sourceRef="Activity_02yfezy" targetRef="Activity_03mks2d" />
+    <bpmn:sequenceFlow id="Flow_1934rtr" sourceRef="Activity_03mks2d" targetRef="Event_1im32km" />
+    <bpmn:endEvent id="Event_1im32km">
+      <bpmn:incoming>Flow_1934rtr</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_00eukxs</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1dqxwag" sourceRef="Activity_0p9c4xx" targetRef="Activity_02yfezy" />
+    <bpmn:serviceTask id="Activity_0p9c4xx" name="Notify Join" camunda:type="external" camunda:topic="SEND_EMAIL">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="emailKey">referral.join</camunda:inputParameter>
+          <camunda:inputParameter name="serviceParams">${execution.processBusinessKey}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_00eukxs</bpmn:incoming>
+      <bpmn:outgoing>Flow_1dqxwag</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Activity_02yfezy" name="Review" camunda:formKey="partner">
+      <bpmn:incoming>Flow_1dqxwag</bpmn:incoming>
+      <bpmn:outgoing>Flow_092ltoj</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_03mks2d" name="Approve" camunda:formKey="partner">
+      <bpmn:incoming>Flow_092ltoj</bpmn:incoming>
+      <bpmn:outgoing>Flow_1934rtr</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0p7wtn1">
+      <bpmndi:BPMNShape id="Participant_0yl415n_di" bpmnElement="Participant_0yl415n" isHorizontal="true">
+        <dc:Bounds x="129" y="52" width="600" height="250" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1im32km_di" bpmnElement="Event_1im32km">
+        <dc:Bounds x="672" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="192" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ebnz7x_di" bpmnElement="Activity_0p9c4xx">
+        <dc:Bounds x="270" y="130" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0lof3x4_di" bpmnElement="Activity_02yfezy">
+        <dc:Bounds x="400" y="130" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0luhi09_di" bpmnElement="Activity_03mks2d">
+        <dc:Bounds x="540" y="130" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_00eukxs_di" bpmnElement="Flow_00eukxs">
+        <di:waypoint x="228" y="170" />
+        <di:waypoint x="270" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_092ltoj_di" bpmnElement="Flow_092ltoj">
+        <di:waypoint x="500" y="170" />
+        <di:waypoint x="540" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1934rtr_di" bpmnElement="Flow_1934rtr">
+        <di:waypoint x="640" y="170" />
+        <di:waypoint x="672" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1dqxwag_di" bpmnElement="Flow_1dqxwag">
+        <di:waypoint x="370" y="170" />
+        <di:waypoint x="400" y="170" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

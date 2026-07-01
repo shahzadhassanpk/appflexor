@@ -1,0 +1,529 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -16
+      ],
+      "id": "cf710082-df63-4d3e-b70f-a0a3927008fb",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/etc/wflow/app_profiles/{{$json.datasource}}/app_formuploads/documents/{{$json.businessKey}}/{{$json.data_file}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        -16
+      ],
+      "id": "93b2a88b-aae7-443e-a069-adab005d9474",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "={{$json.fileKey}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -16
+      ],
+      "id": "8fc1310b-cfbc-4e0a-aaaf-7e1e51de6e44",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "let results = [];\n\nfor (const item of $input.all()) {\n  for (const key of Object.keys(item.binary)) {\n    const binaryData = item.binary[key];\n\n    results.push({\n      json: {\n        fileKey: key,\n        fileName: binaryData.fileName || null,\n        mimeType: binaryData.mimeType || null,\n      },\n      binary: {\n        [key]: binaryData, // keep binary for Extract from File\n      },\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        -16
+      ],
+      "id": "997ec75b-596e-471a-86a9-9d7c77ad7ebc",
+      "name": "Extract Bill"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let text = (item.json.text?item.json.text:item.json.data)\n  item.json.text = text;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        208
+      ],
+      "id": "39ac7be9-5ffa-4ea4-838d-e51c81fe8bad",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  let raw = item.json.text ? item.json.text : item.json.data;\n\n  const clean = raw\n    .replace(/[ \\t]+/g, \" \") // collapse spaces & tabs\n    .replace(/\\n\\s*\\n+/g, \"\\n\") // collapse multiple newlines\n    .replace(/[,]+/g, \",\") // clean up extra commas\n    .trim();\n\n  const preview = clean.toLowerCase().substring(0, 3000);\n    // Escape for JSON\n  const escapedPreview = preview\n    .replace(/\\\\/g, \"\\\\\\\\\")  // escape backslashes\n    .replace(/\"/g, '\\\\\"')    // escape quotes\n    .replace(/\\n/g, \" \");  // escape newlines\n  item.json.preview = escapedPreview;\n  item.json.text = clean;\n  item.json.document_hint = {};\n}\n\nreturn $input.all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        208
+      ],
+      "id": "c4ff285b-a192-48ac-bd75-fdadf6e838a3",
+      "name": "Clean Text"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4o-mini",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "=You are an expert financial document classifier and metadata extractor.  \nYour task is to read a text snippet from an OCR or raw financial document and identify its document type and summary fields.\n\nYou must always produce a **valid JSON object only** — no markdown, no comments, no extra text.\n\nSupported document types:\n- \"bank_statement\"\n- \"creditcard_statement\"\n- \"vendor_bill\"\n- \"customer_invoice\"\n\nRules:\n- If uncertain between \"vendor_bill\" and \"customer_invoice\", choose based on keywords:\n  - “Invoice To”, “Customer”, “Sale” → customer_invoice\n  - “Bill From”, “Vendor”, “Supplier”, “Payable To” → vendor_bill\n- If keywords like “Transaction”, “Balance”, “Deposit”, “Withdrawal”, “Account Number”, “Statement Period” appear → bank_statement\n- If keywords like “Card Number”, “Credit Card”, “Purchases”, “Payment Due”, “Cardholder” appear → creditcard_statement\n\nOutput rules:\n- Output must be **strict JSON** only (no explanation).\n- Dates must use ISO format: YYYY-MM-DD.\n- Numbers must be numeric (no currency symbols or commas).\n- If a field is missing or uncertain, set it to `null`.\n\nExpected JSON fields by type:\n1. **bank_statement**\n   ```json\n   {\n     \"document_type\": \"bank_statement\",\n     \"currency\": \"USD\",\n     \"bank_name\": \"Wells Fargo\",\n     \"account_number\": \"123456789\",\n     \"start_date\": \"2025-09-01\",\n     \"end_date\": \"2025-09-30\"\n   }\n2. vendor_bill\n{\n  \"document_type\": \"vendor_bill\",\n  \"vendor_name\": \"Acme Supplies Ltd\",\n  \"purchase_order\": \"PO-123\",\n  \"invoice_number\": \"INV-00234\",\n  \"invoice_date\": \"2025-09-15\",\n  \"due_date\": \"2025-10-15\",\n  \"payment_terms_days\": 30,\n  \"total_amount\": 450.00,\n  \"currency\": \"USD\"\n}\n\n3. customer_invoice\n{\n  \"document_type\": \"customer_invoice\",\n  \"customer_name\": \"ABC Retail Co\",\n  \"invoice_number\": \"INV-1056\",\n  \"invoice_date\": \"2025-09-05\",\n  \"due_date\": \"2025-10-05\",\n  \"payment_terms_days\": 30,\n  \"total_amount\": 2750.00,\n  \"currency\": \"USD\"\n}\n\n4. creditcard_statement\n{\n  \"document_type\": \"creditcard_statement\",\n  \"cardholder_name\": \"John Doe\",\n  \"card_last4\": \"5678\",\n  \"start_date\": \"2025-08-10\",\n  \"end_date\": \"2025-09-09\",\n  \"currency\": \"USD\"\n}\n\n"
+            },
+            {
+              "content": "=Detect the document type and extract a summary of key fields from the following text.\n\nReturn **only valid JSON** according to the format for that document type.\n\nText:\n{{ $json.preview }}\n"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "93c8efb0-6cc7-417e-9481-6e9a017eca2a",
+      "name": "Detect Type",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        208
+      ],
+      "executeOnce": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "tHMu2yE3KwDhuI8e",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $node[\"Clean Text\"].json;\nlet _ai = JSON.parse($json.message.content);\ndata.document_summary = _ai\nreturn data;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        208
+      ],
+      "id": "01902673-b6e6-4376-bb9e-e5085a0d8617",
+      "name": "Parse Summar"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://172.17.0.1:11434/api/embed",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \n  \"model\":\"nomic-embed-text:latest\", \n  \"input\":\"{{ $json.preview }}\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -448,
+        416
+      ],
+      "id": "4f0c413d-2656-47ce-9bfc-3ee514ddd115",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const datasource = $('When clicking ‘Execute workflow’').first().json.datasource;\nconst text = $('Parse Summar').first().json.text;\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.datasource = datasource;\n  item.json.text = text;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        416
+      ],
+      "id": "b0ee41a2-6eae-4283-80ba-b4e44b09a5ee",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  metadata,\n  embedding <=> ($1::vector) AS similarity\nFROM classification_embeddings\n  WHERE metadata->>'type'='party'\nORDER BY similarity ASC\nLIMIT 5;\n",
+        "options": {
+          "queryReplacement": "={{ $json.embeddings }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        416
+      ],
+      "id": "c08efc9a-4fc6-47c2-bce9-db1d88de1adb",
+      "name": "Party Search",
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  metadata,\n  embedding <=> ($1::vector) AS similarity\nFROM classification_embeddings\n  WHERE metadata->>'type'='account'\nORDER BY similarity ASC\nLIMIT 5;\n",
+        "options": {
+          "queryReplacement": "={{ $json.embeddings }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        576
+      ],
+      "id": "647aa069-abef-483e-acb0-6e7f41717af0",
+      "name": "Account Search",
+      "credentials": {
+        "postgres": {
+          "id": "Hh0bcgMxfW9DFTEE",
+          "name": "tenant db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $('Code in JavaScript').first().json.text;\nreturn [{\n  json: {\n    text:text,\n    party_candidates: $items(\"Party Search\").map(i => i.json),\n    account_candidates: $items(\"Account Search\").map(i => i.json)\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        768
+      ],
+      "id": "38bab8ea-ba57-4b1d-a9ea-f2f7a5c35310",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        224,
+        496
+      ],
+      "id": "cb08fc7a-577b-4f95-bc7d-46cbd19ba739",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4o-mini",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "=You are an expert in invoice and bill classification. \nYou match financial documents to the correct party and chart-of-account.\nAlways return ONLY valid JSON."
+            },
+            {
+              "content": "=You are a strict classification assistant.\n\nHere is the extracted bill text:\n<<<TEXT>>>\n{{$json.text}}\n<<<END TEXT>>>\n\nTop matching party candidates from vector search:\n<<<PARTIES>>>\n{{JSON.stringify($json.party_candidates)}}\n<<<END PARTIES>>>\n\nTop matching account candidates from vector search:\n<<<ACCOUNTS>>>\n{{JSON.stringify($json.account_candidates)}}\n<<<END ACCOUNTS>>>\n\nTask:\n- Select the MOST relevant party_id ONLY from the provided party_candidates.\n- Select the MOST relevant account_id ONLY from the provided account_candidates.\n- Do NOT invent or guess any ID not included in the candidates.\n- If a matching candidate is obvious (e.g., same brand name), choose it.\n- If unsure between two options, choose the one with the smallest distance score.\n\nReturn JSON ONLY in this format:\n\n{\n  \"party_id\": \"xxx\",\n  \"account_id\": \"yyy\"\n}\n\nNo explanation. No extra text.\n"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "857edc9a-a148-4bcf-ba40-da66640bbd4b",
+      "name": "Link Party and Account",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        768
+      ],
+      "executeOnce": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "tHMu2yE3KwDhuI8e",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let response = [];\nlet summary = $('Parse Summar').first().json.document_summary;\nlet text = $('Parse Summar').first().json.text;\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let _temp = JSON.parse(item.json.message.content);\n  let data = {text:text, ...summary, ..._temp};  \n  response.push(data);\n}\n\nreturn response;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        768
+      ],
+      "id": "bdde1b7e-6a8a-42ad-9e14-718d43257bc4",
+      "name": "Code in JavaScript2"
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {
+          "taskId": "26fb324a-d021-11f0-ab40-562f7bebebfc",
+          "processInstanceId": "26f1471a-d021-11f0-ab40-562f7bebebfc",
+          "datasource": "tenantshst00105",
+          "businessKey": "33ed5eb6-1766-44f2-a1c9-aa47fc08114d",
+          "data_file": "bill_7_ELEVEN_BILL-0001.pdf",
+          "body": {
+            "workerId": "data-ingestion",
+            "variables": {
+              "taskKeys": {
+                "type": "Json",
+                "value": "[\"action\",\"executeTriggers\"]",
+                "valueInfo": {}
+              },
+              "enableAuditEvents": {
+                "type": "String",
+                "value": "yes",
+                "valueInfo": {}
+              },
+              "data_file": {
+                "type": "String",
+                "value": "bill_7_ELEVEN_BILL-0001.pdf",
+                "valueInfo": {}
+              },
+              "auditKeys": {
+                "type": "Json",
+                "value": "[\"action\"]",
+                "valueInfo": {}
+              },
+              "enableTaskEvents": {
+                "type": "String",
+                "value": "yes",
+                "valueInfo": {}
+              },
+              "auditEvents": {
+                "type": "Json",
+                "value": "[\"create\",\"assignment\",\"complete\"]",
+                "valueInfo": {}
+              },
+              "taskEvents": {
+                "type": "Json",
+                "value": "[\"complete\"]",
+                "valueInfo": {}
+              },
+              "requestor": {
+                "type": "String",
+                "value": "admin",
+                "valueInfo": {}
+              },
+              "subject": {
+                "value": "bill_7_ELEVEN_BILL-0001.pdf",
+                "type": "String"
+              },
+              "result": {
+                "value": "done",
+                "type": "String"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Extract Bill",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Bill": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Clean Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Text": {
+      "main": [
+        [
+          {
+            "node": "Detect Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Type": {
+      "main": [
+        [
+          {
+            "node": "Parse Summar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Summar": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Party Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Account Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Party Search": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Account Search": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Link Party and Account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Link Party and Account": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cbc90273-4c4b-42b7-a31b-d56f49ff57f7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "SvBNkQgIGWaMjVBM",
+  "tags": []
+}

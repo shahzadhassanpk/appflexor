@@ -1,0 +1,104 @@
+{
+  "name": "Log Camunda Audit",
+  "nodes": [
+    {
+      "parameters": {
+        "topic": "camunda-audit-events",
+        "groupId": "camunda-audit-events",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.kafkaTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -624,
+        -112
+      ],
+      "id": "94c4c57f-51f3-4d99-88e2-90fee459dd5c",
+      "name": "Kafka Trigger",
+      "credentials": {
+        "kafka": {
+          "id": "tVUAZwCGGaqoKEiS",
+          "name": "S2A KAFKA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.step2agility.com/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "=1d59ea80-22ba-4475-96db-13127f668971"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -192,
+        -112
+      ],
+      "id": "1251db43-4f28-4751-8b87-c507cb429eee",
+      "name": "Post Data"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let data = JSON.parse($json.message);\n\n  const _item = {\n    formId: \"task_history\",\n    entity: \"task_history\",\n    action: \"update\",\n    id: data.task_id,\n    formData: {\n      id: data.task_id,\n      ...data\n    },\n  };\nif (data.event === \"create\" || data.event === \"start\") {\n  _item.formData.created_time = data.timestamp;\n} else if (data.event === \"assignment\") {\n  _item.formData.assigned_time = data.timestamp;\n} else if (data.event === \"complete\" || data.event === \"end\") {\n  _item.formData.completed_time = data.timestamp;\n}\nconst event_log = {\n    formId: \"task_event\",\n    entity: \"task_event\",\n    action: \"update\",\n    id: \"new\",\n    formData: {\n      id: \"new\",\n      ...data\n    },\n  };\nlet request = {\n  tenant_id: data.tenant_id,  \n  saveOrUpdate: \"Yes\",  \n  data: [_item, event_log],\n};\nreturn request;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        -112
+      ],
+      "id": "81d27ac6-9ddc-4f0d-ab53-77b0a80fcf03",
+      "name": "Prepare Request",
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Kafka Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Request": {
+      "main": [
+        [
+          {
+            "node": "Post Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bf75a479-2ec3-44d1-a21a-355a7f0c65b6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "Jjowu0QcLAJm94XL",
+  "tags": []
+}

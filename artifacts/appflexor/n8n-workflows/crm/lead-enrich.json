@@ -1,0 +1,149 @@
+{
+  "name": "lead-enrich",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -96,
+        0
+      ],
+      "id": "f20bc46b-e511-4acf-8066-dda9cbdd57ec",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "url": "https://api.tomba.io/v1/domain-search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "domain",
+              "value": "={{ $json.website.replace(/^https?:\\/\\//, '').replace(/\\/$/, '') }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Tomba-Key",
+              "value": "ta_pgdkhqimbcsd3luscev56r71eqhjykaojrlah"
+            },
+            {
+              "name": "X-Tomba-Secret",
+              "value": "ts_c39d4d95-47dd-4118-8f04-2850951ac811"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -64,
+        240
+      ],
+      "id": "81179db0-9c83-4716-bdb5-cedf4b3d7855",
+      "name": "Find Email"
+    },
+    {
+      "parameters": {
+        "jsCode": "const emails = items[0].json.data.emails;\n\nfunction scoreContact(c) {\n  let score = c.score || 0;\n\n  const position = (c.position || \"\").toLowerCase();\n  const fullName = (c.full_name || \"\").trim();\n\n  // Role-based boost (Real Estate decision makers)\n  if (\n    position.includes(\"realtor\") ||\n    position.includes(\"broker\") ||\n    position.includes(\"agent\") ||\n    position.includes(\"sales\")\n  ) {\n    score += 20;\n  }\n\n  // LinkedIn presence\n  if (c.linkedin) score += 15;\n\n  // Phone number available\n  if (c.phone_number === true) score += 10;\n\n  // Personal email preferred\n  if (c.type === \"personal\") score += 10;\n\n  // Geography\n  if (c.country === \"US\") score += 5;\n\n  // Penalize generic or unnamed emails\n  if (!fullName || fullName.length < 3) score -= 10;\n\n  return score;\n}\n\n// Score all contacts\nconst scoredContacts = emails.map(c => ({\n  ...c,\n  lead_score: scoreContact(c)\n}));\n\n// Sort by lead score (descending)\nscoredContacts.sort((a, b) => b.lead_score - a.lead_score);\n\n// Select top 3\nconst topLeads = scoredContacts.slice(0, 3);\n\n// Return as separate items\nreturn {contacts:topLeads.map(lead => ({ ...lead }))};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        240
+      ],
+      "id": "f747b4a1-da0a-4d20-8a00-5399f83c13d1",
+      "name": "Filter Contacts"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        320,
+        224
+      ],
+      "id": "5e6ab965-cb24-4e75-b473-b452a9c276d1",
+      "name": "Merge2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Find Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Email": {
+      "main": [
+        [
+          {
+            "node": "Filter Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Contacts": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5e7e6305-097c-42fc-9aef-39aeb8b707c1",
+  "meta": {
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "zdFQJ12iof89yKav",
+  "tags": []
+}

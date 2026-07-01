@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0k8jlr1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:process id="n8n-integration-rnd" name="RnD" isExecutable="true" camunda:historyTimeToLive="1">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <camunda:executionListener event="start">
+          <camunda:script scriptFormat="javascript">var auditKeys = S(JSON.stringify(["action"]), "application/json");
+var auditEvents = S(JSON.stringify(["create","assignment","complete"]), "application/json");
+var taskEvents = S(JSON.stringify(["complete"]), "application/json");
+var taskKeys = S(JSON.stringify(["action", "executeTriggers"]), "application/json");
+
+execution.setVariable("auditKeys", auditKeys );
+execution.setVariable("auditEvents", auditEvents);
+execution.setVariable("taskKeys", taskKeys);
+execution.setVariable("taskEvents", taskEvents);
+execution.setVariable("enableTaskEvents", "yes");
+execution.setVariable("enableAuditEvents", "yes");</camunda:script>
+          <camunda:field />
+        </camunda:executionListener>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_18w1eyl</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_18w1eyl" sourceRef="StartEvent_1" targetRef="Activity_0nyoq2a" />
+    <bpmn:endEvent id="Event_1pvui12">
+      <bpmn:incoming>Flow_08v421n</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_07z4gid" sourceRef="Activity_1h3j02z" targetRef="Activity_0ccj1wl" />
+    <bpmn:sequenceFlow id="Flow_1cpsub7" sourceRef="Activity_0nyoq2a" targetRef="Activity_1h3j02z" />
+    <bpmn:serviceTask id="Activity_0nyoq2a" name="Service Task" camunda:type="external" camunda:topic="test-task">
+      <bpmn:incoming>Flow_18w1eyl</bpmn:incoming>
+      <bpmn:outgoing>Flow_1cpsub7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Activity_1h3j02z" name="Review" camunda:formKey="test_form">
+      <bpmn:extensionElements>
+        <camunda:taskListener event="complete">
+          <camunda:script scriptFormat="javascript">var action= task.getVariable("action");
+var businessKey = task.getExecution().getProcessBusinessKey();
+var executeTriggers = [
+{"serviceKey":"update.doc.status", "serviceParams": action+";"+businessKey}
+];
+task.setVariableLocal("executeTriggers", JSON.stringify(executeTriggers));</camunda:script>
+        </camunda:taskListener>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1cpsub7</bpmn:incoming>
+      <bpmn:outgoing>Flow_07z4gid</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_0ccj1wl" name="Approve" camunda:formKey="test_form">
+      <bpmn:extensionElements>
+        <camunda:taskListener event="complete">
+          <camunda:script scriptFormat="javascript">var action= task.getVariable("action");
+var businessKey = task.getExecution().getProcessBusinessKey();
+var executeTriggers = [
+{"serviceKey":"update.doc.status", "serviceParams": action+";"+businessKey}
+];
+task.setVariableLocal("executeTriggers", JSON.stringify(executeTriggers));</camunda:script>
+        </camunda:taskListener>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_07z4gid</bpmn:incoming>
+      <bpmn:outgoing>Flow_08v421n</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_08v421n" sourceRef="Activity_0ccj1wl" targetRef="Event_1pvui12" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="n8n-integration-rnd">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1pvui12_di" bpmnElement="Event_1pvui12">
+        <dc:Bounds x="742" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_057875a_di" bpmnElement="Activity_0nyoq2a">
+        <dc:Bounds x="260" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1w8kacn_di" bpmnElement="Activity_1h3j02z">
+        <dc:Bounds x="430" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0kts3z1" bpmnElement="Activity_0ccj1wl">
+        <dc:Bounds x="590" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_18w1eyl_di" bpmnElement="Flow_18w1eyl">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="260" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_07z4gid_di" bpmnElement="Flow_07z4gid">
+        <di:waypoint x="530" y="117" />
+        <di:waypoint x="590" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1cpsub7_di" bpmnElement="Flow_1cpsub7">
+        <di:waypoint x="360" y="117" />
+        <di:waypoint x="430" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08v421n_di" bpmnElement="Flow_08v421n">
+        <di:waypoint x="690" y="117" />
+        <di:waypoint x="742" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

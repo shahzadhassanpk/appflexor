@@ -1,0 +1,182 @@
+{
+  "name": "Execute Query",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -480,
+        -16
+      ],
+      "id": "7508b587-ea9e-4a24-b558-535b3e4ebfb3",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://172.17.0.1:8089/engine-rest/external-task/fetchAndLock",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"workerId\": \"EXECUTE_QUERIES\",\n  \"maxTasks\": 1,\n  \"usePriority\": true,\n  \"topics\": [\n    {\n      \"topicName\": \"EXECUTE_QUERIES\",\n      \"lockDuration\": 6000\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -288,
+        -16
+      ],
+      "id": "a6d02c1b-b0b6-4bda-b92a-83d69be6ce91",
+      "name": "Fetch and Lock"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://172.17.0.1:8089/engine-rest/external-task/{{ $json.taskId }}/complete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        176,
+        208
+      ],
+      "id": "b010ce16-c91f-4710-8846-5a7dbd97aa11",
+      "name": "Complete Task",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\n\nfor (const item of $input.all()) {\n  let broken = item.json.variables.queries.value;\n  let fixed = broken\n  .replace(/(\\w+)\\s*:/g, '\"$1\":')                 // add quotes around keys\n  .replace(/(\\[)([0-9a-fA-F-]{36})(\\])/g, '[\"$2\"]'); // wrap UUIDs in quotes\n\nconst parsed = JSON.parse(fixed);\n  const dataKeys = parsed.dataKeys;\n  dataKeys.forEach(dk => {\n    if (Array.isArray(dk.serviceParams)) {\n      dk.serviceParams = dk.serviceParams.join(\",\"); // convert array to comma-separated string\n    }\n  });\n  items.push({      \n      tenant_id:item.json.variables.tenantId.value,\n      dataKeys\n    });\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        -16
+      ],
+      "id": "2b486d95-7611-46ce-b815-143cb374c21f",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://demo.step2agility.com/app/service?service.key=tenant.data",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "c017fe26-3d5e-4cd1-85e2-2945ae673726"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        112,
+        -16
+      ],
+      "id": "cbb5d6b3-3ec1-4e87-b020-538bd097c8d2",
+      "name": "Execute Query"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\n\nfor (const item of $input.all()) {\n  const camundaVars = {};\n  const request = {taskId:$('Fetch and Lock').first().json.id,\n                  workerId:\"EXECUTE_QUERIES\"}\n  Object.entries(item.json.C_DATA).forEach(([key, value]) => {\n    camundaVars[key] = {\n      value: JSON.stringify(value),\n      type: \"Json\"  // use String for text values\n    };\n  });\n  request.variables = camundaVars;\n  items.push(request);  \n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        208
+      ],
+      "id": "c132acd4-2b04-4f16-be96-2ca664ff63e6",
+      "name": "Code1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch and Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch and Lock": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Execute Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Query": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Complete Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9ed3a58d-84c8-49ec-b5f8-032d9b6cf046",
+  "meta": {
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "jkeW2neaSrUyAhku",
+  "tags": []
+}

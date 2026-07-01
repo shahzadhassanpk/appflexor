@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1gyqai4" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:collaboration id="Collaboration_1k5jyir">
+    <bpmn:participant id="Participant_0s7nf84" name="Bill Processing" processRef="data_ingestion" />
+  </bpmn:collaboration>
+  <bpmn:process id="data_ingestion" name="Data Ingestion" isExecutable="true" camunda:historyTimeToLive="1">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <camunda:executionListener event="start">
+          <camunda:script scriptFormat="javascript">execution.setVariable("auditEvent", "yes");</camunda:script>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_17ao32z</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Activity_0rplbod" name="Extract Data" camunda:type="external" camunda:topic="data_ingestion">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_17ao32z</bpmn:incoming>
+      <bpmn:outgoing>Flow_0vrbidy</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_1xi47uv">
+      <bpmn:incoming>Flow_0c95ge2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="Activity_0smsirw" name="Approve" camunda:formKey="document">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="action">APPROVED</camunda:outputParameter>
+          <camunda:outputParameter name="comments">Seems good to approve</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1m666fe</bpmn:incoming>
+      <bpmn:outgoing>Flow_0c95ge2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_0c0livd" name="Review" camunda:formKey="document">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="action">APPROVED</camunda:outputParameter>
+          <camunda:outputParameter name="comments">Seems good to review</camunda:outputParameter>
+        </camunda:inputOutput>
+        <camunda:executionListener event="end">
+          <camunda:script scriptFormat="javascript">var status= execution.getVariable("status");
+var executeTriggers = [
+{"trigger":"update.doc.status", "serviceParams": status}
+];
+execution.setVariable("externalEvent", "yes");
+execution.setVariable("executeTriggers", JSON.stringify(executeTriggers));</camunda:script>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_17zyl97</bpmn:incoming>
+      <bpmn:outgoing>Flow_1m666fe</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Activity_16zvhdr" name="Set Variables" camunda:type="external" camunda:topic="EXECUTE_QUERIES">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="queries">{
+    dataKeys: [
+                {
+                    serviceParams: [${execution.processBusinessKey}],
+                    dataKey: "formData",
+                    serviceKey: "fetch.bill.details",
+                    mode: "formData"
+                }
+            ]           
+}</camunda:inputParameter>
+        </camunda:inputOutput>
+        <camunda:executionListener event="end">
+          <camunda:script scriptFormat="javascript">var ArrayList = Java.type("java.util.ArrayList");
+var auditKeys = new ArrayList();
+auditKeys.add("status");
+execution.setVariable("audit_keys", auditKeys);
+var responseObj = JSON.parse(formData);
+execution.setVariable("subject", responseObj[0].document_name);
+execution.setVariable("dueDate", responseObj[0].due_date);
+execution.setVariable("status", responseObj[0].status);</camunda:script>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0vrbidy</bpmn:incoming>
+      <bpmn:outgoing>Flow_17zyl97</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_17ao32z" sourceRef="StartEvent_1" targetRef="Activity_0rplbod" />
+    <bpmn:sequenceFlow id="Flow_0vrbidy" sourceRef="Activity_0rplbod" targetRef="Activity_16zvhdr" />
+    <bpmn:sequenceFlow id="Flow_0c95ge2" sourceRef="Activity_0smsirw" targetRef="Event_1xi47uv" />
+    <bpmn:sequenceFlow id="Flow_1m666fe" sourceRef="Activity_0c0livd" targetRef="Activity_0smsirw" />
+    <bpmn:sequenceFlow id="Flow_17zyl97" sourceRef="Activity_16zvhdr" targetRef="Activity_0c0livd" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1k5jyir">
+      <bpmndi:BPMNShape id="Participant_0s7nf84_di" bpmnElement="Participant_0s7nf84" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="910" height="210" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="232" y="172" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ly77ib_di" bpmnElement="Activity_0rplbod">
+        <dc:Bounds x="310" y="150" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1xi47uv_di" bpmnElement="Event_1xi47uv">
+        <dc:Bounds x="952" y="172" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ia123z_di" bpmnElement="Activity_0smsirw">
+        <dc:Bounds x="790" y="150" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ry4onf_di" bpmnElement="Activity_0c0livd">
+        <dc:Bounds x="630" y="150" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1sbtkmu_di" bpmnElement="Activity_16zvhdr">
+        <dc:Bounds x="470" y="150" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_17ao32z_di" bpmnElement="Flow_17ao32z">
+        <di:waypoint x="268" y="190" />
+        <di:waypoint x="310" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vrbidy_di" bpmnElement="Flow_0vrbidy">
+        <di:waypoint x="410" y="190" />
+        <di:waypoint x="470" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0c95ge2_di" bpmnElement="Flow_0c95ge2">
+        <di:waypoint x="890" y="190" />
+        <di:waypoint x="952" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1m666fe_di" bpmnElement="Flow_1m666fe">
+        <di:waypoint x="730" y="190" />
+        <di:waypoint x="790" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17zyl97_di" bpmnElement="Flow_17zyl97">
+        <di:waypoint x="570" y="190" />
+        <di:waypoint x="630" y="190" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

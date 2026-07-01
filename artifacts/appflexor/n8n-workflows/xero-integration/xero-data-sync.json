@@ -1,0 +1,501 @@
+{
+  "name": "xero-data-sync",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://api.xero.com/api.xro/2.0/Contacts",
+        "options": {},
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Xero-tenant-id",
+              "value": "={{ $json.tenantId }}"
+            }
+          ]
+        }
+      },
+      "id": "7db19a30-bf11-4da3-b223-a5553d633ced",
+      "name": "Get Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.xero.com/api.xro/2.0/Accounts",
+        "options": {},
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Xero-tenant-id",
+              "value": "={{ $json.tenantId }}"
+            }
+          ]
+        }
+      },
+      "id": "998d8418-a8ab-4a62-8b50-b035240f8442",
+      "name": "Get Accounts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        528,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from app_fd_integration\nwhere c_external_system = 'xero'",
+        "additionalFields": {}
+      },
+      "id": "36532d3e-80d3-4424-8b3e-f5a4b5cffd89",
+      "name": "Prepare Database1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        -16
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1CkkR8qdO1PfVrpm",
+          "name": "tenant_db"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        -16
+      ],
+      "id": "f58412b6-6d64-4543-bcce-83ea1c8d3346",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        272,
+        160
+      ],
+      "id": "575842eb-b1b6-49b3-9ddf-f417559c3e09",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "let contacts = $input.first().json.Contacts; // array of contacts from Xero\n\nlet request = {\n  tenant_id: $('Prepare Database1').first().json.c_datasource,\n  saveOrUpdate: \"Yes\",\n  data: []\n};\n\nfor (let i = 0; i < contacts.length; i++) {\n    let contact = contacts[i];\n    let record = {\n        formId: \"party\",\n        entity: \"party\",\n        action: \"update\",\n        id: contact.ContactID || \"new\", // use ContactID if available, else \"new\"\n        formData: {\n            org_id: $('Prepare Database1').first().json.c_org_id,\n            integration:$('Prepare Database1').first().json.id,\n            name: contact.Name,\n            is_customer: contact.IsCustomer,\n            is_bank:  \"\",\n            is_vendor: contact.IsSupplier,\n            contact_id: contact.ContactID,\n            id: contact.ContactID || \"new\"\n        }\n    };\n    request.data.push(record);\n}\n\nreturn request;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        -112
+      ],
+      "id": "5f0472a3-854a-44aa-8977-03417cbe9065",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CLOUD_URL}}/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "={{$env.AUTH_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1088,
+        -112
+      ],
+      "id": "1ff3d12f-cb28-4084-bb34-0a6f5af8566b",
+      "name": "HTTP Request1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "let accounts = $input.first().json.Accounts; // array of contacts from Xero\n\nlet request = {\n  tenant_id: $('Prepare Database1').first().json.c_datasource,\n  saveOrUpdate: \"Yes\",\n  data: []\n};\n\nfor (let i = 0; i < accounts.length; i++) {\n    let account = accounts[i];\n    let record = {\n        formId: \"chart_of_accounts\",\n        entity: \"chart_of_accounts\",\n        action: \"update\",\n        id: account.AccountID || \"new\",\n        formData: {\n          org_id: $('Prepare Database1').first().json.c_org_id,\n            integration:$('Prepare Database1').first().json.id,\n            name: account.Name,\n            status: account.Status,\n            description: account?.Description,\n            code: account?.Code || \"\",\n            currency: account?.CurrencyCode||\"\",\n            tax_type:  account.TaxType?.toLowerCase(),\n            type:  account.Type?.toLowerCase(),\n          account_type:  account.Class?.toLowerCase(),\n            id: account.AccountID || \"new\"\n        }\n    };\n    request.data.push(record);\n}\n\nreturn request;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        192
+      ],
+      "id": "e967bab2-d7ad-49e8-bfdb-aa57dda0a6f1",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CLOUD_URL}}/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "={{$env.AUTH_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1088,
+        192
+      ],
+      "id": "4127013b-9798-42ea-a1ef-0e0bfb7e7519",
+      "name": "HTTP Request",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://identity.xero.com/connect/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $json.c_client_id }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.c_client_secret }}"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.c_refresh_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        128,
+        -96
+      ],
+      "id": "b348c684-525f-4dab-b89f-a25d3834ed0f",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        64,
+        -224
+      ],
+      "id": "0ea66d58-0ffd-4188-9471-c185a3ca06b9",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "url": "https://api.xero.com/connections",
+        "options": {},
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        }
+      },
+      "id": "c838b956-f9f4-4456-a2f8-f9c7a4cf1889",
+      "name": "Get Contacts1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        304,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $json[0];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -112
+      ],
+      "id": "53307bd9-e809-4d97-a7aa-fe815d40d69b",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let id = $('Prepare Database1').item.json.id;\nlet request = {\n  tenant_id: $json.datasource,\n  data: []\n};\nlet record = {\n    formId: \"integration\",\n    entity: \"integration\",\n    action: \"update\",\n    id: id,\n    formData: {\n      ...$json,\n      id: id\n    }\n  }\nrequest.data.push(record);\nreturn request;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        -272
+      ],
+      "id": "0aacd3b1-fda1-4e30-89f7-17a036d4a1d4",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.step2agility.com/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "=1d59ea80-22ba-4475-96db-13127f668971"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        -272
+      ],
+      "id": "150c4fd5-ce25-411c-bd0a-855a02514174",
+      "name": "HTTP Request3",
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {
+          "datasource": "tenantshst00105"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Get Contacts": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Accounts": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Database1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Prepare Database1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Get Accounts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Get Contacts1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Contacts1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b730b05c-3f21-4841-9d5f-e39f93d00550",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "EZIRfl9E34q04lBS",
+  "tags": []
+}
