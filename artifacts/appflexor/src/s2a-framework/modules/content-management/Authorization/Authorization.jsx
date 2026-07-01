@@ -183,7 +183,7 @@ function Authorization(props) {
         });
 
         let _orgs = selectedItem?.orgs;
-        let __orgsArr = _orgs.split(";");
+        let __orgsArr = _orgs?.split(";")??[];
         let _finalOrgsArr = [];
         __orgsArr.forEach(id => {
             orgs.forEach(org => {

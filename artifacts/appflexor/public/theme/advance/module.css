@@ -1312,7 +1312,7 @@
 }
 
 .datalist .datalist-actions-cell {
-    color: #6ea8fe;
+    color: var(--accent-primary-hover);
     text-decoration: underline;
     padding: 0px 8px;
     text-wrap: nowrap;

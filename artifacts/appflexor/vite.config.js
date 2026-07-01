@@ -22,7 +22,7 @@ export default defineConfig({
     base: "/app/",
     server: {
         port: 3000,
-        allowedHosts: ["local.com", "demo.local.com"],
+        allowedHosts: [".local.com", "demo.local.com"],
 
         // open: "/public/index.html"
     },
