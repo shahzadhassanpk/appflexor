@@ -2,7 +2,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 
-const port = Number(process.env.PORT ?? "18232");
+const port = Number(process.env.PORT ?? "3000");
 const basePath = process.env.BASE_PATH ?? "/app/";
 
 export default defineConfig({
