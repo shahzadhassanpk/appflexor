@@ -1,5 +1,6 @@
 import { useState } from "react";
 import logoSrc from "../assets/appflexor-logo.png";
+import bgDesign from '../../../design/appflexor_Design signup p_2026-07-01T06_39_30.png';
 
 /* ── Static data ──────────────────────────────────────────────────────────── */
 const FEATURES = [
@@ -205,14 +206,25 @@ export default function Signup() {
 
         {/* ══ LEFT PANEL ══ */}
         <div className="hidden lg:flex" style={{
-          width: "55%", minHeight: "100vh", background: "#ffffff",
+          width: "55%", minHeight: "100vh",
           flexDirection: "column", position: "relative", overflow: "hidden",
+          backgroundImage: `url(${bgDesign})`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'left center',
+          backgroundSize: '120% auto',
         }}>
-          {/* Subtle dot pattern */}
+
+          {/* soft violet overlay to match design */}
           <div style={{
-            position: "absolute", inset: 0, opacity: 0.35,
-            backgroundImage: "radial-gradient(circle, #c4b5fd 1px, transparent 1px)",
-            backgroundSize: "20px 20px", pointerEvents: "none",
+            position: "absolute", inset: 0,
+            background: 'linear-gradient(90deg, rgba(124,58,237,0.18) 0%, rgba(255,255,255,0.92) 55%)',
+            mixBlendMode: 'normal',
+            pointerEvents: "none",
+          }} />
+
+          {/* subtle vignette to match screenshot */}
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+            backgroundImage: 'radial-gradient(ellipse at left center, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0) 40%)',
           }} />
 
           <div style={{ position: "relative", zIndex: 1, padding: "36px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
