@@ -425,8 +425,8 @@ function Login({
                         <div className="w-full lg:w-[42%] flex items-center justify-center px-4 py-8 sm:px-8 sm:py-12">
                             <div className="w-full max-w-[380px] bg-white rounded-2xl shadow-xl border border-slate-100 px-5 py-7 sm:px-8 sm:py-9">
 
-                                {/* Card logo — hidden on mobile (top bar handles it) */}
-                                <div className="hidden lg:flex flex-col items-center mb-6">
+                                {/* Card logo */}
+                                <div className="flex flex-col items-center mb-6">
                                     <div className="flex items-center gap-2 mb-1">
                                         {logoUrl
                                             ? <img src={logoUrl} alt={brandTitle} className="h-7 object-contain" />
@@ -434,9 +434,6 @@ function Login({
                                         <span className="text-base font-bold text-slate-800 tracking-tight">{brandTitle}</span>
                                     </div>
                                 </div>
-
-                                {/* Mobile-only welcome spacer */}
-                                <div className="lg:hidden mb-5"></div>
 
                                 <h2 className="text-2xl font-bold text-center text-slate-900 mb-1">Welcome Back</h2>
                                 <p className="text-sm text-center text-slate-500 mb-6">Sign in to continue.</p>
