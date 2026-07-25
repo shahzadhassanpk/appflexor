@@ -297,14 +297,6 @@ function Login({
                             </div>
                         )}
 
-                        <div className="mt-auto relative z-10 pt-12 flex items-center justify-between text-xs text-gray-500 dark:text-slate-500 font-medium">
-                            <div>© {new Date().getFullYear()} Step 2 Agility. All rights reserved.</div>
-                            <div className="flex gap-4">
-                                <a href="#" className="hover:text-gray-900 dark:hover:text-slate-300">Privacy Policy</a>
-                                <a href="#" className="hover:text-gray-900 dark:hover:text-slate-300">Terms</a>
-                                <span>Version 1.0.0</span>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Right Panel - Login Card */}
@@ -472,9 +464,6 @@ function Login({
                                     </div>
                                 )}
                                 
-                                <p className="mt-8 text-center text-xs text-gray-400 dark:text-slate-500">
-                                    Need an account? Contact Administrator
-                                </p>
                             </div>
                         </div>
                     </div>
