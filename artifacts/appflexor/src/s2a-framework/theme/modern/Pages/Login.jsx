@@ -564,7 +564,7 @@ function Login({
                                 {/* Sign Up button — always visible */}
                                 <button
                                     type="button"
-                                    onClick={() => navigate("/register")}
+                                    onClick={() => window.location.href = "/signup/"}
                                     className="w-full py-2.5 bg-white border border-indigo-500 hover:bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-lg transition"
                                 >
                                     Sign Up
@@ -600,9 +600,9 @@ function Login({
                                 {/* Need an account */}
                                 <p className="mt-5 text-center text-xs text-slate-500">
                                     Need an account?{" "}
-                                    <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-700 transition">
+                                    <a href="/signup/" className="font-semibold text-indigo-600 hover:text-indigo-700 transition">
                                         Contact Administrator
-                                    </Link>
+                                    </a>
                                 </p>
                             </div>
                         </div>
