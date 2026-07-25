@@ -96,15 +96,20 @@ function Breadcrumb() {
         }
     }
 
+    if (!breadcrumbPath.length) return null;
+
     return (
-        <div className="flex items-center text-sm text-gray-500 dark:text-slate-400 py-4 px-6 overflow-x-auto whitespace-nowrap hide-scrollbar border-b border-gray-100 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50">
-            <span className="font-medium text-gray-900 dark:text-white">
-                {appContext?.channel?.brand_title}
-            </span>
+        <div className="flex items-center gap-1 text-sm px-6 py-3 overflow-x-auto whitespace-nowrap hide-scrollbar">
             {breadcrumbPath.map((name, i) => (
-                <div key={i} className="flex items-center">
-                    <i className="fa-solid fa-chevron-right text-[10px] mx-2 text-gray-400 dark:text-slate-500"></i>
-                    <span className={breadcrumbPath.length - 1 === i ? "font-medium text-indigo-600 dark:text-indigo-400" : ""}>
+                <div key={i} className="flex items-center gap-1">
+                    {i > 0 && (
+                        <i className="fa-solid fa-chevron-right text-[9px] text-gray-400 dark:text-slate-600 mx-0.5"></i>
+                    )}
+                    <span className={
+                        i === breadcrumbPath.length - 1
+                            ? "font-semibold text-gray-800 dark:text-slate-100"
+                            : "text-gray-400 dark:text-slate-500"
+                    }>
                         {name}
                     </span>
                 </div>

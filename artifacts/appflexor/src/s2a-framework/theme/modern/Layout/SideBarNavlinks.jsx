@@ -45,7 +45,7 @@ function ModuleSection({ module, features, pathname }) {
 
     return (
         <div className="mt-5 first:mt-2">
-            <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 select-none">
+            <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest select-none text-slate-500 dark:text-slate-500">
                 {module.name}
             </p>
             <div className="flex flex-col gap-0.5">

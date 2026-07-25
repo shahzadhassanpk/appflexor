@@ -729,13 +729,14 @@
 }
 
 .badge {
+    /* Modern: preserve Bootstrap semantic colors; only set geometry */
     margin: 1px 2px;
     margin-bottom: 2px;
-    color: var(--font-color) !important;
-    background-color: var(--primary-color) !important;
-    box-shadow:
-        var(--border-color) 0px 1px 1px,
-        var(--border-color) 0px 0px 1px 1px !important;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    line-height: 1.2;
 }
 
 .form-border {
@@ -2005,14 +2006,13 @@
 
 .s2a-table .tag-badge,
 .s2a-table .s2a-badge {
-    box-shadow:
-        var(--border-color) 0px 1px 1px,
-        var(--border-color) 0px 0px 1px 1px !important;
-    color: var(--font-color) !important;
+    /* Modern: preserve semantic badge colors */
     margin: 2px;
-    background-color: var(--primary-color) !important;
-    border-radius: 4px;
-    font-size: 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    line-height: 1.2;
 }
 
 @media screen and (max-width: 40em) {

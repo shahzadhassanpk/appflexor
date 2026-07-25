@@ -1,81 +1,115 @@
-/* applyAppTheme Advance Theme Css */
+/* applyAppTheme Advance Theme Css — Modern palette */
+
+/* ═══════════════════════════════════════════════
+   DARK MODE
+   Body bg: gray-900 · Cards: gray-800 · Accent: indigo-500
+   ═══════════════════════════════════════════════ */
 body.dark {
-    /* Core surfaces */
-    --primary-color: #020617;
-    --secondary-color: #0f172a;
-    --navigation-color: rgb(2, 6, 23);
-    --header-color: rgb(2, 6, 23);
-    --tab-color: rgb(62, 61, 89);
-    --shadow-color: rgb(30, 41, 59);
-    --font-color: rgb(229, 231, 235);
-    --border-color: rgb(30, 41, 59);
-    --bpmn-line-stroke: rgb(229, 231, 235);
-    --bpmn-background: rgb(15, 23, 42);
+    /* ── Core surfaces ── */
+    --primary-color:    #111827;   /* page / app bg  (gray-900) */
+    --secondary-color:  #1f2937;   /* card / panel   (gray-800) */
+    --navigation-color: #111827;   /* sidebar + topnav */
+    --header-color:     #111827;
+    --tab-color:        #1f2937;
+    --shadow-color:     rgba(0, 0, 0, 0.4);
+    --font-color:       #f9fafb;   /* gray-50 */
+    --border-color:     #374151;   /* gray-700 */
+    --bpmn-line-stroke: #f9fafb;
+    --bpmn-background:  #1f2937;
 
-    /* Backgrounds */
-    --bg-app: #0f172a;
-    --bg-surface: #020617;
-    --bg-hover: #1c2737;
-    --bg-active: #1e293b;
+    /* ── Semantic bg tokens ── */
+    --bg-app:    #111827;
+    --bg-surface: #1f2937;
+    --bg-hover:   rgba(99, 102, 241, 0.12);
+    --bg-active:  rgba(99, 102, 241, 0.22);
 
-    /* Borders */
-    --border-default: #1e293b;
+    /* ── Borders ── */
+    --border-default: #374151;
 
-    /* Text */
-    --text-primary: #f8fafc;
-    --text-secondary: #e5e7eb;
-    --text-muted: #94a3b8;
-    --text-placeholder: #64748b;
+    /* ── Text hierarchy ── */
+    --text-primary:     #f9fafb;
+    --text-secondary:   #e5e7eb;
+    --text-muted:       #9ca3af;
+    --text-placeholder: #6b7280;
 
-    /* Accent */
-    --accent-primary: #693ffa;
-    --accent-primary-hover: #693ffa;
+    /* ── Accent (indigo) ── */
+    --accent-primary:       #6366f1;   /* indigo-500 */
+    --accent-primary-hover: #4f46e5;   /* indigo-600 */
+    --link-active-color:    #818cf8;   /* indigo-400 */
 
-    /* Status */
+    /* ── Semantic status ── */
     --success: #22c55e;
-    --warning: #facc15;
-    --danger: #ef4444;
-    --s2a-sidebar-width: 230px;
-    --s2a-sidebar-mini-width: 60px;
+    --warning: #f59e0b;
+    --danger:  #ef4444;
+
+    /* ── Sidebar / layout dimensions ── */
+    --s2a-sidebar-width:      230px;
+    --s2a-sidebar-mini-width:  64px;
+
+    /* ── Polish tokens ── */
+    --s2a-control-bg:       #1f2937;
+    --s2a-panel-bg:         #1f2937;
+    --s2a-muted-bg:         #111827;
+    --s2a-soft-border:      #374151;
+    --s2a-focus-ring:       rgba(99, 102, 241, 0.25);
+    --s2a-soft-shadow:      0 4px 16px rgba(0, 0, 0, 0.30);
+    --s2a-elevated-shadow:  0 20px 48px rgba(0, 0, 0, 0.40);
 }
 
+/* ═══════════════════════════════════════════════
+   LIGHT MODE
+   Page bg: slate-100 · Cards: white · Accent: indigo-600
+   ═══════════════════════════════════════════════ */
 body.light {
-    --primary-color: #f4f7fb;
-    --secondary-color: #ffffff;
-    --navigation-color: #ffffff;
-    --header-color: #eef3f8;
-    --tab-color: #edf2f7;
-    --shadow-color: rgba(15, 23, 42, 0.16);
-    --font-color: #111827;
-    --border-color: #cbd5e1;
+    /* ── Core surfaces ── */
+    --primary-color:    #f1f5f9;   /* page / app bg  (slate-100) */
+    --secondary-color:  #ffffff;   /* card / panel   (white) */
+    --navigation-color: #ffffff;   /* sidebar + topnav */
+    --header-color:     #ffffff;
+    --tab-color:        #f1f5f9;
+    --shadow-color:     rgba(15, 23, 42, 0.06);
+    --font-color:       #111827;   /* gray-900 */
+    --border-color:     #e2e8f0;   /* slate-200 */
     --bpmn-line-stroke: #111827;
-    --bpmn-background: #f4f7fb;
+    --bpmn-background:  #f1f5f9;
 
-    /* Backgrounds */
-    --bg-app: #f4f7fb;
+    /* ── Semantic bg tokens ── */
+    --bg-app:    #f1f5f9;
     --bg-surface: #ffffff;
-    --bg-hover: #f0ebff;
-    --bg-active: #dbe6f1;
+    --bg-hover:   #eef2ff;   /* indigo-50 */
+    --bg-active:  #e0e7ff;   /* indigo-100 */
 
-    /* Borders */
-    --border-default: #cbd5e1;
+    /* ── Borders ── */
+    --border-default: #e2e8f0;
 
-    /* Text */
-    --text-primary: #0b1220;
-    --text-secondary: #243244;
-    --text-muted: #475569;
-    --text-placeholder: #64748b;
+    /* ── Text hierarchy ── */
+    --text-primary:     #111827;
+    --text-secondary:   #374151;
+    --text-muted:       #6b7280;
+    --text-placeholder: #9ca3af;
 
-    /* Accent */
-    --accent-primary: #693ffa;
-    --accent-primary-hover: #693ffa;
+    /* ── Accent (indigo) ── */
+    --accent-primary:       #4f46e5;   /* indigo-600 */
+    --accent-primary-hover: #4338ca;   /* indigo-700 */
+    --link-active-color:    #4f46e5;
 
-    /* Status */
+    /* ── Semantic status ── */
     --success: #16a34a;
-    --warning: #ca8a04;
-    --danger: #dc2626;
-    --s2a-sidebar-width: 230px;
-    --s2a-sidebar-mini-width: 60px;
+    --warning: #d97706;
+    --danger:  #dc2626;
+
+    /* ── Sidebar / layout dimensions ── */
+    --s2a-sidebar-width:      230px;
+    --s2a-sidebar-mini-width:  64px;
+
+    /* ── Polish tokens ── */
+    --s2a-control-bg:       #ffffff;
+    --s2a-panel-bg:         #ffffff;
+    --s2a-muted-bg:         #f1f5f9;
+    --s2a-soft-border:      #e2e8f0;
+    --s2a-focus-ring:       rgba(79, 70, 229, 0.20);
+    --s2a-soft-shadow:      0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --s2a-elevated-shadow:  0 10px 25px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.04);
 }
 
 /* body.light :root {
@@ -2414,26 +2448,7 @@ pdf-viewer #toolbar {
     color: #1e8fe1 !important;
 }
 
-/* Modern Bootstrap polish */
-body.light {
-    --s2a-control-bg: #ffffff;
-    --s2a-panel-bg: var(--secondary-color);
-    --s2a-muted-bg: #eef3f8;
-    --s2a-soft-border: #cbd5e1;
-    --s2a-focus-ring: rgba(37, 99, 235, 0.22);
-    --s2a-soft-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
-    --s2a-elevated-shadow: 0 18px 44px rgba(15, 23, 42, 0.14);
-}
-
-body.dark {
-    --s2a-control-bg: #0f172a;
-    --s2a-panel-bg: var(--secondary-color);
-    --s2a-muted-bg: #111827;
-    --s2a-soft-border: #263244;
-    --s2a-focus-ring: rgba(56, 189, 248, 0.2);
-    --s2a-soft-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-    --s2a-elevated-shadow: 0 20px 48px rgba(0, 0, 0, 0.36);
-}
+/* ── Polish tokens are now consolidated in the top-level body.dark / body.light blocks ── */
 
 body {
     background-color: var(--bg-app, var(--primary-color));
@@ -2801,4 +2816,27 @@ body {
 .s2a-page,
 .adv-navbar-main {
     width: 100% !important;
+}
+
+/* ── Modern layout: offset main content below fixed 56px topbar ── */
+.s2a-main {
+    margin-top: 56px;
+}
+
+/* Login / signup render their own full-page layout — no top offset */
+.s2a-main:has(.s2a-login),
+.s2a-main:has(.s2a-signup),
+.s2a-main:has(.s2a-modern-login) {
+    margin-top: 0;
+}
+
+/* ── Modern sidebar scrollbar ── */
+.custom-scrollbar::-webkit-scrollbar        { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track  { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb  {
+    background: var(--border-color);
+    border-radius: 99px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--text-placeholder);
 }

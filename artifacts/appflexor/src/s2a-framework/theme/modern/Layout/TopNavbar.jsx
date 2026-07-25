@@ -204,8 +204,10 @@ function TopNavbar({
                             )}
 
                             <button className="text-gray-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
-                                <i className="fa-regular fa-bell"></i>
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                                <i className="fa-regular fa-bell text-[17px]"></i>
+                                <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] bg-red-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center px-1 leading-none shadow">
+                                    1
+                                </span>
                             </button>
 
                             <button className="text-gray-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
