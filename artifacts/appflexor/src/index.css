@@ -1,6 +1,28 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark *));
 
+/* Reset advance theme CSS variables for the modern login page so dark-mode
+   body class doesn't bleed in and make text/inputs invisible on white bg. */
+.s2a-modern-login {
+    --primary-color: #f8fafc;
+    --secondary-color: #ffffff;
+    --navigation-color: #ffffff;
+    --header-color: #f1f5f9;
+    --shadow-color: rgba(15,23,42,0.08);
+    --font-color: #0f172a;
+    --border-color: #e2e8f0;
+    --bg-app: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-hover: #f1f5f9;
+    --bg-active: #e2e8f0;
+    --border-default: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #1e293b;
+    --text-muted: #64748b;
+    --text-placeholder: #94a3b8;
+    color: #0f172a;
+}
+
 @layer base {
   :root {
     --background: 0 0% 98%;
