@@ -612,13 +612,6 @@ function Login({
                                     </div>
                                 )}
 
-                                {/* Need an account */}
-                                <p className="mt-5 text-center text-xs text-slate-500">
-                                    Need an account?{" "}
-                                    <a href="/signup/" className="font-semibold text-indigo-600 hover:text-indigo-700 transition">
-                                        Contact Administrator
-                                    </a>
-                                </p>
                             </div>
                         </div>
                     </div>
