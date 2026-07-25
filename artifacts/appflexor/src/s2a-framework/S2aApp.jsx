@@ -317,9 +317,7 @@ function S2aApp() {
                     const site_preference = tryToParse(
                         brandDetails?.site_preference,
                     );
-                    const menu_position = site_preference
-                        ? site_preference.menu_position
-                        : "";
+                    const menu_position = site_preference?.menu_position || "body-left";
                     if (
                         typeof menu_position === "string"
                             ? menu_position.includes("header")
@@ -328,11 +326,12 @@ function S2aApp() {
                         removeMargin();
                     }
 
-                    if (
-                        typeof menu_position === "string"
+                    const isBodyLeft =
+                        !menu_position ||
+                        (typeof menu_position === "string"
                             ? menu_position.includes("body-left")
-                            : menu_position === "body-left"
-                    ) {
+                            : menu_position === "body-left");
+                    if (isBodyLeft) {
                         if (sideNavBarState && sideNavBarState === MENU.HOVER) {
                             addMargin60();
                         } else {

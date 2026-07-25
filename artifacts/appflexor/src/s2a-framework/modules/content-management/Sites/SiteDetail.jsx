@@ -762,7 +762,7 @@ function SiteDetails({
                                         </label>
                                     </div>
                                 </div>
-                                {/* <div className="col-sm-4">
+                                <div className="col-sm-4">
                                     <div className="form-check">
                                         <input
                                             className="form-check-input"
@@ -779,10 +779,10 @@ function SiteDetails({
                                             }
                                         />
                                         <label className="form-check-label">
-                                            Body left
+                                            Body Left
                                         </label>
                                     </div>
-                                </div> */}
+                                </div>
                             </div>
                         </div>
                     </fieldset>

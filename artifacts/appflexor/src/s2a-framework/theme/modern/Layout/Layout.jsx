@@ -23,7 +23,7 @@ function Layout() {
     );
     const location = useLocation();
     const site_preference = tryToParse(appContext.channel?.site_preference);
-    const menu_position = site_preference ? site_preference?.menu_position : "";
+    const menu_position = site_preference?.menu_position || "body-left";
 
     useEffect(() => {
         $(".loader-line").fadeOut();

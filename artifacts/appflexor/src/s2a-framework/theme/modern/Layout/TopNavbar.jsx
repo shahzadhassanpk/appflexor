@@ -113,31 +113,31 @@ function TopNavbar({
             <nav className="fixed top-0 left-0 right-0 h-14 z-40 bg-white border-b border-gray-200 dark:bg-slate-800 dark:border-slate-700 flex items-center px-4 transition-colors">
                 <div className="flex items-center w-full justify-between">
                     {/* Left Section */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        {/* Desktop sidebar toggle — always first */}
+                        {screenView === "lg" && isAuthorized && (
+                            <button
+                                onClick={handleToggleMiniNavbar}
+                                className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+                                title="Toggle sidebar"
+                            >
+                                <i className="fa-solid fa-bars text-base"></i>
+                            </button>
+                        )}
+
+                        {/* Mobile hamburger */}
                         {appContext.isAuthorized && screenView !== "lg" && (
                             <button
                                 data-bs-toggle="offcanvas"
                                 data-bs-target="#sideNavbarMobile"
-                                className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
-                            >
-                                <i className="fa-solid fa-bars-staggered text-lg"></i>
-                            </button>
-                        )}
-
-                        {toggleMiniNavbar === MENU.FIXED || screenView !== "lg" ? (
-                            <BrandLogo />
-                        ) : (
-                            <div className="w-8"></div>
-                        )}
-
-                        {screenView === "lg" && isAuthorized && menu_position === "body-left" && (
-                            <button
-                                onClick={handleToggleMiniNavbar}
                                 className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
                             >
-                                <i className="fa-solid fa-align-left"></i>
+                                <i className="fa-solid fa-bars-staggered text-base"></i>
                             </button>
                         )}
+
+                        {/* Brand logo */}
+                        <BrandLogo />
                     </div>
 
                     {/* Center Section: Search */}
