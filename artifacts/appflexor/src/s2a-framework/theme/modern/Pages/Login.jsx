@@ -321,7 +321,9 @@ function Login({
 
                             {/* Brand logo */}
                             <div className="flex items-center gap-2.5 mb-10">
-                                <AppflexorMark size={30} />
+                                {logoUrl
+                                    ? <img src={logoUrl} alt={brandTitle} className="h-8 object-contain" />
+                                    : <AppflexorMark size={30} />}
                                 <span className="text-lg font-bold text-slate-800 tracking-tight">{brandTitle}</span>
                             </div>
 
@@ -418,7 +420,9 @@ function Login({
                                 {/* Card logo */}
                                 <div className="flex flex-col items-center mb-6">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <AppflexorMark size={26} />
+                                        {logoUrl
+                                            ? <img src={logoUrl} alt={brandTitle} className="h-7 object-contain" />
+                                            : <AppflexorMark size={26} />}
                                         <span className="text-base font-bold text-slate-800 tracking-tight">{brandTitle}</span>
                                     </div>
                                 </div>
