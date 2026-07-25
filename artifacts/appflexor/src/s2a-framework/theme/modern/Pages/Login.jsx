@@ -302,8 +302,16 @@ function Login({
                     className="s2a-modern-login min-h-screen flex flex-col"
                     style={{ background: "linear-gradient(135deg, #eef2ff 0%, #e8eaf6 50%, #ede9fe 100%)" }}
                 >
+                    {/* ── Mobile-only top brand bar ─────────────────────── */}
+                    <div className="lg:hidden flex items-center gap-2.5 px-5 py-4 border-b border-indigo-100/60">
+                        {logoUrl
+                            ? <img src={logoUrl} alt={brandTitle} className="h-7 object-contain" />
+                            : <AppflexorMark size={26} />}
+                        <span className="text-base font-bold text-slate-800 tracking-tight">{brandTitle}</span>
+                    </div>
+
                     {/* ── Main content row ──────────────────────────────── */}
-                    <div className="flex flex-1">
+                    <div className="flex flex-1 items-center lg:items-stretch">
 
                         {/* ══ LEFT PANEL ══════════════════════════════════ */}
                         <div className="hidden lg:flex w-[58%] flex-col px-14 py-12 relative overflow-hidden">
@@ -414,11 +422,11 @@ function Login({
                         </div>
 
                         {/* ══ RIGHT PANEL — floating card ════════════════ */}
-                        <div className="w-full lg:w-[42%] flex items-center justify-center px-8 py-12">
-                            <div className="w-full max-w-[360px] bg-white rounded-2xl shadow-xl border border-slate-100 px-8 py-9">
+                        <div className="w-full lg:w-[42%] flex items-center justify-center px-4 py-8 sm:px-8 sm:py-12">
+                            <div className="w-full max-w-[380px] bg-white rounded-2xl shadow-xl border border-slate-100 px-5 py-7 sm:px-8 sm:py-9">
 
-                                {/* Card logo */}
-                                <div className="flex flex-col items-center mb-6">
+                                {/* Card logo — hidden on mobile (top bar handles it) */}
+                                <div className="hidden lg:flex flex-col items-center mb-6">
                                     <div className="flex items-center gap-2 mb-1">
                                         {logoUrl
                                             ? <img src={logoUrl} alt={brandTitle} className="h-7 object-contain" />
@@ -426,6 +434,9 @@ function Login({
                                         <span className="text-base font-bold text-slate-800 tracking-tight">{brandTitle}</span>
                                     </div>
                                 </div>
+
+                                {/* Mobile-only welcome spacer */}
+                                <div className="lg:hidden mb-5"></div>
 
                                 <h2 className="text-2xl font-bold text-center text-slate-900 mb-1">Welcome Back</h2>
                                 <p className="text-sm text-center text-slate-500 mb-6">Sign in to continue.</p>
@@ -613,9 +624,9 @@ function Login({
                     </div>
 
                     {/* ── Full-width footer ──────────────────────────────── */}
-                    <footer className="flex items-center justify-between px-14 py-4 text-xs text-slate-500 border-t border-slate-200/60">
+                    <footer className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between px-5 sm:px-14 py-4 text-xs text-slate-500 border-t border-slate-200/60">
                         <span>© {new Date().getFullYear()} Step 2 Agility</span>
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4 sm:gap-6">
                             <a href="#" className="hover:text-slate-700 transition">Privacy Policy</a>
                             <a href="#" className="hover:text-slate-700 transition">Terms</a>
                             <span>Version 1.0.0</span>
