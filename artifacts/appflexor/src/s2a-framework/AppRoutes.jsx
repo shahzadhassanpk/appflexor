@@ -13,10 +13,10 @@ import { AppContext } from "../AppContext";
 import { IFrame } from "./components/IFrame/Iframe";
 import RenderStartProcess from "./components/RenderStartProcess/RenderStartProcess";
 import RenderStepProcess from "./components/RenderStepProcess/RenderStepProcess";
-import Forget from "./theme/advance/Pages/Forget";
-import Login from "./theme/advance/Pages/Login";
-import NotFound from "./theme/advance/Pages/NotFoundPage";
-import SignUp from "./theme/advance/Pages/SignUp";
+import Forget from "./theme/modern/Pages/Forget";
+import Login from "./theme/modern/Pages/Login";
+import NotFound from "./theme/modern/Pages/NotFoundPage";
+import SignUp from "./theme/modern/Pages/SignUp";
 import PageFormViewer from "./components/RenderForm/PageFormViewer";
 import ContentManagement from "./modules/content-management/ContentManagement";
 
