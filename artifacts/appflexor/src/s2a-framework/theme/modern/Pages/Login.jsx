@@ -302,14 +302,6 @@ function Login({
                     className="s2a-modern-login min-h-screen flex flex-col"
                     style={{ background: "linear-gradient(135deg, #eef2ff 0%, #e8eaf6 50%, #ede9fe 100%)" }}
                 >
-                    {/* ── Mobile-only top brand bar ─────────────────────── */}
-                    <div className="lg:hidden flex items-center gap-2.5 px-5 py-4 border-b border-indigo-100/60">
-                        {logoUrl
-                            ? <img src={logoUrl} alt={brandTitle} className="h-7 object-contain" />
-                            : <AppflexorMark size={26} />}
-                        <span className="text-base font-bold text-slate-800 tracking-tight">{brandTitle}</span>
-                    </div>
-
                     {/* ── Main content row ──────────────────────────────── */}
                     <div className="flex flex-1 items-center lg:items-stretch">
 
