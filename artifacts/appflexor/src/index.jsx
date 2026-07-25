@@ -15,7 +15,7 @@ if (process.env.NODE_ENV === "development") {
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-    <BrowserRouter basename='/app'>
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
         <ErrorBoundary>
             <S2aApp />
         </ErrorBoundary>
