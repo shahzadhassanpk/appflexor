@@ -2,35 +2,35 @@
 
 /* ═══════════════════════════════════════════════
    DARK MODE
-   Body bg: gray-900 · Cards: gray-800 · Accent: indigo-500
+   Body bg: slate-900 · Cards: slate-800 · Accent: indigo-500
    ═══════════════════════════════════════════════ */
 body.dark {
     /* ── Core surfaces ── */
-    --primary-color:    #111827;   /* page / app bg  (gray-900) */
-    --secondary-color:  #1f2937;   /* card / panel   (gray-800) */
-    --navigation-color: #111827;   /* sidebar + topnav */
-    --header-color:     #111827;
-    --tab-color:        #1f2937;
-    --shadow-color:     rgba(0, 0, 0, 0.4);
-    --font-color:       #f9fafb;   /* gray-50 */
-    --border-color:     #374151;   /* gray-700 */
-    --bpmn-line-stroke: #f9fafb;
-    --bpmn-background:  #1f2937;
+    --primary-color:    #0f172a;   /* page / app bg  (slate-900) */
+    --secondary-color:  #1e293b;   /* card / panel   (slate-800) */
+    --navigation-color: #1e293b;   /* sidebar + topnav */
+    --header-color:     #1e293b;
+    --tab-color:        #1e293b;
+    --shadow-color:     rgba(0, 0, 0, 0.5);
+    --font-color:       #f8fafc;   /* slate-50 */
+    --border-color:     #334155;   /* slate-700 */
+    --bpmn-line-stroke: #f8fafc;
+    --bpmn-background:  #1e293b;
 
     /* ── Semantic bg tokens ── */
-    --bg-app:    #111827;
-    --bg-surface: #1f2937;
+    --bg-app:     #0f172a;
+    --bg-surface: #1e293b;
     --bg-hover:   rgba(99, 102, 241, 0.12);
     --bg-active:  rgba(99, 102, 241, 0.22);
 
     /* ── Borders ── */
-    --border-default: #374151;
+    --border-default: #334155;
 
     /* ── Text hierarchy ── */
-    --text-primary:     #f9fafb;
-    --text-secondary:   #e5e7eb;
-    --text-muted:       #9ca3af;
-    --text-placeholder: #6b7280;
+    --text-primary:     #f8fafc;
+    --text-secondary:   #e2e8f0;
+    --text-muted:       #94a3b8;
+    --text-placeholder: #64748b;
 
     /* ── Accent (indigo) ── */
     --accent-primary:       #6366f1;   /* indigo-500 */
@@ -47,34 +47,34 @@ body.dark {
     --s2a-sidebar-mini-width:  64px;
 
     /* ── Polish tokens ── */
-    --s2a-control-bg:       #1f2937;
-    --s2a-panel-bg:         #1f2937;
-    --s2a-muted-bg:         #111827;
-    --s2a-soft-border:      #374151;
+    --s2a-control-bg:       #1e293b;
+    --s2a-panel-bg:         #1e293b;
+    --s2a-muted-bg:         #0f172a;
+    --s2a-soft-border:      #334155;
     --s2a-focus-ring:       rgba(99, 102, 241, 0.25);
-    --s2a-soft-shadow:      0 4px 16px rgba(0, 0, 0, 0.30);
-    --s2a-elevated-shadow:  0 20px 48px rgba(0, 0, 0, 0.40);
+    --s2a-soft-shadow:      0 4px 16px rgba(0, 0, 0, 0.35);
+    --s2a-elevated-shadow:  0 20px 48px rgba(0, 0, 0, 0.50);
 }
 
 /* ═══════════════════════════════════════════════
    LIGHT MODE
-   Page bg: slate-100 · Cards: white · Accent: indigo-600
+   Page bg: slate-50 · Cards: white · Accent: indigo-600
    ═══════════════════════════════════════════════ */
 body.light {
     /* ── Core surfaces ── */
-    --primary-color:    #f1f5f9;   /* page / app bg  (slate-100) */
+    --primary-color:    #f8fafc;   /* page / app bg  (slate-50) */
     --secondary-color:  #ffffff;   /* card / panel   (white) */
     --navigation-color: #ffffff;   /* sidebar + topnav */
     --header-color:     #ffffff;
-    --tab-color:        #f1f5f9;
+    --tab-color:        #f1f5f9;   /* slate-100 — subtle tab bg */
     --shadow-color:     rgba(15, 23, 42, 0.06);
-    --font-color:       #111827;   /* gray-900 */
+    --font-color:       #0f172a;   /* slate-900 */
     --border-color:     #e2e8f0;   /* slate-200 */
-    --bpmn-line-stroke: #111827;
-    --bpmn-background:  #f1f5f9;
+    --bpmn-line-stroke: #0f172a;
+    --bpmn-background:  #f8fafc;
 
     /* ── Semantic bg tokens ── */
-    --bg-app:    #f1f5f9;
+    --bg-app:     #f8fafc;
     --bg-surface: #ffffff;
     --bg-hover:   #eef2ff;   /* indigo-50 */
     --bg-active:  #e0e7ff;   /* indigo-100 */
@@ -83,10 +83,10 @@ body.light {
     --border-default: #e2e8f0;
 
     /* ── Text hierarchy ── */
-    --text-primary:     #111827;
-    --text-secondary:   #374151;
-    --text-muted:       #6b7280;
-    --text-placeholder: #9ca3af;
+    --text-primary:     #0f172a;
+    --text-secondary:   #334155;
+    --text-muted:       #64748b;
+    --text-placeholder: #94a3b8;
 
     /* ── Accent (indigo) ── */
     --accent-primary:       #4f46e5;   /* indigo-600 */
@@ -108,8 +108,8 @@ body.light {
     --s2a-muted-bg:         #f1f5f9;
     --s2a-soft-border:      #e2e8f0;
     --s2a-focus-ring:       rgba(79, 70, 229, 0.20);
-    --s2a-soft-shadow:      0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-    --s2a-elevated-shadow:  0 10px 25px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.04);
+    --s2a-soft-shadow:      0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+    --s2a-elevated-shadow:  0 10px 25px rgba(0,0,0,0.07), 0 4px 10px rgba(0,0,0,0.04);
 }
 
 /* body.light :root {
