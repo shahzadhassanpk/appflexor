@@ -11,7 +11,7 @@ export default defineConfig({
     plugins: [
         react({
             babel: isDev ? {
-                plugins: ["@locator/babel-jsx/dist/index.cjs"],
+                plugins: ["@locator/babel-jsx"],
             } : {},
         }),
         tailwindcss(),
