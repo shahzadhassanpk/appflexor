@@ -310,6 +310,9 @@ const Row = ({
                     true ? "row-outilne" : ""
                 }  ${rowStyles}`}
                 onClick={() => context.handleSelectRow(rowData)}>
+                    {
+                        <span>{rowData?.title}</span>
+                    }
                 {rowData.children.map((column, index) => {
                     const currentPath = `${path}-${index}`;
                     return (

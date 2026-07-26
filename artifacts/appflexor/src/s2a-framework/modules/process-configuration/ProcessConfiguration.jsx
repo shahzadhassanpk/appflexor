@@ -3,9 +3,13 @@ import { AppContext } from "../../../AppContext";
 import { ErrorBoundary } from "../../utils/ErrorBoundry";
 import { getAuthorizedTabs } from "../../utils/utils";
 import Loading from "../../components/Loading/loading";
+import "./process-config.css";
 const ProcessEngine = lazy(() => import("./ProcessEngine"));
 const ProcessCategory = lazy(() =>
     import("./process-category/ProcessCategory"),
+);
+const ProcessBusinessArea = lazy(() =>
+    import("./process-category/ProcessBusinessArea"),
 );
 const ProcessMap = lazy(() => import("./process-map/ProcessMap"));
 const ProcessMonitor = lazy(() => import("./process-monitor/ProcessMonitor"));
@@ -21,6 +25,11 @@ const TABS = [
         name: "Process Categories",
         code: "PROCESS_CATEGORY",
         active: "true",
+    },
+    {
+        name: "Business Area",
+        code: "BUSINESS_AREA",
+        active: "false",
     },
     {
         name: "Process Deployments",
@@ -43,6 +52,7 @@ const TABS = [
 const componentRegistry = {
     PROCESS_ENGINE: ProcessEngine,
     PROCESS_CATEGORY: ProcessCategory,
+    BUSINESS_AREA: ProcessBusinessArea,
     PROCESS_MAP: ProcessMap,
     PROCESSES: Processes,
     PROCESS_MONITOR: ProcessMonitor,
@@ -125,7 +135,7 @@ function ProcessConfiguration() {
                     <div className="col-sm-12">
                         <div className="module-title">
                             <span>Process Automation</span>
-                            <span>
+                            {/* <span>
                                 {" - Process Engine > "}
                                 {appContext?.tenantSubscription
                                     ?.process_engine === "CAMUNDA_SEVEN"
@@ -134,91 +144,87 @@ function ProcessConfiguration() {
                                           ?.process_engine === "CAMUNDA_EIGHT"
                                     ? "Camunda 8"
                                     : ""}
-                            </span>
+                            </span> */}
                         </div>
                     </div>
                 </div>
                 <div className="row">
                     <div className="container">
-                        <ul
-                            className="nav nav-tabs"
-                            id="myTab"
-                            role="tablist">
-                            {tabs.length > 0 &&
-                                tabs.map(tab => {
-                                    // Check visibility for the "Process Deployments" tab
-                                    if (
-                                        tab.name === "Process Deployments" &&
-                                        !showProcessDeploymentsTab(tab)
-                                    ) {
-                                        return null; // Skip rendering this tab if conditions are not met
-                                    }
-                                    // if (
-                                    //     appContext?.tenantSubscription
-                                    //     ?.process_engine === "CAMUNDA_SEVEN" && tab.code === "PROCESS_MONITOR"
-                                    // ) {
-                                    //     return null; // Skip rendering this tab if conditions are not met
-                                    // }
-                                    return (
-                                        <li
-                                            className="nav-item"
-                                            key={tab.code}>
-                                            <button
-                                                className={`nav-link ${
-                                                    tab.active === "true"
-                                                        ? "active"
-                                                        : ""
-                                                }`}
-                                                data-bs-toggle="tab"
-                                                data-bs-target={`#${tab.code}`}
-                                                type="button"
-                                                onClick={() => {
-                                                    handleTabsChange(tab.code);
-                                                }}>
-                                                {tab.name}
-                                            </button>
-                                        </li>
-                                    );
-                                })}
-                        </ul>
+                        {/* Single-column stacked view: render all authorized components vertically */}
+                        {tabs.length > 0 ? (
+                            (() => {
+                                const visible = tabs.filter(tab => showProcessDeploymentsTab(tab));
+                                const hasCategory = visible.some(t => t.code === "PROCESS_CATEGORY");
+                                const hasBusiness = visible.some(t => t.code === "BUSINESS_AREA");
 
-                        <div
-                            className="tab-content"
-                            id="myTabContent">
-                            {/* {tabs.length > 0 ? (
-                            tabs.map((tab, index) => {
-                                return (
-                                    <CreateComponent
-                                        key={index}
-                                        component={tab}
-                                        componentList={componentRegistry}
-                                        activeTab={activeTab}
-                                    />
+                                const remaining = visible.filter(
+                                    t => t.code !== "PROCESS_CATEGORY" && t.code !== "BUSINESS_AREA",
                                 );
-                            })
+
+                                return (
+                                    <>
+                                        <div className="row">
+                                            <div className="col-md-6">
+                                                    {hasCategory && (() => {
+                                                        const tab = visible.find(t => t.code === "PROCESS_CATEGORY") || { code: "PROCESS_CATEGORY", name: "Process Categories" };
+                                                        const Component = componentRegistry[tab.code];
+                                                        return (
+                                                            <div className="card mb-3 bg-transparent" key={tab.code}>
+                                                                <div className="card-header border-0">
+                                                                    <strong>{tab.name}</strong>
+                                                                </div>
+                                                                <div className="card-body p-0 bg-transparent">
+                                                                    <Suspense fallback={<Loading message={`Loading ${tab.name}`} />}>
+                                                                        {React.createElement(Component, { key: tab.code, activeTab: tab.code })}
+                                                                    </Suspense>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            <div className="col-md-6">
+                                                {true && (() => {
+                                                    const tab = visible.find(t => t.code === "BUSINESS_AREA") || { code: "BUSINESS_AREA", name: "Business Area" };
+                                                    const Component = componentRegistry[tab.code];
+                                                    if (!Component) return null;
+                                                    return (
+                                                        <div className="card mb-3 bg-transparent" key={tab.code}>
+                                                            <div className="card-header border-0">
+                                                                <strong>{tab.name}</strong>
+                                                            </div>
+                                                            <div className="card-body p-0 bg-transparent">
+                                                                <Suspense fallback={<Loading message={`Loading ${tab.name}`} />}>
+                                                                    {React.createElement(Component, { key: tab.code, activeTab: tab.code })}
+                                                                </Suspense>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+
+                                        {remaining.map(tab => {
+                                            const Component = componentRegistry[tab.code];
+                                            if (!Component) return null;
+                                            return (
+                                                <div className="card mb-3 bg-transparent" key={tab.code}>
+                                                    <div className="card-header border-0">
+                                                        <strong>{tab.name}</strong>
+                                                    </div>
+                                                    <div className="card-body p-0 bg-transparent">
+                                                        <Suspense fallback={<Loading message={`Loading ${tab.name}`} />}>
+                                                            {React.createElement(Component, { key: tab.code, activeTab: tab.code })}
+                                                        </Suspense>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </>
+                                );
+                            })()
                         ) : (
                             <NotAuthorized />
-                        )} */}
-                            {activeTab ? (
-                                <Suspense
-                                    fallback={
-                                        <Loading
-                                            message={`Loading ${activeTab}`}
-                                        />
-                                    }>
-                                    <CreateComponent
-                                        key={activeTab}
-                                        component={tabs.find(
-                                            tab => tab.code === activeTab,
-                                        )}
-                                        componentList={componentRegistry}
-                                        activeTab={activeTab}
-                                    />
-                                </Suspense>
-                            ) : (
-                                <NotAuthorized />
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>

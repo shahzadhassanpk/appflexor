@@ -17,14 +17,6 @@ import { toastEmitter } from "../components/Toastify/Toastify";
 import { tryToParse } from "../modules/data-management/form-builder/Forms/FormViewer/utils";
 import CryptoJS from "crypto-js";
 import axios from "axios";
-import UserProfile from "../theme/tailwind/Pages/UserProfile";
-/*
-const DATE_FORMAT_FOR_DATABASE = "YYYY-MM-DD";
-const DATE_FORMAT_FOR_USER_VIEW = "ddd DD, MMM YYYY";
-const DATE_FORMAT_FOR_DATE_PICKER_VIEW = "ddd DD, MMM YYYY";
-const DATE_TIME_FORMAT_FOR_DATABASE = "YYYY-MM-DD HH:MM:SS";
-const DATE_TIME_FORMAT_FOR_USER_VIEW = "E dd, MMM yyyy, HH:mm:ss a";
-*/
 
 let formatDateForDataBase = date => {
     let formatedDate = "";
@@ -71,7 +63,31 @@ let formatDateForUserViewLocale = date => {
 
     return formatedDate;
 };
+
+// utils/deviceDetector.js
+const detectDeviceType = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  const width = window.innerWidth;
+
+  if (/mobile/i.test(userAgent)) {
+    return "mobile";
+  }
+  if (/tablet|ipad|playbook|silk/i.test(userAgent)) {
+    return "tablet";
+  }
+  // fallback to screen width breakpoints
+  if (width < 768) {
+    return "mobile";
+  }
+  if (width >= 768 && width <= 1024) {
+    return "tablet";
+  }
+  return "desktop";
+}
+
+
 let formatDateForUserView = (date, format) => {
+    
     let formatedDate = "";
     let currentFormatedDate = moment(new Date()).format(
         format ? format : DATE_FORMAT_FOR_USER_VIEW,
@@ -1082,4 +1098,5 @@ export {
     parseDBTime,
     convertDBDateToFromNow,
     getTimeAgo,
+    detectDeviceType,
 };

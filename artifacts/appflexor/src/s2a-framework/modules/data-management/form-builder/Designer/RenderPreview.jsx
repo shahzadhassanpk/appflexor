@@ -51,6 +51,7 @@ const RenderPreview = ({
                         <div
                             className={` ${row.classes ? row.classes : ""} row`}
                             key={row.id}>
+                            {row.title && <span className="row-title">{row.title}</span>}
                             <Row
                                 key={row.id}
                                 rowData={row}
@@ -210,6 +211,9 @@ function Row({ rowData, components, images, htmlCollection, mode, modeType }) {
         return (
             <React.Fragment>
                 <div className={`${column.classes} col-style p-0`}>
+                    {
+                       column?.title && <span className="column-title">{column?.title}</span>
+                    }
                     <Column
                         key={column.id}
                         columnData={column}
@@ -245,7 +249,7 @@ function Column({
 }) {
     const renderComponent = component => {
         return (
-            <React.Fragment>
+            <React.Fragment>                
                 <div className="col-wrapper">
                     <Component
                         key={component.id}

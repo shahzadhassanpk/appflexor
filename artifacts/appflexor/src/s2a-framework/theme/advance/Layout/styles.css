@@ -1,21 +1,621 @@
-/* /* a {
-    color: #fdf3d8;
-    color: #d9a408;
-    color: #624b04;
-} */
+/* Sidebar geometry is kept here so the fixed navigation and page content use
+   the same dimensions at every desktop viewport size. */
+:root {
+    --s2a-sidebar-width: 200px;
+    --s2a-sidebar-mini-width: 60px;
+}
 
-/* #FDF3D8; 60% */
-/* color: #D9A408;  30%*/
+.s2a-main-content{
+    padding:10px;
+}
 
-/* color: #624B04;  10%*/
+.advance-top-header {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+}
 
-/* a {
-    color: #CAD3F7;
-    color: #2A4EDF;
-    color: #13287C;
-}  */
+/* `hidden` creates a non-scrolling overflow container and prevents sticky
+   descendants from tracking the page scroll. `clip` keeps the same visual
+   containment without breaking the sticky header. */
+body .s2a-page {
+    overflow-x: clip;
+}
 
-/* #FDF3D8; 60% */
-/* color: #D9A408;  30%*/
+.advance-top-header #top-adv-navbar {
+    top: 0;
+}
 
-/* color: #624B04;  10% */
+#side-navbar.sidenav {
+    left: 0 !important;
+    bottom: 0;
+    width: var(--s2a-sidebar-width);
+    max-width: var(--s2a-sidebar-width);
+    height: auto;
+}
+
+#side-navbar .sidenavbar {
+    height: 100%;
+    overflow-y: auto;
+}
+
+#sideNavbarMobile.sidebar-width {
+    width: min(var(--s2a-sidebar-width), 85vw) !important;
+    max-width: 85vw;
+}
+
+#sideNavbarMini.side-navbar-mini {
+    /* Override the runtime theme's legacy left: 60px declaration. */
+    left: 0 !important;
+    bottom: 0;
+    height: auto;
+    visibility: visible !important;
+    transform: none !important;
+    transition: width 0.2s ease;
+}
+
+#sideNavbarMini.side-navbar-mini-contracted {
+    width: var(--s2a-sidebar-mini-width) !important;
+    max-width: var(--s2a-sidebar-mini-width);
+}
+
+#sideNavbarMini.side-navbar-mini-expanded {
+    width: var(--s2a-sidebar-width) !important;
+    max-width: var(--s2a-sidebar-width);
+    box-shadow: 0 0.5rem 1rem rgb(0 0 0 / 15%);
+}
+
+.add-margin {
+    margin-left: var(--s2a-sidebar-width);
+    width: calc(100% - var(--s2a-sidebar-width));
+    max-width: calc(100% - var(--s2a-sidebar-width));
+}
+
+/* The channel stylesheet is loaded after component CSS and still contains
+   the legacy 230px margin. Scope offsets to the application shell so the
+   margin always matches the current sidebar width. */
+#main.s2a-app-shell.add-margin {
+    margin-left: var(--s2a-sidebar-width) !important;
+    width: calc(100% - var(--s2a-sidebar-width)) !important;
+    max-width: calc(100% - var(--s2a-sidebar-width)) !important;
+}
+
+.add-margin-60 {
+    margin-left: var(--s2a-sidebar-mini-width);
+    width: calc(100% - var(--s2a-sidebar-mini-width));
+    max-width: calc(100% - var(--s2a-sidebar-mini-width));
+}
+
+#main.s2a-app-shell.add-margin-60 {
+    margin-left: var(--s2a-sidebar-mini-width) !important;
+    width: calc(100% - var(--s2a-sidebar-mini-width)) !important;
+    max-width: calc(100% - var(--s2a-sidebar-mini-width)) !important;
+}
+
+.remove-margin {
+    margin-left: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+#main.s2a-app-shell.remove-margin {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.s2a-page .s2a-footer.add-margin,
+.s2a-page .s2a-footer.add-margin-60,
+.s2a-page .s2a-footer.remove-margin {
+    margin-left: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+@media (max-width: 991.98px) {
+    .add-margin,
+    .add-margin-60 {
+        margin-left: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #main.s2a-app-shell.add-margin,
+    #main.s2a-app-shell.add-margin-60 {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .advance-top-header #top-adv-navbar .brand-expanded {
+        order: 2;
+        width: auto;
+        min-width: 52px;
+        max-width: min(210px, 42vw);
+        min-height: 60px;
+        margin: 0;
+        padding: 7px 8px;
+        display: flex !important;
+        align-items: center;
+        border: 0 !important;
+    }
+
+    .advance-top-header #top-adv-navbar .brand-expanded .brand-logo {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+    }
+
+    .advance-top-header #top-adv-navbar .mob-header-left {
+        order: 1;
+        flex: 0 0 42px;
+    }
+
+    .advance-top-header #top-adv-navbar .top-navbar-actions {
+        order: 3;
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .advance-top-header #top-adv-navbar .brand-expanded {
+        min-width: 50px;
+        max-width: 50px;
+    }
+
+    .advance-top-header #top-adv-navbar .brand-expanded > .navbar-brand {
+        display: none !important;
+    }
+}
+
+/* AppFlexor-style desktop navigation */
+#side-navbar.app-sidebar,
+#sideNavbarMini.app-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    margin-top: 0 !important;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--primary-color);
+    border-right: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    box-shadow: none;
+    z-index: 1031;
+}
+
+#side-navbar.app-sidebar {
+    width: var(--s2a-sidebar-width);
+    min-width: var(--s2a-sidebar-width);
+}
+
+#side-navbar .app-sidebar-brand {
+    height: 60px;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    background: var(--primary-color);
+    color: var(--font-color);
+}
+
+#side-navbar .app-sidebar-brand #brand-logo {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 9px 14px;
+    border-right: 0 !important;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+#side-navbar .app-sidebar-brand .brand-logo {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+}
+
+#side-navbar .app-sidebar-brand .navbar-brand {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+}
+
+#side-navbar .app-sidebar-brand .navbar-brand-title {
+    font-size: 17px;
+    line-height: 1.2;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--font-color);
+}
+
+#side-navbar .app-sidebar-brand .navbar-brand-text {
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.2;
+    color: color-mix(in srgb, var(--font-color) 68%, var(--navigation-color));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#side-navbar .app-sidebar-navigation {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    margin: 0;
+    padding: 10px 8px 12px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color:
+        color-mix(in srgb, var(--primary-color) 70%, var(--font-color))
+        color-mix(in srgb, var(--navigation-color) 88%, var(--border-color));
+}
+
+#side-navbar .app-sidebar-navigation::-webkit-scrollbar,
+#sideNavbarMini .app-sidebar-mini-navigation::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+    height: 6px;
+}
+
+#side-navbar .app-sidebar-navigation::-webkit-scrollbar-track,
+#sideNavbarMini .app-sidebar-mini-navigation::-webkit-scrollbar-track {
+    background: color-mix(in srgb, var(--navigation-color) 88%, var(--border-color));
+    border-radius: 999px;
+}
+
+#side-navbar .app-sidebar-navigation::-webkit-scrollbar-thumb,
+#sideNavbarMini .app-sidebar-mini-navigation::-webkit-scrollbar-thumb {
+    min-height: 28px;
+    border: 1px solid var(--navigation-color);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary-color) 70%, var(--font-color));
+}
+
+#side-navbar .app-sidebar-navigation::-webkit-scrollbar-thumb:hover,
+#sideNavbarMini .app-sidebar-mini-navigation::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--primary-color) 86%, var(--font-color));
+}
+
+#side-navbar .accordion-main {
+    margin: 0 !important;
+}
+
+#side-navbar .menu-accordion,
+#side-navbar .menu-accordion .accordion-item,
+#side-navbar .menu-accordion .accordion-header,
+#side-navbar .menu-accordion .accordion-collapse {
+    background: transparent !important;
+}
+
+#side-navbar .menu-accordion {
+    margin: 0 0 3px;
+}
+
+#side-navbar .menu-accordion .accordion-button {
+    min-height: 34px;
+    padding: 7px 9px;
+    border: 0;
+    border-radius: 5px !important;
+    background: transparent !important;
+    color: var(--font-color);
+    box-shadow: none !important;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+#side-navbar .menu-accordion .accordion-button:hover {
+    background: color-mix(in srgb, var(--primary-color) 18%, transparent) !important;
+}
+
+#side-navbar .menu-accordion .accordion-button::after {
+    width: 10px;
+    height: 10px;
+    margin-left: auto;
+    background-size: 10px;
+    opacity: 0.7;
+}
+
+#side-navbar .menu-accordion .accordion-button i {
+    width: 17px;
+    margin: 0 7px 0 0 !important;
+    color: color-mix(in srgb, var(--font-color) 82%, transparent);
+    text-align: center;
+}
+
+#side-navbar .app-sidebar-group {
+    margin: 8px 0 10px;
+}
+
+#side-navbar .app-sidebar-group:first-child {
+    margin-top: 0;
+}
+
+:is(#side-navbar, #sideNavbarMini.app-sidebar-hover-expanded) .app-sidebar-group-label {
+    padding: 2px 7px 5px;
+    color: var(--theme-color);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+}
+
+
+#side-navbar .nav-items-ul {
+    padding: 1px 0 3px 0 !important;
+}
+
+#side-navbar .nav-items-link {
+    min-height: 32px;
+    margin: 2px 0;
+    padding: 7px 9px !important;
+    border-radius: 5px !important;
+    display: flex;
+    align-items: center;
+    color: color-mix(in srgb, var(--font-color) 82%, var(--navigation-color));
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+#side-navbar .nav-items-link:hover {
+    color: var(--font-color) !important;
+    background: color-mix(in srgb, var(--primary-color) 14%, transparent) !important;
+}
+
+#side-navbar .nav-items-link.active {
+    color: var(--font-color) !important;
+    background: var(--navigation-color) !important;
+}
+
+#side-navbar .nav-items-link i {
+    width: 15px;
+    margin-right: 7px !important;
+    text-align: center;
+    color: color-mix(in srgb, var(--font-color) 72%, var(--primary-color));
+}
+
+#side-navbar > .app-sidebar-navigation > .accordion-main > .nav-link {
+    margin: 2px 0;
+    padding: 0;
+    border-radius: 5px !important;
+}
+
+#side-navbar > .app-sidebar-navigation > .accordion-main > .nav-link .feature-link {
+    min-height: 34px;
+    margin: 0 !important;
+    padding: 8px 9px !important;
+    display: flex;
+    align-items: center;
+    border-radius: 5px !important;
+    font-size: 12px;
+}
+
+#side-navbar .app-sidebar-collapse {
+    min-height: 42px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    background: transparent;
+    color: color-mix(in srgb, var(--font-color) 76%, transparent);
+    font-size: 11px;
+    text-align: left;
+}
+
+#side-navbar .app-sidebar-collapse:hover {
+    color: var(--font-color);
+    background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+#sideNavbarMini.app-sidebar-mini {
+    left: 0 !important;
+    transform: none !important;
+    width: var(--s2a-sidebar-mini-width) !important;
+    min-width: var(--s2a-sidebar-mini-width);
+    max-width: var(--s2a-sidebar-mini-width);
+    box-sizing: border-box;
+    transition:
+        width 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+        min-width 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+        max-width 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.38s ease;
+}
+
+#sideNavbarMini.app-sidebar-mini.app-sidebar-hover-expanded {
+    width: var(--s2a-sidebar-width) !important;
+    min-width: var(--s2a-sidebar-width);
+    max-width: var(--s2a-sidebar-width);
+    box-shadow: 10px 0 28px rgb(0 0 0 / 20%);
+}
+
+#sideNavbarMini .app-sidebar-mini-brand {
+    width: 100%;
+    height: 60px;
+    min-height: 60px;
+    display: grid;
+    place-items: center;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    background: color-mix(in srgb, var(--navigation-color) 92%, var(--secondary-color));
+}
+
+#sideNavbarMini.app-sidebar-mini #brand-logo-mini {
+    width: 100%;
+    min-height: 68px;
+    margin: 0;
+    padding: 0;
+    display: grid !important;
+    place-items: center;
+    justify-content: center !important;
+    border: 0;
+    box-sizing: border-box;
+}
+
+#sideNavbarMini.app-sidebar-mini .brand-layout {
+    width: 100%;
+    height: 68px;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    place-items: center;
+}
+
+#sideNavbarMini.app-sidebar-mini .brand-logo {
+    display: block;
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    object-fit: contain;
+    transform: translate(1px, -2px);
+}
+
+#sideNavbarMini .app-sidebar-mini-actions {
+    width: 100%;
+    height: 46px;
+    min-height: 46px;
+    display: grid;
+    place-items: center;
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+}
+
+#sideNavbarMini .app-sidebar-expand {
+    width: 38px;
+    height: 38px;
+    margin: 0;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: color-mix(in srgb, var(--font-color) 82%, var(--navigation-color));
+}
+
+#sideNavbarMini .mini-nav-icon-wrapper {
+    color: color-mix(in srgb, var(--font-color) 82%, var(--navigation-color));
+}
+
+#sideNavbarMini .mini-nav-icon-wrapper:hover {
+    color: var(--font-color);
+    background: color-mix(in srgb, var(--primary-color) 16%, transparent);
+}
+
+#sideNavbarMini .mini-nav-icon-wrapper.link-active {
+    color: var(--link-active-color, var(--font-color));
+}
+
+#sideNavbarMini .app-sidebar-expand:hover {
+    color: var(--font-color);
+    background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+}
+
+#sideNavbarMini .app-sidebar-mini-navigation {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    padding: 2px 0 !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color:
+        color-mix(in srgb, var(--primary-color) 70%, var(--font-color))
+        color-mix(in srgb, var(--navigation-color) 88%, var(--border-color));
+}
+
+#sideNavbarMini.app-sidebar-hover-expanded .app-sidebar-mini-navigation {
+    padding: 10px 8px 12px !important;
+}
+
+#sideNavbarMini.app-sidebar-hover-expanded .app-sidebar-mini-navigation > .accordion-main {
+    width: 100%;
+    margin: 0 !important;
+    animation: sidebar-content-enter 0.3s ease 0.08s both;
+}
+
+#sideNavbarMini.app-sidebar-hover-expanded #brand-logo-mini {
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start !important;
+    gap: 8px;
+    padding: 8px 12px !important;
+    animation: sidebar-content-enter 0.3s ease 0.08s both;
+}
+
+#sideNavbarMini.app-sidebar-hover-expanded #brand-logo-mini .brand-logo {
+    transform: none;
+}
+
+@keyframes sidebar-content-enter {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+#sideNavbarMini .app-sidebar-mini-navigation::-webkit-scrollbar {
+    display: block;
+}
+
+#sideNavbarMini .app-sidebar-mini-navigation > .d-flex,
+#sideNavbarMini .app-sidebar-mini-navigation > .d-flex > .d-flex {
+    width: 100%;
+    margin: 0 !important;
+    align-items: center;
+    justify-content: flex-start !important;
+}
+
+#sideNavbarMini.app-sidebar-mini .mini-nav-icon-wrapper {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    margin: 2px auto;
+    padding: 0;
+    border-radius: 5px;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+}
+
+#sideNavbarMini.app-sidebar-mini .mini-nav-icon-wrapper.link-active {
+    background: color-mix(in srgb, var(--primary-color) 68%, #123d76);
+}
+
+#sideNavbarMini .mini-nav-section,
+#sideNavbarMini .mini-nav-section-links {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#sideNavbarMini .mini-nav-section {
+    margin-bottom: 3px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 48%, transparent);
+}
+
+#sideNavbarMini .mini-nav-section-icon {
+    color: var(--font-color);
+}
+
+#sideNavbarMini .mini-nav-child-link {
+    width: 34px;
+    height: 34px;
+    color: color-mix(in srgb, var(--font-color) 70%, var(--navigation-color));
+}
+
+#sideNavbarMini .mini-nav-child-link .mini-nav-icon-size {
+    font-size: 15px;
+}

@@ -183,17 +183,17 @@ const DataListFormViewer = ({
                 defalutFormData.id = "new";
                 if (!isEmpty(defalutFormData)) setFormData(defalutFormData);
                 //Commented below as for datalist bussiness key will never be empty
-                // if (businessKey === "new" || businessKey === "") {
-                //     const defalutFormData = getObjectSchemeForValidation(
-                //         layout,
-                //         components,
-                //         {},
-                //         formVars,
-                //     );
-                //     if (fkColumn) defalutFormData[fkColumn] = fkValue;
-                //     defalutFormData.id = "new";
-                //     if (!isEmpty(defalutFormData)) setFormData(defalutFormData);
-                // }
+                if (businessKey === "new" || businessKey === "") {
+                    const defalutFormData = getObjectSchemeForValidation(
+                        layout,
+                        components,
+                        {},
+                        formVars,
+                    );
+                    if (fkColumn) defalutFormData[fkColumn] = fkValue;
+                    defalutFormData.id = "new";
+                    if (!isEmpty(defalutFormData)) setFormData(defalutFormData);
+                }
                 setLayoutLoaded(true);
             }
         }
@@ -475,7 +475,7 @@ const DataListFormViewer = ({
                 let { mainId, resObj, reqPayload } = result;
                 if (!isEmpty(resObj)) setFormData(resObj);
                 // setFilesToDelete([]);
-                debugger;
+
                 if (handleActions) {
                     const formStatus =
                         formData.id === "new" || !formData.id ? "add" : "edit";
@@ -567,7 +567,7 @@ const DataListFormViewer = ({
         } else {
             entityForm.id = "new";
             fieldsData.id = "new";
-        }
+        }        
 
         entityForm.formData = fieldsData;
 
@@ -692,24 +692,24 @@ const DataListFormViewer = ({
                                 </div>
                             )}
                             {layoutLoaded && formData.id && (
-                            <RenderFormFields
-                                multipageDesign={multipageDesign}
-                                uniqueFormId={uniqueFormId}
-                                layout={layout}
-                                components={components}
-                                mode={mode}
-                                images={images}
-                                htmlCollection={htmlCollection}
-                                formData={formData}
-                                isFormSaved={isFormSaved}
-                                formDetails={formDetails}
-                                fileNameMapping={fileNameMapping}
-                                handleInputFields={handleInputFields}
-                                fkColumn={fkColumn}
-                                fkValue={fkValue}
-                                dataKeys={dataKeys}
-                                setDataKeys={setDataKeys}
-                            />
+                                <RenderFormFields
+                                    multipageDesign={multipageDesign}
+                                    uniqueFormId={uniqueFormId}
+                                    layout={layout}
+                                    components={components}
+                                    mode={mode}
+                                    images={images}
+                                    htmlCollection={htmlCollection}
+                                    formData={formData}
+                                    isFormSaved={isFormSaved}
+                                    formDetails={formDetails}
+                                    fileNameMapping={fileNameMapping}
+                                    handleInputFields={handleInputFields}
+                                    fkColumn={fkColumn}
+                                    fkValue={fkValue}
+                                    dataKeys={dataKeys}
+                                    setDataKeys={setDataKeys}
+                                />
                             )}
                         </div>
                         <div className="row action-row-bottom">
@@ -731,7 +731,11 @@ const DataListFormViewer = ({
                                             {mode !== modeType.readonly && (
                                                 <button
                                                     type="button"
-                                                    disabled={mode === modeType.readonly || !isFormSaved}
+                                                    disabled={
+                                                        mode ===
+                                                            modeType.readonly ||
+                                                        !isFormSaved
+                                                    }
                                                     onClick={() =>
                                                         handleMainSave(
                                                             actions.complete,
@@ -742,7 +746,9 @@ const DataListFormViewer = ({
                                                             ? "ms-2 btn button-theme btn-sm"
                                                             : "ms-1 btn button-theme btn-sm"
                                                     }>
-                                                    {isFormSaved?'Save':"Saving.."}
+                                                    {isFormSaved
+                                                        ? "Save"
+                                                        : "Saving.."}
                                                 </button>
                                             )}
                                         </span>

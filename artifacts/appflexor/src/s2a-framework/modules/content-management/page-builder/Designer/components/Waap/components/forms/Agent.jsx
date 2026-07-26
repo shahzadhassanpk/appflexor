@@ -7,7 +7,6 @@ import { agentServices } from "../../services/agent";
 import iconMap from "../DropDown/icons";
 import { toastEmitter } from "../Toastify/Toastify";
 import { leadServices } from "../../services/lead";
-import { Label } from "recharts";
 
 const Agents = props => {
     const { hideModal, getData, selectedLead } = props;
@@ -24,16 +23,32 @@ const Agents = props => {
         })();
     }, []);
 
+    const searchText = (values?.search || "").toLowerCase();
+
     const filteredAgents =
-        agents?.filter(agent =>
-            agent?.username.includes(values?.search || ""),
-        ) || [];
+        agents?.filter(agent => {
+            const username = (agent?.username || "").toLowerCase();
+            const firstName = (agent?.first_name || agent?.firstname || "").toLowerCase();
+            const lastName = (agent?.last_name || agent?.lastname || "").toLowerCase();
+            const fullName = `${firstName} ${lastName}`.trim();
+            return (
+                username.includes(searchText) ||
+                firstName.includes(searchText) ||
+                lastName.includes(searchText) ||
+                fullName.includes(searchText)
+            );
+        }) || [];
 
     const handleAssignedLeadToAgent = async agent => {
         try {
-            const { username } = agent;
+            // WAAP stores assignee as contact UUID; fallback to username for legacy rows.
+            const assignee = agent?.id || agent?.username;
+            if (!assignee || !selectedLead?.id) {
+                toastEmitter("Agent assignment failed", true, "error");
+                return;
+            }
             const formData = {
-                agent_assigned: username,
+                agent_assigned: assignee,
                 id: selectedLead.id,
             };
 
@@ -64,7 +79,11 @@ const Agents = props => {
                             <li
                                 key={agent?.id || index}
                                 className="list-group-item d-flex justify-content-between">
-                                <span>{agent.firstname}{" "}{agent.lastname}{" ("}{agent?.username}{")"}</span>
+                                <span>
+                                    {agent?.first_name || agent?.firstname || ""}{" "}
+                                    {agent?.last_name || agent?.lastname || ""}
+                                    {agent?.username ? ` (${agent.username})` : ""}
+                                </span>
                                 <LoadingButton
                                     classes={{ btn: "btn-primary" }}
                                     label={

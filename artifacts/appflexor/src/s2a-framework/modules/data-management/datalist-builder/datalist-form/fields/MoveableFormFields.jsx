@@ -43,6 +43,7 @@ export default function MoveableFormFields({
         json: "Json",
         fileuploader: "File",
         imageview: "ImageView",
+        imageuploader: "ImageUploader",
         HTML: "Html",
     };
     const showFields = {
@@ -66,11 +67,12 @@ export default function MoveableFormFields({
         phoneField: true,
         json: true,
         fileuploader: true,
+        imageuploader: true,
         hiddenfield: true,
         richtexteditor: true,
         carousel: false,
         datalist: false,
-        imageview: false,
+        imageview: true,
         HTML: false,
     };
     const [show, setShow] = useState(false);
@@ -369,8 +371,8 @@ function FieldConfigModal(props) {
                                             fieldType === "SQL"
                                                 ? false
                                                 : fieldType === "FORM"
-                                                ? true
-                                                : false
+                                                  ? true
+                                                  : false
                                         }>
                                         <option defaultValue={""}>
                                             Select Type
@@ -403,6 +405,24 @@ function FieldConfigModal(props) {
                                     />
                                 </Form.Group>
                             </div>
+                            {/* <div className="col-sm-6">
+                                <Form.Group
+                                    className="mb-3"
+                                    controlId={item.css_class}>
+                                    <Form.Label>CSS Class</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={item.css_class}
+                                        placeholder={
+                                            item.css_class || "Enter CSS class"
+                                        }
+                                        autoFocus
+                                        onChange={e =>
+                                            handleSelectedField(e, index, item)
+                                        }
+                                    />
+                                </Form.Group>
+                            </div> */}
                             {item.type === "fileuploader" &&
                                 selectedItem.type === "SQL" && (
                                     <div className="col-sm-6">

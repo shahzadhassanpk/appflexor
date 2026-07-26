@@ -2,3 +2,9 @@
 .mce-edit-area {
   border-width: 1px 1px 0px 0px !important;
 }
+
+.html-preview-placeholder{
+  max-height: 300px;
+  overflow: auto;
+  background-color: white;
+}

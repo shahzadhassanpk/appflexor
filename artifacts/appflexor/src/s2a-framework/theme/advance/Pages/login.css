@@ -1,0 +1,357 @@
+/* Reset advance theme CSS variables for the modern login page so dark-mode
+   body class doesn't bleed in and make text/inputs invisible on white bg. */
+.s2a-modern-login {
+    --primary-color: #f8fafc;
+    --secondary-color: #ffffff;
+    --navigation-color: #ffffff;
+    --header-color: #f1f5f9;
+    --shadow-color: rgba(15,23,42,0.08);
+    --font-color: #0f172a;
+    --border-color: #e2e8f0;
+    --bg-app: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-hover: #f1f5f9;
+    --bg-active: #e2e8f0;
+    --border-default: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #1e293b;
+    --text-muted: #64748b;
+    --text-placeholder: #94a3b8;
+    color: #0f172a;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+ 
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+ 
+    --radius: 0.5rem;
+  }
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+ 
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+ 
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+ 
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+ 
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+.fa-whatsapp{
+    color: #25D366;
+}
+
+.s2a-login-supported .fa-globe{
+    color: blue;
+}
+
+/* Login page layout */
+.s2a-modern-login {
+    width: 100%;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    background:
+        radial-gradient(circle at 78% 46%, rgb(255 255 255 / 76%) 0 19%, transparent 42%),
+        linear-gradient(135deg, #f8faff 0%, #f2f4fb 52%, #eef0fa 100%);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.s2a-modern-login,
+.s2a-modern-login * {
+    box-sizing: border-box;
+}
+
+.s2a-login-main {
+    width: 100%;
+    min-height: 0;
+}
+
+.s2a-login-presentation {
+    width: 54% !important;
+    min-width: 0;
+    padding: 26px 4.1vw 24px !important;
+}
+
+.s2a-login-dot-grid {
+    top: 42px !important;
+    right: 42px !important;
+}
+
+.s2a-login-brand {
+    min-height: 34px;
+    margin-bottom: 28px !important;
+}
+
+.s2a-login-brand img {
+    max-width: 150px;
+}
+
+.s2a-login-headline {
+    margin-bottom: 10px !important;
+    font-size: clamp(2.25rem, 3.25vw, 3.1rem) !important;
+    line-height: 1.06 !important;
+    letter-spacing: -0.035em !important;
+}
+
+.s2a-login-intro {
+    margin-bottom: 16px !important;
+    line-height: 1.45 !important;
+}
+
+.s2a-login-feature-grid {
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+}
+
+.s2a-login-feature-card {
+    min-height: 106px;
+    padding: 14px !important;
+    border-radius: 11px !important;
+    box-shadow: 0 6px 22px rgb(51 65 85 / 5%) !important;
+}
+
+.s2a-login-feature-card > div {
+    gap: 10px !important;
+}
+
+.s2a-login-feature-card p {
+    margin-top: 0;
+}
+
+.s2a-login-feature-card p.text-sm {
+    font-size: 11px !important;
+}
+
+.s2a-login-feature-card p.text-xs {
+    font-size: 9px !important;
+    line-height: 1.45 !important;
+}
+
+.s2a-login-flow {
+    width: min(100%, 500px);
+    margin: 0 auto 16px !important;
+    justify-content: center;
+}
+
+.s2a-login-flow > div.flex-col {
+    min-width: 74px;
+}
+
+.s2a-login-supported {
+    margin-bottom: 12px !important;
+}
+
+.s2a-login-supported > div {
+    column-gap: 14px !important;
+    row-gap: 7px !important;
+}
+
+.s2a-login-supported > div > span {
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: 10px !important;
+}
+
+.s2a-login-supported .s2a-channel-logo {
+    width: 15px;
+    height: 15px;
+    display: block;
+    flex: 0 0 15px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.s2a-channel-logo-odoo {
+    background-image: url("/theme/images/odoo.svg");
+}
+
+.s2a-channel-logo-quickbooks {
+    background-image: url("/theme/images/quickbooks.svg");
+}
+
+.s2a-channel-logo-xero {
+    background-image: url("/theme/images/xero.svg");
+}
+
+.s2a-channel-logo-kafka {
+    background-image: url("/theme/images/kafka.svg");
+}
+
+.s2a-login-services {
+    margin-bottom: 14px !important;
+}
+
+.s2a-login-services > div {
+    gap: 7px !important;
+}
+
+.s2a-login-services > div > span {
+    padding: 4px 9px !important;
+    font-size: 9px !important;
+}
+
+.s2a-login-auth-panel {
+    width: 46% !important;
+    min-width: 0;
+    padding: 28px clamp(24px, 4vw, 64px) !important;
+}
+
+.s2a-login-card {
+    width: 100%;
+    max-width: 416px !important;
+    padding: 30px 40px !important;
+    border-color: rgb(226 232 240 / 85%) !important;
+    border-radius: 16px !important;
+    box-shadow:
+        0 24px 55px rgb(30 41 59 / 12%),
+        0 2px 8px rgb(30 41 59 / 6%) !important;
+}
+
+.s2a-login-card input[type="text"],
+.s2a-login-card input[type="password"] {
+    min-height: 40px;
+}
+
+.s2a-login-card button[type="submit"],
+.s2a-login-card > button {
+    min-height: 38px;
+}
+
+.s2a-login-contact a {
+    text-decoration: none;
+}
+
+.s2a-login-footer {
+    min-height: 40px;
+    padding: 10px 3.1vw !important;
+    background: rgb(255 255 255 / 38%);
+}
+
+.s2a-login-footer a {
+    color: inherit;
+    text-decoration: none;
+}
+
+@media (max-width: 1100px) {
+    .s2a-login-presentation {
+        width: 56% !important;
+        padding-inline: 32px !important;
+    }
+
+    .s2a-login-auth-panel {
+        width: 44% !important;
+        padding-inline: 24px !important;
+    }
+
+    .s2a-login-headline {
+        font-size: 2.25rem !important;
+    }
+
+    .s2a-login-feature-card {
+        padding: 11px !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .s2a-login-main {
+        min-height: calc(100dvh - 48px);
+        justify-content: center;
+    }
+
+    .s2a-login-auth-panel {
+        width: 100% !important;
+        padding: 28px 16px !important;
+    }
+
+    .s2a-login-card {
+        max-width: 440px !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .s2a-login-card {
+        padding: 26px 20px !important;
+        border-radius: 14px !important;
+    }
+
+    .s2a-login-footer {
+        align-items: center;
+        text-align: center;
+    }
+}
+
+@media (max-height: 740px) and (min-width: 992px) {
+    .s2a-login-presentation {
+        padding-top: 22px !important;
+        padding-bottom: 18px !important;
+    }
+
+    .s2a-login-brand {
+        margin-bottom: 20px !important;
+    }
+
+    .s2a-login-feature-card {
+        min-height: 96px;
+        padding: 11px !important;
+    }
+
+    .s2a-login-flow {
+        margin-bottom: 12px !important;
+    }
+
+    .s2a-login-card {
+        padding-top: 26px !important;
+        padding-bottom: 26px !important;
+    }
+}

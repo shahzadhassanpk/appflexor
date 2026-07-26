@@ -84,6 +84,7 @@ function TextArea(props) {
     }, [data, props]);
 
     useEffect(() => {
+        setMessage("");
         if (props.component && props.component.data) {
             setComponentData(props.component.data);
         }

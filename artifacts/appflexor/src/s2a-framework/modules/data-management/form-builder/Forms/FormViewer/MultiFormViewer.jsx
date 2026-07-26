@@ -427,7 +427,7 @@ const MultiFormViewer = ({
                     />
 
                     {mode !== modeType.design && (
-                        <div className="d-flex justify-content-between align-items-center">
+                        <div className="form-actions d-flex justify-content-between align-items-center">
                             <span></span>
                             <span className="text-danger">{infoMsg}</span>
 

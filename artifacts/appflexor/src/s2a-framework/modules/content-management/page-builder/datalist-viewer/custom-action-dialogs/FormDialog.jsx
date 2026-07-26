@@ -6,6 +6,7 @@ import { modeType } from "../../Designer/Designer";
 import DatalistUrlViewer from "../datalist-view-with-url/DatalistUrlViewer";
 import ProcessFormViewer from "../../../../data-management/form-builder/Forms/FormViewer/ProcessFormViewer";
 import StartStepProcessor from "../../../../camunda/cam8/StartStepProcessor8";
+import { Interweave } from "interweave";
 
 export default function FormDialog(props) {
     const {
@@ -42,7 +43,9 @@ export default function FormDialog(props) {
                 backdrop="static">
                 <Modal.Header>
                     <Modal.Title className="modal-title">
-                        <span>{renderTitle(item)}</span>
+                        <span>
+                            <Interweave content={renderTitle(item)} />
+                        </span>
                         <i
                             className="fa-solid fa-xmark modal-close"
                             onClick={handleClose}></i>
@@ -72,10 +75,7 @@ export default function FormDialog(props) {
                             <DataListFormViewer
                                 formKey={item.form}
                                 businessKey="new"
-                                handleActions={(props) => {
-                                    setShow(false);
-                                    handleActions(props);                                    
-                                }}
+                                handleActions={handleActions}
                                 mode={modeType.render}
                                 formVars={obj}
                                 external={{ show: show, setShow: setShow }}
@@ -84,12 +84,16 @@ export default function FormDialog(props) {
                         )}
 
                         {show && item.link_type === "DATALIST" && (
-                            <DatalistUrlViewer
-                                id={item.datalist_id}
-                                fkColumn={obj ? Object.keys(obj)[0] : ""}
-                                fkValue={obj ? Object.values(obj)[0] : ""}
-                                record={record}
-                            />
+                            <>
+                            {/* {JSON.stringify(item.hide_label)} */}
+                                <DatalistUrlViewer
+                                    hideLabel={item?.hide_label}
+                                    id={item.datalist_id}
+                                    fkColumn={obj ? Object.keys(obj)[0] : ""}
+                                    fkValue={obj ? Object.values(obj)[0] : ""}
+                                    record={record}
+                                />
+                            </>
                         )}
 
                         {show && item.link_type === "PROCESS" && (

@@ -3,7 +3,16 @@ import React, { useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
 import { DATE_TIME_FORMAT_FOR_USER_VIEW } from "../../../../../../Config";
 import { ErrorBoundary } from "../../../../../../utils/ErrorBoundry";
-import { formatDateTimeForUserView, utcToLocalDateTime, localToUTCDateTime, formatDateTimeToISO, formatDateTimeForDataBase, formatDateTimeForDataBaseLocal, parseDBDateTime } from "../../../../../../utils/utils";
+import {
+    formatDateTimeForUserView,
+    utcToLocalDateTime,
+    localToUTCDateTime,
+    formatDateTimeToISO,
+    formatDateTimeForDataBase,
+    formatDateTimeForDataBaseLocal,
+    parseDBDateTime,
+    detectDeviceType,
+} from "../../../../../../utils/utils";
 import TextPropsEditor from "../../props-editors/TextPropsEditor";
 import useGlobalData from "../../../../../../components/useGlobal";
 import { evaluateExpression } from "../../../../../content-management/page-builder/datalist-viewer/datalist-filter-helpers/DatalistFilters";
@@ -29,6 +38,7 @@ function DateTime(props) {
     const [toggleModalWindow, setToggleModalWindow] = useState("restore");
 
     const expressionProps = useGlobalData();
+    const deviceType = detectDeviceType();
 
     useEffect(() => {
         if (props.component && props.component.data) {
@@ -132,7 +142,7 @@ function DateTime(props) {
         //     ...prev,
         //     [key]: utc,
         // }));
-        
+
         if (props.handleInputFields) {
             props.handleInputFields(componentData.db_column, utc, isValid);
         }
@@ -224,36 +234,69 @@ function DateTime(props) {
                         {/* date-picker */}
                         {visible && (
                             <>
-                                <input
-                                    type="datetime-local"
-                                    className={`form-control date-time-picker form-control-sm ${
-                                        componentData.required &&
-                                        componentData.required === "YES"
-                                            ? !isValidField
-                                                ? "form-control-danger"
+                                {deviceType !== "mobile" ? (
+                                    <input
+                                        type="datetime-local"
+                                        className={`form-control date-time-picker form-control-sm ${
+                                            componentData.required &&
+                                            componentData.required === "YES"
+                                                ? !isValidField
+                                                    ? "form-control-danger"
+                                                    : ""
                                                 : ""
-                                            : ""
-                                    } `}
-                                    data={formatDateTimeForUserView(
-                                        obj[componentData.db_column],
-                                    )}
-                                    name={componentData.db_column}
-                                    value={parseDBDateTime(obj[componentData.db_column])}
-                                    onChange={(e)=>handleChange(e)}
-                                    // onBlur={handleOnBlur}
-                                    disabled={
-                                        props.mode === props.modeType.design ||
-                                        props.mode ===
-                                            props.modeType.readonly ||
-                                        props.mode === props.modeType.preview
-                                            ? true
-                                            : componentData.readonly ===
-                                                  "YES" || disable
-                                            ? true
-                                            : false
-                                    }
-                                />
-                                
+                                        } `}
+                                        data={formatDateTimeForUserView(
+                                            obj[componentData.db_column],
+                                        )}
+                                        name={componentData.db_column}
+                                        // value={parseDBDateTime(obj[componentData.db_column])}
+                                        onChange={e => handleChange(e)}
+                                        // onBlur={handleOnBlur}
+                                        disabled={
+                                            props.mode ===
+                                                props.modeType.design ||
+                                            props.mode ===
+                                                props.modeType.readonly ||
+                                            props.mode ===
+                                                props.modeType.preview
+                                                ? true
+                                                : componentData.readonly ===
+                                                        "YES" || disable
+                                                  ? true
+                                                  : false
+                                        }
+                                    />
+                                ) : (
+                                    <input
+                                        type="datetime-local"
+                                        className={`form-control date-time-picker form-control-sm ${
+                                            componentData.required &&
+                                            componentData.required === "YES"
+                                                ? !isValidField
+                                                    ? "form-control-danger"
+                                                    : ""
+                                                : ""
+                                        } `}
+                                        value={obj[componentData.db_column] && parseDBDateTime(obj[componentData.db_column])}
+                                        name={componentData.db_column}
+                                        // value={parseDBDateTime(obj[componentData.db_column])}
+                                        onChange={e => handleChange(e)}
+                                        // onBlur={handleOnBlur}
+                                        disabled={
+                                            props.mode ===
+                                                props.modeType.design ||
+                                            props.mode ===
+                                                props.modeType.readonly ||
+                                            props.mode ===
+                                                props.modeType.preview
+                                                ? true
+                                                : componentData.readonly ===
+                                                        "YES" || disable
+                                                  ? true
+                                                  : false
+                                        }
+                                    />
+                                )}
                             </>
                         )}
                     </>

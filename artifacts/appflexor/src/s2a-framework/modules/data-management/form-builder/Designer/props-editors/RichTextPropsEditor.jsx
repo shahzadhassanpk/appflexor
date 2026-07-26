@@ -28,6 +28,7 @@ export default function RichTextPropsEditor({ setShow }) {
     const types = [
         { code: "HTML", label: "HTML" },
         { code: "MARKDOWN", label: "Markdown" },
+        { code: "INTERWEAVE", label: "INTERWEAVE" },
     ];
 
     useEffect(() => {
@@ -483,7 +484,7 @@ export default function RichTextPropsEditor({ setShow }) {
                             value={inputField.height}
                         />
                     </div>
-                    <div className="col-sm-4 d-flex mb-3 mt-auto">
+                    <div className="col-sm-8 d-flex mb-3 mt-auto">
                         <div className="pe-3">Type:</div>
                         {types.map(type => (
                             <div className="">

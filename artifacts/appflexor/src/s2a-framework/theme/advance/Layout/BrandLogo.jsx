@@ -59,15 +59,19 @@ function BrandLogo({}) {
 
         function addMargin() {
             if (mainEle) mainEle.classList.remove("remove-margin");
+            if (mainEle) mainEle.classList.remove("add-margin-60");
             if (mainEle) mainEle.classList.add("add-margin");
             if (footerEle) footerEle.classList.remove("remove-margin");
+            if (footerEle) footerEle.classList.remove("add-margin-60");
             if (footerEle) footerEle.classList.add("add-margin");
         }
 
         function removeMargin() {
             if (mainEle) mainEle.classList.remove("add-margin");
+            if (mainEle) mainEle.classList.remove("add-margin-60");
             if (mainEle) mainEle.classList.add("remove-margin");
             if (footerEle) footerEle.classList.remove("add-margin");
+            if (footerEle) footerEle.classList.remove("add-margin-60");
             if (footerEle) footerEle.classList.add("remove-margin");
         }
 
@@ -123,7 +127,7 @@ function BrandLogo({}) {
                         alt={brand?.brand_title}
                     />
                 </span>
-                <div className="d-flex flex-column justify-content-center">
+                <div className="navbar-brand d-flex flex-column justify-content-center">
                     <span className="navbar-brand-title">
                         <Interweave content={brand?.brand_title}></Interweave>
                     </span>

@@ -21,16 +21,19 @@ function ProcessMap({ activeTab }) {
         process_key: "",
         form_id: "",
         category: "",
+        business_area: "",
         is_active: "YES",
         allow_draft: "YES",
     };
     const [items, setItems] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const [saveIsDisabled, setSaveIsDisabled] = useState(true);
     const [selectedItem, setSelectedItem] = useState(initialState);
     const [size, setSize] = useState(5);
     const [processList, setProcessList] = useState([]);
     const [formList, setFormList] = useState([]);
     const [categoryList, setCategoryList] = useState([]);
+    const [businessAreaList, setBusinessAreaList] = useState([]);
     const [error, setError] = useState([]);
     const [current, setCurrent] = useState(1);
     const [formShow, setFormShow] = useState(false);
@@ -44,11 +47,29 @@ function ProcessMap({ activeTab }) {
     const channel = appContext.channel;
     const tenantId = appContext?.tenantSubscription?.tenant_id;
     const getPaginateData = (current, pageSize) => {
-        if (items) {
-            return items.slice((current - 1) * pageSize, current * pageSize);
+        const data = getFilteredItems();
+        if (data) {
+            return data.slice((current - 1) * pageSize, current * pageSize);
         }
         return [];
     };
+
+    function getFilteredItems() {
+        if (!searchTerm || searchTerm.trim() === "") return items;
+        const q = searchTerm.trim().toLowerCase();
+        return items.filter(it => {
+            const title = (it.title || "").toString().toLowerCase();
+            const key = (it.process_key || "").toString().toLowerCase();
+            const category = (it.category || "").toString().toLowerCase();
+            const business = (it.business_area || "").toString().toLowerCase();
+            return (
+                title.indexOf(q) > -1 ||
+                key.indexOf(q) > -1 ||
+                category.indexOf(q) > -1 ||
+                business.indexOf(q) > -1
+            );
+        });
+    }
     const [deleteConfig, setDeleteConfig] = useState({
         show: false,
         item: {},
@@ -60,6 +81,10 @@ function ProcessMap({ activeTab }) {
             getChannels();
         }
     }, [activeTab]);
+
+    useEffect(() => {
+        setCurrent(1);
+    }, [searchTerm]);
 
     useEffect(() => {
         if (selectedItem?.id) {
@@ -320,6 +345,12 @@ function ProcessMap({ activeTab }) {
                 },
                 {
                     serviceParams: "",
+                    dataKey: "processBusinessArea",
+                    serviceKey: "process.business.area",
+                    mode: "formData",
+                },
+                {
+                    serviceParams: "",
                     dataKey: "tenantProcess",
                     serviceKey: "sys.tenant.process",
                     mode: "formData",
@@ -343,6 +374,7 @@ function ProcessMap({ activeTab }) {
                     setItems(response.data.C_DATA.processMap);
                     setProcessList(response.data.C_DATA.tenantProcess);
                     setCategoryList(response.data.C_DATA.processCategory);
+                    setBusinessAreaList(response.data.C_DATA.processBusinessArea);
                     if (response.data.C_DATA.groups) {
                         let mainArr = response.data.C_DATA.groups;
                         let finalArr = [];
@@ -399,7 +431,7 @@ function ProcessMap({ activeTab }) {
         }
 
         entityForm.formData = selectedItem;
-
+        debugger
         request.data.push(entityForm);
         try {
             axios.post(url, request).then(function (response) {
@@ -501,6 +533,16 @@ function ProcessMap({ activeTab }) {
         return title ? title : "";
     }
 
+    function getBusinessAreaByKey(key) {
+        let title = "";
+        businessAreaList.forEach(item => {
+            if (item.key === key) {
+                title = item.title;
+            }
+        });
+        return title ? title : "";
+    }
+
     return (
         <div className="process-configuration-map">
             <ModalBox
@@ -512,6 +554,28 @@ function ProcessMap({ activeTab }) {
                 modalType="deleteModal"
             />
             <div className="row p-2 m-0">
+                <div className="col-sm-12 p-2">
+                    <div className="input-group">
+                        <span className="input-group-text">
+                            <i className="fa fa-search"></i>
+                        </span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Search by title, key or category"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                        />
+                        {searchTerm && (
+                            <button
+                                className="btn btn-light"
+                                onClick={() => setSearchTerm("")}
+                                title="Clear">
+                                <i className="fa fa-times" />
+                            </button>
+                        )}
+                    </div>
+                </div>
                 <div className="col-sm-12 p-0">
                     <Table className="s2a-table table-bordered table-hover mb-0">
                         <Thead className="thead">
@@ -529,6 +593,9 @@ function ProcessMap({ activeTab }) {
                                 </Th>
                                 <Th className="col-sm-2 table-row text-left">
                                     Category
+                                </Th>
+                                <Th className="col-sm-2 table-row text-left">
+                                    Business Area
                                 </Th>
                                 <Th className="col-sm-2 table-row text-left">
                                     Form
@@ -562,6 +629,9 @@ function ProcessMap({ activeTab }) {
                                         </Td>
                                         <Td className="col-sm-2 table-row text-left">
                                             {getCategoryByKey(item.category)}
+                                        </Td>
+                                        <Td className="col-sm-2 table-row text-left">
+                                            {getBusinessAreaByKey(item.business_area)}
                                         </Td>
                                         <Td className="col-sm-2 table-row text-left">
                                             {getNameById(item.form_id)}
@@ -607,7 +677,7 @@ function ProcessMap({ activeTab }) {
                         setSize={setSize}
                         current={current}
                         setCurrent={setCurrent}
-                        tableData={items}
+                        tableData={getFilteredItems()}
                     />
                 </div>
                 <ModuleFormViewer
@@ -690,6 +760,42 @@ function ProcessMap({ activeTab }) {
                                                                 category.key
                                                             }>
                                                             {category.title}
+                                                        </option>
+                                                    );
+                                                })}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="col-sm-6 mb-2">
+                                    <div className="form-group">
+                                        <label className="mt-1 fw-bold">
+                                            Business Area&nbsp;
+                                            <span className="text-danger">
+                                                *
+                                            </span>
+                                        </label>
+                                        <select
+                                            placeholder="Select Business Area"
+                                            className="form-select"
+                                            name="business_area"
+                                            value={
+                                                selectedItem &&
+                                                selectedItem.business_area
+                                            }
+                                            onChange={handleInputField}>
+                                            <option
+                                                key={0}
+                                                defaultValue="">
+                                                Select Business Area
+                                            </option>
+                                            {businessAreaList &&
+                                                businessAreaList !== undefined &&
+                                                businessAreaList.map(barea => {
+                                                    return (
+                                                        <option
+                                                            key={barea.id}
+                                                            value={barea.key}>
+                                                            {barea.title}
                                                         </option>
                                                     );
                                                 })}

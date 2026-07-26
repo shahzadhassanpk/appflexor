@@ -33,7 +33,7 @@ const Navigation = ({
                 );
             })}
             {selectedFolder?.id && selectedFolder?.id !== repository?.id && (
-                <div className="d-flex flex gap-2 border-s">
+                <div className="d-flex flex gap-2 border-s folder-title-actions">
                     {/* {JSON.stringify(selectedFolder)} */}
                     {"| "}
                     {selectedFolder.status !== "ARCHIVE" &&

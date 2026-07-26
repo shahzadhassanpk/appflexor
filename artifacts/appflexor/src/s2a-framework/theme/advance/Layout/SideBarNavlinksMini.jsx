@@ -1,7 +1,14 @@
-import React from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
-function SidebarNavlinksMini({ appModules, moduleFeatures }) {
+function getFeaturePath(feature) {
+    if (feature.type === "IFRAME") return `/iframe:id=${feature.id}`;
+    if (feature.type === "PAGE") {
+        return feature.slug ? `/page/${feature.slug}` : `/page:id=${feature.id}`;
+    }
+    return feature.feature_key;
+}
+
+function SidebarNavlinksMini({ appModules, moduleFeatures, onExpand }) {
     const { pathname } = useLocation();
     return (
         <div className="d-flex justify-content-end my-1">
@@ -10,11 +17,13 @@ function SidebarNavlinksMini({ appModules, moduleFeatures }) {
                     if (module.location === "FRONTOFFICE") {
                         if (module.type === "LINK") {
                             return (
-                                <ModuleFeatureIcon
+                                <ModuleDropdownIcon
                                     key={module.id}
                                     module={module}
                                     features={moduleFeatures}
                                     pathname={pathname}
+                                    onExpand={onExpand}
+                                    showChildren={false}
                                 />
                             );
                         }
@@ -26,6 +35,8 @@ function SidebarNavlinksMini({ appModules, moduleFeatures }) {
                                     module={module}
                                     features={moduleFeatures}
                                     pathname={pathname}
+                                    onExpand={onExpand}
+                                    showChildren
                                 />
                             );
                         }
@@ -37,63 +48,19 @@ function SidebarNavlinksMini({ appModules, moduleFeatures }) {
     );
 }
 
-function ModuleFeatureIcon({ module, features, pathname }) {
-    function isLinkActive(feature) {
-        if (feature.type === "INTERNAL_LINK") {
-            if (feature.feature_key.includes(pathname)) {
-                return true;
-            }
-        }
-
-        if (feature.type === "PAGE" || feature.type === "IFRAME") {
-            if (feature.slug) {
-                let arr = pathname.split("/page/");
-                let trimmedPath = arr[1];
-                if (feature.slug.includes(trimmedPath)) {
-                    return true;
-                }
-            } else {
-                let arr = pathname.split(":id=");
-                let trimmedPath = arr[1];
-                if (feature.id.includes(trimmedPath)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    return (
-        <React.Fragment>
-            {features.map(feature => {
-                return (
-                    <React.Fragment>
-                        {feature.module === module.id && (
-                            <span
-                                className={`mini-nav-icon-wrapper ${
-                                    isLinkActive(feature) ? "link-active" : ""
-                                } `}>
-                                <i
-                                    className={`${
-                                        feature.icon
-                                            ? feature.icon
-                                            : "fa fa-paw"
-                                    } mini-nav-icon-size m-0`}></i>
-                            </span>
-                        )}
-                    </React.Fragment>
-                );
-            })}
-        </React.Fragment>
+function ModuleDropdownIcon({
+    module,
+    features,
+    pathname,
+    onExpand,
+    showChildren,
+}) {
+    const moduleFeatures = features.filter(
+        feature => feature.module === module.id,
     );
-}
 
-function ModuleDropdownIcon({ module, features, pathname }) {
     function isLinkActive() {
-        let filteredFeatures = features.filter(
-            feature => feature.module === module.id,
-        );
+        let filteredFeatures = moduleFeatures;
 
         if (pathname.includes(":id=")) {
             let trimmedPath = pathname.replace(/[/]/g, "");
@@ -116,18 +83,75 @@ function ModuleDropdownIcon({ module, features, pathname }) {
         return false;
     }
 
+    const targetFeature =
+        moduleFeatures.find(feature => {
+            const targetPath = getFeaturePath(feature).split("?")[0];
+            return pathname === targetPath;
+        }) || moduleFeatures[0];
+
+    const icon = module.icon || "fa-solid fa-angles-right";
+
+    if (showChildren && moduleFeatures.length > 0) {
+        return (
+            <div className="mini-nav-section">
+                <button
+                    type="button"
+                    onClick={onExpand}
+                    title={module.name}
+                    aria-label={`Open ${module.name}`}
+                    className={`mini-nav-icon-wrapper mini-nav-section-icon ${
+                        isLinkActive() ? "link-active" : ""
+                    }`}>
+                    <i className={`${icon} mini-nav-icon-size m-0`}></i>
+                </button>
+                <div className="mini-nav-section-links">
+                    {moduleFeatures.map(feature => (
+                        <NavLink
+                            key={feature.id}
+                            to={getFeaturePath(feature)}
+                            end
+                            title={feature.name}
+                            aria-label={feature.name}
+                            className={({ isActive }) =>
+                                `mini-nav-icon-wrapper mini-nav-child-link ${
+                                    isActive ? "link-active" : ""
+                                }`
+                            }>
+                            <i
+                                className={`${
+                                    feature.icon || "fa-solid fa-angle-right"
+                                } mini-nav-icon-size m-0`}></i>
+                        </NavLink>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (!targetFeature) {
+        return (
+            <button
+                type="button"
+                onClick={onExpand}
+                title={module.name}
+                aria-label={`Open ${module.name}`}
+                className="mini-nav-icon-wrapper">
+                <i className={`${icon} mini-nav-icon-size m-0`}></i>
+            </button>
+        );
+    }
+
     return (
-        <React.Fragment>
-            <span
-                className={`mini-nav-icon-wrapper ${
-                    isLinkActive() ? "link-active" : ""
-                }`}>
-                <i
-                    className={`${
-                        module.icon ? module.icon : "fa-solid fa-angles-right"
-                    } mini-nav-icon-size m-0`}></i>
-            </span>
-        </React.Fragment>
+        <NavLink
+            to={getFeaturePath(targetFeature)}
+            end
+            title={module.name}
+            aria-label={module.name}
+            className={`mini-nav-icon-wrapper ${
+                isLinkActive() ? "link-active" : ""
+            }`}>
+            <i className={`${icon} mini-nav-icon-size m-0`}></i>
+        </NavLink>
     );
 }
 

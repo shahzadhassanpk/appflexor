@@ -29,7 +29,8 @@ const CustomActionsPropEditer = props => {
         { code: "URL", title: "Url", selected: false },
         { code: "FORM", title: "Form", selected: false },
         { code: "POST", title: "Post", selected: false },
-        { code: "PROCESS", title: "Process", selected: false }
+        { code: "PROCESS", title: "Process", selected: false },
+        { code: "DATALIST", title: "DataList", selected: false },
     ]);
     const keys = [
         {
@@ -115,9 +116,7 @@ const CustomActionsPropEditer = props => {
         }
     }
 
-    // const handleActions = () => {
-    //     setShow(false);
-    // };
+    const handleActions = () => {};
 
     useEffect(() => {
         const component = props.component;
@@ -157,7 +156,8 @@ const CustomActionsPropEditer = props => {
         );
     else if (
         props.mode === props.modeType.render ||
-        props.mode === props.modeType.preview
+        props.mode === props.modeType.preview ||
+        props.mode === props.modeType.readonly
     )
         return (
             <>
@@ -170,7 +170,7 @@ const CustomActionsPropEditer = props => {
                             : returnParams(selectedAction, data, appContext)
                     }
                     record={data}
-                    handleActions={() => setShow(false)}
+                    handleActions={handleActions}
                     i={uuid()}
                     getData={getData}
                     page={page}

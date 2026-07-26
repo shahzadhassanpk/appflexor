@@ -61,12 +61,15 @@ function UserProfile() {
         {
             id: "FORM",
             label: "User Details",
+            className: "form-tab",
         },
         {
             id: "TASK-DELEGATION",
             label: "Task Delegation",
+            className: "delegation-tab",
         },
     ];
+
     const [activeTab, setActiveTab] = useState("FORM");
     const [date, setDate] = useState({
         start: "",
@@ -495,10 +498,22 @@ function UserProfile() {
                             />
                         </div>
                         <div className="profile-contentname">
-                            <h2 className="text-capitalize">
-                                {profile.firstname} {profile.lastname}
-                            </h2>
-                            <h4>Update Your Photo and Personal Details.</h4>
+                            <div>
+                                <h2>
+                                    <span className="text-capitalize">
+                                        {profile.firstname} {profile.lastname}
+                                    </span>
+                                </h2>
+                            </div>
+                            <div>
+                                <h4 className="text-capitalize">
+                                    ( {profile.username} )
+                                </h4>
+                            </div>
+                            <div>
+                                <h4>Update Your Photo and Personal Details.</h4>
+                            </div>
+
                             {profile.provider === "system" && (
                                 <div className="form-group m-2 mb-3 col-sm-4">
                                     <label className="mt-1 fw-bold">

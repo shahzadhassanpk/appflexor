@@ -12,6 +12,7 @@ import { componentList } from "../../Designer/ComponentRegistry";
 import RenderFormFields from "./RenderFormFields";
 import { actions } from "./constants";
 import { evalDefault } from "./utils";
+import { AppContext } from "../../../../../../AppContext";
 /*
 
     File Viewer takes form key for fetching form layout, formId or businessKey
@@ -79,6 +80,7 @@ const FormViewer = ({
 
     const lastFormKey = useRef(null);
     const lastBusinessKey = useRef(null);
+    const appContext = useContext(AppContext);
 
     useEffect(() => {
         if (layout.length > 0) {
@@ -1098,7 +1100,7 @@ const FormViewer = ({
                 entityForm.id = "new";
                 fieldsData.id = "new";
             }
-
+            
             entityForm.formData = fieldsData;
 
             request.data.push(entityForm);
@@ -1356,26 +1358,28 @@ const FormViewer = ({
                                 </div>
                             )}
 
-                            {isSubForm === false && isProcessForm === false && mode !== modeType.readonly &&(
-                                <div className="d-flex justify-content-between align-items-center my-1">
-                                    <span></span>
-                                    <span className="text-danger">
-                                        {infoMsg}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        className="mx-2 btn button-theme  btn-sm"
-                                        onClick={() =>
-                                            handleMainSave(actions.complete)
-                                        }>
-                                        {submitLabel ? (
-                                            <span>{submitLabel}</span>
-                                        ) : (
-                                            <span>Save</span>
-                                        )}
-                                    </button>
-                                </div>
-                            )}
+                            {isSubForm === false &&
+                                isProcessForm === false &&
+                                mode !== modeType.readonly && (
+                                    <div className="d-flex justify-content-between align-items-center my-1">
+                                        <span></span>
+                                        <span className="text-danger">
+                                            {infoMsg}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            className="mx-2 btn button-theme  btn-sm"
+                                            onClick={() =>
+                                                handleMainSave(actions.complete)
+                                            }>
+                                            {submitLabel ? (
+                                                <span>{submitLabel}</span>
+                                            ) : (
+                                                <span>Save</span>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                         </>
                     )}
                 </div>

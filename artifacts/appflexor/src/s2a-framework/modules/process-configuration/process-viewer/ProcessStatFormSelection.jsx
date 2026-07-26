@@ -10,6 +10,7 @@ import { TablePagination } from "../../../components/TablePagination/TablePagina
 import TableSorting from "../../../components/TableSorting/TableSorting";
 import { BPM_API_URL } from "../../camunda/CamundaConfig";
 import ProcessesContext from "../../camunda/ProcessesContext";
+import { getProcessVariablesFromData } from "../../camunda/helperFunctions";
 import { getProcessVariablesFromData8 } from "../../camunda/helperFunctions";
 import FormViewer, {
     modeType,
@@ -82,12 +83,15 @@ function ProcessStatFormSelection({ componentData }) {
         reqPayload = {},
     ) {
         if (actionType === actions.complete) {
+            const taskVariables = getProcessVariablesFromData(
+                state,
+                componentsData,
+            );
             //  processKey, businessKey
             startProcessInstance(
                 selectedItem.process_key,
                 state.id,
-                state,
-                componentsData,
+                taskVariables
             );
             setSelectedItem(prev => ({ ...prev, id: state.id }));
             updateBusinessKey(state, formDetails, state.id);
@@ -154,7 +158,7 @@ function ProcessStatFormSelection({ componentData }) {
     function startProcessInstance(
         processKey,
         businessKey = "",
-        componentsData,
+        taskVariables = {},
     ) {
         let path = "";
         if (tenantId === "") {
@@ -162,8 +166,7 @@ function ProcessStatFormSelection({ componentData }) {
         } else {
             path = `/process-definition/key/${processKey}/tenant-id/${tenantId}/start`;
         }
-        let variables = {};
-        variables["requestor"] = {
+        taskVariables["requestor"] = {
             value: appContext?.profile?.username,
             type: "string",
         };
@@ -173,7 +176,7 @@ function ProcessStatFormSelection({ componentData }) {
             method: "POST",
             data: {
                 businessKey: businessKey,
-                requestor: appContext.profile.username,
+                variables: taskVariables,
             },
         };
 

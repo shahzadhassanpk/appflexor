@@ -13,11 +13,12 @@ const modeType = {
 };
 
 const pageType = {
+    keyPage: "GET_PAGE_BY_KEY",
     idPage: "GET_PAGE_BY_ID",
     slugPage: "GET_PAGE_BY_SLUG",
 };
 
-function PageViewer() {
+function PageViewer(props) {
     const [layout, setLayout] = useState([]);
     const [components, setComponents] = useState({});
     const [pageConfig, setPageConfig] = useState({
@@ -53,6 +54,13 @@ function PageViewer() {
                 params: slug,
                 type: pageType.slugPage,
             });
+        } else if (props.get("page_key")) {
+            // extract page key safely
+            const pageKey = props.get("page_key");
+            setPageConfig({
+                params: pageKey,
+                type: pageType.keyPage,
+            });
         }
     }, [window.location.href]);
 
@@ -79,6 +87,8 @@ function PageViewer() {
             serviceKey = "sys.get.page";
         } else if (pageConfig.type === pageType.slugPage) {
             serviceKey = "sys.get.page.slug";
+        } else if (pageConfig.type === pageType.keyPage) {
+            serviceKey = "sys.get.page.key";
         }
 
         const dataRequest = {

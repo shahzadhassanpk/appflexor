@@ -806,8 +806,8 @@ const DocumentView = props => {
                         </div>
                     </div>
                 </div>
-                {!hideProperties && documentIsHovered == document?.id && (
-                    <div className="d-flex flex-column border-s">
+                {!hideProperties && documentIsHovered == document.id && (
+                    <div className="d-flex flex-column action-layer border-s">
                         {!isCheckedOut && document?.status !== "ARCHIVE" && (
                             <div
                                 onClick={() => {

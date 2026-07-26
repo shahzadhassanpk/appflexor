@@ -54,7 +54,7 @@
 }
 
 .action-layer .pointer:hover{
-    background-color: var(--primary-color);
+    background-color: var(--secondary-color);
 }
 
 .tree-node{

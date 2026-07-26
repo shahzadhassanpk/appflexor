@@ -16,6 +16,7 @@ import ProcessesContext from "../../camunda/ProcessesContext";
 import { toastEmitter } from "../../../components/Toastify/Toastify";
 import { modeType } from "../../data-management/datalist-builder/datalist-form/form/DataListForm";
 import PEDataListViewer from "../../content-management/page-builder/datalist-viewer/viewer/PEDataListViewer";
+import { background } from "plotly.js/dist/plotly-cartesian";
 
 function ProcessMonitor({ activeTab }) {
     let initialState = {
@@ -35,6 +36,8 @@ function ProcessMonitor({ activeTab }) {
     const [selectedItem, setSelectedItem] = useState(initialState);
     const [size, setSize] = useState(5);
     const [processList, setProcessList] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filteredProcessList, setFilteredProcessList] = useState(null);
     const [formList, setFormList] = useState([]);
     const [categoryList, setCategoryList] = useState([]);
     const [error, setError] = useState([]);
@@ -328,6 +331,26 @@ function ProcessMonitor({ activeTab }) {
             });
     }
 
+    useEffect(() => {
+        if (!processList || !processList.data) {
+            setFilteredProcessList(null);
+            return;
+        }
+
+        if (!searchTerm || searchTerm.trim() === "") {
+            setFilteredProcessList(null);
+            return;
+        }
+
+        const q = searchTerm.trim().toLowerCase();
+        const filtered = processList.data.filter(item => {
+            const title = (item.title || item.name || "").toString().toLowerCase();
+            const id = (item.id || item.process_def_key || item.key || "").toString().toLowerCase();
+            return title.indexOf(q) > -1 || id.indexOf(q) > -1;
+        });
+        setFilteredProcessList({ data: filtered });
+    }, [searchTerm, processList]);
+
     function handleInputField(event, id) {
         let value = "";
         let name = event.target.name;
@@ -513,121 +536,72 @@ function ProcessMonitor({ activeTab }) {
     }
     return (
         <>
-            {loaded &&
-                appContext.tenantSubscription.process_engine ==
-                    "CAMUNDA_EIGHT" && (
+            {loaded && appContext.tenantSubscription.process_engine == "CAMUNDA_EIGHT" && (
+                <div className="mb-3">
+                    <div className="d-flex align-items-center mb-2">
+                        <h5 className="me-3 mb-0">Process Monitor</h5>
+                        <div className="input-group" style={{ maxWidth: 360 }}>
+                            <span className="input-group-text">
+                                <i className="fa fa-search"></i>
+                            </span>
+                            <input
+                                className="form-control"
+                                placeholder="Filter processes by name or id"
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                            />
+                            {searchTerm && (
+                                <button
+                                    className="btn btn-light"
+                                    onClick={() => setSearchTerm("")}
+                                    title="Clear">
+                                    <i className="fa fa-times" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
                     <PEDataListViewer
-                        key="pe_monitor"
-                        component={processList}
+                        key={"pe_monitor" + (searchTerm || "")}
+                        component={filteredProcessList ? filteredProcessList : processList}
                         mode={modeType.render}
                         modeType={modeType}
                     />
-                )}
+                </div>
+            )}
 
             {loaded &&
                 appContext.tenantSubscription.process_engine ==
                     "CAMUNDA_SEVEN" && (
-                    <div
-                        style={{
-                            textAlign: "center",
-                            padding: "50px",
-                            fontSize: "30px",
-                        }}>
-                        <p>
-                            Login to{" "}
-                            <a
-                                href="/camunda/app/cockpit/default/#/login"
-                                target="_blank">
-                                Camunda Cockpit
-                            </a>{" "}
-                            to monitor processes.
-                        </p>{" "}
-                        {!camLogin?.username && (
-                            <a
-                                className="m-2"
-                                href="#"
-                                onClick={() => ssoCamunda7()}>
-                                Click to get your camunda login
-                            </a>
-                        )}
+                    <div className="card p-4 text-center mx-auto mt-4 mb-4" style={{maxWidth:700, backgroundColor:"var(--primary-color)"}}>
+                        <h4 className="mb-3">Camunda Cockpit (v7)</h4>
+                        <p className="mb-3">
+                            Open Camunda Cockpit to monitor processes.
+                        </p>
+                        <div className="mb-3">
+                            <a className="btn btn-primary me-2" href="/camunda/app/cockpit/default/#/login" target="_blank">Open Cockpit</a>
+                            {!camLogin?.username && (
+                                <button className="btn btn-outline-secondary" onClick={() => ssoCamunda7()}>Get Camunda Login</button>
+                            )}
+                        </div>
                         {camLogin?.username && (
-                            <>
-                                <div
-                                    className="col-sm-4 d-flex form-group mb-2"
-                                    style={{
-                                        margin: "auto",
-                                    }}>
-                                    <label
-                                        className="form-label flex-between"
-                                        style={{
-                                            color: "var(--bs-link-color)",
-                                        }}>
-                                        User:
-                                    </label>{" "}
-                                    {camLogin?.username && (
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            readOnly="true"
-                                            value={camLogin.username}></input>
-                                    )}
-                                </div>
-                                <div
-                                    className="col-sm-4 d-flex form-group mb-2"
-                                    style={{
-                                        margin: "auto",
-                                    }}>
-                                    <label
-                                        className="form-label flex-between"
-                                        style={{
-                                            color: "var(--bs-link-color)",
-                                        }}>
-                                        Password:
-                                    </label>{" "}
-                                    <div className="pass-input d-flex">
-                                        <input
-                                            type={
-                                                camLogin.showPassword
-                                                    ? "text"
-                                                    : "password"
-                                            }
-                                            className={
-                                                "form-control password-input"
-                                            }
-                                            id="ciphertext"
-                                            name="password"
-                                            value={camLogin.password}
-                                            readonly
-                                        />
-                                        <div
-                                            className="show-pass ms-2 cursor-pointer"
-                                            onClick={() =>
-                                                setCamLogin({
-                                                    ...camLogin,
-                                                    showPassword:
-                                                        !camLogin.showPassword,
-                                                })
-                                            }>
-                                            {camLogin.showPassword ? (
-                                                <i
-                                                    className="fa-regular fa-eye"
-                                                    title="Hide Password"></i>
-                                            ) : (
-                                                <i
-                                                    className="fa-regular fa-eye-slash"
-                                                    title="Show Password"></i>
-                                            )}
-                                        </div>
-                                        <div
-                                            className="show-pass ms-2 cursor-pointer"
-                                            onClick={() =>
-                                                resetPassCamunda7()
-                                            }><i
-                                                    className="bi bi-arrow-repeat"
-                                                    title="Reset Password"></i></div>
+                            <div className="row justify-content-center">
+                                <div className="col-sm-8 mb-2">
+                                    <label className="form-label text-start w-100">User</label>
+                                    <div className="input-group">
+                                        <input type="text" readOnly className="form-control" value={camLogin.username} />
+                                        <button className="btn btn-outline-secondary" onClick={() => {navigator.clipboard.writeText(camLogin.username); toastEmitter('Username copied', true);}}>Copy</button>
                                     </div>
                                 </div>
-                            </>
+                                <div className="col-sm-8 mb-2">
+                                    <label className="form-label text-start w-100">Password</label>
+                                    <div className="input-group">
+                                        <input type={camLogin.showPassword ? 'text' : 'password'} readOnly className="form-control" value={camLogin.password} />
+                                        <button className="btn btn-outline-secondary" onClick={() => setCamLogin({...camLogin, showPassword: !camLogin.showPassword})} title="Toggle visibility">{camLogin.showPassword? 'Hide' : 'Show'}</button>
+                                        <button className="btn btn-outline-secondary" onClick={() => { resetPassCamunda7(); toastEmitter('Password reset requested', true); }} title="Reset Password">Reset</button>
+                                        <button className="btn btn-outline-secondary" onClick={() => {navigator.clipboard.writeText(camLogin.password); toastEmitter('Password copied', true);}}>Copy</button>
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
                 )}

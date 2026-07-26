@@ -19,10 +19,7 @@ import {
 } from "../../../utils/utils";
 import Modal from "react-bootstrap/Modal";
 import { tryParseJSONObject } from "../../../utils/utils";
-import "react-dates/initialize";
-import "react-dates/lib/css/_datepicker.css";
-
-import { DateRangePicker } from "react-dates";
+import { DateRangePicker } from "../../../components/DatePicker/DatePicker";
 import moment from "moment";
 import { DATE_FORMAT_FOR_DATE_PICKER_VIEW } from "../../../Config";
 import TableSorting from "../../../components/TableSorting/TableSorting";

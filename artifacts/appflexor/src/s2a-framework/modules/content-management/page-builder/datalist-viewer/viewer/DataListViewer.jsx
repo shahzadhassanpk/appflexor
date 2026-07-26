@@ -38,9 +38,9 @@ export default function DataListViewer(props) {
             setHidePagination(props.component.data.hidePagination);
             setHideActions(props.component.data.hideActions);
             setHideSearch(props.component.data.hideSearch);
-            setHideCheckBoxes(props.component.data.hideCheckBoxes);
-            setHideLabel(props.component.data.hideLabel);
+            setHideCheckBoxes(props.component.data.hideCheckBoxes);            
         }
+        setHideLabel(props.hideLabel || props?.component?.data?.hideLabel || false);
         setShowMaximize(props?.maximize_button == "true" ? true : false);
     }, []);
 
@@ -148,10 +148,7 @@ export default function DataListViewer(props) {
             });
     }
 
-    
-
     function getSelectedForm(form_id) {
-
         // let cachedForm = localStorage.getItem(`${tenantId}:${formKey}`);
         // if(cachedForm){
         //     let form = JSON.parse(cachedForm);
@@ -210,7 +207,8 @@ export default function DataListViewer(props) {
         try {
             if (selectedDataListOnly) {
                 let parsedLayout = tryParseJSONObject(
-                    selectedDataListOnly.layout, selectedDataListOnly.layout
+                    selectedDataListOnly.layout,
+                    selectedDataListOnly.layout,
                 );
                 const actions = [
                     "add",
@@ -339,6 +337,10 @@ export default function DataListViewer(props) {
                         mode={props?.mode}
                         modeType={props?.modeType}
                         hideLabel={hideLabel}
+                        hideActions={hideActions}
+                        hideSearch={hideSearch}
+                        hidePagination={hidePagination}
+                        hideCheckBoxes={hideCheckBoxes}
                         hideFormDatalistLabel={props.hideFormDatalistLabel}
                     />
                 );
@@ -362,6 +364,10 @@ export default function DataListViewer(props) {
                             mode={props?.mode}
                             modeType={props?.modeType}
                             hideLabel={hideLabel}
+                            hideActions={hideActions}
+                            hideSearch={hideSearch}
+                            hidePagination={hidePagination}
+                            hideCheckBoxes={hideCheckBoxes}
                             hideFormDatalistLabel={props.hideFormDatalistLabel}
                         />
                     </>
@@ -380,6 +386,10 @@ export default function DataListViewer(props) {
                         datalistUrl={props && props.datalistUrl}
                         mode={props?.mode}
                         modeType={props?.modeType}
+                        hideActions={hideActions}
+                        hideSearch={hideSearch}
+                        hidePagination={hidePagination}
+                        hideCheckBoxes={hideCheckBoxes}
                         hideLabel={hideLabel}
                     />
                 );
@@ -463,7 +473,7 @@ export default function DataListViewer(props) {
                         </center>
                     </div>
                 )}
-            {/* fkColumn: {props.fkColumn} fkValue: {props.fkValue} */}
+            
             {props &&
                 !isEmpty(selectedItem) &&
                 (props.mode === props.modeType.render ||

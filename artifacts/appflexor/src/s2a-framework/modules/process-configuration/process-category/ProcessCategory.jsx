@@ -21,6 +21,7 @@ function ProcessMap({ activeTab }) {
     };
 
     const [items, setItems] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const [saveIsDisabled, setSaveIsDisabled] = useState(true);
     const [selectedItem, setSelectedItem] = useState(initialState);
     const [size, setSize] = useState(5);
@@ -35,14 +36,30 @@ function ProcessMap({ activeTab }) {
     });
 
     const getPaginateData = (current, pageSize) => {
-        return items.slice((current - 1) * pageSize, current * pageSize);
+        const data = getFilteredItems();
+        return data.slice((current - 1) * pageSize, current * pageSize);
     };
+
+    function getFilteredItems() {
+        if (!searchTerm || searchTerm.trim() === "") return items;
+        const q = searchTerm.trim().toLowerCase();
+        return items.filter(it => {
+            const title = (it.title || "").toString().toLowerCase();
+            const key = (it.key || "").toString().toLowerCase();
+            return title.indexOf(q) > -1 || key.indexOf(q) > -1;
+        });
+    }
 
     useEffect(() => {
         if (activeTab === "PROCESS_CATEGORY") {
             getData();
         }
     }, [activeTab]);
+
+    useEffect(() => {
+        // reset to first page when search changes
+        setCurrent(1);
+    }, [searchTerm]);
 
     useEffect(() => {
         if (selectedItem.title !== "" && selectedItem.key !== "") {
@@ -219,6 +236,28 @@ function ProcessMap({ activeTab }) {
                 modalType="deleteModal"
             />
             <div className="row p-2 m-0">
+                <div className="col-sm-12 p-2">
+                    <div className="input-group">
+                        <span className="input-group-text">
+                            <i className="fa fa-search"></i>
+                        </span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Search by title or key"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                        />
+                        {searchTerm && (
+                            <button
+                                className="btn btn-light"
+                                onClick={() => setSearchTerm("")}
+                                title="Clear">
+                                <i className="fa fa-times" />
+                            </button>
+                        )}
+                    </div>
+                </div>
                 <div className="col-sm-12 p-0">
                     <Table className="s2a-table table-bordered table-hover mb-0">
                         <Thead className="thead">
@@ -277,7 +316,7 @@ function ProcessMap({ activeTab }) {
                         </Tbody>
                     </Table>
                 </div>
-                <div className="col-sm-8 p-0">
+                <div className="col-sm-5 p-0">
                     <span
                         type="button"
                         className="button-theme btn btn-sm pull-left my-2"
@@ -286,13 +325,13 @@ function ProcessMap({ activeTab }) {
                         Add New
                     </span>
                 </div>
-                <div className="col-sm-4 p-0">
+                <div className="col-sm-7 p-0">
                     <TablePagination
                         size={size}
                         setSize={setSize}
                         current={current}
                         setCurrent={setCurrent}
-                        tableData={items}
+                        tableData={getFilteredItems()}
                     />
                 </div>
                 <ModuleFormViewer

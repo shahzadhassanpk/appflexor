@@ -34,7 +34,7 @@ export const staticAdminModules = [
         icon: "fa-solid fa-globe",
     },
     {
-        name: "System",
+        name: "Admin",
         location: ADMINOFFICE,
         id: `${said}`,
         position: "1002",
@@ -55,13 +55,6 @@ export const staticAdminModuleFeatures = [
         icon: "fa-solid fa-user-shield",
         role:"ROLE_ADMIN"
     },
-    // {
-    //     module: `${said}`,
-    //     type: OPEN_AS.internalLink,
-    //     name: "Access Control",
-    //     feature_key: "/access-control",
-    //     icon: "fa-solid fa-address-card",
-    // },
     {
         module: `${said}`,
         type: OPEN_AS.internalLink,
@@ -71,14 +64,22 @@ export const staticAdminModuleFeatures = [
         icon: "fa-solid fa-address-card",
         role:"ROLE_ADMIN"
     },
-    {
-        module: `${said}`,
-        type: OPEN_AS.internalLink,
-        name: "Get Started",
-        code: "MOD_GET_STARTED",
-        feature_key: "/welcome",
-        icon: "fa-solid fa-circle-info",
-    },
+    // {
+    //     module: `${said}`,
+    //     type: OPEN_AS.internalLink,
+    //     name: "Access Control",
+    //     feature_key: "/access-control",
+    //     icon: "fa-solid fa-address-card",
+    // },
+    
+    // {
+    //     module: `${said}`,
+    //     type: OPEN_AS.internalLink,
+    //     name: "Get Started",
+    //     code: "MOD_GET_STARTED",
+    //     feature_key: "/welcome",
+    //     icon: "fa-solid fa-circle-info",
+    // },
     {
         module: `${suid}`,
         type: OPEN_AS.internalLink,

@@ -98,6 +98,7 @@ function IframeName({ feature }) {
     return (
         <NavLink
             to={`/iframe:id=${feature.id}`}
+            end
             className={`text-decoration-none ${
                 getActiveFeature(feature.id) ? "nav-link active" : "nav-link"
             } rounded`}>
@@ -119,7 +120,7 @@ function IframeName({ feature }) {
                         className={`${
                             feature.icon
                                 ? feature.icon
-                                : "fa fa-paw"
+                                : "fa-solid fa-angle-right"
                         } me-2`}></i>
                     {feature.name}
                 </span>
@@ -179,6 +180,7 @@ function FeatureName({ feature }) {
     return (
         <NavLink
             to={path}
+            end
             className={`text-decoration-none ${
                 getRouteFromKey(feature.feature_key)
                     ? "nav-link active"
@@ -199,7 +201,7 @@ function FeatureName({ feature }) {
                         className={`${
                             feature.icon
                                 ? feature.icon
-                                : "fa fa-paw"
+                                : "fa-solid fa-angle-right"
                         } me-2`}></i>
                     {feature.name}
                 </span>
@@ -239,61 +241,15 @@ function AccordionItem({ id, title = "...", module, features }) {
 
     return (
         <div
-            id="nav-accordion"
-            className="accordion menu-accordion">
-            <div className="accordion-item border-0">
-                <div className="accordion-header">
-                    <span
-                        className={` ${
-                            isLinkActive() ? "" : "collapsed"
-                        } accordion-button rounded pointer`}
-                        data-bs-toggle="collapse"
-                        data-bs-target={`#${id}`}
-                        aria-controls="modify-search">
-                        <div className="">
-                            <i
-                                className={`${
-                                    module.icon
-                                        ? module.icon
-                                        : "fa-solid fa-angles-right"
-                                } m-1 me-2`}></i>
-                            {title}
-                        </div>
-                    </span>
-                </div>
-                <div
-                    id={id}
-                    className={`accordion-collapse collapse  ${
-                        isLinkActive() ? "show" : ""
-                    } `}
-                    data-bs-parent="#side-navbar-parent"
-                    aria-labelledby="">
-                    <div className="accordion-body p-0">
-                        <AccordionNavItems
-                            module={module}
-                            features={features}
-                        />
-                    </div>
-                </div>
-            </div>
+            id={id}
+            className={`app-sidebar-group ${isLinkActive() ? "is-active" : ""}`}>
+            <div className="app-sidebar-group-label">{title}</div>
+            <AccordionNavItems module={module} features={features} />
         </div>
     );
 }
 
 function AccordionNavItems({ module, features }) {
-    let activeStyle = {
-        // display: "block",
-        // width: "100%",
-        // backgroundColor: "var(--secondary-color)",
-        // color: "var(--primary-color)",
-        color: "var(--link-active-color)",
-    };
-
-    function closeSideBar() {
-        var closeBtn = document.getElementById("sidebar-toggle");
-        if (closeBtn) closeBtn.click();
-    }
-
     return (
         <nav>
             <ul className="nav-items-ul p-1 pt-0 ps-3 mb-0">
@@ -314,16 +270,14 @@ function AccordionNavItems({ module, features }) {
 
                     return (
                         feature.module === module.id && (
-                            <li
-                                key={feature.id}
-                                onClick={() => {
-                                    closeSideBar();
-                                }}>
+                            <li key={feature.id}>
                                 <NavLink
                                     to={path}
-                                    className="nav-items-link py-2 rounded"
-                                    style={({ isActive }) =>
-                                        isActive ? activeStyle : undefined
+                                    end
+                                    className={({ isActive }) =>
+                                        `nav-items-link py-2 rounded ${
+                                            isActive ? "active" : ""
+                                        }`
                                     }>
                                     <ModuleName
                                         icon={
@@ -332,7 +286,6 @@ function AccordionNavItems({ module, features }) {
                                                 : "fa-solid fa-angle-right"
                                         }
                                         name={feature.name}
-                                        route={feature.feature_key}
                                     />
                                 </NavLink>
                             </li>
@@ -344,16 +297,10 @@ function AccordionNavItems({ module, features }) {
     );
 }
 
-function ModuleName({ icon, name, route }) {
-    let { pathname } = useLocation();
-
+function ModuleName({ icon, name }) {
     return (
         <span>
-            {route === pathname ? (
-                <i className={`${icon} me-2`}></i>
-            ) : (
-                <i className={`${icon} me-2`}></i>
-            )}
+            <i className={`${icon} me-2`}></i>
             {name}
         </span>
     );

@@ -27,6 +27,7 @@ function RenderFormFields({
     fkValue = "",
     showTitle = false,
 }) {
+    const appContext = useContext(AppContext);
     const renderTabs = () => {
         let position = "TOP";
         let firstTab = 0;
@@ -81,7 +82,9 @@ function RenderFormFields({
                                                         fileNameMapping
                                                     }
                                                     fkColumn={fkColumn}
-                                                    fkValue={fkValue}></Row>
+                                                    fkValue={fkValue}
+                                                    appContext={appContext}
+                                                    ></Row>
                                             </div>
                                         );
                                     })}
@@ -202,6 +205,9 @@ function RenderFormFields({
                                                                 }
                                                                 fkValue={
                                                                     fkValue
+                                                                }
+                                                                appContext={
+                                                                    appContext
                                                                 }></Row>
                                                         </div>
                                                     );
@@ -338,6 +344,9 @@ function RenderFormFields({
                                                                             }
                                                                             fkValue={
                                                                                 fkValue
+                                                                            }
+                                                                            appContext={
+                                                                                appContext
                                                                             }></Row>
                                                                     </div>
                                                                 );
@@ -416,6 +425,7 @@ function RenderFormFields({
                                         fileNameMapping={fileNameMapping}
                                         fkColumn={fkColumn}
                                         fkValue={fkValue}
+                                        appContext={appContext}
                                     />
                                 </div>
                             );
@@ -521,6 +531,7 @@ function RenderTabs({
                     rowData.classes ? rowData.classes : ""
                 } nav nav-tabs pt-2`}
                 key={rowData.id}>
+                {/* {JSON.stringify(rowData)} */}
                 {rowData.children.map((tab, index) => {
                     const visibleExp = tab.visibilityExpression;
                     const data = { ...formData };
@@ -655,6 +666,7 @@ function Row({
     fileNameMapping,
     fkColumn,
     fkValue,
+    appContext,
 }) {
     const [visible, setVisible] = useState(true);
     let data = { ...formData };
@@ -662,7 +674,15 @@ function Row({
     useEffect(() => {
         let visibleExp = rowData.visibilityExpression;
         if (visibleExp && visibleExp !== "") {
-            let _visible = evaluateExpression({ expression: visibleExp }, data);
+            let _visible = evaluateExpression(
+                { expression: visibleExp },
+                data,
+                appContext?.channel,
+                appContext?.userGroups,
+                appContext?.profile,                
+                    appContext?.tenantSubscription,
+                
+            );
             setVisible(_visible);
         }
     }, [rowData, data]);
@@ -678,7 +698,8 @@ function Row({
                 {/* {JSON.stringify(_visible)} */}
                 {_visible && (
                     //SHA
-                    <div className={`${column.classes} col-style p-0`}>
+                    <div
+                        className={`${column.classes} col-style p-0 ${column.className ? column.className : ""}`}>
                         <Column
                             key={column.id}
                             columnData={column}

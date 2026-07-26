@@ -25,6 +25,7 @@ import TableView from "./views/TableView";
 import useScreenWidth from "../../../../../components/custom-hooks/useScreenWidth";
 import { initialPages, notIncludeKeys } from "./variables/VARIABLES";
 import GalleryView from "./views/GalleryView";
+import CartView from "./views/CartView";
 import Pagination from "./components/Pagination";
 import ListingView from "./views/ListingView";
 import { modeType } from "../../Designer/Designer";
@@ -85,6 +86,12 @@ export default function ReactTable({
     dataKey,
     setDataKeys,
     mode,
+    hideLabel,
+    hideSearch,
+    hidePagination,
+    hideCheckBoxes,
+    hideActions,
+    hideFormDatalistLabel,
 }) {
     const currentDivRef = useRef(null);
     const [currentDivWidth, setCurrentDivWidth] = useState(0);
@@ -438,6 +445,27 @@ export default function ReactTable({
         return showDatalist;
     };
 
+    const Cart = (
+        <>
+            {/* <div className="s2a-gallery-header">
+                <Header
+                    headerGroups={headerGroups}
+                    onFilterClick={onFilterClick}
+                />
+            </div> */}
+            <CartView
+                page={page}
+                prepareRow={prepareRow}
+                titleShowingFields={titleShowingFields}
+                screenWidth={screenWidth}
+                columns={selectedItem?.gallery_columns}
+                groupBy={selectedItem?.groupby_column}
+                groupMode={selectedItem?.group_mode}
+                datalist_type={selectedItem?.datalist_type}
+            />
+        </>
+    );
+
     const Gallery = (
         <>
             {/* <div className="s2a-gallery-header">
@@ -452,6 +480,8 @@ export default function ReactTable({
                 titleShowingFields={titleShowingFields}
                 screenWidth={screenWidth}
                 columns={selectedItem?.gallery_columns}
+                groupBy={selectedItem?.groupby_column}
+                groupMode={selectedItem?.group_mode}
                 datalist_type={selectedItem?.datalist_type}
             />
         </>
@@ -470,6 +500,10 @@ export default function ReactTable({
             footerGroups={footerGroups}
             notIncludeFooter={notIncludeFooter}
             titleShowingFields={titleShowingFields}
+            hideActions={hideActions}
+            hideSearch={hideSearch}
+            hidePagination={hidePagination}
+            hideCheckBoxes={hideCheckBoxes}
         />
     );
 
@@ -489,6 +523,7 @@ export default function ReactTable({
     const RenderView = selectedItem => {
         const viewMap = {
             GALLERY: Gallery,
+            CART: Cart,
             TABLE: Table,
             "EDITABLE-GRID": Table,
             LIST: Listing,
@@ -732,7 +767,7 @@ export default function ReactTable({
                     <DatalistNotification message={message} />
                 )}
             </div>
-            {mode === modeType.render && (
+            {mode === modeType.render && !hideActions && (
                 <div className="datalist-footer flex-between flex-wrap">
                     <div className="s2a-datalist-actions">
                         <DatalistActionsButtons

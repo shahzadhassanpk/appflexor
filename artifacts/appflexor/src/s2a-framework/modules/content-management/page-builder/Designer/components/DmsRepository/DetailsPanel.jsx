@@ -832,6 +832,17 @@ const Detailspanel = ({
                         setSelectedDocuments,
                         actions,
                     }}>
+                    <Navigation
+                        navigation={navigationStack}
+                        permissionActions={permissionActions}
+                        repository={repository}
+                        selectedFolder={selectedParentFolder}
+                        handleFolderMove={handleFolderMove}
+                        handleFolderEdit={handleFolderEdit}
+                        handleDeleteFolder={handleFolderDelete}
+                        backNavigationAction={backNavigationAction}
+                        handleNavigationAction={handleNavigationAction}
+                    />
                     <div className="d-flex align-items-center justify-content-between p-2 action-header s2a-border mb-2">
                         <div className="d-flex align-items-center  gap-3">
                             <ReactSelect
@@ -917,17 +928,6 @@ const Detailspanel = ({
                             /> */}
                         </div>
                     </div>
-                    <Navigation
-                        navigation={navigationStack}
-                        permissionActions={permissionActions}
-                        repository={repository}
-                        selectedFolder={selectedParentFolder}
-                        handleFolderMove={handleFolderMove}
-                        handleFolderEdit={handleFolderEdit}
-                        handleDeleteFolder={handleFolderDelete}
-                        backNavigationAction={backNavigationAction}
-                        handleNavigationAction={handleNavigationAction}
-                    />
                     <div>
                         <ol className="list-group ">
                             <FolderListView

@@ -1311,6 +1311,24 @@ export default function CustomActionModal(props) {
                                     <Form.Group
                                         as={Col}
                                         sm="12"
+                                        controlId="response_message_path">
+                                        <Form.Label>
+                                            Response Message Path
+                                        </Form.Label>
+                                        <Form.Control
+                                            // required
+                                            type="text"
+                                            placeholder="Response message path"
+                                            name="response_message_path"
+                                            value={action.response_message_path}
+                                            onChange={handleInput}
+                                        />
+                                    </Form.Group>
+                                </Row>
+                                <Row className="mb-2">
+                                    <Form.Group
+                                        as={Col}
+                                        sm="12"
                                         controlId="visibility_expression">
                                         <Form.Label>
                                             Action Visibility Expression

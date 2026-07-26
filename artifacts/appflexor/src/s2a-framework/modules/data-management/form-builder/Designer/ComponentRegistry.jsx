@@ -33,9 +33,11 @@ import Audio from "./components/audio/Audio";
 const CustomActionsPropEditer = lazy(() =>
     import("./components/CustomActions/CustomActionsPropEditer"),
 );
+import AppView from "./components/AppView";
+import HTMLTemplate from "./components/HTMLTemplate";
 // import CustomActionsPropEditer from "./components/CustomActions/CustomActionsPropEditer";
 import AutoIncrement from "./components/Auto Increment/AutoIncrement";
-
+import { makeid } from "../../../../utils/utils";
 export const SIDEBAR_ITEM = "sidebaritem"; // draggable
 export const ROW = "row"; // dropable
 export const COLUMN = "DB Column"; // dropable
@@ -55,6 +57,7 @@ export const componentList = {
     number: Number,
     radio: Radio,
     HTML: HTML,
+    HTMLTemplate: HTMLTemplate,
     richtexteditor: RichTextEditor,
     select: Select,
     multiSelect: MultiSelect,
@@ -72,6 +75,7 @@ export const componentList = {
     video: VideoComponent,
     audio: Audio,
     action: CustomActionsPropEditer,
+    appView: AppView,
     // dndlisting: DndListing,
     // audio:audioComponent
     // subform: SubForm,
@@ -99,7 +103,6 @@ export const componentList = {
     "fa-regular fa-clock"
 
  */
-
 export const SIDEBAR_ITEMS = [
     {
         type: SIDEBAR_ITEM,
@@ -124,7 +127,7 @@ export const SIDEBAR_ITEMS = [
             title: "Text Field",
             icon: "fa-regular fa-square-minus",
         },
-    },
+    },    
     {
         type: SIDEBAR_ITEM, //  used by designer to identify dragable component
         component: {
@@ -263,6 +266,17 @@ export const SIDEBAR_ITEMS = [
     {
         type: SIDEBAR_ITEM,
         component: {
+            type: "HTMLTemplate",
+            title: "HTML Template",
+            icon: "fa-solid fa-font",
+            data: {
+                html_id: "",
+            },
+        },
+    },
+    {
+        type: SIDEBAR_ITEM,
+        component: {
             type: "richtexteditor",
             title: "Rich Text Editor",
             icon: "fa-solid fa-font",
@@ -378,6 +392,41 @@ export const SIDEBAR_ITEMS = [
             type: "action",
             title: "Custom Action",
             icon: "fa fa-gear",
+        },
+    },
+    {
+        id: `${makeid(8)}`,
+        type: SIDEBAR_ITEM,
+        require_auth: "false",
+        path: "",
+        code: "WEB_CONTENT",
+        component: {
+            type: "appView",
+            title: "App View",
+            icon: "fa-solid fa-crop-simple",
+            data: {
+                url: "",
+                width: "",
+                height: "",
+            },
+            props: [
+                {
+                    id: "app",
+                    label: "App",
+                    type: "text", // text, date, options,
+                    value: "",
+                    options: [], // optional
+                    hidden: false,
+                },
+                {
+                    id: "view",
+                    label: "View",
+                    type: "text", // text, date, options,
+                    value: "",
+                    options: [], // optional
+                    hidden: false,
+                },
+            ],
         },
     },
 ];

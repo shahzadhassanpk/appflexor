@@ -143,9 +143,9 @@ function Radio(props) {
                 [key]: value,
             });
 
-            // if (key && value && props.handleInputFields) {
-            //     props.handleInputFields(key, value);
-            // }
+            if (key && value && props.handleInputFields) {
+                props.handleInputFields(key, value);
+            }
         }
     }, [props.component.data]);
 

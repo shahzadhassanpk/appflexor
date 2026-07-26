@@ -3,7 +3,11 @@ import React, { useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
 import { TIME_FORMAT_FOR_USER_VIEW } from "../../../../../../Config";
 import { ErrorBoundary } from "../../../../../../utils/ErrorBoundry";
-import { formatTimeForDataBase, parseDBDateTime, parseDBTime } from "../../../../../../utils/utils";
+import {
+    formatTimeForDataBase,
+    parseDBDateTime,
+    parseDBTime,
+} from "../../../../../../utils/utils";
 import TextPropsEditor from "../../props-editors/TextPropsEditor";
 import useGlobalData from "../../../../../../components/useGlobal";
 import { evaluateExpression } from "../../../../../content-management/page-builder/datalist-viewer/datalist-filter-helpers/DatalistFilters";
@@ -12,6 +16,7 @@ import {
     formatTimeForUserView,
     localToUTCDateTime,
     formatDateTimeToISO,
+    detectDeviceType,
 } from "../../../../../../utils/utils";
 
 /**
@@ -35,6 +40,7 @@ function Time(props) {
     const [toggleModalWindow, setToggleModalWindow] = useState("restore");
 
     const expressionProps = useGlobalData();
+    const deviceType = detectDeviceType();
 
     useEffect(() => {
         if (props.component && props.component.data) {
@@ -129,21 +135,21 @@ function Time(props) {
             let dbFormat = value;
             try {
                 let arrTime = value.split(":");
-                console.log("************ value:"+value);
+                console.log("************ value:" + value);
                 today.setHours(arrTime[0]);
                 today.setMinutes(arrTime[1]);
                 let local = formatDateTimeToISO(today);
-                console.log("************ local:"+local);
-                let utc = localToUTCDateTime(local);                
+                console.log("************ local:" + local);
+                let utc = localToUTCDateTime(local);
                 dbFormat = formatTimeForDataBase(utc);
-                console.log("************ dbFormat:"+local);
+                console.log("************ dbFormat:" + local);
                 // setObj(prev => ({
                 //     ...prev,
                 //     [key]: utc,
                 // }));
             } catch (e) {}
             setIsValidField(isValid);
-            
+
             if (props.handleInputFields) {
                 props.handleInputFields(
                     componentData.db_column,
@@ -237,8 +243,8 @@ function Time(props) {
                     props.mode === props.modeType.readonly) && (
                     <>
                         {visible && (
-                            <>
-                                <div className="input-group input-group-sm">
+                            <div className="input-group input-group-sm">
+                                {deviceType !== "mobile" ? (
                                     <input
                                         type="time"
                                         className={`input-group date-time-picker form-control  ${
@@ -256,8 +262,8 @@ function Time(props) {
                                         data={formatTimeForUserView(
                                             obj[componentData.db_column],
                                         )}
-                                        value={parseDBTime(obj[componentData.db_column])}
-                                        onChange={(e)=>handleChange(e)}
+                                        // value={parseDBTime(obj[componentData.db_column])}
+                                        onChange={e => handleChange(e)}
                                         // onBlur={e => handleOnBlur(e)}
                                         disabled={
                                             props.mode ===
@@ -268,24 +274,55 @@ function Time(props) {
                                                 props.modeType.preview
                                                 ? true
                                                 : componentData.readonly ===
-                                                      "YES" || disable
-                                                ? true
-                                                : false
+                                                        "YES" || disable
+                                                  ? true
+                                                  : false
                                         }
                                     />
-                                    <span className="input-group-text">
-                                        <div
-                                            name={componentData.db_column}
-                                            className="text-decoration-none pointer"
-                                            onClick={handleClear}>
-                                            clear
-                                        </div>
-                                    </span>
-                                </div>
-                                {/* <p className="text-danger">
-                                    {message && <span>{message}</span>}
-                                </p> */}
-                            </>
+                                ) : (
+                                    <input
+                                        type="time"
+                                        className={`input-group date-time-picker form-control  ${
+                                            componentData.required &&
+                                            componentData.required === "YES"
+                                                ? !isValidField
+                                                    ? "form-control-danger"
+                                                    : ""
+                                                : ""
+                                        } `}
+                                        name={
+                                            componentData.db_column &&
+                                            componentData.db_column
+                                        }
+                                        value={parseDBTime(
+                                            obj[componentData.db_column],
+                                        )}
+                                        onChange={e => handleChange(e)}
+                                        // onBlur={e => handleOnBlur(e)}
+                                        disabled={
+                                            props.mode ===
+                                                props.modeType.design ||
+                                            props.mode ===
+                                                props.modeType.readonly ||
+                                            props.mode ===
+                                                props.modeType.preview
+                                                ? true
+                                                : componentData.readonly ===
+                                                        "YES" || disable
+                                                  ? true
+                                                  : false
+                                        }
+                                    />
+                                )}
+                                <span className="input-group-text">
+                                    <div
+                                        name={componentData.db_column}
+                                        className="text-decoration-none pointer"
+                                        onClick={handleClear}>
+                                        clear
+                                    </div>
+                                </span>
+                            </div>
                         )}
                     </>
                 )}

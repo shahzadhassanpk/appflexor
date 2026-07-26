@@ -779,7 +779,7 @@ function SiteDetails({
                                             }
                                         />
                                         <label className="form-check-label">
-                                            Body Left
+                                            Body left
                                         </label>
                                     </div>
                                 </div>

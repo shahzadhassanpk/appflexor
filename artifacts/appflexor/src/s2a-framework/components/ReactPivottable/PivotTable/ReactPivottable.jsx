@@ -156,7 +156,6 @@ export default function ReactPivottable(props) {
                     console.log(`UNAUTHORIZED, please login.`);
                 } else if (response.data.C_STATUS === "SUCCESS") {
                     if (response.data.C_DATA.pivotDataSet) {
-                        // debugger;
                         let items = response.data.C_DATA.pivotDataSet;
                         setList(items);
                     } else {

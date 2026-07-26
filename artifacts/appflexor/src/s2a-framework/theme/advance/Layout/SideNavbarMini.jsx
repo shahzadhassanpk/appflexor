@@ -1,79 +1,91 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { NAVBAR_STATE } from "../../../contants";
 import BrandLogoMini from "./BrandLogoMini";
 import SideBarNavlinks from "./SideBarNavlinks";
 import SidebarNavlinksMini from "./SideBarNavlinksMini";
 
-function SideNavbarMini({ isAuthorized, appModules, moduleFeatures }) {
-    const [toggleMiniState, setToggleMiniState] = useState(NAVBAR_STATE.CON);
-    const navbarRef = useRef();
+function SideNavbarMini({
+    isAuthorized,
+    appModules,
+    moduleFeatures,
+    setToggleMiniNavbar,
+    MENU,
+}) {
+    const [isHovered, setIsHovered] = useState(false);
 
-    function expandMiniNavbar() {
-        if (navbarRef) {
-            if (
-                !navbarRef.current.classList.contains("show") &&
-                !navbarRef.current.classList.contains("remove-left-margin")
-            ) {
-                navbarRef.current.classList.add("show");
-                navbarRef.current.classList.add("remove-left-margin");
-                setToggleMiniState(NAVBAR_STATE.EXP);
-            }
-        }
-    }
+    function expandSidebar() {
+        setToggleMiniNavbar(MENU.FIXED);
+        localStorage.setItem("SIDE_NAVBAR_STATE", MENU.FIXED);
 
-    function contractMiniNavbar() {
-        if (navbarRef) {
-            if (navbarRef.current.classList.contains("show")) {
-                navbarRef.current.classList.remove("show");
-                setToggleMiniState(NAVBAR_STATE.CON);
-            }
-
-            if (navbarRef.current.classList.contains("remove-left-margin")) {
-                navbarRef.current.classList.remove("remove-left-margin");
-            }
-        }
+        ["main", "footer"].forEach(id => {
+            const element = document.getElementById(id);
+            if (!element) return;
+            element.classList.remove("remove-margin");
+            element.classList.remove("add-margin-60");
+            element.classList.add("add-margin");
+        });
     }
 
     return (
-        <div
-            ref={navbarRef}
+        <aside
             id="sideNavbarMini"
-            className="side-navbar-mini offcanvas offcanvas-start sidebar-width"
-            tabIndex="-1"
-            onMouseEnter={() => expandMiniNavbar()}
-            onMouseLeave={() => contractMiniNavbar()}>
-            <BrandLogoMini
-                toggleMiniState={toggleMiniState}
-                STATE={NAVBAR_STATE}
-            />
-            <div
-                className={`offcanvas-body ${
-                    toggleMiniState === NAVBAR_STATE.CON
-                        ? " navbar-contracted overflow-y-hidden"
-                        : ""
-                }`}>
-                {isAuthorized === true && (
-                    <React.Fragment>
-                        {toggleMiniState === NAVBAR_STATE.EXP && (
-                            <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                                <SideBarNavlinks
-                                    appModules={appModules}
-                                    moduleFeatures={
-                                        moduleFeatures
-                                    }></SideBarNavlinks>
-                            </ul>
-                        )}
-                        {toggleMiniState === NAVBAR_STATE.CON && (
-                            <SidebarNavlinksMini
-                                appModules={appModules}
-                                moduleFeatures={
-                                    moduleFeatures
-                                }></SidebarNavlinksMini>
-                        )}
-                    </React.Fragment>
-                )}
+            className={`app-sidebar app-sidebar-mini ${
+                isHovered ? "app-sidebar-hover-expanded" : ""
+            }`}
+            aria-label={isHovered ? "Expanded sidebar" : "Collapsed sidebar"}
+            onPointerLeave={() => setIsHovered(false)}
+            onPointerOver={event => {
+                if (event.target.closest(".mini-nav-icon-wrapper")) {
+                    setIsHovered(true);
+                }
+            }}
+            onFocus={event => {
+                if (event.target.closest(".mini-nav-icon-wrapper")) {
+                    setIsHovered(true);
+                }
+            }}
+            onBlur={event => {
+                if (!event.currentTarget.contains(event.relatedTarget)) {
+                    setIsHovered(false);
+                }
+            }}
+            onClick={event => {
+                if (event.target.closest("a")) setIsHovered(false);
+            }}>
+            <div className="app-sidebar-mini-brand">
+                <BrandLogoMini
+                    toggleMiniState={
+                        isHovered ? NAVBAR_STATE.EXP : NAVBAR_STATE.CON
+                    }
+                    STATE={NAVBAR_STATE}
+                />
             </div>
-        </div>
+            <nav className="app-sidebar-mini-navigation" aria-label="Main navigation">
+                {isAuthorized === true && !isHovered && (
+                    <SidebarNavlinksMini
+                        appModules={appModules}
+                        moduleFeatures={moduleFeatures}
+                        onExpand={expandSidebar}
+                    />
+                )}
+                {isAuthorized === true && isHovered && (
+                    <SideBarNavlinks
+                        appModules={appModules}
+                        moduleFeatures={moduleFeatures}
+                    />
+                )}
+            </nav>
+            <div className={`app-sidebar-mini-actions ${isHovered ? "d-none" : ""}`}>
+                <button
+                    type="button"
+                    className="app-sidebar-expand"
+                    onClick={expandSidebar}
+                    aria-label="Expand sidebar"
+                    title="Expand sidebar">
+                    <i className="fa-solid fa-angles-right" aria-hidden="true"></i>
+                </button>
+            </div>
+        </aside>
     );
 }
 

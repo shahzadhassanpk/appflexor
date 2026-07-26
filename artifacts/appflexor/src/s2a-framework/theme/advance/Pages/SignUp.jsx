@@ -1,19 +1,11 @@
 import axios from "axios";
-import $ from "jquery";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-import { useContext } from "react";
 import { AppContext } from "../../../../AppContext";
-import { SIGNUP_URL } from "../../../Config";
-import {
-    disposeTooltip,
-    enableTooltip,
-    tryParseJSONObject,
-} from "../../../utils/utils";
+import { SIGNUP_URL, IMAGE_BASE } from "../../../Config";
+import { disposeTooltip, enableTooltip, tryParseJSONObject } from "../../../utils/utils";
 import BrandLogo from "../Layout/BrandLogo";
-import SocialLogin from "./SocialLogin";
-import LoginBackground from "./LoginBackground";
+import { Interweave } from "interweave";
 
 function SignUp() {
     let initialState = {
@@ -24,638 +16,187 @@ function SignUp() {
         password: "",
     };
     const appContext = useContext(AppContext);
-    const { screenView } = appContext;
     const [userDetail, setUserDetail] = useState(initialState);
     const [showPassword, setShowPassword] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState("");
     const [errors, setErrors] = useState([]);
-    const [usernameError, setUsernameError] = useState("");
-    const [emailError, setEmailError] = useState("");
+    const [errorMessages, setErrorMessages] = useState({});
     const [successMsg, setSuccessMsg] = useState("");
-    const [fadeIn, setFadeIn] = useState("");
     const [socialLogins, setSocialLogins] = useState([]);
     const navigate = useNavigate();
 
-    const clientID = appContext.brandDetails.google_client_id;
-    const clientSecret = appContext.brandDetails.google_client_secret;
-    const handleGoogleLogin = path => {
-        const newWin = window.open(
-            `/auth/${path}?clientID=${encodeURIComponent(
-                clientID,
-            )}&clientSecret=${encodeURIComponent(clientSecret)}`,
-            "_self",
-        );
-
-        if (!newWin || newWin.closed || typeof newWin.closed == "undefined") {
-            toastEmitter("Please allow popups.", true, "warning");
-        }
-    };
+    const brand = appContext?.channel || {};
+    const brandTitle = brand.brand_title || "Appflexor";
 
     useEffect(() => {
-        enableTooltip();
-
-        return () => disposeTooltip();
-    }, []);
-
-    useEffect(() => {
-        let brand = appContext.channel;
-        if (brand && !isEmpty(brand)) {
-            let link = document.querySelector("link[rel~='icon']");
-            if (!link) {
-                link = document.createElement("link");
-                link.rel = "icon";
-                document.getElementsByTagName("head")[0].appendChild(link);
-            }
-            let url =
-                brand.brand_logo && brand.brand_logo !== ""
-                    ? "/file/service/app_site/" +
-                      brand.id +
-                      "/" +
-                      brand.brand_logo
-                    : "/them/advance/images/default-logo.png";
-            link.href = url;
+        if (brand.sso_login) {
+            let sso = tryParseJSONObject(brand.sso_login, []);
+            if (sso && sso.length > 0) setSocialLogins(sso);
         }
-        if (appContext.channel.sso_login) {
-            let socialLogins = tryParseJSONObject(
-                appContext.channel.sso_login,
-                [],
-            );
-            if (socialLogins && socialLogins.length > 0) {
-                setSocialLogins(socialLogins);
-            }
-        }
-    }, [appContext.channel]);
-
-    function isEmpty(obj) {
-        for (var prop in obj) {
-            if (obj.hasOwnProperty(prop)) return false;
-        }
-        return true;
-    }
+    }, [brand]);
 
     function handleChange(evt) {
-        let name = evt.target.name;
-        let value = evt.target.value;
-        setUserDetail(prevState => ({
-            ...prevState,
-            [name]: value,
-        }));
-    }
-
-    function handleConfirmPasswordChange(evt) {
-        let value = evt.target.value;
-        setConfirmPassword(value);
-    }
-
-    function handleUsernameError(message) {
-        setUsernameError(message);
-        setTimeout(() => {
-            setFadeIn("fade");
-        }, 3500);
-        setTimeout(() => {
-            setUsernameError(" ");
-            setFadeIn(" ");
-        }, 4000);
-    }
-
-    function handleEmailError(message) {
-        setEmailError(message);
-        setTimeout(() => {
-            setFadeIn("fade");
-        }, 3500);
-        setTimeout(() => {
-            setEmailError(" ");
-            setFadeIn(" ");
-        }, 4000);
-    }
-
-    function handleSuccessSignup(message) {
-        setSuccessMsg(message);
-        setTimeout(() => {
-            setFadeIn("fade");
-        }, 2000);
-        setTimeout(() => {
-            setSuccessMsg(" ");
-            setFadeIn(" ");
-        }, 2500);
-        setTimeout(() => {
-            navigate("/login");
-        }, 3000);
-    }
-
-    function handleShowPassword(event) {
-        setShowPassword(event.target.checked);
+        setUserDetail(prev => ({ ...prev, [evt.target.name]: evt.target.value }));
     }
 
     function validation() {
-        let errorsFound = [];
+        let errs = [];
+        const emailRxg = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
 
-        const emailRxg =
-            /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
+        if (!userDetail.firstname) errs.push("firstname");
+        if (!userDetail.lastname) errs.push("lastname");
+        if (!userDetail.username) errs.push("username");
+        if (!emailRxg.test(userDetail.email)) errs.push("email");
+        if (!userDetail.password) errs.push("password");
+        if (userDetail.password !== confirmPassword) errs.push("confirm_password");
 
-        for (var key in userDetail) {
-            if (key === "email") {
-                if (!emailRxg.test(userDetail[key])) {
-                    errorsFound.push(key);
-                }
-            } else if (key === "password") {
-                if (confirmPassword.length < 1 || userDetail[key].length < 1) {
-                    errorsFound.push(key);
-                }
-                if (
-                    confirmPassword.length > 0 &&
-                    userDetail[key].length > 0 &&
-                    confirmPassword !== userDetail[key]
-                ) {
-                    errorsFound.push("confirm_password");
-                }
-            } else if (userDetail[key] === "") {
-                errorsFound.push(key);
-            }
-        }
-
-        setErrors(errorsFound);
-
-        if (errorsFound.length > 0) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    function generateUsername() {
-        var first_name = userDetail.firstname;
-        var last_name = userDetail.lastname;
-
-        var username =
-            first_name + last_name + Math.floor(Math.random() * (99 - 0) + 0);
-        username = username.replaceAll(" ", "").toLowerCase();
-
-        setUserDetail(prevState => ({
-            ...prevState,
-            username: username,
-        }));
-
-        const callback = status => {
-            if (status === "FAIL") {
-                generateUsername();
-            }
-        };
-
-        checkDuplicateUsername(username, callback);
+        setErrors(errs);
+        return errs.length === 0;
     }
 
     async function signUp() {
+        setErrorMessages({});
         if (validation()) {
             try {
-                const userExist = await checkDuplicateUsername(
-                    userDetail.username,
-                );
+                // Check duplicates
+                const [userExist, emailExist] = await Promise.all([
+                    checkDuplicate("username", userDetail.username),
+                    checkDuplicate("email", userDetail.email)
+                ]);
 
-                const emailExist = await checkDuplicateEmail(userDetail.email);
+                if (emailExist) return setErrorMessages(prev => ({ ...prev, email: "Email already exists." }));
+                if (userExist) return setErrorMessages(prev => ({ ...prev, username: "Username already exists." }));
 
-                if (emailExist) {
-                    return handleEmailError("Email already exists.");
+                const payload = { ...userDetail, channel_id: brand.id };
+                const res = await axios.post(`${SIGNUP_URL}?service.key=register.user`, payload);
+                
+                if (res.data.C_STATUS === "SUCCESS") {
+                    setSuccessMsg("Account created successfully! Redirecting...");
+                    setTimeout(() => navigate("/login"), 2000);
                 }
-
-                if (userExist) {
-                    return handleUsernameError("Username already exists.");
-                }
-
-                const updatedUserDetail = {
-                    ...userDetail,
-                    channel_id: appContext.channel.id,
-                };
-
-                const signUpUrl = `${SIGNUP_URL}?service.key=register.user`;
-                axios.post(signUpUrl, updatedUserDetail).then(response => {
-                    if (response.data.C_STATUS == "SUCCESS") {
-                        setUserDetail(initialState);
-                        setConfirmPassword("");
-                        handleSuccessSignup(
-                            "Signup was successfull, redirecting to login page",
-                        );
-                    }
-                });
-            } catch (error) {
-                console.error(error);
+            } catch (err) {
+                console.error(err);
             }
         }
     }
 
-    function checkDuplicateUsername(username, callback) {
-        const url = `${SIGNUP_URL}?service.key=check.username`;
-        const dataRequest = {
-            username,
-        };
-        return new Promise((resolve, reject) => {
-            axios
-                .post(url, dataRequest)
-                .then(function (response) {
-                    if (response.status === 200) {
-                        const status = response.data.C_STATUS;
-                        if (callback) {
-                            callback(status);
-                        }
-
-                        if (status === "FAIL") {
-                            resolve(true);
-                        } else if (status === "SUCCESS") {
-                            resolve(false);
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.error("***********:" + err);
-                });
-        });
-    }
-
-    function checkDuplicateEmail(email) {
-        const url = `${SIGNUP_URL}?service.key=check.email`;
-        const dataRequest = {
-            email,
-        };
-        return new Promise((resolve, reject) => {
-            axios
-                .post(url, dataRequest)
-                .then(function (response) {
-                    if (response.status === 200) {
-                        const status = response.data.C_STATUS;
-
-                        if (status === "FAIL") {
-                            resolve(true);
-                        } else if (status === "SUCCESS") {
-                            resolve(false);
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.error("***********:" + err);
-                });
-        });
+    function checkDuplicate(type, value) {
+        return axios.post(`${SIGNUP_URL}?service.key=check.${type}`, { [type]: value })
+            .then(res => res.data.C_STATUS === "FAIL") // FAIL means it exists
+            .catch(() => false);
     }
 
     return (
-        <React.Fragment>
-            <div
-                id="signup"
-                className="s2a-signup">
-                <style>{appContext?.channel?.css_styles}</style>
-                <div className="row m-0">
-                    {screenView === "lg" && (
-                        <LoginBackground> </LoginBackground>
-                    )}
-                    <div className="col-sm-6 login-brand-bg">
-                        <div className="login-content">
-                            <div className="s2a-brand-container">
-                                <BrandLogo></BrandLogo>
-                                <div className="signup-form rounded-4 border-shadow">
-                                    <div className="row mb-2">
-                                        <div className="col registerd">
-                                            <p className="h5 text-center login-text">
-                                                Get Registered
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="row">
-                                            <div className="col-sm-6 mb-3">
-                                                <input
-                                                    type="text"
-                                                    name="firstname"
-                                                    value={userDetail.firstname}
-                                                    onChange={handleChange}
-                                                    className="form-control form-control-custom"
-                                                    placeholder="First Name*"
-                                                    tabIndex={1}
-                                                    required
-                                                />
+        <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 font-sans">
+            <div className="hidden lg:flex w-[50%] xl:w-[60%] bg-slate-100 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex-col p-12 relative overflow-hidden">
+                <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-lighten opacity-70"></div>
+                <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-lighten opacity-70"></div>
+                
+                <div className="relative z-10 flex flex-col h-full justify-center max-w-2xl mx-auto">
+                    <h1 className="text-5xl font-extrabold text-gray-900 dark:text-white leading-tight mb-6">
+                        Join <span className="text-indigo-600 dark:text-indigo-400"><Interweave content={brandTitle}/></span> today.
+                    </h1>
+                    <p className="text-xl text-gray-600 dark:text-slate-300 mb-12">
+                        Get started with the most powerful automation platform and transform your business processes.
+                    </p>
+                </div>
+            </div>
 
-                                                <span
-                                                    className={`invalid-feedback ${
-                                                        errors.indexOf(
-                                                            "firstname",
-                                                        ) > -1 && "d-block"
-                                                    }`}>
-                                                    First Name is Required.
-                                                </span>
-                                            </div>
-                                            <div className="col-sm-6 mb-3">
-                                                <input
-                                                    type="text"
-                                                    name="lastname"
-                                                    value={userDetail.lastname}
-                                                    onChange={handleChange}
-                                                    className="form-control form-control-custom"
-                                                    placeholder="Last Name*"
-                                                    tabIndex={2}
-                                                    required
-                                                />
-                                                <span
-                                                    className={`invalid-feedback ${
-                                                        errors.indexOf(
-                                                            "lastname",
-                                                        ) > -1 && "d-block"
-                                                    }`}>
-                                                    Last Name is Required.
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="row mb-3">
-                                            <div className="col">
-                                                <input
-                                                    type="email"
-                                                    name="email"
-                                                    value={userDetail.email}
-                                                    onChange={handleChange}
-                                                    className="form-control form-control-custom email"
-                                                    placeholder="Email*"
-                                                    tabIndex={3}
-                                                    required
-                                                />
-                                                <span
-                                                    className={`invalid-feedback ${
-                                                        errors.indexOf(
-                                                            "email",
-                                                        ) > -1 && "d-block"
-                                                    }`}>
-                                                    Invalid email.
-                                                </span>
-                                                <div
-                                                    className={`invalid-feedback d-block ${fadeIn}`}>
-                                                    {emailError}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="row mb-3">
-                                            <div className="col">
-                                                <div className="input-group">
-                                                    <input
-                                                        type="text"
-                                                        name="username"
-                                                        onChange={handleChange}
-                                                        value={userDetail.username.replaceAll(
-                                                            /['";,()<>%!#$^&*?=+:[{}`~/|\\\]]/g,
-                                                            "",
-                                                        )}
-                                                        className="form-control form-control-custom"
-                                                        placeholder="Username*"
-                                                        tabIndex={4}
-                                                        required
-                                                    />
-                                                    {/* <span
-                                                className="input-group-text suggest-btn p-0"
-                                                id="basic-addon2">
-                                                <button
-                                                    className={`btn username-btn ${userDetail.firstname ==
-                                                            "" ||
-                                                            userDetail.lastname ==
-                                                            ""
-                                                            ? "  text-danger "
-                                                            : "  text-success"
-                                                        } `}
-                                                    type="button"
-                                                    style={{
-                                                        cursor:
-                                                            userDetail.firstname ==
-                                                                "" ||
-                                                                userDetail.lastname ==
-                                                                ""
-                                                                ? "not-allowed"
-                                                                : "",
-                                                    }}
-                                                    onClick={() => {
-                                                        if (
-                                                            userDetail.firstname !=
-                                                            "" &&
-                                                            userDetail.lastname !=
-                                                            ""
-                                                        ) {
-                                                            generateUsername();
-                                                        }
-                                                    }}
-                                                    data-bs-toggle="tooltip"
-                                                    data-bs-title="Requires first name, last name"
-                                                    tabIndex={5}>
-                                                    Suggest
-                                                </button>
-                                            </span> */}
-                                                    <span
-                                                        className="input-group-text suggest-btn p-0"
-                                                        id="basic-addon2">
-                                                        <button
-                                                            className={`username-btn btn ${
-                                                                userDetail.email ==
-                                                                ""
-                                                                    ? " text-danger "
-                                                                    : " text-success"
-                                                            } `}
-                                                            type="button"
-                                                            style={{
-                                                                cursor:
-                                                                    userDetail.email ==
-                                                                    ""
-                                                                        ? "not-allowed"
-                                                                        : "",
-                                                            }}
-                                                            onClick={() => {
-                                                                if (
-                                                                    userDetail.email !==
-                                                                    ""
-                                                                ) {
-                                                                    const sanitizedEmail =
-                                                                        userDetail.email.replaceAll(
-                                                                            /['";,()<>%!#$^&*?=+:[{}`~/|\\\]]/g,
-                                                                            "",
-                                                                        );
+            <div className="w-full lg:w-[50%] xl:w-[40%] flex items-center justify-center p-8 bg-white dark:bg-slate-950 overflow-y-auto">
+                <div className="w-full max-w-md py-8">
+                    <div className="mb-8 flex justify-center lg:hidden">
+                        <BrandLogo />
+                    </div>
 
-                                                                    setUserDetail(
-                                                                        prev => ({
-                                                                            ...prev,
-                                                                            username:
-                                                                                sanitizedEmail,
-                                                                        }),
-                                                                    );
-                                                                }
-                                                            }}
-                                                            data-bs-toggle="tooltip"
-                                                            data-bs-title="Requires email"
-                                                            tabIndex={6}>
-                                                            Email as a username
-                                                        </button>
-                                                    </span>
-                                                </div>
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-gray-100 dark:border-slate-800 p-8 sm:p-10">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Create an account</h2>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 text-center mb-8">Enter your details to get started.</p>
 
-                                                <div
-                                                    className={`invalid-feedback ${
-                                                        errors.indexOf(
-                                                            "username",
-                                                        ) > -1 && "d-block"
-                                                    }`}>
-                                                    Username is Required.
-                                                </div>
-                                                <div
-                                                    className={`invalid-feedback d-block ${fadeIn}`}>
-                                                    {usernameError}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="row">
-                                            <div className="col-sm-12 mb-3">
-                                                <input
-                                                    name="password"
-                                                    className="form-control form-control-custom password"
-                                                    placeholder="Password*"
-                                                    type={
-                                                        showPassword
-                                                            ? "text"
-                                                            : "password"
-                                                    }
-                                                    value={userDetail.password}
-                                                    onChange={handleChange}
-                                                    tabIndex={7}
-                                                    required
-                                                />
-                                                <span
-                                                    className={`invalid-feedback ${
-                                                        errors.indexOf(
-                                                            "password",
-                                                        ) > -1 && "d-block"
-                                                    }`}>
-                                                    Password is Required
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="row">
-                                            <div className="col-sm-12 mb-3">
-                                                <input
-                                                    name="password"
-                                                    className="form-control form-control-custom password"
-                                                    placeholder="Confirm Password*"
-                                                    type={
-                                                        showPassword
-                                                            ? "text"
-                                                            : "password"
-                                                    }
-                                                    value={confirmPassword}
-                                                    onChange={e =>
-                                                        handleConfirmPasswordChange(
-                                                            e,
-                                                        )
-                                                    }
-                                                    tabIndex={8}
-                                                    required
-                                                />
-                                                <span
-                                                    className={`invalid-feedback ${
-                                                        errors.indexOf(
-                                                            "confirm_password",
-                                                        ) > -1 && "d-block"
-                                                    }`}>
-                                                    Password didn't match
-                                                </span>
-                                            </div>
-                                        </div>
+                        {successMsg && (
+                            <div className="mb-6 p-4 rounded-xl bg-green-50 text-green-700 text-sm font-medium text-center">
+                                {successMsg}
+                            </div>
+                        )}
 
-                                        <div className="action-row mb-2">
-                                            <div className="col-sm-6">
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-sm button-theme"
-                                                    onClick={() => signUp()}
-                                                    tabIndex={9}>
-                                                    Sign up
-                                                </button>
-                                            </div>
-                                            <div className="form-check my-2 ms-2 ps-3">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    value=""
-                                                    id="password-show"
-                                                    onChange={event => {
-                                                        handleShowPassword(
-                                                            event,
-                                                        );
-                                                    }}
-                                                    tabIndex={10}
-                                                />
-                                                <label className="form-check-label show-password">
-                                                    Show password
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div className="row">
-                                            <Link
-                                                to="/login"
-                                                className="btn btn-link"
-                                                tabIndex={11}>
-                                                Already have an account
-                                            </Link>
-                                            <center>
-                                                <span className="text-success">
-                                                    {successMsg}
-                                                </span>
-                                            </center>
-                                        </div>
-                                        <div className="col-sm-12 text-center">
-                                            {/* {appContext.channel &&
-                                                appContext.channel
-                                                    .allow_signup === "YES" &&
-                                                socialLogins &&
-                                                socialLogins.length > 0 && (
-                                                    <SocialLogin
-                                                        socialLogins={
-                                                            socialLogins
-                                                        }
-                                                    />
-                                                )} */}
-                                            {appContext.channel &&
-                                                appContext.channel
-                                                    .allow_signup === "YES" &&
-                                                socialLogins &&
-                                                socialLogins.length > 0 && (
-                                                    <button
-                                                        type="button"
-                                                        style={{
-                                                            width: "100%",
-                                                        }}
-                                                        className="sso-buttons rounded pointer"
-                                                        onClick={() =>
-                                                            handleGoogleLogin(
-                                                                "google",
-                                                            )
-                                                        }>
-                                                        <i className="fa-brands fa-google"></i>
-                                                        &nbsp; Continue with
-                                                        Google
-                                                    </button>
-                                                )}
-                                        </div>
-                                        {/* {socialLogins &&
-                                        socialLogins.length > 0 && (
-                                            <div className="row">
-                                                <center className="mb-2 fw-2 login-text">
-                                                    Or
-                                                </center>
-                                                <div className="col p-0 mt-2">
-                                                    <SocialLogin
-                                                        socialLogins={
-                                                            socialLogins
-                                                        }
-                                                    />
-                                                </div>
-                                            </div>
-                                        )} */}
-                                    </div>
+                        <form className="space-y-4" onSubmit={e => e.preventDefault()}>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">First Name</label>
+                                    <input
+                                        type="text" name="firstname" value={userDetail.firstname} onChange={handleChange}
+                                        className={`w-full bg-gray-50 dark:bg-slate-950 border ${errors.includes("firstname") ? "border-red-500" : "border-gray-200 dark:border-slate-800"} rounded-xl py-2.5 px-3 text-sm text-gray-900 dark:text-white focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">Last Name</label>
+                                    <input
+                                        type="text" name="lastname" value={userDetail.lastname} onChange={handleChange}
+                                        className={`w-full bg-gray-50 dark:bg-slate-950 border ${errors.includes("lastname") ? "border-red-500" : "border-gray-200 dark:border-slate-800"} rounded-xl py-2.5 px-3 text-sm text-gray-900 dark:text-white focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none`}
+                                    />
                                 </div>
                             </div>
-                        </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">Email Address</label>
+                                <input
+                                    type="email" name="email" value={userDetail.email} onChange={handleChange}
+                                    className={`w-full bg-gray-50 dark:bg-slate-950 border ${errors.includes("email") || errorMessages.email ? "border-red-500" : "border-gray-200 dark:border-slate-800"} rounded-xl py-2.5 px-3 text-sm text-gray-900 dark:text-white focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none`}
+                                />
+                                {errorMessages.email && <p className="mt-1 text-xs text-red-500">{errorMessages.email}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">Username</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text" name="username" value={userDetail.username} onChange={handleChange}
+                                        className={`flex-1 bg-gray-50 dark:bg-slate-950 border ${errors.includes("username") || errorMessages.username ? "border-red-500" : "border-gray-200 dark:border-slate-800"} rounded-xl py-2.5 px-3 text-sm text-gray-900 dark:text-white focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none`}
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => { if(userDetail.email) setUserDetail(p => ({...p, username: userDetail.email})) }}
+                                        className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 text-xs font-medium rounded-xl whitespace-nowrap transition-colors"
+                                    >
+                                        Use Email
+                                    </button>
+                                </div>
+                                {errorMessages.username && <p className="mt-1 text-xs text-red-500">{errorMessages.username}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">Password</label>
+                                <input
+                                    type={showPassword ? "text" : "password"} name="password" value={userDetail.password} onChange={handleChange}
+                                    className={`w-full bg-gray-50 dark:bg-slate-950 border ${errors.includes("password") ? "border-red-500" : "border-gray-200 dark:border-slate-800"} rounded-xl py-2.5 px-3 text-sm text-gray-900 dark:text-white focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none`}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">Confirm Password</label>
+                                <input
+                                    type={showPassword ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                                    className={`w-full bg-gray-50 dark:bg-slate-950 border ${errors.includes("confirm_password") ? "border-red-500" : "border-gray-200 dark:border-slate-800"} rounded-xl py-2.5 px-3 text-sm text-gray-900 dark:text-white focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none`}
+                                />
+                            </div>
+
+                            <div className="flex items-center pb-2">
+                                <input type="checkbox" id="showPass" checked={showPassword} onChange={e => setShowPassword(e.target.checked)} className="rounded text-indigo-600 border-gray-300 focus:ring-indigo-500" />
+                                <label htmlFor="showPass" className="ml-2 text-xs text-gray-600 dark:text-slate-400 select-none">Show passwords</label>
+                            </div>
+
+                            <button type="button" onClick={signUp} className="w-full py-3 px-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors">
+                                Create Account
+                            </button>
+
+                            <div className="text-center mt-6">
+                                <span className="text-sm text-gray-500 dark:text-slate-400">Already have an account? </span>
+                                <Link to="/login" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Sign in</Link>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
-        </React.Fragment>
+        </div>
     );
 }
 

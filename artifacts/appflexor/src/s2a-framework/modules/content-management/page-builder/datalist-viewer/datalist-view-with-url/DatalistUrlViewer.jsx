@@ -35,7 +35,7 @@ function DatalistUrlViewer(props) {
                         ...pre,
                         fkColumn: fkColumn[1],
                         fkValue: fkValue[1],
-                        filterCondition:filterCondition[1],
+                        filterCondition: filterCondition[1],
                     }));
                 }
                 getSelectedDatalist(selectedId);
@@ -78,6 +78,7 @@ function DatalistUrlViewer(props) {
 
     return (
         <>
+            {/* {props?.hideLabel ? "hide" : "show"} */}
             {selectedDatalist &&
                 selectedDatalist.id !== "" &&
                 url.fkColumn === "" && (
@@ -87,6 +88,7 @@ function DatalistUrlViewer(props) {
                         modeType={modeType}
                         fkColumn={props && props.fkColumn}
                         fkValue={props && props.fkValue}
+                        hideLabel={props && props.hideLabel}
                     />
                 )}
             {selectedDatalist &&

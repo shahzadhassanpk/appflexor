@@ -597,7 +597,7 @@ export default function ChartModal(props) {
                                     </div>
                                 )}
                             <div className="row px-2 mt-2">
-                                <div className="col-sm-4">
+                                <div className="col-sm-2">
                                     <label
                                         htmlFor="keyColumn"
                                         className="form-label d-flex justify-content-between chart-legend">
@@ -643,7 +643,103 @@ export default function ChartModal(props) {
                                         ))}
                                     </select>
                                 </div>
-                                <div className="col-sm-4">
+                                <div className="col-sm-2">
+                                    <label
+                                        htmlFor="keyColumn"
+                                        className="form-label d-flex justify-content-between chart-legend">
+                                        <span className="d-inline-block">
+                                            Fact Column&nbsp;
+                                            <span className="text-danger">
+                                                *
+                                            </span>
+                                        </span>
+                                        <span
+                                            className={`text-danger text-end ${
+                                                props.error.indexOf(
+                                                    "keyColumn",
+                                                ) > -1
+                                                    ? "d-inline-block"
+                                                    : "d-none"
+                                            }`}>
+                                            Select column
+                                        </span>
+                                    </label>
+                                    <select
+                                        disabled={fields && fields.length < 1}
+                                        type="text"
+                                        className="form-select"
+                                        id="factColumn"
+                                        name="factColumn"
+                                        value={input && input.factColumn}
+                                        onChange={handleInput}
+                                        required>
+                                        <option
+                                            key="first"
+                                            value="">
+                                            Default
+                                        </option>
+                                        {fields.map((item, i) => (
+                                            <>
+                                                <option
+                                                    key={i}
+                                                    value={item}>
+                                                    {item}
+                                                </option>
+                                            </>
+                                        ))}
+                                    </select>
+                                </div>
+                                {fields && fields.length > 2 && (
+                                    <div className="col-sm-2">
+                                        <label
+                                            htmlFor="seriesColumn"
+                                            className="form-label d-flex justify-content-between chart-legend">
+                                            <span className="d-inline-block">
+                                                Series Column&nbsp;
+                                                <span className="text-danger">
+                                                    *
+                                                </span>
+                                            </span>
+                                            <span
+                                                className={`text-danger text-end ${
+                                                    props.error.indexOf(
+                                                        "keyColumn",
+                                                    ) > -1
+                                                        ? "d-inline-block"
+                                                        : "d-none"
+                                                }`}>
+                                                Select column
+                                            </span>
+                                        </label>
+                                        <select
+                                            disabled={
+                                                fields && fields.length < 1
+                                            }
+                                            type="text"
+                                            className="form-select"
+                                            id="seriesColumn"
+                                            name="seriesColumn"
+                                            value={input && input.seriesColumn}
+                                            onChange={handleInput}
+                                            required>
+                                            <option
+                                                key="first"
+                                                value="">
+                                                Default
+                                            </option>
+                                            {fields.map((item, i) => (
+                                                <>
+                                                    <option
+                                                        key={i}
+                                                        value={item}>
+                                                        {item}
+                                                    </option>
+                                                </>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                <div className="col-sm-2">
                                     <label
                                         htmlFor="RefreshInterval"
                                         className="form-label">
@@ -680,7 +776,6 @@ export default function ChartModal(props) {
                                         className="d-flex justify-content-between">
                                         <span className="d-inline-block">
                                             Show Legend&nbsp;
-                                            
                                         </span>
                                         <span
                                             className={`text-danger text-end ${
@@ -702,7 +797,9 @@ export default function ChartModal(props) {
                                             id="show_percent"
                                             name="show_percent"
                                             value={input && input.show_percent}
-                                            checked={input && input.show_percent}
+                                            checked={
+                                                input && input.show_percent
+                                            }
                                             onChange={handleInputChecked}
                                         />
                                     </span>
@@ -710,8 +807,8 @@ export default function ChartModal(props) {
                                         htmlFor="show_percent"
                                         className="d-flex justify-content-between">
                                         <span className="d-inline-block">
-                                            Show As %&nbsp;                                            
-                                        </span>                                        
+                                            Show As %&nbsp;
+                                        </span>
                                     </label>
                                 </div>
                             </div>

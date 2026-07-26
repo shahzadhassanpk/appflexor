@@ -8,7 +8,7 @@ import { API_URL, BPM_API_URL, FILE_URL } from "../../../Config";
 import ModalBox from "../../../components/Modal/Modal";
 import { TablePagination } from "../../../components/TablePagination/TablePagination";
 import TableSorting from "../../../components/TableSorting/TableSorting";
-import { tryParseJSONObject, updateDeleteConfig } from "../../../utils/utils";
+import { tryParseJSONObject, updateDeleteConfig, formatDateTimeForUserView } from "../../../utils/utils";
 import { toastEmitter } from "../../../components/Toastify/Toastify";
 
 const DB_TABLE = "process";
@@ -29,6 +29,7 @@ function Processes({ activeTab }) {
     const appContext = useContext(AppContext);
 
     const [items, setItems] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedItem, setSelectedItem] = useState(INITIAL_STATE);
     const [formStatus, setFormStatus] = useState(STATUS.none);
     const [fileStatus, setFileStatus] = useState("");
@@ -66,11 +67,23 @@ function Processes({ activeTab }) {
     }, [selectedItem]);
 
     const getPaginateData = (current, pageSize) => {
-        if (items) {
-            return items.slice((current - 1) * pageSize, current * pageSize);
+        const data = getFilteredItems();
+        if (data) {
+            return data.slice((current - 1) * pageSize, current * pageSize);
         }
         return [];
     };
+
+    function getFilteredItems() {
+        if (!searchTerm || searchTerm.trim() === "") return items;
+        const q = searchTerm.trim().toLowerCase();
+        return items.filter(it => {
+            const title = (it.title || "").toString().toLowerCase();
+            const key = (it.process_def_key || "").toString().toLowerCase();
+            const file = (it.process_file || "").toString().toLowerCase();
+            return title.indexOf(q) > -1 || key.indexOf(q) > -1 || file.indexOf(q) > -1;
+        });
+    }
 
     function editItem(item) {
         setFormStatus(STATUS.update);
@@ -542,6 +555,28 @@ function Processes({ activeTab }) {
             {/* <code>{JSON.stringify(items, null, 2)}</code> */}
 
             <div className="row p-2 m-0">
+                <div className="col-sm-12 p-2">
+                    <div className="input-group">
+                        <span className="input-group-text">
+                            <i className="fa fa-search"></i>
+                        </span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Search by title, def key or file"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                        />
+                        {searchTerm && (
+                            <button
+                                className="btn btn-light"
+                                onClick={() => setSearchTerm("")}
+                                title="Clear">
+                                <i className="fa fa-times" />
+                            </button>
+                        )}
+                    </div>
+                </div>
                 <div className="col-sm-12 p-0">
                     <Table className="s2a-table table-bordered table-hover mb-0">
                         <Thead className="thead">
@@ -568,6 +603,9 @@ function Processes({ activeTab }) {
                                 <Th className="col-sm-2 table-row text-left">
                                     Current Deployment
                                 </Th>
+                                <Th className="col-sm-2 table-row text-left">
+                                    Last Updated
+                                </Th>
                                 <Th className="col-sm-2 table-row text-left"></Th>
                             </Tr>
                         </Thead>
@@ -593,7 +631,9 @@ function Processes({ activeTab }) {
                                         <Td className="col-sm-2 table-row text-left">
                                             {item?.version}
                                         </Td>
-
+                                        <Td className="col-sm-2 table-row text-left">
+                                            {formatDateTimeForUserView(item?.datemodified)}
+                                        </Td>
                                         <Td className="col-sm-2 table-row text-left">
                                             <div className="data-cell d-flex">
                                                 <span
@@ -644,7 +684,7 @@ function Processes({ activeTab }) {
                         setSize={setSize}
                         current={current}
                         setCurrent={setCurrent}
-                        tableData={items}
+                        tableData={getFilteredItems()}
                     />
                 </div>
 

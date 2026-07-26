@@ -249,9 +249,10 @@ export default function CustomActionForForms(props) {
             }));
         } else if (
             name === "allow_refresh" ||
-            name === "allow_create_col"
+            name === "allow_create_col" || name === "hide_label"
             // || name === "json_export"
         ) {
+            debugger
             setAction(prev => ({
                 ...prev,
                 [name]: checked,
@@ -520,8 +521,8 @@ export default function CustomActionForForms(props) {
                                         </Form.Label>
                                         {linkType.map((item, index) => (
                                             <>
-                                                {item.code !== "PROCESS" &&
-                                                    item.code !== "DATALIST" &&
+                                                {
+                                                    // item.code !== "DATALIST" &&
                                                     item.code !== "POST" && (
                                                         <React.Fragment
                                                             key={index}>
@@ -556,7 +557,8 @@ export default function CustomActionForForms(props) {
                                                                 {item.title}
                                                             </label>
                                                         </React.Fragment>
-                                                    )}
+                                                    )
+                                                }
                                             </>
                                         ))}
                                     </Form.Group>
@@ -891,12 +893,12 @@ export default function CustomActionForForms(props) {
                                                                 ? false
                                                                 : true
                                                         }
-                                                        required={
-                                                            action?.link_type ===
-                                                            "PROCESS"
-                                                                ? true
-                                                                : false
-                                                        }
+                                                        // required={
+                                                        //     action?.link_type ===
+                                                        //     "PROCESS"
+                                                        //         ? true
+                                                        //         : false
+                                                        // }
                                                         placeholder="please enter confirm message"
                                                         name="deploy_msg"
                                                         value={
@@ -913,7 +915,7 @@ export default function CustomActionForForms(props) {
                                         <>
                                             <Form.Group
                                                 as={Col}
-                                                sm="6"
+                                                sm="4"
                                                 controlId="se">
                                                 <Form.Label>
                                                     Select Datalist
@@ -949,14 +951,26 @@ export default function CustomActionForForms(props) {
                                                             </option>
                                                         ))}
                                                 </Form.Select>
+                                            </Form.Group>                                            
+                                            <Form.Group
+                                                as={Col}
+                                                sm="2"
+                                                controlId="se">
+                                                <Form.Check
+                                                    type="checkbox"
+                                                    label="Hide Label"
+                                                    className="mt-4"                                                    
+                                                    name="hide_label"
+                                                    checked={action?.hide_label} // use checked for boolean
+                                                    onChange={handleInput}
+                                                />
                                             </Form.Group>
+
                                             <HyperTargetField
                                                 action={action}
-                                                hyperTargetOptions={hyperTargetOptions.filter(
-                                                    option =>
-                                                        option.code !==
-                                                        "dialog",
-                                                )}
+                                                hyperTargetOptions={
+                                                    hyperTargetOptions
+                                                }
                                                 handleInput={handleInput}
                                                 modalSizes={modalSizes}
                                                 asidePositions={asidePositions}
@@ -1271,6 +1285,7 @@ CustomActionForForms.defaultProps = {
         { code: "FORM", title: "Form", selected: false },
         { code: "POST", title: "Post", selected: false },
         { code: "PROCESS", title: "Process", selected: false },
+        { code: "DATALIST  ", title: "DataList", selected: false },
     ],
     formList: [],
     processCategory: [],

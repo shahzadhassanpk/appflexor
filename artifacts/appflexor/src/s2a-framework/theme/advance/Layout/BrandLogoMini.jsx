@@ -51,43 +51,6 @@ function BrandLogoMini({
             imgUrl = "/theme/images/default-logo.png";
         }
         setImageUrl(imgUrl);
-
-        const mainEle = document.getElementById("main");
-
-        function addMargin() {
-            if (mainEle) mainEle.classList.remove("remove-margin");
-            if (mainEle) mainEle.classList.add("add-margin");
-        }
-
-        function addMargin60() {
-            if (mainEle) mainEle.classList.remove("remove-margin");
-            if (mainEle) mainEle.classList.add("add-margin-60");
-        }
-
-        function removeMargin() {
-            if (mainEle) mainEle.classList.remove("add-margin");
-            if (mainEle) mainEle.classList.add("remove-margin");
-        }
-
-        if (appContext.screenView === "lg") {
-            if (menu_position === "header") {
-                removeMargin();
-            }
-
-            if (menu_position === "body-left") {
-                if (appContext.isAuthorized) {
-                    if (toggleMiniState === NAVBAR_STATE.CON) {
-                        addMargin60();
-                    } else {
-                        addMargin();
-                    }
-                }
-            }
-        }
-
-        if (appContext.screenView === "sm" || appContext.screenView === "md") {
-            removeMargin();
-        }
     }
 
     return (

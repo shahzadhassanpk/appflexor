@@ -49,7 +49,6 @@ function StartStepProcessor({
         reqPayload = {},
     ) {
         let message = "";
-
         const taskVariables = getProcessVariablesFromData(
             state,
             componentsData,

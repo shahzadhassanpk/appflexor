@@ -6,6 +6,8 @@ import Avatar from "./Avatar";
 import BrandLogo from "./BrandLogo";
 import RightMenu from "./RightMenu";
 import "./styles.css";
+import NotificationBell from "./NotificationBell";
+import QrShare from "./QrShare";
 
 function TopNavbar({
     isAuthorized,
@@ -25,28 +27,10 @@ function TopNavbar({
 
     const [toggleTopSubMenu, setToggleTopSubMenu] = useState(false);
 
-    const [topNavbarHeight, setTopNavbarHeight] = useState(0);
-
-    const [userProfile, setUserProfile] = useState(appContext.profile);
-    const topNavbar = useRef(null);
-    const subNavbar = useRef(null);
-    const [width, setWidth] = useState("desktop");
-    const site_preference = tryToParse(appContext.channel?.site_preference);
-    const menu_position =
-        site_preference && site_preference?.menu_position
-            ? site_preference?.menu_position
-            : "below-header";
-
-    const [showOrgMenu, setShowOrgMenu] = useState(false);
-
-    const orgMenuRef = useRef(null);
-    const [menuAnimation, setMenuAnimation] = useState(false);
-
     const [isLight, setIsLight] = useState(
         localStorage.getItem("theme") === "light",
     );
 
-    // Apply theme class to body whenever state changes
     useEffect(() => {
         const body = document.body;
         if (isLight) {
@@ -65,6 +49,27 @@ function TopNavbar({
             return newTheme;
         });
     };
+
+    const [topNavbarHeight, setTopNavbarHeight] = useState(0);
+
+    const [userProfile, setUserProfile] = useState(appContext.profile);
+    const topNavbar = useRef(null);
+    const subNavbar = useRef(null);
+    const [width, setWidth] = useState("desktop");
+    const site_preference = tryToParse(appContext.channel?.site_preference);
+    const menu_position =
+        site_preference && site_preference?.menu_position
+            ? site_preference?.menu_position
+            : "below-header";
+
+    const [showOrgMenu, setShowOrgMenu] = useState(false);
+
+    const orgMenuRef = useRef(null);
+    const [menuAnimation, setMenuAnimation] = useState(false);
+
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    const url = `${protocol}//${host}/app/`;
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -98,7 +103,7 @@ function TopNavbar({
     }, [showOrgMenu]);
 
     useEffect(() => {
-        getCurrentWidthAndHeight();
+        return getCurrentWidthAndHeight();
     }, []);
 
     useEffect(() => {
@@ -111,6 +116,7 @@ function TopNavbar({
             setTimeout(() => {
                 const el = document.getElementById("sideNavbarMobile");
                 const el2 = document.getElementById("side-navbar");
+                const miniSidebar = document.getElementById("sideNavbarMini");
 
                 if (el) {
                     el.style.marginTop = `${topNavbarHeight}px`;
@@ -119,29 +125,15 @@ function TopNavbar({
                 if (el2 && screenView === "lg") {
                     el2.style.marginTop = `${topNavbarHeight}px`;
                 }
+
+                if (miniSidebar && screenView === "lg") {
+                    miniSidebar.style.marginTop = `${topNavbarHeight}px`;
+                }
             }, 50);
         }
-    }, [topNavbarHeight, screenView]);
+    }, [topNavbarHeight, screenView, toggleMiniNavbar]);
 
     function getCurrentWidthAndHeight() {
-        let navbarHeigth;
-
-        function checkHeight() {
-            try {
-                if (window.scrollY > 50) {
-                    let _mainNavbar = document.getElementById("navbar-main");
-                    if (_mainNavbar) _mainNavbar.classList.add("fixed-top");
-                    navbarHeigth =
-                        document.querySelector("#navbar-main").offsetHeight;
-                    document.body.style.paddingTop = navbarHeigth + "px";
-                } else {
-                    let _mainNavbar = document.getElementById("navbar-main");
-                    if (_mainNavbar) _mainNavbar.classList.remove("fixed-top");
-                    document.body.style.paddingTop = "0";
-                }
-            } catch (e) {}
-        }
-
         function checkWidth() {
             if (window.innerWidth > 991) {
                 setWidth("desktop");
@@ -152,12 +144,10 @@ function TopNavbar({
 
         checkWidth();
 
-        window.addEventListener("scroll", checkHeight);
         window.addEventListener("resize", checkWidth);
 
         return () => {
             window.removeEventListener("resize", checkWidth);
-            window.removeEventListener("scroll", checkHeight);
         };
     }
 
@@ -174,11 +164,13 @@ function TopNavbar({
         const mainEle = document.getElementById("main");
         const footerEle = document.getElementById("footer");
 
-        mainEle.style.transition = "all 0.2s ease";
-        mainEle.style.transitionProperty = "all";
-        mainEle.style.transitionDuration = "0.2s";
-        mainEle.style.transitionTimingFunction = "ease";
-        mainEle.style.transitionDelay = "0s";
+        if (mainEle) {
+            mainEle.style.transition = "all 0.2s ease";
+            mainEle.style.transitionProperty = "all";
+            mainEle.style.transitionDuration = "0.2s";
+            mainEle.style.transitionTimingFunction = "ease";
+            mainEle.style.transitionDelay = "0s";
+        }
 
         if (newState === MENU.HOVER) {
             addMargin();
@@ -187,17 +179,21 @@ function TopNavbar({
         }
 
         function addMargin() {
+            if (mainEle) mainEle.classList.remove("remove-margin");
             if (mainEle) mainEle.classList.remove("add-margin");
             if (mainEle) mainEle.classList.add("add-margin-60");
 
+            if (footerEle) footerEle.classList.remove("remove-margin");
             if (footerEle) footerEle.classList.remove("add-margin");
             if (footerEle) footerEle.classList.add("add-margin-60");
         }
 
         function addExtraMargin() {
+            if (mainEle) mainEle.classList.remove("remove-margin");
             if (mainEle) mainEle.classList.remove("add-margin-60");
             if (mainEle) mainEle.classList.add("add-margin");
 
+            if (footerEle) footerEle.classList.remove("remove-margin");
             if (footerEle) footerEle.classList.remove("add-margin-60");
             if (footerEle) footerEle.classList.add("add-margin");
         }
@@ -239,28 +235,25 @@ function TopNavbar({
             <nav
                 id="top-adv-navbar"
                 ref={topNavbar}
-                className={`adv-navbar-main navbar navbar-border py-0 ${menu_position} ${
-                    (menu_position === "inside-header" ||
+                className={`adv-navbar-main navbar navbar-border py-0 ${menu_position} ${(menu_position === "inside-header" ||
                         menu_position === "body-left") &&
-                    screenView === "lg"
+                        screenView === "lg"
                         ? "sticky-top enable-sticky"
                         : "disable-sticky"
-                }`}>
+                    }`}>
                 <div className="w-100">
                     <div
-                        className={`${
-                            screenView === "lg" && menu_position === "header"
+                        className={`${screenView === "lg" && menu_position === "header"
                                 ? "container"
                                 : "container-fluid ps-0"
-                        }`}>
+                            }`}>
                         <div
-                            className={` d-flex ${
-                                appContext.isAuthorized
+                            className={` d-flex ${appContext.isAuthorized
                                     ? "justify-content-between"
                                     : "justify-content-start"
-                            } `}>
+                                } `}>
                             {appContext.isAuthorized && screenView !== "lg" && (
-                                <div className=" d-flex justify-content-start align-items-center pointer">
+                                <div className="mob-header-left d-flex justify-content-start align-items-center pointer">
                                     <div
                                         data-bs-toggle="offcanvas"
                                         data-bs-target="#sideNavbarMobile">
@@ -270,7 +263,10 @@ function TopNavbar({
                             )}
                             {toggleMiniNavbar === MENU.FIXED ? (
                                 <>
-                                    <BrandLogo />
+                                    {!(screenView === "lg" &&
+                                        menu_position === "body-left") && (
+                                        <BrandLogo />
+                                    )}
                                     {screenView === "lg" &&
                                         menu_position == "inside-header" && (
                                             <div className="navbar-inside-header s2a-scrollable sticky-top">
@@ -287,7 +283,9 @@ function TopNavbar({
                             ) : (
                                 <>
                                     {screenView === "lg" ? (
-                                        <EmptySpace />
+                                        menu_position !== "body-left" ? (
+                                            <EmptySpace />
+                                        ) : null
                                     ) : (
                                         <BrandLogo />
                                     )}
@@ -297,197 +295,201 @@ function TopNavbar({
                                 isAuthorized &&
                                 menu_position === "body-left" && (
                                     <div className="w-100 d-flex justify-content-start align-items-center pointer">
-                                        <div
+                                        {/* <div
                                             className="top-navbar-icon pointer"
                                             onClick={handleToggleMiniNavbar}>
                                             <i className="fa-solid fa-align-left m-0"></i>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 )}
-                            {appContext.isAuthorized &&
-                                appContext.userGroups &&
-                                appContext.userGroups.groupid && (
-                                    <div className="d-flex justify-content-end align-items-center me-1">
-                                        <React.Fragment>
-                                            {/* {JSON.stringify(appContext?.channel?.show_org_context)} */}
-                                            {/* Organization Dropdown */}
-                                            {appContext?.channel
-                                                ?.show_org_context === "YES" &&
-                                                userOrgList &&
-                                                userOrgList.length > 0 && (
+                            <div className="top-navbar-actions d-flex justify-content-end align-items-center">
+                                <div
+                                    title={`Switch to ${isLight ? "Dark" : "Light"} Mode`}
+                                    className="top-navbar-icon pointer"
+                                    onClick={handleThemeToggle}>
+                                    <i className={`fa ${isLight ? "fa-sun" : "fa-moon"}`}></i>
+                                </div>
+                                <QrShare url={url} />
+                                {appContext.isAuthorized && (
+                                    <React.Fragment>
+                                        {/* {JSON.stringify(appContext?.channel?.show_org_context)} */}
+                                        {/* Organization Dropdown */}
+                                        {appContext?.channel
+                                            ?.show_org_context === "YES" &&
+                                            userOrgList &&
+                                            userOrgList.length > 0 && (
+                                                <div
+                                                    className="position-relative"
+                                                    ref={orgMenuRef}>
                                                     <div
-                                                        className="position-relative"
-                                                        ref={orgMenuRef}>
-                                                        <div
-                                                            className="d-flex align-items-center"
-                                                            style={{
-                                                                cursor: "pointer",
-                                                            }}
-                                                            onClick={() =>
-                                                                setShowOrgMenu(
-                                                                    prev =>
-                                                                        !prev,
-                                                                )
-                                                            }>
-                                                            
-                                                            <span className="org-name me-2" title="Orgainzation">
-                                                                <i class="fa-solid fa-building"></i> {userOrg?.name ||
-                                                                    "Select Organization"}
-                                                            </span>
+                                                        className="d-flex align-items-center"
+                                                        style={{
+                                                            cursor: "pointer",
+                                                        }}
+                                                        onClick={() =>
+                                                            setShowOrgMenu(
+                                                                prev => !prev,
+                                                            )
+                                                        }>
+                                                        <span
+                                                            className="org-name me-2"
+                                                            title="Orgainzation">
+                                                            <i class="fa-solid fa-building"></i>{" "}
+                                                            {userOrg?.name ||
+                                                                "Select Organization"}
+                                                        </span>
 
-                                                            {/* <i
+                                                        {/* <i
                                                                 className="fa-solid fa-ellipsis-vertical"
                                                                 style={{
                                                                     fontSize:
                                                                         "20px",
                                                                 }}></i> */}
-                                                        </div>
+                                                    </div>
 
-                                                        {showOrgMenu && (
-                                                            <ul
-                                                                className={`org-menu list-group position-fixed mt-2 ${
-                                                                    menuAnimation
-                                                                        ? "org-menu-enter org-menu-enter-active"
-                                                                        : ""
+                                                    {showOrgMenu && (
+                                                        <ul
+                                                            className={`org-menu list-group position-fixed mt-2 ${menuAnimation
+                                                                    ? "org-menu-enter org-menu-enter-active"
+                                                                    : ""
                                                                 }`}
-                                                                style={{
-                                                                    zIndex: 9999,
-                                                                    width: "220px",
-                                                                    maxHeight:
-                                                                        "260px",
-                                                                    overflowY:
-                                                                        "auto",
-                                                                }}>
-                                                                {/* Default Option */}
-                                                                <li
-                                                                    className={`org-name list-group-item list-group-item-action ${
-                                                                        !userOrg
-                                                                            ? "active"
-                                                                            : ""
+                                                            style={{
+                                                                zIndex: 9999,
+                                                                width: "220px",
+                                                                maxHeight:
+                                                                    "260px",
+                                                                overflowY:
+                                                                    "auto",
+                                                            }}>
+                                                            {/* Default Option */}
+                                                            <li
+                                                                className={`org-name list-group-item list-group-item-action ${!userOrg
+                                                                        ? "active"
+                                                                        : ""
                                                                     }`}
-                                                                    style={{
-                                                                        cursor: "pointer",
-                                                                    }}
-                                                                    onClick={() => {
-                                                                        setUserOrg(
-                                                                            null,
-                                                                        );
-                                                                        localStorage.removeItem(
-                                                                            "userOrg",
-                                                                        );
-                                                                        setShowOrgMenu(
-                                                                            false,
-                                                                        );
-                                                                        window.location.reload();
-                                                                    }}>
-                                                                    Select
-                                                                    Organization
-                                                                </li>
+                                                                style={{
+                                                                    cursor: "pointer",
+                                                                }}
+                                                                onClick={() => {
+                                                                    setUserOrg(
+                                                                        null,
+                                                                    );
+                                                                    localStorage.removeItem(
+                                                                        "userOrg",
+                                                                    );
+                                                                    setShowOrgMenu(
+                                                                        false,
+                                                                    );
+                                                                    window.location.reload();
+                                                                }}>
+                                                                Select
+                                                                Organization
+                                                            </li>
 
-                                                                {/* Actual Orgs */}
-                                                                {userOrgList.map(
-                                                                    org => (
-                                                                        <li
-                                                                            key={
+                                                            {/* Actual Orgs */}
+                                                            {userOrgList.map(
+                                                                org => (
+                                                                    <li
+                                                                        key={
+                                                                            org.id
+                                                                        }
+                                                                        className={`list-group-item list-group-item-action ${userOrg?.id ===
                                                                                 org.id
-                                                                            }
-                                                                            className={`list-group-item list-group-item-action ${
-                                                                                userOrg?.id ===
-                                                                                org.id
-                                                                                    ? "active"
-                                                                                    : ""
+                                                                                ? "active"
+                                                                                : ""
                                                                             }`}
-                                                                            style={{
-                                                                                cursor: "pointer",
-                                                                            }}
-                                                                            onClick={() => {
-                                                                                setUserOrg(
+                                                                        style={{
+                                                                            cursor: "pointer",
+                                                                        }}
+                                                                        onClick={() => {
+                                                                            setUserOrg(
+                                                                                org,
+                                                                            );
+                                                                            localStorage.setItem(
+                                                                                "userOrg",
+                                                                                JSON.stringify(
                                                                                     org,
-                                                                                );
-                                                                                localStorage.setItem(
-                                                                                    "userOrg",
-                                                                                    JSON.stringify(
-                                                                                        org,
-                                                                                    ),
-                                                                                );
-                                                                                setShowOrgMenu(
-                                                                                    false,
-                                                                                );
-                                                                                window.location.reload();
-                                                                            }}>
-                                                                            {
-                                                                                org.name
-                                                                            }
-                                                                        </li>
-                                                                    ),
-                                                                )}
-                                                            </ul>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                            <button
-                                                id="themeToggle"
-                                                className="btn btn-sm btn-outline-secondary"
-                                                title="Toggle theme"
-                                                onClick={handleThemeToggle}>
-                                                <i
-                                                    className={`bi ${isLight ? "bi-moon" : "bi-sun"}`}></i>
-                                            </button>
-
-                                            {appContext.userGroups &&
-                                                appContext.userGroups.groupid &&
-                                                appContext.userGroups.groupid.indexOf(
-                                                    "ADMIN",
-                                                ) > -1 && (
-                                                    <div
-                                                        title="Control Panel"
-                                                        className="top-navbar-icon pointer"
-                                                        data-bs-toggle="offcanvas"
-                                                        data-bs-target="#rightMenu">
-                                                        <i className="fa fa-gear m-0"></i>
-                                                    </div>
-                                                )}
-                                            {appContext.userGroups &&
-                                            appContext.userGroups.groupid &&
-                                            appContext.userGroups.groupid.indexOf(
-                                                "GUEST",
-                                            ) > -1 ? (
-                                                <div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleLogin}
-                                                        className="btn btn-link login-btn">
-                                                        Login
-                                                    </button>
-                                                    {appContext?.channel
-                                                        ?.allow_signup ===
-                                                        "YES" && (
-                                                        // <a
-                                                        //     onClick={
-                                                        //         handleSignup
-                                                        //     }
-                                                        //     className="guest-signup-btn">
-                                                        //     Sign up
-                                                        // </a>
-                                                        <button
-                                                            onClick={
-                                                                handleSignup
-                                                            }
-                                                            type="button"
-                                                            className="btn btn-link signup-btn">
-                                                            Sign up
-                                                        </button>
+                                                                                ),
+                                                                            );
+                                                                            setShowOrgMenu(
+                                                                                false,
+                                                                            );
+                                                                            window.location.reload();
+                                                                        }}>
+                                                                        {
+                                                                            org.name
+                                                                        }
+                                                                    </li>
+                                                                ),
+                                                            )}
+                                                        </ul>
                                                     )}
                                                 </div>
-                                            ) : (
-                                                <Avatar
-                                                    screenView={screenView}
+                                            )}
+                                        {appContext.userGroups &&
+                                            appContext.userGroups.group_code &&
+                                            appContext.userGroups.group_code.indexOf(
+                                                "GUEST",
+                                            ) === -1 && (
+                                                <NotificationBell
+                                                    userId={
+                                                        appContext.profile
+                                                            .username
+                                                    }
                                                 />
                                             )}
-                                        </React.Fragment>
-                                    </div>
+                                        {appContext.userGroups &&
+                                            appContext.userGroups.groupid &&
+                                            appContext.userGroups.groupid.indexOf(
+                                                "ADMIN",
+                                            ) > -1 && (
+                                                <div
+                                                    title="Control Panel"
+                                                    className="control-panel-action pointer top-navbar-icon"
+                                                    data-bs-toggle="offcanvas"
+                                                    data-bs-target="#rightMenu">
+                                                    <i className="fa fa-gear"></i>
+                                                </div>
+                                            )}
+                                        {appContext.userGroups &&
+                                            appContext.userGroups.group_code &&
+                                            appContext.userGroups.group_code.indexOf(
+                                                "GUEST",
+                                            ) > -1 ? (
+                                            <>
+                                                <div className="top-navbar-icon">
+                                                    <button
+                                                        type="button"
+                                                        title="Login"
+                                                        onClick={handleLogin}
+                                                        className="btn btn-link">
+                                                        <i class="bi bi-box-arrow-in-right"></i>
+                                                    </button>
+                                                </div>
+                                                {appContext?.channel
+                                                    ?.allow_signup ===
+                                                    "YES" && (
+                                                        <div className="top-navbar-icon">
+                                                            <button
+                                                                onClick={
+                                                                    handleSignup
+                                                                }
+                                                                type="button"
+                                                                title="Sign up"
+                                                                className="btn btn-link top-navbar-icon">
+                                                                <i class="bi bi-person-plus"></i>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Avatar screenView={screenView} />
+                                            </>
+                                        )}
+                                    </React.Fragment>
                                 )}
+                            </div>
                         </div>
                     </div>
 
@@ -507,39 +509,21 @@ function TopNavbar({
                     )} */}
                 </div>
             </nav>
-
-            {appContext.isAuthorized &&
-                screenView === "lg" &&
-                menu_position === "below-header" && (
-                    <div className="sticky-top">
-                        <nav
-                            id="top-adv-sub-navbar"
-                            ref={subNavbar}
-                            className="adv-navbar-navigation navbar ">
-                            <HorizontalNavigation
-                                mainItems={mainItems}
-                                modules={modules}
-                                features={features}
-                                screenView={screenView}
-                                setOffice={setOffice}
-                            />
-                        </nav>
-                        <div className="loader-line"></div>
-                        <RightMenu
-                            isAuthorized={isAuthorized}
+            {appContext.isAuthorized && menu_position === "below-header" && (
+                <div className="sticky-top">
+                    <nav
+                        id="top-adv-sub-navbar"
+                        ref={subNavbar}
+                        className="adv-navbar-navigation navbar ">
+                        <HorizontalNavigation
+                            mainItems={mainItems}
                             modules={modules}
                             features={features}
                             screenView={screenView}
-                            mainItems={mainItems}
-                            brandDetails={brandDetails}
+                            setOffice={setOffice}
                         />
-                    </div>
-                )}
-            {(menu_position === "inside-header" ||
-                menu_position === "body-left") && (
-                <>
+                    </nav>
                     <div className="loader-line"></div>
-
                     <RightMenu
                         isAuthorized={isAuthorized}
                         modules={modules}
@@ -548,8 +532,23 @@ function TopNavbar({
                         mainItems={mainItems}
                         brandDetails={brandDetails}
                     />
-                </>
+                </div>
             )}
+            {(menu_position === "inside-header" ||
+                menu_position === "body-left") && (
+                    <>
+                        <div className="loader-line"></div>
+
+                        <RightMenu
+                            isAuthorized={isAuthorized}
+                            modules={modules}
+                            features={features}
+                            screenView={screenView}
+                            mainItems={mainItems}
+                            brandDetails={brandDetails}
+                        />
+                    </>
+                )}
         </React.Fragment>
     );
 }
@@ -588,7 +587,7 @@ const HorizontalNavigation = ({
                             <li
                                 key={item.id}
                                 onClick={() => setOffice("front")}
-                                className="nav-item-custom ">
+                                className="nav-item-custom">
                                 <NavLink
                                     className="nav-link nav-link-override nav-link-main"
                                     to={path}>
@@ -687,9 +686,8 @@ function SubMenuMain({ screenView, module, features }) {
                 </a>
                 <ul
                     ref={subMenuRef}
-                    className={`adv-dropdown-menu dropdown-menu fade-down  ${
-                        screenView === "md" || screenView === "lg" ? "" : ""
-                    } `}>
+                    className={`adv-dropdown-menu dropdown-menu fade-down  ${screenView === "md" || screenView === "lg" ? "" : ""
+                        } `}>
                     {features.map(feature => {
                         return (
                             <React.Fragment key={feature.id}>
@@ -734,7 +732,7 @@ function SubMenuMain({ screenView, module, features }) {
                                                 href={feature.feature_key}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                // onClick={(event) => collapseNavbar(event)}
+                                            // onClick={(event) => collapseNavbar(event)}
                                             >
                                                 {feature.name}
                                             </a>
@@ -745,16 +743,16 @@ function SubMenuMain({ screenView, module, features }) {
                                         <li className="dropdown-list-item">
                                             {(screenView === "md" ||
                                                 screenView === "lg") && (
-                                                <NavLink
-                                                    className="dropdown-item"
-                                                    to={feature.feature_key}>
-                                                    <span className="d-block">
-                                                        <i
-                                                            className={`${feature.icon} me-1`}></i>
-                                                        {feature.name}
-                                                    </span>
-                                                </NavLink>
-                                            )}
+                                                    <NavLink
+                                                        className="dropdown-item"
+                                                        to={feature.feature_key}>
+                                                        <span className="d-block">
+                                                            <i
+                                                                className={`${feature.icon} me-1`}></i>
+                                                            {feature.name}
+                                                        </span>
+                                                    </NavLink>
+                                                )}
                                             {screenView === "sm" && (
                                                 <NavLink
                                                     className="dropdown-item"

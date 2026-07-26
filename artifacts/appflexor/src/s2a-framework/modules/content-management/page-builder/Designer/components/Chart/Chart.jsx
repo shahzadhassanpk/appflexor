@@ -1,9 +1,7 @@
 import React, { useEffect, useState, lazy } from "react";
 import axios from "axios";
 import { API_URL, ES_URL } from "../../../../../../Config";
-const LineChartApp = lazy(() =>
-    import("./components/LineChartApp"),
-);
+const LineChartApp = lazy(() => import("./components/LineChartApp"));
 // import LineChartApp from "./components/LineChartApp";
 import BarChartApp from "./components/BarChartApp";
 import AreaChartApp from "./components/AreaChartApp";
@@ -16,6 +14,7 @@ import DonutChart from "./components/DonutChart";
 import StatisticsCard from "./components/StatisticsCard";
 import { AppContext } from "../../../../../../../AppContext";
 import { useContext } from "react";
+import "./Chart.css";
 import Messsage from "../../../../../../components/Subscription Message/Messsage";
 //https://www.reddit.com/r/javahelp/comments/yjwet8/convert_a_flat_json_array_into_a_nested_json/
 
@@ -44,6 +43,9 @@ function Chart(props) {
     const featuresSubscription = appContext?.featuresSubscription;
     // const show = SubscriptionAllowViewer("WEB_CHARTS", featuresSubscription);
     const show = true;
+    const [maximized, setMaximized] = useState(false);
+    const handleMaximize = () => setMaximized(true);
+    const handleRestore = () => setMaximized(false);
 
     useEffect(() => {
         if (
@@ -154,8 +156,8 @@ function Chart(props) {
         let obj = arr[0];
         let keys = Object.keys(obj);
         let d1 = component.keyColumn;
-        let d2 = keys[1];
-        let fact = keys[2];
+        let d2 = component.seriesColumn;
+        let fact = component.factColumn;
         try {
             var o = arr.reduce((a, b) => {
                 a[b[d1]] = a[b[d1]] || [];
@@ -165,7 +167,7 @@ function Chart(props) {
 
             var a = Object.keys(o).map(function (k) {
                 let c = Object.assign.apply({}, o[k]);
-                c.country = k;
+                c[d1] = k;
                 return c;
             });
             // console.log(a);
@@ -305,8 +307,8 @@ function Chart(props) {
                         } else if (sourceType === "POSTGRES") {
                             let data = response.data.C_DATA;
                             if (data) {
-                                let parseData = data;
-                                // let parseData = convertData(data);
+                                // let parseData = data;
+                                let parseData = convertData(data);
 
                                 let firstObjectForColumn = parseData
                                     ? parseData[0]
@@ -359,15 +361,46 @@ function Chart(props) {
     if (show)
         return (
             <div className="p-2">
-                {component &&
-                    chartData &&
-                    chartData !== undefined &&
-                    CreateComponent(
-                        component.chartType,
-                        component,
-                        chartData,
-                        setFlag,
-                    )}
+                {component && chartData && chartData !== undefined && (
+                    <>
+                        <div style={{ position: "relative" }}>
+                            {/* Maximize button */}
+                            {!maximized && (
+                                <button
+                                    onClick={handleMaximize}                                    
+                                    className="btn btn-sm btn-light chart-maximize-btn">
+                                    ⛶
+                                </button>
+                            )}
+
+                            {CreateComponent(
+                                component.chartType,
+                                component,
+                                chartData,
+                                setFlag,
+                            )}
+                        </div>
+
+                        {/* Overlay when maximized */}
+                        {maximized && (
+                            <div className="chart-overlay">
+                                <div className="overlay-content">
+                                    <button
+                                        onClick={handleRestore}                                        
+                                        className="btn btn-sm btn-dark chart-restore-btn">
+                                        ✕
+                                    </button>
+                                    {CreateComponent(
+                                        component.chartType,
+                                        component,
+                                        chartData,
+                                        setFlag,
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
         );
     else return <Messsage message="Charts" />;

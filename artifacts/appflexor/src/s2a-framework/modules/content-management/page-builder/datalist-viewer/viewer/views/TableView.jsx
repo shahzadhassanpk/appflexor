@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import useScreenWidth from "../../../../../../components/custom-hooks/useScreenWidth";
 import { numberFormat } from "../../../../../../utils/utils";
 
@@ -14,9 +14,23 @@ const TableView = props => {
         onFilterClick,
         titleShowingFields,
         parentDivWidth,
+        hideLabel,
+        hideSearch,
+        hidePagination,
+        hideCheckBoxes,
+        hideActions,
+        hideFormDatalistLabel,
     } = props;
-
     const screenWidth = parentDivWidth;
+    const [footer, setFooter] = useState(false);
+
+    useEffect(() => {
+            if(hideActions && hidePagination){
+                setFooter(false);
+            }else{
+                setFooter(true);
+            }
+        }, [hideActions, hidePagination]);
 
     return (
         <table
@@ -69,10 +83,12 @@ const TableView = props => {
                     );
                 })}
             </tbody>
-            <DatalistFooter
-                footerGroups={footerGroups}
-                notIncludeFooter={notIncludeFooter}
-            />
+            {footer && 
+                <DatalistFooter
+                    footerGroups={footerGroups}
+                    notIncludeFooter={notIncludeFooter}
+                />
+            }
         </table>
     );
 };

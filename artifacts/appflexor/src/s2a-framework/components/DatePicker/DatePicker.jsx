@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
-import {
-    DateRangePicker as _DateRangePicker,
-    SingleDatePicker as _SingleDatePicker,
-} from "react-dates";
-import "react-dates/initialize";
+import dayjs from "dayjs";
+import { DatePicker as MuiDatePicker } from "@mui/x-date-pickers/DatePicker";
+import { TextField } from "@mui/material";
+import { Box } from "@mui/material";
+// import {
+//     DateRangePicker as _DateRangePicker,
+//     SingleDatePicker as _SingleDatePicker,
+// } from "react-dates";
+// import "react-dates/initialize";
 // import { DateTimePickerComponent } from "@syncfusion/ej2-react-calendars";
 import moment from "moment";
-import "react-dates/lib/css/_datepicker.css";
+// import "react-dates/lib/css/_datepicker.css";
 import {
     DATE_FORMAT_FOR_DATABASE,
     DATE_FORMAT_FOR_DATE_PICKER_VIEW,
@@ -35,139 +39,104 @@ import "./DatePicker.css";
  */
 
 function DateRangePicker(props) {
-    // console.log(`Data sent to Date Picker `);
-    // console.log(props);
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
 
-    const [startDate, setStartDate] = useState();
-    const [endDate, setEndDate] = useState();
-    const [focusedInput, setFocusedInput] = useState(null);
+    const parseIncomingDate = value => {
+        if (!value) {
+            return null;
+        }
+
+        // Keep compatibility with DB-format strings used across older screens.
+        const parsedByMoment = moment(
+            value,
+            DATE_FORMAT_FOR_DATABASE,
+            true,
+        );
+        if (parsedByMoment.isValid()) {
+            return dayjs(parsedByMoment.toDate());
+        }
+
+        const parsedByDayjs = dayjs(value);
+        return parsedByDayjs.isValid() ? parsedByDayjs : null;
+    };
 
     useEffect(() => {
-        let _endDate = "";
-        let _startDate = "";
-
-        if (props.startDate) {
-            if (
-                moment(
-                    props.startDate,
-                    DATE_FORMAT_FOR_DATABASE,
-                    true,
-                ).isValid()
-            ) {
-                _startDate = moment(props.startDate);
-            }
-            // else {
-            //     _startDate = moment(formatDateForDataBase(props.startDate));
-            // }
-        }
-        // else {
-        //     _startDate = moment();
-        // }
-
-        if (props.endDate) {
-            if (
-                moment(props.endDate, DATE_FORMAT_FOR_DATABASE, true).isValid()
-            ) {
-                _endDate = moment(props.endDate);
-            }
-            // else {
-            //     _endDate = moment(formatDateForDataBase(props.endDate));
-            // }
-        }
-        // else {
-        //     _endDate = moment();
-        // }
-
-        setStartDate(_startDate);
-        setEndDate(_endDate);
+        setStartDate(parseIncomingDate(props.startDate));
+        setEndDate(parseIncomingDate(props.endDate));
     }, [props.startDate, props.endDate]);
 
-    const handleDatesChange = ({ startDate, endDate }) => {
-        setStartDate(startDate);
-        setEndDate(endDate);
-        props.onDatesChange(
-            formatDateForDataBase(startDate),
-            formatDateForDataBase(endDate),
+    const notifyParent = (start, end) => {
+        const s = formatDateForDataBase(start);
+        const e = formatDateForDataBase(end);
+
+        if (props.handleDateRange) {
+            props.handleDateRange(s, e);
+        } else if (props.onDatesChange) {
+            // Keep backward compatibility with older react-dates handlers
+            // that expect a single object: { startDate, endDate }.
+            if (props.onDatesChange.length <= 1) {
+                props.onDatesChange({ startDate: s, endDate: e });
+            } else {
+                props.onDatesChange(s, e);
+            }
+        }
+    };
+
+    const handleStartDateChange = newValue => {
+        setStartDate(newValue);
+        notifyParent(newValue, endDate);
+    };
+
+    const handleEndDateChange = newValue => {
+        setEndDate(newValue);
+        notifyParent(startDate, newValue);
+    };
+
+    const shouldDisableDate = day => {
+        if (!props.disableDaysFrom) {
+            return false;
+        }
+
+        return day.isBefore(
+            dayjs(props.disableDaysFrom, DATE_FORMAT_FOR_DATABASE),
+            "day"
         );
     };
 
-    function disableDay(day) {
-        let bool;
-        if (props.disableDaysFrom) {
-            bool = moment(day).isBefore(moment(props.disableDaysFrom));
-        } else {
-            bool = false;
-        }
-        return bool;
-    }
-
     return (
-        <_DateRangePicker
-            startDateId="startDateId"
-            endDateId="endDateId"
-            startDate={startDate}
-            endDate={endDate}
-            onDatesChange={handleDatesChange}
-            focusedInput={focusedInput}
-            onFocusChange={focusedInput => setFocusedInput(focusedInput)}
-            numberOfMonths={+props.numberOfMonths}
-            daySize={30}
-            displayFormat={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
-            block
-            minimumNights={1}
-            disabled={props.disabled}
-            showDefaultInputIcon
-            showClearDates
-            enableOutsideDays
-            isOutsideRange={day => disableDay(day)}
-            renderMonthElement={({ month, onMonthSelect, onYearSelect }) => (
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        gap: "4px",
-                    }}>
-                    <select
-                        value={month.month()}
-                        onChange={e => onMonthSelect(month, e.target.value)}
-                        style={{
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            border: "1px solid #ccc",
-                            fontSize: "13px",
-                        }}>
-                        {moment.months().map((label, value) => (
-                            <option
-                                value={value}
-                                key={value}>
-                                {label}
-                            </option>
-                        ))}
-                    </select>
+        <div className="date-range-picker d-flex justify-content-between gap-2 mt-2">
+            <MuiDatePicker
+                label="Start Date"
+                value={startDate}
+                format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
+                disabled={props.disabled}
+                shouldDisableDate={shouldDisableDate}
+                onChange={handleStartDateChange}
+                slotProps={{
+                    textField: {
+                        size: "small",
+                        fullWidth: true,
+                    },
+                }}
+            />
 
-                    <select
-                        value={month.year()}
-                        onChange={e => onYearSelect(month, e.target.value)}
-                        style={{
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            border: "1px solid #ccc",
-                            fontSize: "13px",
-                        }}>
-                        {Array.from(
-                            { length: 10 },
-                            (_, i) => moment().year() - 5 + i,
-                        ).map(year => (
-                            <option
-                                value={year}
-                                key={year}>
-                                {year}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            )}
-        />
+            <MuiDatePicker
+                label="End Date"
+                value={endDate}
+                format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
+                disabled={props.disabled}
+                shouldDisableDate={shouldDisableDate}
+                minDate={startDate}
+                onChange={handleEndDateChange}
+                slotProps={{
+                    textField: {
+                        size: "small",
+                        fullWidth: true,
+                    },
+                }}
+            />
+        </div>
     );
 }
 // Takes 2 parameters
@@ -175,41 +144,46 @@ function DateRangePicker(props) {
 // 2nd handle date function to set new date
 // 3rd optional enableBackDays
 function SingleDatePicker(props) {
-    let _date;
-    if (props.date !== null) {
-        _date = moment(props.date);
-    } else {
-        _date = null;
-    }
-    const [date, setDate] = useState(_date);
-    const [focus, setFocus] = useState(false);
-
-    const handleDatesChange = ({ focused }) => {
-        setFocus(focused);
-    };
+    const [date, setDate] = useState(
+        props.date ? dayjs(props.date, DATE_FORMAT_FOR_DATABASE) : null
+    );
 
     useEffect(() => {
-        let _data = formatDateForDataBase(date);
-        props.handlePickedDate(_data);
+        setDate(
+            props.date
+                ? dayjs(props.date, DATE_FORMAT_FOR_DATABASE)
+                : null
+        );
+    }, [props.date]);
+
+    useEffect(() => {
+        if (props.handlePickedDate) {
+            props.handlePickedDate(formatDateForDataBase(date));
+        }
     }, [date]);
 
-    function handleDate(day) {
-        let result = _date.diff(day) > 0;
-        return result;
-    }
+    const shouldDisableDate = day => {
+        if (!props.enableBackDays || !props.date) {
+            return false;
+        }
+
+        return day.isBefore(dayjs(props.date, DATE_FORMAT_FOR_DATABASE), "day");
+    };
 
     return (
-        <_SingleDatePicker
-            date={date}
-            onDateChange={date => setDate(date)}
-            focused={focus}
-            onFocusChange={handleDatesChange}
-            numberOfMonths={1}
-            displayFormat={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
-            showClearDate={true}
-            isOutsideRange={
-                props.enableBackDays ? day => handleDate(day) : () => {}
-            }
+        <MuiDatePicker
+            value={date}
+            onChange={newValue => setDate(newValue)}
+            format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
+            disabled={props.disabled}
+            shouldDisableDate={shouldDisableDate}
+            slotProps={{
+                textField: {
+                    size: "small",
+                    fullWidth: true,
+                    variant: "outlined",
+                },
+            }}
         />
     );
 }
@@ -337,7 +311,11 @@ let formatDateForDataBase = date => {
     let tempDate = "";
     if (date) {
         try {
-            tempDate = moment(date).format(DATE_FORMAT_FOR_DATABASE);
+            if (dayjs.isDayjs(date)) {
+                tempDate = date.format(DATE_FORMAT_FOR_DATABASE);
+            } else {
+                tempDate = moment(date).format(DATE_FORMAT_FOR_DATABASE);
+            }
         } catch (error) {
             console.log("Unable to format date for data base : " + error);
         }

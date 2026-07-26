@@ -1,0 +1,36 @@
+/* Styles scoped to the Process Configuration module */
+.process-config .card {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  overflow: visible;
+}
+
+.process-config .card-header {
+  background: var(--header-color);
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  padding: 0.6rem 0.9rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.process-config .card-header strong {
+  font-weight: 600;
+}
+
+.process-config .card-body {
+  padding: 0.5rem 0.75rem;
+}
+
+/* Reduce spacing on small screens */
+@media (max-width: 767px) {
+  .process-config .card {
+    margin-bottom: 0.75rem;
+  }
+  .process-config .card-body {
+    padding: 0.5rem;
+  }
+}

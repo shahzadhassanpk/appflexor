@@ -40,7 +40,7 @@ function Avatar({ screenView }) {
     return (
         <div
             title="User Menu"
-            className={`d-flex profile-avatar ${
+            className={`d-flex profile-avatar top-navbar-icon ms-2 ${
                 appContext.screenView === "lg" ? "position-relative" : ""
             }`}>
             <div
@@ -66,10 +66,9 @@ function Avatar({ screenView }) {
                             to={"/user-profile"}
                             className="dropdown-item">
                             <i className=" fa-regular fa-user me-2"></i>
-                            {profile.firstname} {profile.lastname}
+                            {profile.firstname} {profile.lastname} ({profile.username}) 
                         </Link>
                     </li>
-
                     <li className="dropdown-list-item pointer">
                         <div
                             className="dropdown-item"

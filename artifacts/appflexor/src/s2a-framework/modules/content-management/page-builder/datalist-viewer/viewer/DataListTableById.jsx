@@ -72,6 +72,10 @@ export default function DataListTableById(props) {
         mode,
         modeType,
         hideLabel,
+        hideSearch,
+        hidePagination,
+        hideCheckBoxes,
+        hideActions,
         hideFormDatalistLabel,
         dataKey = "",
         setDataKeys,
@@ -356,8 +360,8 @@ export default function DataListTableById(props) {
                         : fkColumn
                     : ""
                 : fkColumn
-                ? fkColumn
-                : "";
+                  ? fkColumn
+                  : "";
 
         if (selectedItem.type === "FORM") {
             if (fkColumn !== "" && fkValue !== "") {
@@ -747,7 +751,10 @@ export default function DataListTableById(props) {
         let readOnly =
             readOnlyExp &&
             evaluateExpression({ expression: readOnlyExp }, selectedRowItem);
-        let formMode = readOnly ? modeType.readonly : "";
+        let formMode =
+            readOnly || edit?.readonly_mode == modeType.readonly
+                ? modeType.readonly
+                : "";
         let msg = edit?.confirmation_message;
         let required = edit?.required;
         let modalSize = edit?.modal_size;
@@ -907,7 +914,7 @@ export default function DataListTableById(props) {
     }
 
     function actionFormat(selectedItem) {
-        if (mode === modeType.readonly) {
+        if (mode === modeType.readonly || hideActions) {
             return [];
         }
         try {
@@ -2108,20 +2115,27 @@ export default function DataListTableById(props) {
                                         } ${tableClasses()}`}>
                                         {checkArray(tableColumns) && (
                                             <>
-                                                <DatalistHeader
-                                                    selectedItem={selectedItem}
-                                                    viewerBtn={viewerBtn}
-                                                    mode={mode}
-                                                    modeType={modeType}
-                                                    selectedRowsLength={
-                                                        selectedRowsLength
-                                                    }
-                                                    hideLabel={hideLabel}
-                                                    hideFormDatalistLabel={
-                                                        hideFormDatalistLabel
-                                                    }
-                                                    rows={dbData ? dbData : []}
-                                                />
+                                            {/* {hideLabel?"hide":"show"} */}
+                                                {!hideLabel && (
+                                                    <DatalistHeader
+                                                        selectedItem={
+                                                            selectedItem
+                                                        }
+                                                        viewerBtn={viewerBtn}
+                                                        mode={mode}
+                                                        modeType={modeType}
+                                                        selectedRowsLength={
+                                                            selectedRowsLength
+                                                        }
+                                                        hideLabel={hideLabel}
+                                                        hideFormDatalistLabel={
+                                                            hideFormDatalistLabel
+                                                        }
+                                                        rows={
+                                                            dbData ? dbData : []
+                                                        }
+                                                    />
+                                                )}
 
                                                 <DatalistSqlFilters
                                                     selectedItem={selectedItem}
@@ -2135,6 +2149,7 @@ export default function DataListTableById(props) {
                                                         data={
                                                             dbData
                                                         }></PivotTable> */}
+
                                                     {selectedItem.datalist_type ===
                                                         "TABLE" && (
                                                         <ReactTable
@@ -2189,6 +2204,18 @@ export default function DataListTableById(props) {
                                                             }
                                                             apiResponse={
                                                                 apiResponse
+                                                            }
+                                                            hideActions={
+                                                                hideActions
+                                                            }
+                                                            hideSearch={
+                                                                hideSearch
+                                                            }
+                                                            hidePagination={
+                                                                hidePagination
+                                                            }
+                                                            hideCheckBoxes={
+                                                                hideCheckBoxes
                                                             }
                                                             mode={mode}
                                                         />
@@ -2332,13 +2359,13 @@ function DatalistHeader(_props) {
         rows,
     } = _props;
     return (
-        <div className="s2a-datalist-header row">
-            {modeType.preview === mode ||
-            modeType.render === mode ||
-            modeType.readonly === mode ? (
-                <>
-                    <div className="datalist-title col-sm">
-                        {!hideLabel ? (
+        <>
+            <div className="s2a-datalist-header row">
+                {modeType.preview === mode ||
+                modeType.render === mode ||
+                modeType.readonly === mode ? (
+                    <>
+                        <div className="datalist-title col-sm">
                             <div className="col title-text">
                                 <span>
                                     {!Boolean(hideFormDatalistLabel) &&
@@ -2347,48 +2374,48 @@ function DatalistHeader(_props) {
                                             selectedItem?.name)}
                                 </span>
                             </div>
-                        ) : (
-                            <div></div>
-                        )}
-
-                        <div className="col-sm-1 refresh-count">
-                            {selectedItem && selectedItem.refresh_interval && (
-                                <div className="refresh ps-2">
-                                    <i
-                                        title={`Refresh in ${selectedItem?.refresh_interval} Second`}
-                                        className="fa-solid fa-arrows-rotate"></i>
+                            <div className="col-sm-1 refresh-count">
+                                {selectedItem &&
+                                    selectedItem.refresh_interval && (
+                                        <div className="refresh ps-2">
+                                            <i
+                                                title={`Refresh in ${selectedItem?.refresh_interval} Second`}
+                                                className="fa-solid fa-arrows-rotate"></i>
+                                        </div>
+                                    )}
+                            </div>
+                        </div>
+                        {viewerBtn &&
+                            viewerBtn.flag &&
+                            viewerBtn.flag.search === true && (
+                                <div className="datalist-search flex-between col-sm-4 ms-auto">
+                                    <div className="count pe-2">
+                                        {viewerBtn && viewerBtn?.listLength
+                                            ? selectedRowsLength
+                                            : 0}{" "}
+                                        /{" "}
+                                        {viewerBtn && viewerBtn?.listLength
+                                            ? viewerBtn?.listLength
+                                            : 0}
+                                    </div>
+                                    <GlobalFilter
+                                        preGlobalFilteredRows={
+                                            viewerBtn.preGlobalFilteredRows
+                                        }
+                                        globalFilter={viewerBtn.globalFilter}
+                                        setGlobalFilter={
+                                            viewerBtn.setGlobalFilter
+                                        }
+                                    />
+                                    <div className="fw-bold refresh-json-btn"></div>
                                 </div>
                             )}
-                        </div>
-                    </div>
-                    {viewerBtn &&
-                        viewerBtn.flag &&
-                        viewerBtn.flag.search === true && (
-                            <div className="datalist-search flex-between col-sm-4 ms-auto">
-                                <div className="count pe-2">
-                                    {viewerBtn && viewerBtn?.listLength
-                                        ? selectedRowsLength
-                                        : 0}{" "}
-                                    /{" "}
-                                    {viewerBtn && viewerBtn?.listLength
-                                        ? viewerBtn?.listLength
-                                        : 0}
-                                </div>
-                                <GlobalFilter
-                                    preGlobalFilteredRows={
-                                        viewerBtn.preGlobalFilteredRows
-                                    }
-                                    globalFilter={viewerBtn.globalFilter}
-                                    setGlobalFilter={viewerBtn.setGlobalFilter}
-                                />
-                                <div className="fw-bold refresh-json-btn"></div>
-                            </div>
-                        )}
-                </>
-            ) : (
-                <></>
-            )}
-        </div>
+                    </>
+                ) : (
+                    <></>
+                )}
+            </div>
+        </>
     );
 }
 

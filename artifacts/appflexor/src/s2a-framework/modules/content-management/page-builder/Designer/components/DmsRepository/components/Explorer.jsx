@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { FilesystemItem } from "./FilesystemItem";
+import "./explorer.css";
 
 const Explorer = ({
     repository,

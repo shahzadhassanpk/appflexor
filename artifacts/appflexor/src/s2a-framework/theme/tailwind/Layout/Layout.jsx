@@ -8,8 +8,6 @@ import SideNavbarDesktop from "./SideNavbarDesktop";
 import SideNavbarMini from "./SideNavbarMini";
 import SideNavbarMobile from "./SideNavbarMobile";
 import TopNavbar from "./TopNavbar";
-// import "../styles.css";
-// import "../../../../../public/theme/tailwind/theme.css";
 const MENU = {
     HOVER: "HOVER",
     FIXED: "FIXED",

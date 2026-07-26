@@ -1618,6 +1618,7 @@ function RowEditDialogue({
 
     const [visibilityExpression, setVisibilityExpression] = useState("");
     const [enableTabView, setEnableTabView] = useState("NO");
+    const [title, setTitle] = useState("");
 
     useEffect(() => {
         if (selectedRow.id) {
@@ -1650,6 +1651,7 @@ function RowEditDialogue({
         _layout.forEach(row => {
             if (row) {
                 if (row.id === selectedRow.id) {
+                    row.title = title;
                     row.visibilityExpression = visibilityExpression;
                     row.enableTabView = enableTabView;
                 }
@@ -1673,7 +1675,17 @@ function RowEditDialogue({
             <Modal.Body>
                 <form>
                     <div className="row">
-                        <div className="col mb-3">
+                        <div className="col-sm-12">
+                            <div className="mb-3">
+                                <label className="form-label">Title</label>
+                                <input
+                                    className="form-control"
+                                    name="title"
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}></input>
+                            </div>
+                        </div>
+                        <div className="col-sm-12 mb-3">
                             <label className="form-label">
                                 Visibility Expression
                             </label>

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { Modal } from "react-bootstrap";
 import MDEditor from "@uiw/react-md-editor";
 import TextEditor from "../../../../../../components/TextEditor/RichTextEditor";
@@ -7,6 +7,7 @@ import RichTextPropsEditor from "../../props-editors/RichTextPropsEditor";
 import { evaluateExpression } from "../../../../../content-management/page-builder/datalist-viewer/datalist-filter-helpers/DatalistFilters";
 import { AppContext } from "../../../../../../../AppContext";
 import useGlobalData from "../../../../../../components/useGlobal";
+import { Interweave } from "interweave";
 // import { makeid } from "../../../../../utils/utils";
 /**
  *
@@ -133,9 +134,9 @@ function RichTextEditor(props) {
     }, [props.formData, props.component, props.isFormSaved]);
 
     function handleChange(e) {
-        let type = componentData.type
+        let type = componentData.type;
         let key = componentData.db_column;
-        let stringToValidate = (type=='MARKDOWN'?e:e.target.value);
+        let stringToValidate = type == "MARKDOWN" ? e : e.target.value;
         let isStringValid = true;
         let lengthOfString = stringToValidate.length;
 
@@ -211,6 +212,14 @@ function RichTextEditor(props) {
         return true;
     }
 
+    function extractBody(html) {
+        return html
+            .replace(/<!DOCTYPE[^>]*>/i, "")
+            .replace(/<html[^>]*>|<\/html>/gi, "")
+            .replace(/<head[\s\S]*?>[\s\S]*?<\/head>/gi, "")
+            .replace(/<body[^>]*>|<\/body>/gi, "");
+    }
+
     if (isEmpty(componentData))
         return (
             <div className="form-group">
@@ -246,8 +255,7 @@ function RichTextEditor(props) {
 
                     {props.mode &&
                         props.modeType &&
-                        (props.mode === props.modeType.design ||
-                            props.mode === props.modeType.readonly) && (
+                        (props.mode === props.modeType.design) && (
                             <>
                                 <label className="form-label pe-2 w-100 text-center">
                                     {componentData.label
@@ -278,22 +286,23 @@ function RichTextEditor(props) {
                     {props.mode &&
                         props.modeType &&
                         (props.mode === props.modeType.preview ||
-                            props.mode === props.modeType.render) && (
+                            props.mode === props.modeType.render || props.mode === props.modeType.readonly) && (
                             <div className="position-relative">
-                                {!props?.isInDatalistMode && (
-                                    <label className="form-label">
-                                        {componentData.label
-                                            ? componentData.label
-                                            : "Rich Text Editor"}
-                                        {componentData.required &&
-                                            componentData.required ===
-                                                "YES" && (
-                                                <span className="text-danger">
-                                                    &nbsp;*
-                                                </span>
-                                            )}
-                                    </label>
-                                )}
+                                {(!props?.isInDatalistMode &&
+                                    componentData?.label !== "NO-LABEL") && (
+                                        <label className="form-label">
+                                            {componentData.label
+                                                ? componentData.label
+                                                : "Rich Text Editor"}
+                                            {componentData.required &&
+                                                componentData.required ===
+                                                    "YES" && (
+                                                    <span className="text-danger">
+                                                        &nbsp;*
+                                                    </span>
+                                                )}
+                                        </label>
+                                    )}
                                 <div>
                                     {(!componentData?.type ||
                                         componentData.type === "HTML") && (
@@ -312,11 +321,11 @@ function RichTextEditor(props) {
                                                 props.modeType.design
                                                     ? true
                                                     : componentData.readonly ===
-                                                      "YES"
-                                                    ? true
-                                                    : disable
-                                                    ? true
-                                                    : false
+                                                        "YES"
+                                                      ? true
+                                                      : disable
+                                                        ? true
+                                                        : false
                                             }
                                             mode={componentData.mode}
                                             componentData={componentData}
@@ -330,6 +339,20 @@ function RichTextEditor(props) {
                                                     obj[componentData.db_column]
                                                 }
                                                 onChange={handleChange}
+                                            />
+                                        )}
+                                    {componentData?.type &&
+                                        componentData.type === "INTERWEAVE" &&
+                                        obj[componentData?.db_column] && (
+                                            <HTMLIframe
+                                                html={
+                                                    obj[componentData.db_column]
+                                                }
+                                                height={
+                                                    componentData?.height
+                                                        ? componentData.height
+                                                        : 300
+                                                }
                                             />
                                         )}
                                 </div>
@@ -394,6 +417,77 @@ function RichTextEditor(props) {
             </Modal>
         </ErrorBoundary>
     );
+    function HTMLIframe({ html, height }) {
+        const [maximized, setMaximized] = useState(false);
+        const iframeRef = useRef(null);
+        useEffect(() => {
+            if (!maximized && iframeRef.current) {
+                const iframe = iframeRef.current;
+                iframe.onload = () => {
+                    try {
+                        const height =
+                            iframe.contentWindow.document.body.scrollHeight;
+                        iframe.style.height = height + "px";
+                    } catch {
+                        // cross-origin safe guard
+                    }
+                };
+            }
+        }, [html, maximized]);
+        return (
+            <div
+                style={{
+                    position: maximized ? "fixed" : "relative",
+                    inset: maximized ? 0 : "auto",
+                    zIndex: maximized ? 2000 : "auto",
+                    background: "#fff",
+                    borderRadius: maximized ? 0 : 8,
+                    boxShadow: maximized
+                        ? "none"
+                        : "0 2px 6px rgba(0,0,0,0.15)",
+                    display: "flex",
+                    flexDirection: "column",
+                }}>
+                {/* Toolbar */}
+                <div
+                    style={{
+                        padding: "8px 12px",
+                        borderBottom: "1px solid #e5e7eb",
+                        background: "#f9fafb",
+                        display: "flex",
+                        justifyContent: "flex-end",
+                    }}>
+                    <button
+                        onClick={() => setMaximized(!maximized)}
+                        style={{
+                            background: "#34495e",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 4,
+                            padding: "4px 10px",
+                            cursor: "pointer",
+                            fontSize: 12,
+                        }}>
+                        {maximized ? "Restore" : "Maximize"}
+                    </button>
+                </div>
+
+                {/* Iframe */}
+                <iframe
+                    ref={iframeRef}
+                    title="Email Content"
+                    srcDoc={html}
+                    sandbox=""
+                    style={{
+                        width: "100%",
+                        height: maximized ? "100vh" : height || 300,
+                        flexGrow: 1,
+                        border: "none",
+                    }}
+                />
+            </div>
+        );
+    }
 }
 
 export default RichTextEditor;

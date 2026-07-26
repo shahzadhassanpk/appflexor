@@ -104,10 +104,26 @@ const renderCustomizedLabel = ({
     );
 };
 
+const pivotData = (data, seriesColumn, xColumn, yColumn) => {
+  const grouped = {};
+
+  data.forEach(row => {
+    const xVal = row[xColumn];
+    const series = row[seriesColumn];
+    const yVal = row[yColumn];
+
+    if (!grouped[xVal]) grouped[xVal] = { [xColumn]: xVal };
+    grouped[xVal][series] = yVal;
+  });
+
+  return Object.values(grouped);
+}
+
 export {
     colorMaker,
     subTypes,
     CustomTooltip,
     CustomizeLegend,
     renderCustomizedLabel,
+    pivotData,
 };

@@ -9,9 +9,9 @@ import { ContainerToast } from "./components/Toastify/Toastify";
 import { setThemeColor } from "./modules/content-management/Sites/Site";
 import { tryToParse } from "./modules/data-management/form-builder/Forms/FormViewer/utils";
 import { staticAdminModuleFeatures, staticAdminModules } from "./staticMenu";
-import Breadcrumb from "./theme/modern/Layout/BreadCrumb";
-import Footer from "./theme/modern/Layout/Footer";
-import { Layout, MENU } from "./theme/modern/Layout/Layout";
+import Breadcrumb from "./theme/advance/Layout/BreadCrumb";
+import Footer from "./theme/advance/Layout/Footer";
+import { Layout, MENU } from "./theme/advance/Layout/Layout";
 import { ErrorBoundary } from "./utils/ErrorBoundry";
 import CookieConsent, { Cookies } from "react-cookie-consent";
 import { checkIfComponentIsAuthorized } from "./utils/utils";
@@ -31,6 +31,7 @@ function S2aApp() {
     const [searchParams, setSearchParams] = useSearchParams();
     const currentUrl = window.location.href;
     const searchParamsJS = new URLSearchParams(currentUrl);
+    const [cartItems, setCartItems] = useState([]);
 
     // app state
     const [isAuthorized, setIsAuthorized] = useState(false);
@@ -74,6 +75,13 @@ function S2aApp() {
     });
 
     useEffect(() => {
+        let newTheme = localStorage.getItem("theme");
+        let themeClass = "dark";
+        if (newTheme) {
+            themeClass = newTheme;
+        }
+        localStorage.setItem("theme", themeClass);
+        applyAppTheme(themeClass);
         const orgListener = event => {
             if (event.key === "userOrg") {
                 let org = JSON.parse(event.newValue);
@@ -238,7 +246,7 @@ function S2aApp() {
                     body.classList.remove("light");
                 }
                 body.classList.add("dark");
-            } else if (themeClass === "light") {
+            } else {
                 if (body.classList.contains("dark")) {
                     body.classList.remove("dark");
                 }
@@ -293,22 +301,28 @@ function S2aApp() {
 
             function addMargin() {
                 if (mainEle) mainEle.classList.remove("remove-margin");
+                if (mainEle) mainEle.classList.remove("add-margin-60");
                 if (mainEle) mainEle.classList.add("add-margin");
                 if (footerEle) footerEle.classList.remove("remove-margin");
+                if (footerEle) footerEle.classList.remove("add-margin-60");
                 if (footerEle) footerEle.classList.add("add-margin");
             }
 
             function addMargin60() {
                 if (mainEle) mainEle.classList.remove("remove-margin");
+                if (mainEle) mainEle.classList.remove("add-margin");
                 if (mainEle) mainEle.classList.add("add-margin-60");
                 if (footerEle) footerEle.classList.remove("remove-margin");
+                if (footerEle) footerEle.classList.remove("add-margin");
                 if (footerEle) footerEle.classList.add("add-margin-60");
             }
 
             function removeMargin() {
                 if (mainEle) mainEle.classList.remove("add-margin");
+                if (mainEle) mainEle.classList.remove("add-margin-60");
                 if (mainEle) mainEle.classList.add("remove-margin");
                 if (footerEle) footerEle.classList.remove("add-margin");
+                if (footerEle) footerEle.classList.remove("add-margin-60");
                 if (footerEle) footerEle.classList.add("remove-margin");
             }
 
@@ -317,7 +331,9 @@ function S2aApp() {
                     const site_preference = tryToParse(
                         brandDetails?.site_preference,
                     );
-                    const menu_position = site_preference?.menu_position || "body-left";
+                    const menu_position = site_preference
+                        ? site_preference.menu_position
+                        : "";
                     if (
                         typeof menu_position === "string"
                             ? menu_position.includes("header")
@@ -326,12 +342,11 @@ function S2aApp() {
                         removeMargin();
                     }
 
-                    const isBodyLeft =
-                        !menu_position ||
-                        (typeof menu_position === "string"
+                    if (
+                        typeof menu_position === "string"
                             ? menu_position.includes("body-left")
-                            : menu_position === "body-left");
-                    if (isBodyLeft) {
+                            : menu_position === "body-left"
+                    ) {
                         if (sideNavBarState && sideNavBarState === MENU.HOVER) {
                             addMargin60();
                         } else {
@@ -920,8 +935,6 @@ function S2aApp() {
             if (response.data.C_STATUS == "SUCCESS") {
                 if (response.data.C_DATA) {
                     let channel = {};
-                    let themeClass = "light";
-
                     channel = response.data.C_DATA[0];
 
                     if (channel.site_preference) {
@@ -931,18 +944,11 @@ function S2aApp() {
                             );
                         } catch (e) {}
                         // based on COLOR_PALLETE id
-                        if (channel.site_preference.color_palette === "1") {
-                            themeClass = "dark";
-                        } else {
-                            themeClass = "light";
-                        }
-                    }
-
-                    if (
-                        channel.menu_position === undefined ||
-                        channel.menu_position === "header"
-                    ) {
-                        localStorage.removeItem("SIDE_NAVBAR_STATE");
+                        // if (channel.site_preference.color_palette === "1") {
+                        //     themeClass = "dark";
+                        // } else {
+                        //     themeClass = "light";
+                        // }
                     }
 
                     setChannel(channel);
@@ -956,7 +962,6 @@ function S2aApp() {
                     }
                     setBrandDetials(channel);
                     setThemeColor(channel);
-                    applyAppTheme(themeClass);
 
                     // TODO : refactor this checkGuestLoginStatus() only works for login screen
                     // checkGuestLoginStatus(channel);
@@ -1029,12 +1034,14 @@ function S2aApp() {
         <ErrorBoundary>
             <div className={`s2a-layout ${isEmbeded ? "embeded" : ""}`}>
                 <ContainerToast />
-                <main
+                <div
                     id="main"
-                    className="s2a-main">
+                    className="s2a-main s2a-app-shell">
                     {(tenantSubscription?.id || !isAuthorized) && (
                         <AppContext.Provider
                             value={{
+                                cartItems, 
+                                setCartItems,
                                 profile,
                                 userGroups,
                                 userOrgList,
@@ -1077,37 +1084,33 @@ function S2aApp() {
                                 <>
                                     <Layout />
                                     <div
-                                        id="page"
-                                        className={`s2a-page`}>
-                                        <main
-                                            id="main"
-                                            className="s2a-main">
-                                            {isAuthorized && <Breadcrumb />}
-                                            <AppRoutes
-                                                wrapperSetIsAuthorized={
-                                                    wrapperSetIsAuthorized
-                                                }
-                                                isLoaded={isLoaded}
-                                                initailRoute={initailRoute}
-                                                isLoading={isLoading}
-                                                wrapperSetIsLoading={
-                                                    wrapperSetIsLoading
-                                                }
-                                                errorMessage={errorMessage}
-                                                wrapperSetErrorMessage={
-                                                    wrapperSetErrorMessage
-                                                }
-                                                channel={channel}
-                                            />
-                                        </main>
-                                        {isAuthorized && (
-                                            <footer
-                                                id="footer"
-                                                className="s2a-footer">
-                                                <Footer />
-                                            </footer>
-                                        )}
+                                        id="main-content"
+                                        className="s2a-main-content">
+                                        {isAuthorized && <Breadcrumb />}
+                                        <AppRoutes
+                                            wrapperSetIsAuthorized={
+                                                wrapperSetIsAuthorized
+                                            }
+                                            isLoaded={isLoaded}
+                                            initailRoute={initailRoute}
+                                            isLoading={isLoading}
+                                            wrapperSetIsLoading={
+                                                wrapperSetIsLoading
+                                            }
+                                            errorMessage={errorMessage}
+                                            wrapperSetErrorMessage={
+                                                wrapperSetErrorMessage
+                                            }
+                                            channel={channel}
+                                        />
                                     </div>
+                                    {isAuthorized && (
+                                        <footer
+                                            id="footer"
+                                            className="s2a-footer">
+                                            <Footer />
+                                        </footer>
+                                    )}
                                     {/* <CookieConsent
                                     location="bottom"
                                     buttonText="I understand"
@@ -1125,7 +1128,7 @@ function S2aApp() {
                             )}
                         </AppContext.Provider>
                     )}
-                </main>
+                </div>
             </div>
         </ErrorBoundary>
     );

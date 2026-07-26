@@ -1,0 +1,50 @@
+.chart-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    background-color: rgba(var(--primary-color), 0.4);
+    border: 1px solid var(--border-color);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.overlay-content {
+    position: relative;
+    width: 90%;
+    height: 90%;
+    background: var(--secondary-color);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    padding: 20px;
+}
+
+.chart-restore-btn {
+    border: 0px;
+    position: absolute;
+    top: 20px;
+    right: 70px;
+    z-index: 10;
+    background: transparent;
+    font-size: 22px;
+    color: var(--font-color);
+}
+
+.chart-maximize-btn {
+    border: 0px;
+    position: absolute;
+    top: 0px;
+    right: 50px;
+    z-index: 10;
+    background: transparent;
+    font-size: 22px;
+    color: var(--font-color);
+}
+
+.chart-restore-btn:hover,
+.chart-maximize-btn:hover {
+    background: transparent;
+    color: var(--font-color);
+}

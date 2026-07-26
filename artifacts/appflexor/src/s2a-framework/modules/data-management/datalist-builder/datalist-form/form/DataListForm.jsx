@@ -100,6 +100,21 @@ export default function DataListForm(props) {
             title: "Csv",
         },
     ];
+    const groupModes = [
+        {
+            code: "",
+            title: "None",
+        },
+        {
+            code: "filter",
+            title: "Filter",
+        },
+        {
+            code: "section",
+            title: "Section",
+        },
+        
+    ];
     const [_selectedItem, _setSelectedItem] = useState({});
     const [showSearch, setShowSearch] = useState(false);
     const serviceParamModalRef = useRef(null);
@@ -527,6 +542,10 @@ export default function DataListForm(props) {
                                                 label: "gallery",
                                                 code: "GALLERY",
                                             },
+                                            {
+                                                label: "cart",
+                                                code: "CART",
+                                            },
                                             { label: "list", code: "LIST" },
                                             { label: "table", code: "TABLE" },
                                         ]}
@@ -543,21 +562,82 @@ export default function DataListForm(props) {
                                         }
                                     />
                                 </div>
-                                {selectedItem?.view === "GALLERY" && (
-                                    <div className="gallery-cols">
-                                        <label htmlFor="gallery_columns">
-                                            Gallery Columns
-                                        </label>
-                                        <input
-                                            className="form-control"
-                                            type="number"
-                                            name="gallery_columns"
-                                            value={
-                                                selectedItem?.gallery_columns
-                                            }
-                                            onChange={handleInputField}
-                                        />
-                                    </div>
+                                {(selectedItem?.view === "GALLERY" || selectedItem?.view === "CART") && (
+                                    <>
+                                        <div className="gallery-cols">
+                                            <label htmlFor="gallery_columns">
+                                                Gallery Columns
+                                            </label>
+                                            <input
+                                                className="form-control"
+                                                type="number"
+                                                name="gallery_columns"
+                                                value={
+                                                    selectedItem?.gallery_columns
+                                                }
+                                                onChange={handleInputField}
+                                            />
+                                        </div>
+                                        <div className="my-1">
+                                            <div className="d-flex">
+                                                <label className="col-sm-5 fw-bold">
+                                                    Group By Mode&nbsp;
+                                                </label>
+                                                <div
+                                                    className={`${
+                                                        error.indexOf(
+                                                            "datalist_export_type",
+                                                        ) === -1
+                                                            ? "visually-hidden  col-sm-7"
+                                                            : "error-msg col-sm-7"
+                                                    }`}>
+                                                    Section
+                                                </div>
+                                            </div>
+                                            {groupModes.map((type, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="form-check type-check-box">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="radio"
+                                                        name="group_mode"
+                                                        checked={
+                                                            selectedItem?.group_mode ===
+                                                            type.code
+                                                        }
+                                                        value={type.code}
+                                                        onChange={e => {
+                                                            const { value, name } = e.target;
+                                                            setSelectedItem(
+                                                                prev => ({
+                                                                    ...prev,
+                                                                    [name]: value
+                                                                }),
+                                                            );
+                                                        }}
+                                                    />
+                                                    <label className="form-check-label type-title">
+                                                        {type.title}{" "}
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="gallery-cols">
+                                            <label htmlFor="gallery_columns">
+                                                Group By Column
+                                            </label>
+                                            <input
+                                                className="form-control"
+                                                type="text"
+                                                name="groupby_column"
+                                                value={
+                                                    selectedItem?.groupby_column
+                                                }
+                                                onChange={handleInputField}
+                                            />
+                                        </div>
+                                    </>
                                 )}
 
                                 <div className="actions">
@@ -727,7 +807,7 @@ export default function DataListForm(props) {
                                                                     <div className="col-sm-6 fw-bold">
                                                                         Data
                                                                         Source
-                                                                    </div>                                                                    
+                                                                    </div>
                                                                 </div>
                                                                 <select
                                                                     placeholder="Default"
@@ -1111,7 +1191,9 @@ export default function DataListForm(props) {
                                                         className="form-check-input"
                                                         type="checkbox"
                                                         checked={
-                                                            selectedItem?.serviceparams && selectedItem?.serviceparams!=='[]' &&
+                                                            selectedItem?.serviceparams &&
+                                                            selectedItem?.serviceparams !==
+                                                                "[]" &&
                                                             selectedItem?.serviceparams?.every(
                                                                 par =>
                                                                     par.selected,

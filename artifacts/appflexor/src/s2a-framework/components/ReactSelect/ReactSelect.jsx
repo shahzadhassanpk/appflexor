@@ -34,7 +34,7 @@ function ReactSelect(props) {
         disabled = false,
         withIcons = false,
         isSearchable = true,
-        width = "100%",
+        width="100%",
     } = props;
     const colourStyles = {
         container: provider => ({
@@ -93,6 +93,11 @@ function ReactSelect(props) {
             left: "0", // Position to the left edge of the select box
             right: "auto", // Prevent it from overflowing the container
             transform: "translateX(0)", // Ensures it’s aligned with the select box
+            zIndex: 9999,
+        }),
+        menuPortal: base => ({
+            ...base,
+            zIndex: 9999,
         }),
     };
 
@@ -115,42 +120,36 @@ function ReactSelect(props) {
                 styles={colourStyles}
                 isSearchable={isSearchable}
                 components={{ Option: IconOption }}
+                menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                menuPosition="fixed"
+                menuShouldScrollIntoView={false}
             />
         );
     }
 
     return (
         <>
-            <Select
-                placeholder={placeholder}
-                onChange={(newValue, action) => handleChange(newValue, action)}
-                getOptionLabel={option => {
-                    if (fieldLabel) return option[fieldLabel];
-                    return option.label;
-                }}
-                getOptionValue={option => {
-                    if (fieldValue) return option[fieldValue];
-                    return option.value;
-                }}
-                value={isMulti ? selectedOptions : selectedOption}
-                options={options}
-                isMulti={isMulti}
-                isDisabled={disabled}
-                isSearchable={isSearchable}
-                menuPortalTarget={document.body}
-                menuPosition="fixed"
-                styles={{
-                    ...colourStyles,
-                    menuPortal: (base) => ({
-                        ...base,
-                        zIndex: 9999,
-                    }),
-                    menu: (base) => ({
-                        ...base,
-                        zIndex: 9999,
-                    }),
-                }}
-            />
+        <Select
+            placeholder={placeholder}
+            onChange={(newValue, action) => handleChange(newValue, action)}
+            getOptionLabel={option => {
+                if (fieldLabel) return option[fieldLabel];
+                return option.label;
+            }}
+            getOptionValue={option => {
+                if (fieldValue) return option[fieldValue];
+                return option.value;
+            }}
+            value={isMulti ? selectedOptions : selectedOption}
+            options={options}
+            isMulti={isMulti}
+            isDisabled={disabled}
+            styles={colourStyles}
+            isSearchable={isSearchable}
+            menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+            menuPosition="fixed"
+            menuShouldScrollIntoView={false}
+        />
         </>
     );
 }

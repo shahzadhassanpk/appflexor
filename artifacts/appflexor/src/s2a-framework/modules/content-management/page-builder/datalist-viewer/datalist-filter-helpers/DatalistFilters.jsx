@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
 import moment from "moment";
-import "react-dates/initialize";
-import "react-dates/lib/css/_datepicker.css";
 import { DATE_FORMAT_FOR_USER_VIEW, FILE_URL } from "../../../../../Config";
 import { API_URL } from "../../../../../Config";
 import axios from "axios";
@@ -11,8 +9,7 @@ import { eventBus } from "../../../../../eventBus";
 import Scroll from "../../../../../components/Scroll/Scroll";
 import {
     DateRangePicker as DateRangePickerComp,
-    SingleDatePicker as _SingleDatePicker,
-} from "react-dates";
+} from "../../../../../components/DatePicker/DatePicker";
 
 import {
     DATE_FORMAT_FOR_DATABASE,
@@ -36,6 +33,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import ReactSelect from "../../../../../components/ReactSelect/ReactSelect";
 import DynamicRadio from "../../../../../components/dynamic-radio/radio";
 import DynamicCheckBoxs from "../../../../../components/dynamic-checkbox/Checkbox";
+import { image } from "d3";
 
 function NumberRangeColumnFilter({
     column: { filterValue = [], preFilteredRows, setFilter, id },
@@ -254,47 +252,26 @@ function DateRangeColumnFilter({
     column: { filterValue = [], preFilteredRows, setFilter, id },
 }) {
     const appcontext = useContext(AppContext);
-    let _startDate;
-    let _endDate;
-
-    const [startDate, setStartDate] = useState(_startDate);
-    const [endDate, setEndDate] = useState(_endDate);
-    const [focusedInput, setFocusedInput] = useState(null);
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
 
     useEffect(() => {
         if (filterValue === undefined) {
-            setStartDate(undefined);
-            setEndDate(undefined);
+            setStartDate(null);
+            setEndDate(null);
         } else if (filterValue[0] && filterValue[1]) {
             setStartDate(moment(filterValue[0]));
             setEndDate(moment(filterValue[1]));
         }
     }, [filterValue]);
 
-    if (startDate !== null) {
-        if (moment(startDate, DATE_FORMAT_FOR_DATABASE, true).isValid()) {
-            _startDate = moment(startDate);
-        } else {
-            _startDate = moment(formatDateForDataBase(startDate));
-        }
-    } else {
-        _startDate = null;
-    }
-
-    if (endDate !== null) {
-        if (moment(endDate, DATE_FORMAT_FOR_DATABASE, true).isValid()) {
-            _endDate = moment(endDate);
-        } else {
-            _endDate = moment(formatDateForDataBase(endDate));
-        }
-    } else {
-        _endDate = null;
-    }
-
     const handleDatesChange = ({ startDate = "", endDate = "" }) => {
         setStartDate(startDate);
         setEndDate(endDate);
-        setFilter([startDate?._d, endDate?._d]);
+        setFilter([
+            startDate ? new Date(startDate) : undefined,
+            endDate ? new Date(endDate) : undefined,
+        ]);
     };
 
     const handleClear = () => {
@@ -307,79 +284,9 @@ function DateRangeColumnFilter({
         <div className="">
             <DateRangePickerComp
                 startDate={startDate}
-                startDateId="startDateId"
                 endDate={endDate}
-                endDateId="endDateId"
-                startDatePlaceholderText="From"
-                endDatePlaceholderText="To"
-                isOutsideRange={() => false}
                 onDatesChange={handleDatesChange}
-                focusedInput={focusedInput}
-                onFocusChange={focusedInput => setFocusedInput(focusedInput)}
                 numberOfMonths={appcontext.screenView === "lg" ? 2 : 1}
-                daySize={30}
-                displayFormat={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
-                block
-                showDefaultInputIcon
-                renderMonthElement={({
-                    month,
-                    onMonthSelect,
-                    onYearSelect,
-                }) => (
-                    <div
-                        style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            gap: "8px",
-                            margin: "8px 0",
-                        }}>
-                        {/* Month dropdown */}
-                        <select
-                            value={month.month()}
-                            onChange={e => onMonthSelect(month, e.target.value)}
-                            style={{
-                                padding: "4px 8px",
-                                fontSize: "14px",
-                                border: "1px solid #ccc",
-                                borderRadius: "6px",
-                                backgroundColor: "#fff",
-                                cursor: "pointer",
-                            }}>
-                            {moment.months().map((label, value) => (
-                                <option
-                                    value={value}
-                                    key={value}>
-                                    {label}
-                                </option>
-                            ))}
-                        </select>
-
-                        {/* Year dropdown */}
-                        <select
-                            value={month.year()}
-                            onChange={e => onYearSelect(month, e.target.value)}
-                            style={{
-                                padding: "4px 8px",
-                                fontSize: "14px",
-                                border: "1px solid #ccc",
-                                borderRadius: "6px",
-                                backgroundColor: "#fff",
-                                cursor: "pointer",
-                            }}>
-                            {Array.from(
-                                { length: 30 },
-                                (_, i) => moment().year() - 15 + i,
-                            ).map(yr => (
-                                <option
-                                    value={yr}
-                                    key={yr}>
-                                    {yr}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                )}
             />
             <button
                 className="btn btn-sm button-theme my-2"
@@ -1075,6 +982,11 @@ const datalistDataTypes = {
         code: "fileuploader",
         operation: (column, { type, table, datalist_type }) =>
             fileUploader(column, type, table, datalist_type),
+    },
+    imageuploader: {
+        code: "imageuploader",
+        operation: (column, { type, table, datalist_type }) =>
+            imageUploader(column, type, table, datalist_type),
     },
     json: {
         code: "json",
@@ -2274,6 +2186,58 @@ const fileUploader = (column, type, table, datalist_type) => {
     }
 };
 
+const imageUploader = (column, type, table, datalist_type) => {
+    // console.log(type);
+    // Replace 'your_file_url' with the actual URL of the file you want to download
+    if (datalist_type === "EDITABLE-GRID") {
+        return {
+            id: column.id,
+            Header: column.label,
+            Footer: () => null,
+            datatype: column.type,
+            accessor: column.db_column.toLowerCase(),
+            className: `header_${column.db_column.toLowerCase()} s2a-file-uploader`,
+            hideFilter: column.isFilter || false,
+            filter: "fuzzyText",
+            Cell: cell => {
+                const files = cell?.value?.split(";");
+                const recordId = cell.row.original["id"];
+                return files?.map(
+                    file =>
+                        file && (
+                            <img
+                                src={`${FILE_URL}/${table}/${recordId}/${file}`}
+                            />
+                        ),
+                );
+            },
+        };
+    } else {
+        return {
+            id: column.id,
+            Header: column.label,
+            Footer: () => null,
+            datatype: column.type,
+            accessor: column.db_column.toLowerCase(),
+            className: `header_${column.db_column.toLowerCase()} s2a-file-uploader`,
+            hideFilter: column.isFilter || false,
+            filter: "fuzzyText",
+            Cell: cell => {
+                const files = cell?.value?.split(";");
+                const recordId = cell.row.original["id"];
+                return files?.map(
+                    file =>
+                        file && (
+                            <img className="w-100"
+                                src={`${FILE_URL}/${table}/${recordId}/${file}`}
+                            />
+                        ),
+                );
+            },
+        };
+    }
+};
+
 const DATECREATEDORMODIFIED = column => {
     // id need for those component which exist in form field not db generated fields
     return {
@@ -2334,8 +2298,12 @@ function evaluateExpression(
     userProfile,
     isAuthorized,
     tenantSubscription,
+    appContext,
 ) {
     let expressionResult = false;
+    if (!item.expression) {
+        return true;
+    }
 
     try {
         const exp = new Function(
@@ -2346,6 +2314,7 @@ function evaluateExpression(
             "userProfile",
             "isAuthorized",
             "tenantSubscription",
+            "appContext",
             "return " + item.expression,
         );
         expressionResult = exp(
@@ -2356,6 +2325,7 @@ function evaluateExpression(
             userProfile,
             isAuthorized,
             tenantSubscription,
+            appContext,
         );
     } catch (error) {
         // console.log(error);

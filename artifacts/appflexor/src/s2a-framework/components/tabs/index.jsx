@@ -9,7 +9,7 @@ const Tabs = params => {
                 return (
                     <li
                         key={tab.id}
-                        className="nav-item"
+                        className={tab.className || "nav-item"}
                         role="presentation">
                         <button
                             className={`nav-link ${

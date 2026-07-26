@@ -97,6 +97,7 @@ function Pages(props) {
         },
         tags: [],
         title_image: "",
+        page_key: "",
         meta_tags: "",
         type: "PROTECTED",
     };
@@ -1377,6 +1378,22 @@ const PageList = forwardRef(function PageList(props, ref) {
                                     props.selectedPage["name"]
                                 }
                                 onChange={e => props.handleInputField(e)}
+                            />
+                        </div>
+                        <div className="form-group mb-2">
+                            <label className="form-label">
+                                <span className="fw-bold">Page Key</span>
+                            </label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                name="page_key"
+                                value={
+                                    props.selectedPage &&
+                                    props.selectedPage["page_key"]
+                                }
+                                onChange={e => props.handleInputField(e)}
+                                placeholder="unique-page-key"
                             />
                         </div>
                         <div className="form-group mb-2">

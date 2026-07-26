@@ -63,12 +63,13 @@
     min-height: 100vh;
     display: flex;
     align-items: center;
+    margin:auto;
 }
 
 .s2a-login .login-content-bg,
 .s2a-signup .login-content-bg {
     background-color: var(--secondary-color);
-    min-height: 100vh;
+    /* min-height: 100vh; */
     padding: 20px 50px;
     /* padding: 20px 40px; */
 }
@@ -86,8 +87,9 @@
     color: #198754;
 }
 
-.login-content {
+.login-content{
     margin: auto;
+    max-width: 90%;
 }
 
 .login-content .content-btns {
@@ -270,7 +272,6 @@
 
 .s2a-login .s2a-brand-container {
     margin: auto;
-    max-width: 85%;
 }
 
 .s2a-signup .s2a-brand-container {
@@ -326,7 +327,12 @@
     padding: 0.375rem 0.25rem;
 }
 
-@media all and (max-width: 576px) {
+@media all and (max-width: 700px) {
+
+    .s2a-login .login-content-bg{
+        display:none;
+    }
+
     .s2a-login .registerd-text,
     .s2a-signup .registerd-text {
         font-size: 31px;
@@ -358,10 +364,10 @@
         padding: 12px;
     }
 
-    .s2a-login .s2a-brand-container,
+    /* .s2a-login .s2a-brand-container,
     .s2a-signup .s2a-brand-container {
         width: 85%;
-    }
+    } */
 
     .s2a-login .login-form,
     .s2a-signup .signup-form,
@@ -455,12 +461,16 @@
 }
 /* s2a datalist form styles end */
 
+/* .datalist-viewer .table-byid{
+    margin-left:10px;
+} */
+
 .s2a-form-title,
 .analytic-setting,
 .chart-title,
 .process-task-title,
 .datalist-viewer .s2a-datalist-header {
-    background-color: var(--header-color);
+    background-color: var(--primary-color);
     /* border: 1px solid var(--border-color); */
     padding: 8px 10px;
     border-radius: 5px;
@@ -469,17 +479,17 @@
 
 .task-title {
     font-weight: 600;
-    padding:5px 0px;
+    padding: 5px 0px;
     color: var(--text-primary);
 }
 
 .task-meta {
     font-size: 0.85rem;
-    padding:5px 0px;
+    padding: 5px 0px;
     color: var(--text-muted);
 }
 
-.task-tab{
+.task-tab {
     margin-right: 5px !important;
 }
 
@@ -670,9 +680,9 @@
     background-color: white !important;
 }
 
-.badge {
+/* .badge {
     padding: 4px 5px 3px 5px;
-}
+} */
 
 .pivot-badge {
     /* margin-right: 6px;
@@ -728,16 +738,15 @@
     font-size: 18px;
 }
 
-.badge {
-    /* Modern: preserve Bootstrap semantic colors; only set geometry */
+/* .badge {
     margin: 1px 2px;
     margin-bottom: 2px;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 3px 8px;
-    line-height: 1.2;
-}
+    color: var(--font-color) !important;
+    background-color: var(--primary-color) !important;
+    box-shadow:
+        var(--border-color) 0px 1px 1px,
+        var(--border-color) 0px 0px 1px 1px !important;
+} */
 
 .form-border {
     border: 1px solid lightgray;
@@ -1021,15 +1030,6 @@
     font-weight: 600;
 }
 
-.responsiveTable{
-    max-width: 90vw !important;
-}
-
-.responsiveTable tr{
-    display: flex;
-    width: 100%;
-}
-
 @media screen and (max-width: 40em) {
     .s2a-table.responsiveTable .data-cell {
         max-width: 90%;
@@ -1090,9 +1090,6 @@
 /*  datalist & form-builder styles start  */
 
 .datalist-viewer .title-text {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     text-wrap: nowrap;
 }
 
@@ -1313,7 +1310,7 @@
 }
 
 .datalist .datalist-actions-cell {
-    color: var(--accent-primary-hover);
+    color: #6ea8fe;
     text-decoration: underline;
     padding: 0px 8px;
     text-wrap: nowrap;
@@ -1874,8 +1871,6 @@
 }
 
 .datalist .datalist-title {
-    align-items: center;
-    display: flex;
     padding-left: 0px;
 }
 
@@ -2006,13 +2001,14 @@
 
 .s2a-table .tag-badge,
 .s2a-table .s2a-badge {
-    /* Modern: preserve semantic badge colors */
+    box-shadow:
+        var(--border-color) 0px 1px 1px,
+        var(--border-color) 0px 0px 1px 1px !important;
+    color: var(--font-color) !important;
     margin: 2px;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 2px 8px;
-    line-height: 1.2;
+    background-color: var(--primary-color) !important;
+    border-radius: 4px;
+    font-size: 10px;
 }
 
 @media screen and (max-width: 40em) {
@@ -2596,9 +2592,8 @@
 }
 
 .chart-data.figure {
-    font-size: 60pt;
+    font-size: 35pt;
     font-weight: 600;
-    padding: 1rem;
 }
 
 .chart-data.figure__title {
@@ -5828,6 +5823,13 @@ chart color picker component
 }
 .datalist-viewer {
     padding: 10px;
+    /* background-color: var(--primary-color); */
+    margin-top: 10px;
+    border-radius: 8px;
+}
+
+.datalist-viewer .table-header {
+    background-color: var(--secondary-color);
 }
 
 .task-panel .count,
@@ -6351,6 +6353,8 @@ chart color picker component
 
 .s2a-list .list-item {
     margin-bottom: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .s2a-list .list-item .s2a-list-data.heading {

@@ -73,6 +73,16 @@ function RenderListView({
         });
     }, []);
 
+    const allCount = taskList ? taskList.length : 0;
+    const myCount = taskList
+        ? taskList.filter(
+              t =>
+                  (t.assignee || "").toString().toLowerCase() ===
+                  (userDetails?.username || "").toString().toLowerCase(),
+          ).length
+        : 0;
+    // keep single total counts (as before)
+
     function handleStartProcessActions(
         actionType,
         state = {},
@@ -176,55 +186,25 @@ function RenderListView({
                     <div className="p-2">
                         <div className="task-panel-filters process-task-title chart-title">
                             <div className="col-sm-12 d-flex">
-                                <div className="col-sm-9 tasks-select">
-                                    {((data &&
-                                        data?.show_task === "ALL-TASK") ||
-                                        data?.show_task === "BOTH") &&
-                                        appContext.userGroups &&
-                                        appContext.userGroups.groupid && (
-                                            <label className="px-1 form-check-label pointer">
-                                                <input
-                                                    type="radio"
-                                                    className="form-check-input"
-                                                    value="allTask"
-                                                    checked={
-                                                        taskFilterType ===
-                                                            "allTask" ||
-                                                        (data &&
-                                                            data?.show_task ===
-                                                                "ALL-TASK")
-                                                    }
-                                                    onChange={event => {
-                                                        handleTypeChange(event);
-                                                    }}
-                                                />
-                                                <span className="ms-2">
-                                                    All Tasks
-                                                </span>
-                                            </label>
-                                        )}
-                                    {((data && data?.show_task === "MY-TASK") ||
-                                        data?.show_task === "BOTH") && (
-                                        <label className="px-1 form-check-label pointer">
-                                            <input
-                                                type="radio"
-                                                className="form-check-input"
-                                                value="myTask"
-                                                checked={
-                                                    taskFilterType ===
-                                                        "myTask" ||
-                                                    (data &&
-                                                        data?.show_task ===
-                                                            "MY-TASK")
-                                                }
-                                                onChange={event => {
-                                                    handleTypeChange(event);
-                                                }}
-                                            />
-                                            <span className="ms-2">
-                                                My Tasks
-                                            </span>
-                                        </label>
+                                <div className="col-sm-9 tasks-select d-flex align-items-center">
+                                    {/* Tab-like buttons showing counts */}
+                                    {((data && data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups && appContext.userGroups.groupid && (
+                                        <button
+                                            type="button"
+                                            className={`btn btn-sm me-2 ${taskFilterType === 'allTask' || (data && data?.show_task === 'ALL-TASK') ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                            onClick={() => { setTaskFilterType('allTask'); setSelectedTask(taskInitState); setCurrentProcessState({ initial: true, start: false, step: false, loading: false }); }}>
+                                            <span>All Tasks</span>
+                                            <span className="badge bg-light text-dark ms-2">{allCount}</span>
+                                        </button>
+                                    )}
+                                    {((data && data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
+                                        <button
+                                            type="button"
+                                            className={`btn btn-sm ${taskFilterType === 'myTask' || (data && data?.show_task === 'MY-TASK') ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                            onClick={() => { setTaskFilterType('myTask'); setSelectedTask(taskInitState); setCurrentProcessState({ initial: true, start: false, step: false, loading: false }); }}>
+                                            <span>My Tasks</span>
+                                            <span className="badge bg-light text-dark ms-2">{myCount}</span>
+                                        </button>
                                     )}
                                 </div>
                                 <div className="col-sm-3 d-flex action-bar m-auto">

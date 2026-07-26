@@ -13,12 +13,13 @@ import { AppContext } from "../../../../../../AppContext";
 import { API_URL } from "../../../../../Config";
 import { tryToParse } from "../../../../data-management/form-builder/Forms/FormViewer/utils";
 import { evaluateExpression } from "../datalist-filter-helpers/DatalistFilters";
+import { post } from "jquery";
 
 export default function RenderCustomActions({
     item = {},
     params = "",
     record = {},
-    handleActions = () => {setShow(false)},
+    handleActions = () => {},
     i = 0,
     getData,
     selectedItem,
@@ -35,6 +36,7 @@ export default function RenderCustomActions({
         },
         message: "",
     };
+    
     const [showCustomAction, setShowCustomAction] = useState(initial);
     const appContext = useContext(AppContext);
 
@@ -80,6 +82,10 @@ export default function RenderCustomActions({
     function navigateCustomURL(url, target) {
         window.open(url, target);
     }
+
+    const handleFormActions = () => {
+        setShow(false);
+    };
 
     function navigationcustom(url, target, id, condition, modalrequired) {
         if (target !== "dialog") {
@@ -199,8 +205,6 @@ export default function RenderCustomActions({
         if (foreignKey) {
             value = record[foreignKey.column_name];
             name = foreignKey.parameter_name;
-        }else{
-            return;
         }
 
         obj = {
@@ -220,11 +224,20 @@ export default function RenderCustomActions({
         });
     }
 
+    function getValueByPath(obj, path) {
+        return path.split(".").reduce((acc, key) => acc && acc[key], obj);
+    }
+
     function sendPostRequest(item, record) {
         try {
-            debugger;
-            let { method, post_url, hyper_parameters, post_json, api_service } =
-                item;
+            let {
+                method,
+                post_url,
+                hyper_parameters,
+                post_json,
+                api_service,
+                response_message_path,
+            } = item;
 
             post_json = tryToParse(post_json);
 
@@ -287,10 +300,16 @@ export default function RenderCustomActions({
                 });
             } else if (api_service === "EXTERNAL") {
                 //post_url += `/${record.id}`;
-
+                let jsonString = JSON.stringify(post_json);
                 hyper_parameters.forEach(parameter => {
                     if (post_url.includes(parameter.parameter_name)) {
                         post_url = post_url.replaceAll(
+                            `{${parameter.parameter_name}}`,
+                            `${record[parameter.column_name]}`,
+                        );
+                    }
+                    if (jsonString.includes(parameter.parameter_name)) {
+                        jsonString = jsonString.replaceAll(
                             `{${parameter.parameter_name}}`,
                             `${record[parameter.column_name]}`,
                         );
@@ -300,9 +319,7 @@ export default function RenderCustomActions({
                         method === "put" ||
                         method === "patch"
                     ) {
-                        post_json[parameter.parameter_name] =
-                            record[parameter.column_name];
-                        // post_json["id"] = "new";
+                        post_json = JSON.parse(jsonString);
                     } else {
                         post_json.id = record[parameter.column_name];
                     }
@@ -311,6 +328,13 @@ export default function RenderCustomActions({
                 axios[method](post_url, post_json)
                     .then(response => {
                         if (response) {
+                            if(response_message_path){
+                                const message = getValueByPath(
+                                    response.data,
+                                    response_message_path,
+                                );
+                                toastEmitter(message, true);
+                            }
                             // method === "delete"
                             //     ? toastEmitter(
                             //           "Record Deleted Successfully",
@@ -448,7 +472,7 @@ export default function RenderCustomActions({
                             setProcessModal(false);
                         }}
                         camundaVars={camundaVars}
-                        businessKey = {formVars?.business_key||"new"}
+                        businessKey={formVars?.business_key || "new"}
                         formVars={formVars}
                         action={item}
                     />
@@ -502,7 +526,11 @@ export default function RenderCustomActions({
                         <div
                             onClick={event => {
                                 event.preventDefault();
-                                let _url = replaceVariablesInUrl(item.hyper_link, record, appContext);
+                                let _url = replaceVariablesInUrl(
+                                    item.hyper_link,
+                                    record,
+                                    appContext,
+                                );
 
                                 if (!_url) {
                                     _url = item.hyper_link;
@@ -525,7 +553,11 @@ export default function RenderCustomActions({
                         <div
                             onClick={event => {
                                 event.preventDefault();
-                                let _url = replaceVariablesInUrl(item.hyper_link, record, appContext);
+                                let _url = replaceVariablesInUrl(
+                                    item.hyper_link,
+                                    record,
+                                    appContext,
+                                );
                                 navigationcustom(
                                     _url
                                         ? _url + params
@@ -571,8 +603,12 @@ export default function RenderCustomActions({
                         <div
                             onClick={event => {
                                 event.preventDefault();
-                                let _url = replaceVariablesInUrl(item.hyper_link, record, appContext);
-                                
+                                let _url = replaceVariablesInUrl(
+                                    item.hyper_link,
+                                    record,
+                                    appContext,
+                                );
+
                                 // else{
                                 //     _url = evaluateExpression(
                                 //         { expression: _url },
@@ -598,8 +634,12 @@ export default function RenderCustomActions({
                         <div
                             onClick={event => {
                                 event.preventDefault();
-                                let _url = replaceVariablesInUrl(item.hyper_link, record, appContext);
-                                
+                                let _url = replaceVariablesInUrl(
+                                    item.hyper_link,
+                                    record,
+                                    appContext,
+                                );
+
                                 navigationcustom(
                                     _url
                                         ? _url + params
@@ -633,11 +673,15 @@ export default function RenderCustomActions({
                 <>
                     {item.link_type === "FORM" && (
                         <>
-                            <div
+                            <div className="form-custom-action"
                                 onClick={event => {
                                     event.preventDefault();
-                                    let _url = replaceVariablesInUrl(item.hyper_link, record, appContext);
-                                
+                                    let _url = replaceVariablesInUrl(
+                                        item.hyper_link,
+                                        record,
+                                        appContext,
+                                    );
+
                                     //Hold
                                     navigationcustom(
                                         _url + params,
@@ -657,7 +701,46 @@ export default function RenderCustomActions({
                                 <FormDialog
                                     item={item}
                                     record={record}
-                                    handleActions={handleActions}
+                                    handleActions={handleFormActions}
+                                    show={show}
+                                    setShow={setShow}
+                                    parentFormData={parentFormData}
+                                    params={params}
+                                />
+                            )}
+                        </>
+                    )}
+                    {item.link_type === "DATALIST" && (
+                        <>
+                            <div className="form-custom-action"
+                                onClick={event => {
+                                    event.preventDefault();
+                                    let _url = replaceVariablesInUrl(
+                                        item.hyper_link,
+                                        record,
+                                        appContext,
+                                    );
+
+                                    //Hold
+                                    navigationcustom(
+                                        _url + params,
+                                        "dialog",
+                                        `#abc${i}`,
+                                        undefined,
+                                        item.enable_modal,
+                                    );
+                                }}>
+                                <ShowAs show_as={item.show_as}>
+                                    <Interweave
+                                        content={item.title}></Interweave>
+                                </ShowAs>
+                            </div>
+
+                            {show && (
+                                <FormDialog
+                                    item={item}
+                                    record={record}
+                                    handleActions={handleFormActions}
                                     show={show}
                                     setShow={setShow}
                                     parentFormData={parentFormData}

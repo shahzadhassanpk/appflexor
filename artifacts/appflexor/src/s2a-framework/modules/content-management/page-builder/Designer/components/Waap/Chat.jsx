@@ -11,7 +11,6 @@ import Modal from "./components/Modal";
 import Agents from "./components/forms/Agent";
 import { EditAgent } from "./components/forms/EditAgent";
 import {
-    formatDateForUserView,
     formatDateTimeForUserView,
 } from "./utils/utils";
 import ChatTabs from "./ChatTabs";
@@ -19,14 +18,14 @@ import { AssignProducts } from "./components/forms/AssignProducts";
 import { AssignStage } from "./components/forms/AssignStage";
 
 const BASE_URL = "/chat";
-// const socket = io("wss://ws.step2agility.com", {
-//     path: "/chat/ws/socket.io/",
-//     transports: ["websocket"],
-//     reconnection: true, // default is true
-//     reconnectionAttempts: 5, // try 5 times
-//     reconnectionDelay: 2000, // wait 2 sec between attempts
-//     timeout: 10000, // connection timeout
-// });
+const socket = io("wss://ws.step2agility.com", {
+    path: "/chat/ws/socket.io/",
+    transports: ["websocket"],
+    reconnection: true, // default is true
+    reconnectionAttempts: 5, // try 5 times
+    reconnectionDelay: 2000, // wait 2 sec between attempts
+    timeout: 10000, // connection timeout
+});
 
 function Waap() {
     const { userGroups, isAuthorized, setIsAuthorized } =
@@ -39,6 +38,7 @@ function Waap() {
     const [selectedLead, setSelectedLead] = useState(null);
     const [messages, setMessages] = useState([]);
     const [leadHistory, setLeadHistory] = useState([]);
+    const [leadSearch, setLeadSearch] = useState("");
 
     const [receiveMessages, setReceiveMessages] = useState(false);
     const chatBoxRef = useRef(null);
@@ -440,6 +440,34 @@ function Waap() {
         setSelectedItemId("");
     };
 
+    const getLeadInitials = lead => {
+        const name = (lead?.name || "").trim();
+        if (!name) return "?";
+        return name
+            .split(/\s+/)
+            .slice(0, 2)
+            .map(part => part[0]?.toUpperCase() || "")
+            .join("");
+    };
+
+    const totalUnread = Object.values(unreadMap).reduce(
+        (sum, count) => sum + Number(count || 0),
+        0,
+    );
+
+    const filteredLeads = (leads || []).filter(lead => {
+        const query = leadSearch.trim().toLowerCase();
+        if (!query) return true;
+        const name = String(lead?.name || "").toLowerCase();
+        const phone = String(lead?.phone || "").toLowerCase();
+        const stage = String(lead?.stage || "").toLowerCase();
+        return (
+            name.includes(query) ||
+            phone.includes(query) ||
+            stage.includes(query)
+        );
+    });
+
     return (
         <div
             className={`container-fluid chat-main ${
@@ -492,63 +520,69 @@ function Waap() {
                 />
             </Modal>
 
-            <div className="row p-2">
+            <div className="row p-2 waap-shell">
                 {/* Left Sidebar: Hidden on mobile if a user is selected */}
                 <div className={`d-flex`}>
                     {(!isMobile || (isMobile && !selectedLead?.id)) && (
                         <div className="col-12 col-md-4 col-lg-3 lead-list">
-                            <div className="p-2 fw-semibold lead-title mb-2">
-                                <div className="col-sm-12 d-flex">
-                                    <div className="col-sm-9 title d-flex">
+                            <div className="p-2 fw-semibold lead-title mb-2 waap-list-header">
+                                <div className="waap-list-top-row row">
+                                    <div className="title d-flex align-items-center col-sm-12">
                                         <div
-                                            className="col-sm-1 me-1 add-pointer"
+                                            className="me-2 add-pointer"
                                             onClick={toggleMaximize}>
                                             {isMaximized ? (
                                                 <i
-                                                    class="fa fa-compress"
+                                                    className="fa fa-compress"
                                                     title="Restore"></i>
                                             ) : (
                                                 <i
-                                                    class="fa fa-expand"
+                                                    className="fa fa-expand"
                                                     title="Maximize"></i>
                                             )}
                                         </div>
-                                        <div className="col-sm-8 d-flex">
-                                            Active Leads ({leads.length}){" "}
+                                        <div className="d-flex align-items-center waap-chat-heading">
+                                            Chats ({filteredLeads.length})
                                         </div>
+                                        <span className="waap-unread-chip ms-2">
+                                            {totalUnread}
+                                        </span>
                                     </div>
-                                    <div className="col-sm-3">
-                                        <ul className="stage-ul">
-                                            {Object.entries(
-                                                leads.reduce((acc, lead) => {
-                                                    (acc[lead.stage] ||=
-                                                        []).push(lead);
-                                                    return acc;
-                                                }, {}),
-                                            ).map(
-                                                (
-                                                    [stage, groupedLeads],
-                                                    index,
-                                                ) => (
-                                                    <li
-                                                        key={index}
-                                                        title={stage}
-                                                        className={`stage-li STAGE-${stage}`}>
-                                                        
-                                                        <span className="stage-count">
-                                                            {
-                                                                groupedLeads.length
-                                                            }
-                                                        </span>
-                                                    </li>
-                                                ),
-                                            )}
-                                        </ul>
-                                    </div>
+                                        {/* <div className="waap-list-actions col-sm-6">
+                                            <button
+                                                type="button"
+                                                className="btn waap-icon-btn"
+                                                onClick={() => {
+                                                    const input = document.getElementById(
+                                                        "waapLeadSearch",
+                                                    );
+                                                    input?.focus();
+                                                }}>
+                                                <i className="bi bi-search"></i>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn waap-icon-btn"
+                                                title="Start New Chat">
+                                                <i className="bi bi-plus-lg"></i>
+                                            </button>
+                                        </div> */}
                                 </div>
+                                {/* <div className="waap-list-search mt-2">
+                                    <input
+                                        id="waapLeadSearch"
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Search or start new chat"
+                                        value={leadSearch}
+                                        onChange={e =>
+                                            setLeadSearch(e.target.value)
+                                        }
+                                    />
+                                </div> */}
                             </div>
                             <ul className="list-group list-group-flush flex-grow-1 overflow-auto enable-scroll">
-                                {leads?.map(
+                                {filteredLeads?.map(
                                     lead =>
                                         lead.id && (
                                             <li
@@ -566,48 +600,46 @@ function Waap() {
                                                     getMessages(lead)
                                                 }
                                                 style={{ cursor: "pointer" }}>
-                                                <div className="col-sm-12 d-flex space-between">
+                                                <div className="col-sm-12 d-flex space-between lead-row">
+                                                    <div className="lead-avatar">
+                                                        {getLeadInitials(lead)}
+                                                    </div>
                                                     <div className="col-sm-10 d-flex flex-column align-items-start">
-                                                        <div className="col-sm-12 title d-flex w-100">
-                                                            <span className="text-truncate">
-                                                                {lead?.name ==
-                                                                ""
+                                                        <div className="col-sm-12 title d-flex w-100 justify-content-between align-items-start">
+                                                            <div className="text-truncate pe-2">
+                                                                {lead?.name == ""
                                                                     ? "Unknown"
-                                                                    : lead.name}{" "}
-                                                                ({lead.phone})
+                                                                    : lead.name}
+                                                            </div>
+                                                            <span className="lead-time text-nowrap">
+                                                                {formatDateTimeForUserView(
+                                                                    lead.datecreated,
+                                                                )}
                                                             </span>
+                                                        </div>
 
-                                                            {unreadMap[
-                                                                lead.id
-                                                            ] > 0 && (
-                                                                <span className="badge bg-primary ms-2">
-                                                                    {
-                                                                        unreadMap[
-                                                                            lead
-                                                                                .id
-                                                                        ]
-                                                                    }
+                                                        <div className="col-sm-12 d-flex align-items-center">
+                                                            <span className="lead-phone text-truncate">
+                                                                {lead.phone}
+                                                            </span>
+                                                            {unreadMap[lead.id] > 0 && (
+                                                                <span className="badge bg-primary ms-2 waap-unread-badge">
+                                                                    {unreadMap[lead.id]}
                                                                 </span>
                                                             )}
                                                         </div>
 
-                                                        {/* <div className="col-sm-12 title">{lead.name}</div> */}
                                                         <div className="col-sm-12 timestamp">
-                                                            {formatDateTimeForUserView(
-                                                                lead.datecreated,
-                                                            )}{" "}
                                                             {" | CSO: "}
-                                                            {
-                                                                lead.agent_assigned
-                                                            }
+                                                            {lead.agent_assigned}
                                                         </div>
-                                                        <div
-                                                            className={`col-sm-12 timestamp p-1 STAGE-${lead.stage}`}>
-                                                            <span>
-                                                                [{lead?.stage}]{" "}
-                                                                {
-                                                                    lead.product_name
-                                                                }
+
+                                                        <div className="col-sm-12 timestamp d-flex align-items-center gap-1 mt-1">
+                                                            <span className={`waap-stage-badge STAGE-${lead.stage}`}>
+                                                                {lead?.stage}
+                                                            </span>
+                                                            <span className="waap-product-name text-truncate">
+                                                                {lead.product_name}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -676,13 +708,22 @@ function Waap() {
                                         ),
                                 )}
                             </ul>
+                            <div className="waap-list-footer">
+                                <button type="button" className="btn waap-icon-btn">
+                                    <i className="bi bi-chevron-left"></i>
+                                </button>
+                                <span className="waap-page-pill">1</span>
+                                <button type="button" className="btn waap-icon-btn">
+                                    <i className="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     )}
                     {/* Right ChatBox */}
                     {(selectedLead?.id || !isMobile) && (
                         <>
                             <div
-                                className={`col-18 col-md-8 col-lg-9 d-flex flex-column`}>
+                                className={`chat-container col-18 col-md-8 col-lg-9 d-flex flex-column`}>
                                 <ChatTabs
                                     chatBoxRef={chatBoxRef}
                                     messages={messages}

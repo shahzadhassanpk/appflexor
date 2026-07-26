@@ -488,7 +488,6 @@ const ProcessFormViewer = ({
 
     async function handleMainSave(actionType) {
         let validations = validateFormData();
-
         if (validations.isValid) {
             let result = await saveMainForm();
 
@@ -750,7 +749,6 @@ const ProcessFormViewer = ({
                                                         </span>
                                                     </button>
                                                 )}
-
                                                 <button
                                                     type="button"
                                                     onClick={() =>

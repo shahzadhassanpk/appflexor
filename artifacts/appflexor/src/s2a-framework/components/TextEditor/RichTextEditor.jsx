@@ -48,14 +48,11 @@ function TextEditor({
     }, [componentData?.mode]);
 
     useEffect(() => {
-        
         document.addEventListener("focusin", e => {
             let _obj = e.target.closest(
                 ".tox-tinymce, .tox-fullscreen, .tox-control-wrap, .tox-tinymce-aux, .tox-dialog-wrap, .moxman-window, .tam-assetmanager-root",
-            )
-            if (
-                _obj!== null
-            ) {
+            );
+            if (_obj !== null) {
                 e.stopImmediatePropagation();
             }
         });
@@ -86,15 +83,12 @@ function TextEditor({
         onChange(event);
     };
 
-
     function keepFocus() {
         document.addEventListener("focusin", e => {
             let _obj = e.target.closest(
                 ".tox-tinymce, .tox-fullscreen, .tox-control-wrap, .tox-tinymce-aux, .tox-dialog-wrap, .moxman-window, .tam-assetmanager-root",
-            )
-            if (
-                _obj!== null
-            ) {
+            );
+            if (_obj !== null) {
                 e.stopImmediatePropagation();
             }
         });
@@ -179,6 +173,9 @@ function TextEditor({
                                 }}
                                 init={{
                                     height: height,
+                                    convert_urls: false,
+                                    relative_urls: false,
+                                    remove_script_host: false,
                                     menubar: "",
                                     setup: editor => {
                                         editor.ui.registry.addButton("source", {
@@ -189,30 +186,33 @@ function TextEditor({
                                             },
                                         });
                                     },
-                                    plugins: [
-                                        "fullscreen",
-                                        "lists",
-                                        "link",
-                                        "image",
-                                        "charmap",
-                                        "anchor",
-                                        "searchreplace",
-                                        "visualblocks",
-                                        "media",
-                                        "table",
-                                        "fullscreen",
-                                        "pagebreak",
-                                        "preview",
-                                        "help",
-                                        "wordcount",
-                                    ],
-                                    toolbar:
-                                        "fullscreen print " +
-                                        "undo redo | blocks | " +
-                                        "bold italic forecolor | alignleft aligncenter " +
-                                        "alignright alignjustify | bullist numlist outdent indent | " +
-                                        "image | " +
-                                        "removeformat pagebreak source| preview",
+                                    plugins: disabled
+                                        ? []
+                                        : [
+                                              "fullscreen",
+                                              "lists",
+                                              "link",
+                                              "image",
+                                              "charmap",
+                                              "anchor",
+                                              "searchreplace",
+                                              "visualblocks",
+                                              "media",
+                                              "table",
+                                              "fullscreen",
+                                              "pagebreak",
+                                              "preview",
+                                              "help",
+                                              "wordcount",
+                                          ],
+                                    toolbar: disabled
+                                        ? ""
+                                        : "fullscreen print " +
+                                          "undo redo | blocks | " +
+                                          "bold italic forecolor | alignleft aligncenter " +
+                                          "alignright alignjustify | bullist numlist outdent indent | " +
+                                          "image | " +
+                                          "removeformat pagebreak source| preview",
                                     // image_list: [...list],
                                     content_css:
                                         "/resources/bootstrap-5.2.3/css/bootstrap.min.css",
@@ -246,6 +246,9 @@ function TextEditor({
                                 init={{
                                     height: height,
                                     menubar: "edit view insert format",
+                                    convert_urls: false,
+                                    relative_urls: false,
+                                    remove_script_host: false,
                                     setup: editor => {
                                         editor.ui.registry.addButton("source", {
                                             // text: "View Source",
@@ -257,38 +260,41 @@ function TextEditor({
                                         // editor.ui.registry.remove("newdocument"); // Remove New Document option
                                         // editor.ui.registry.remove("print"); // Remove Print option
                                     },
-                                    plugins: [
-                                        "fullscreen",
-                                        "print",
-                                        // "advlist",
-                                        // "autolink",
-                                        "lists",
-                                        "link",
-                                        "image",
-                                        "charmap",
-                                        "anchor",
-                                        "searchreplace",
-                                        "visualblocks",
-                                        // "code",
-                                        // "insertdatetime",
-                                        "media",
-                                        "table",
-                                        "fullscreen",
-                                        "pagebreak",
-                                        // "preview",
-                                        // "help",
-                                        // "wordcount",
-                                    ],
+                                    plugins: disabled
+                                        ? ["fullscreen", "print"]
+                                        : [
+                                              "fullscreen",
+                                              "print",
+                                              // "advlist",
+                                              // "autolink",
+                                              "lists",
+                                              "link",
+                                              "image",
+                                              "charmap",
+                                              "anchor",
+                                              "searchreplace",
+                                              "visualblocks",
+                                              // "code",
+                                              // "insertdatetime",
+                                              "media",
+                                              "table",
+                                              "fullscreen",
+                                              "pagebreak",
+                                              // "preview",
+                                              // "help",
+                                              // "wordcount",
+                                          ],
                                     // selector: ".editable",
                                     // inline: true,
 
-                                    toolbar:
-                                        "fullscreen print " +
-                                        "undo redo | blocks | " +
-                                        "bold italic forecolor | alignleft aligncenter " +
-                                        "alignright alignjustify | bullist numlist outdent indent | " +
-                                        "image | " +
-                                        "removeformat pagebreak source| ",
+                                    toolbar: disabled
+                                        ? "fullscreen print"
+                                        : "fullscreen print " +
+                                          "undo redo | blocks | " +
+                                          "bold italic forecolor | alignleft aligncenter " +
+                                          "alignright alignjustify | bullist numlist outdent indent | " +
+                                          "image | " +
+                                          "removeformat pagebreak source| ",
                                     // image_list: [...list],
                                     content_css:
                                         "/resources/bootstrap-5.2.3/css/bootstrap.min.css",
@@ -336,7 +342,7 @@ function TextEditor({
                     />
                 </div>
             )}
-            {/* {mode === MODE.interweave && (
+            {mode === MODE.interweave && (
                 <div className="s2a-border">
                     <div
                         className="d-flex justify-content-end align-items-center"
@@ -368,7 +374,7 @@ function TextEditor({
                         </div>
                     )}
                 </div>
-            )} */}
+            )}
         </>
     );
 }

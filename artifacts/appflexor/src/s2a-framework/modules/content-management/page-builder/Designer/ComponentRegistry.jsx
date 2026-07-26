@@ -1,60 +1,57 @@
 import { lazy } from "react";
 // import ReactPivottable from "../../../../components/ReactPivottable/PivotTable/ReactPivottable";
-const ReactPivottable = lazy(() =>
-    import("../../../../components/ReactPivottable/PivotTable/ReactPivottable"),
+const ReactPivottable = lazy(
+    () =>
+        import("../../../../components/ReactPivottable/PivotTable/ReactPivottable"),
 );
 import { makeid } from "../../../../utils/utils";
 import Processes from "../../../camunda/Processes";
-const ContentViewer = lazy(() =>
-    import("../../../content-management/page-builder/ContentViewer/ContentViewer"),
+const ContentViewer = lazy(
+    () =>
+        import("../../../content-management/page-builder/ContentViewer/ContentViewer"),
 );
 // import ContentViewer from "../../../content-management/page-builder/ContentViewer/ContentViewer";
-const PostViewer = lazy(() =>
-    import("../../../content-management/page-builder/PostViewer/PostViewer"),
+const PostViewer = lazy(
+    () =>
+        import("../../../content-management/page-builder/PostViewer/PostViewer"),
 );
 // import PostViewer from "../../../content-management/page-builder/PostViewer/PostViewer";
-const Analytics = lazy(() =>
-    import("../../../data-analysis/analytics/analytics/Analytics"),
+const Analytics = lazy(
+    () => import("../../../data-analysis/analytics/analytics/Analytics"),
 );
 
 // import PostViewer from "../../../content-management/page-builder/PostViewer/PostViewer";
-const DropBox = lazy(() =>
-    import("../Designer/components/DropBox/DropBox"),
-);
+const DropBox = lazy(() => import("../Designer/components/DropBox/DropBox"));
 // import Analytics from "../../../data-analysis/analytics/analytics/Analytics";
 import CustomActionsPropEditer from "../../../data-management/form-builder/Designer/components/CustomActions/CustomActionsPropEditer";
 import ProcessStartForm from "../../../process-configuration/process-viewer/ProcessStartForm";
 import ProcessViewer from "../../../process-configuration/process-viewer/ProcessViewer";
-const DataListViewer = lazy(() =>
-    import("../datalist-viewer/viewer/DataListViewer"),
+const DataListViewer = lazy(
+    () => import("../datalist-viewer/viewer/DataListViewer"),
 );
 // import DataListViewer from "../datalist-viewer/viewer/DataListViewer";
-const ChartForm = lazy(() =>
-    import("./components/Chart/ChartForm"),
-);
+const ChartForm = lazy(() => import("./components/Chart/ChartForm"));
 // import ChartForm from "./components/Chart/ChartForm";
 import Form from "./components/Form";
 import HTML from "./components/HTML";
 import Iframe from "./components/Iframe";
 import Media from "./components/Media";
 import Report from "./components/Report";
+import AppView from "./components/AppView";
+import HTMLTemplate from "./components/HTMLTemplate";
+import SubmitForm from "./components/SubmitForm";
+import CartOrder from "./components/Cart/CartOrder";
 
-const Wiki = lazy(() =>
-    import("./components/Wiki/Wiki"),
-);
+const Wiki = lazy(() => import("./components/Wiki/Wiki"));
 // import Wiki from "./components/Wiki/Wiki";
-const DmsRepository = lazy(() =>
-    import("./components/DmsRepository"),
-);
+const DmsRepository = lazy(() => import("./components/DmsRepository"));
 // import DmsRepository from "./components/DmsRepository";
 // const Waap = lazy(() =>
 //     import("./components/Waap/Chat"),
 // );
-const ChatApp = lazy(() =>
-    import("./components/Chat"),
-);
+const ChatApp = lazy(() => import("./components/Chat"));
 // import ChatApp from "./components/Chat";
-import {Waap} from "./components/Waap/Chat";
+import { Waap } from "./components/Waap/Chat";
 // import Tabs from "./components/Tabs";
 // import RichText from "./components/RichText";
 // import ImageView from "./components/ImageView";
@@ -76,10 +73,14 @@ export const componentList = {
     post: PostViewer,
     content: ContentViewer,
     HTML: HTML,
+    htmlTemplate: HTMLTemplate,
     form: Form,
     action: CustomActionsPropEditer,
     chat: ChatApp,
     waap: Waap,
+    appView: AppView,
+    submitForm: SubmitForm,
+    cartOrder: CartOrder,
     // tabs: Tabs,
     // richtext: RichText,
     // imageview: ImageView,
@@ -92,6 +93,24 @@ export const COMPONENT = "component";
 export const COMPONENTS_STORED_IN_LAYOUT = ["HTML"]; // Saved in layout
 
 export const SIDEBAR_ITEMS = [
+    // Cart
+    {
+        id: `${makeid(8)}`,
+        type: SIDEBAR_ITEM,
+        require_auth: "true",
+        code: "FORM_BUILDER", // for SUBSCRIPTION_CHECK
+        path: "",
+        component: {
+            type: "cartOrder",
+            title: "Cart Order",
+            icon: "fa-solid fa-diagram-predecessor",
+            data: {
+                formId: "",
+                dataListId: "",
+            },
+            props: [],
+        },
+    },
     // Form
     {
         id: `${makeid(8)}`,
@@ -113,6 +132,24 @@ export const SIDEBAR_ITEMS = [
         id: `${makeid(8)}`,
         type: SIDEBAR_ITEM,
         require_auth: "true",
+        code: "FORM_BUILDER", // for SUBSCRIPTION_CHECK
+        path: "",
+        component: {
+            type: "submitForm",
+            title: "Submit Form",
+            icon: "fa-solid fa-diagram-predecessor",
+            data: {
+                actionUrl: "",
+                buttonLabel: "Submit",
+                inputs: {},
+            },
+            props: [],
+        },
+    },
+    {
+        id: `${makeid(8)}`,
+        type: SIDEBAR_ITEM,
+        require_auth: "false",
         code: "WAAP", // for SUBSCRIPTION_CHECK
         path: "",
         component: {
@@ -310,6 +347,31 @@ export const SIDEBAR_ITEMS = [
             props: [],
         },
     },
+    // HTML
+    {
+        id: `${makeid(8)}`,
+        type: SIDEBAR_ITEM,
+        require_auth: "false",
+        code: "WEB_CONTENT",
+        component: {
+            type: "htmlTemplate",
+            title: "HTML Template",
+            icon: "fa-solid fa-font",
+            data: {
+                html_id: "",
+            },
+            props: [
+                {
+                    id: "template",
+                    label: "Template",
+                    type: "text", // text, date, options,
+                    value: "",
+                    options: [], // optional
+                    hidden: false,
+                },
+            ],
+        },
+    },
     // datalist
     {
         id: `${makeid(8)}`,
@@ -454,6 +516,42 @@ export const SIDEBAR_ITEMS = [
                 {
                     id: "height",
                     label: "Height",
+                    type: "text", // text, date, options,
+                    value: "",
+                    options: [], // optional
+                    hidden: false,
+                },
+            ],
+        },
+    },
+    // appview
+    {
+        id: `${makeid(8)}`,
+        type: SIDEBAR_ITEM,
+        require_auth: "false",
+        path: "",
+        code: "WEB_CONTENT",
+        component: {
+            type: "appView",
+            title: "App View",
+            icon: "fa-solid fa-crop-simple",
+            data: {
+                url: "",
+                width: "",
+                height: "",
+            },
+            props: [
+                {
+                    id: "app",
+                    label: "App",
+                    type: "text", // text, date, options,
+                    value: "",
+                    options: [], // optional
+                    hidden: false,
+                },
+                {
+                    id: "view",
+                    label: "View",
                     type: "text", // text, date, options,
                     value: "",
                     options: [], // optional

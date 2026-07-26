@@ -112,7 +112,7 @@ function RightMenuModules(props) {
                             appContext.profile &&
                             appContext.userGroups &&
                             appContext.userGroups.groupid &&
-                            appContext.userGroups.groupid.includes("ADMIN") &&
+                            appContext.userGroups.group_code.includes("ADMIN") &&
                             // appContext.userGroups.groupid.indexOf("ADMIN") >
                             //     -1 &&
                             modules.map((module, index) => {

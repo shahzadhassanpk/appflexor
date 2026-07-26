@@ -24,7 +24,7 @@ const ChatTabs = ({
     return (
         <>
             {/* Tabs Header */}
-            <ul className="nav nav-tabs mb-2">
+            {/* <ul className="nav nav-tabs mb-2 waap-tabs">
                 <li className="nav-item">
                     <button
                         className={`nav-link ${
@@ -44,7 +44,7 @@ const ChatTabs = ({
                         Chat History
                     </button>
                 </li>
-            </ul>
+            </ul> */}
 
             {/* Tabs Content */}
             {activeTab === "chat" && (

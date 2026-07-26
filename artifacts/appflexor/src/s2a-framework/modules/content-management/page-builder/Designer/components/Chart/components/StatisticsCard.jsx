@@ -71,9 +71,9 @@ export default function StatisticsCard(props) {
 
                         {Object.keys(keys).map(key => (
                             <div className="chart-card-content">
-                                <h2 className="col-sm-12 chart-data figure">
+                                <span className="col-sm-12 chart-data figure">
                                     {keys[key]}
-                                </h2>                                
+                                </span>                                
                             </div>
                         ))}
                     </React.Fragment>

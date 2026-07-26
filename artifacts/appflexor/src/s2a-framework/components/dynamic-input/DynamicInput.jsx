@@ -65,6 +65,7 @@ const DynamicInput = props => {
                 onChange={setFormData ? handleInput : customInputHandler}
             />
         </div>
+        
     );
 };
 

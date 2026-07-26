@@ -1,5 +1,11 @@
 const DEFAULTACTIONS = [
     {
+        code: "add",
+        title: "Add",
+        selected: false,
+        type: "default",
+    },
+    {
         code: "edit",
         title: "Edit",
         selected: false,
@@ -10,13 +16,7 @@ const DEFAULTACTIONS = [
         title: "Delete",
         selected: false,
         type: "default",
-    },
-    {
-        code: "add",
-        title: "Add New",
-        selected: false,
-        type: "default",
-    },
+    },    
     {
         code: "export",
         title: "Export ",

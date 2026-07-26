@@ -24,6 +24,7 @@ function CheckList(props) {
     const [disable, setDisable] = useState(false);
     const [data, setData] = useState({});
     const [show, setShow] = useState(false);
+    const [componentLoaded, setComponentLoaded] = useState(false);
     const appContext = useContext(AppContext);
     const tenantId = appContext?.tenantSubscription?.tenant_id;
     const [serviceParams, setServiceParams] = useState(
@@ -120,14 +121,7 @@ function CheckList(props) {
                 }
             } else if (serviceKey !== "") {
                 getData(serviceKey, serviceParams, mapValue, mapLabel);
-            } else setMessage("No service key or Static options provided.");
-
-            setObj({
-                [key]: value,
-            });
-            // if (key && value && props.handleInputFields) {
-            //     props.handleInputFields(key, value);
-            // }
+            } else setMessage("No service key or Static options provided.");  
         }
     }, [props.component.data]);
 
@@ -138,7 +132,7 @@ function CheckList(props) {
         setData(props.formData);
     }, [props.formData]);
 
-    useEffect(() => {
+    useEffect(() => {        
         if (!props.formData || isEmpty(props.formData) || isEmpty(options)) {
             return;
         }
@@ -153,7 +147,7 @@ function CheckList(props) {
         let _options = [];
 
         options.map(opt => {
-            if (idsString.includes(opt.value)) {
+            if (idsString.indexOf(opt.value)>-1) {
                 opt.isChecked = true;
                 _options.push(opt);
             } else {
@@ -358,19 +352,12 @@ function CheckList(props) {
     };
 
     return (
-        <div className={"s2a-checklist-form " + userDefineClasses()}>
-            <ErrorBoundary render={() => Error}>
-                {visible && (
-                    <div className="field-padding">
-                        {props.mode &&
-                            props.modeType &&
-                            props.mode === props.modeType.design && (
-                                <span
-                                    className="m-2 fa-regular fa-pen-to-square mx-1 pointer"
-                                    onClick={() => setShow(true)}></span>
-                            )}
+        <ErrorBoundary render={() => Error}>
+            {visible && (
+                <div className={"ps-2 " + userDefineClasses()}>
+                    <div>
                         {!props.isInDatalistMode && (
-                            <label className="form-label d-flex">
+                            <label>
                                 {componentData.label
                                     ? componentData.label
                                     : "Checklist"}
@@ -382,231 +369,227 @@ function CheckList(props) {
                                     )}
                             </label>
                         )}
-                        <label>
-                            {componentData.style ? componentData.style : ""}
-                        </label>
                         {props.mode &&
                             props.modeType &&
-                            props.mode === props.modeType.design &&
-                            options &&
-                            options.map(option => {
-                                return (
-                                    <div
-                                        className={`form-check ${
-                                            componentData.inline === "YES"
-                                                ? "form-check-inline"
-                                                : ""
-                                        }`}>
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            name={componentData.db_column}
-                                            value={option.value}
-                                            data-id={option.id}
-                                            onChange={handleChange}
-                                            disabled
-                                        />
-                                        <label
-                                            className={`${componentData.style}`}>
-                                            {option.label}
-                                        </label>
-                                    </div>
-                                );
-                            })}
+                            props.mode === props.modeType.design && (
+                                <span
+                                    className="m-2 fa-regular fa-pen-to-square mx-1 pointer"
+                                    onClick={() => setShow(true)}></span>
+                            )}
+                    </div>
+                    {props.mode &&
+                        props.modeType &&
+                        props.mode === props.modeType.design &&
+                        options &&
+                        options.map(option => {
+                            return (
+                                <div
+                                    className={`form-check ${
+                                        componentData.inline === "YES"
+                                            ? "form-check-inline"
+                                            : ""
+                                    }`}>
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        name={componentData.db_column}
+                                        value={option.value}
+                                        data-id={option.id}
+                                        onChange={handleChange}
+                                        disabled
+                                    />
+                                    <label className={`${componentData.style}`}>
+                                        {option.label}
+                                    </label>
+                                </div>
+                            );
+                        })}
 
-                        {props.mode &&
-                            props.modeType &&
-                            props.mode === props.modeType.readonly &&
-                            updatedOptions &&
-                            updatedOptions.map(option => {
-                                return (
-                                    <div
-                                        className={`form-check ${
-                                            componentData.inline === "YES"
-                                                ? "form-check-inline"
+                    {props.mode &&
+                        props.modeType &&
+                        props.mode === props.modeType.readonly &&
+                        updatedOptions &&
+                        updatedOptions.map(option => {
+                            return (
+                                <div
+                                    className={`form-check ${
+                                        componentData.inline === "YES"
+                                            ? "form-check-inline"
+                                            : ""
+                                    }`}>
+                                    <input
+                                        className={`form-check-input ${
+                                            componentData.required &&
+                                            componentData.required === "YES"
+                                                ? isValidField
+                                                    ? ""
+                                                    : "form-control-danger"
                                                 : ""
-                                        }`}>
-                                        <input
-                                            className={`form-check-input ${
-                                                componentData.required &&
-                                                componentData.required === "YES"
-                                                    ? isValidField
-                                                        ? ""
-                                                        : "form-control-danger"
-                                                    : ""
-                                            } `}
-                                            type="checkbox"
-                                            name={componentData.db_column}
-                                            value={option.value}
-                                            checked={option.isChecked}
-                                            data-id={option.id}
-                                            onChange={handleChange}
-                                            onBlur={handleChange}
-                                            disabled={true}
-                                        />
-                                        <label
-                                            className={`${componentData.style}`}
-                                            htmlFor={``}>
-                                            {option.label}
-                                        </label>
-                                    </div>
-                                );
-                            })}
+                                        } `}
+                                        type="checkbox"
+                                        name={componentData.db_column}
+                                        value={option.value}
+                                        checked={option.isChecked}
+                                        data-id={option.id}
+                                        onChange={handleChange}
+                                        onBlur={handleChange}
+                                        disabled={true}
+                                    />
+                                    <label
+                                        className={`${componentData.style}`}
+                                        htmlFor={``}>
+                                        {option.label}
+                                    </label>
+                                </div>
+                            );
+                        })}
 
-                        {props.mode &&
-                            props.modeType &&
-                            props.mode === props.modeType.preview &&
-                            options &&
-                            options.map(option => {
-                                return (
-                                    <div
-                                        className={`form-check ${
-                                            componentData.inline === "YES"
-                                                ? "form-check-inline"
+                    {props.mode &&
+                        props.modeType &&
+                        props.mode === props.modeType.preview &&
+                        options &&
+                        options.map(option => {
+                            return (
+                                <div
+                                    className={`form-check ${
+                                        componentData.inline === "YES"
+                                            ? "form-check-inline"
+                                            : ""
+                                    }`}>
+                                    <input
+                                        className={`form-check-input ${
+                                            componentData.required &&
+                                            componentData.required === "YES"
+                                                ? isValidField
+                                                    ? ""
+                                                    : "form-control-danger"
                                                 : ""
-                                        }`}>
-                                        <input
-                                            className={`form-check-input ${
-                                                componentData.required &&
-                                                componentData.required === "YES"
-                                                    ? isValidField
-                                                        ? ""
-                                                        : "form-control-danger"
-                                                    : ""
-                                            } `}
-                                            type="checkbox"
-                                            name={componentData.db_column}
-                                            value={option.value}
-                                            checked={
-                                                option.isChecked ? true : false
-                                            }
-                                            data-id={option.id}
-                                            onBlur={handleChange}
-                                            onChange={handleChange}
-                                            disabled={
-                                                props.mode ===
-                                                props.modeType.design
-                                                    ? true
-                                                    : componentData.readonly ===
-                                                      "YES"
-                                                    ? true
-                                                    : disable
+                                        } `}
+                                        type="checkbox"
+                                        name={componentData.db_column}
+                                        value={option.value}
+                                        checked={
+                                            option.isChecked ? true : false
+                                        }
+                                        data-id={option.id}
+                                        onBlur={handleChange}
+                                        onChange={handleChange}
+                                        disabled={
+                                            props.mode === props.modeType.design
+                                                ? true
+                                                : componentData.readonly ===
+                                                    "YES"
+                                                  ? true
+                                                  : disable
                                                     ? true
                                                     : false
-                                            }
-                                        />
-                                        <label
-                                            className={`${componentData.style}`}>
-                                            {option.label}
-                                        </label>
-                                    </div>
-                                );
-                            })}
-                        {props.mode &&
-                            props.modeType &&
-                            props.mode === props.modeType.render &&
-                            updatedOptions &&
-                            updatedOptions.map(option => {
-                                return (
-                                    <div
-                                        className={`form-check ${
-                                            componentData.inline === "YES"
-                                                ? "form-check-inline"
+                                        }
+                                    />
+                                    <label className={`${componentData.style}`}>
+                                        {option.label}
+                                    </label>
+                                </div>
+                            );
+                        })}
+                    {props.mode &&
+                        props.modeType &&
+                        props.mode === props.modeType.render &&
+                        updatedOptions &&
+                        updatedOptions.map(option => {
+                            return (
+                                <div
+                                    className={`form-check ${
+                                        componentData.inline === "YES"
+                                            ? "form-check-inline"
+                                            : ""
+                                    }`}>
+                                    <input
+                                        id={option.id}
+                                        className={`form-check-input ${
+                                            componentData.required &&
+                                            componentData.required === "YES"
+                                                ? isValidField
+                                                    ? ""
+                                                    : "form-control-danger"
                                                 : ""
-                                        }`}>
-                                        <input
-                                            id={option.id}
-                                            className={`form-check-input ${
-                                                componentData.required &&
-                                                componentData.required === "YES"
-                                                    ? isValidField
-                                                        ? ""
-                                                        : "form-control-danger"
-                                                    : ""
-                                            } `}
-                                            type="checkbox"
-                                            name={componentData.db_column}
-                                            value={option.value}
-                                            checked={option.isChecked}
-                                            data-id={option.id}
-                                            onChange={handleChange}
-                                            onBlur={handleOnBlur}
-                                            disabled={
-                                                props.mode ===
-                                                props.modeType.design
-                                                    ? true
-                                                    : componentData.readonly ===
-                                                      "YES"
-                                                    ? true
-                                                    : disable
+                                        } `}
+                                        type="checkbox"
+                                        name={componentData.db_column}
+                                        value={option.value}
+                                        checked={option.isChecked}
+                                        data-id={option.id}
+                                        onChange={handleChange}
+                                        onBlur={handleOnBlur}
+                                        disabled={
+                                            props.mode === props.modeType.design
+                                                ? true
+                                                : componentData.readonly ===
+                                                    "YES"
+                                                  ? true
+                                                  : disable
                                                     ? true
                                                     : false
-                                            }
-                                        />
-                                        <label
-                                            className={`form-check-label pe-3 pointer ${componentData.style}`}
-                                            htmlFor={option.id}>
-                                            {option.label}
-                                        </label>
-                                    </div>
-                                );
-                            })}
-                        {/* <code>
+                                        }
+                                    />
+                                    <label
+                                        className={`form-check-label pe-3 pointer ${componentData.style}`}
+                                        htmlFor={option.id}>
+                                        {option.label}
+                                    </label>
+                                </div>
+                            );
+                        })}
+                    {/* <code>
                     <pre>{JSON.stringify(options, null, 2)}</pre>
                 </code> */}
-                    </div>
-                )}
-                <Modal
-                    className="s2a-modal"
-                    show={show}
-                    size="lg"
-                    onHide={() => setShow(false)}
-                    backdrop="static"
-                    keyboard={false}
-                    animation={true}
-                    fullscreen={toggleModalWindow === "maximize"}>
-                    <Modal.Header>
-                        <Modal.Title className="modal-title">
-                            <span>Edit Checklist</span>
-                            <div className="d-flex">
-                                <div
-                                    className={`${
-                                        toggleModalWindow === "maximize"
-                                            ? "visually-hidden"
-                                            : ""
-                                    } `}
-                                    onClick={() =>
-                                        setToggleModalWindow("maximize")
-                                    }
-                                    data-bs-toggle="tooltip"
-                                    data-bs-title="Maximize window">
-                                    <i className="fa-regular fa-window-maximize modal-resize"></i>
-                                </div>
-                                <div
-                                    className={`${
-                                        toggleModalWindow === "restore"
-                                            ? "visually-hidden"
-                                            : ""
-                                    } `}
-                                    onClick={() =>
-                                        setToggleModalWindow("restore")
-                                    }
-                                    data-bs-toggle="tooltip"
-                                    data-bs-title="Restore Window">
-                                    <i className="fa-regular fa-window-restore modal-resize"></i>
-                                </div>
-                                <i
-                                    className="fa-solid fa-xmark modal-close"
-                                    onClick={() => setShow(false)}></i>
+                </div>
+            )}
+            <Modal
+                className="s2a-modal"
+                show={show}
+                size="lg"
+                onHide={() => setShow(false)}
+                backdrop="static"
+                keyboard={false}
+                animation={true}
+                fullscreen={toggleModalWindow === "maximize"}>
+                <Modal.Header>
+                    <Modal.Title className="modal-title">
+                        <span>Edit Checklist</span>
+                        <div className="d-flex">
+                            <div
+                                className={`${
+                                    toggleModalWindow === "maximize"
+                                        ? "visually-hidden"
+                                        : ""
+                                } `}
+                                onClick={() => setToggleModalWindow("maximize")}
+                                data-bs-toggle="tooltip"
+                                data-bs-title="Maximize window">
+                                <i className="fa-regular fa-window-maximize modal-resize"></i>
                             </div>
-                        </Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <CheckListPropsEditor setShow={setShow} />
-                    </Modal.Body>
-                </Modal>
-            </ErrorBoundary>
-        </div>
+                            <div
+                                className={`${
+                                    toggleModalWindow === "restore"
+                                        ? "visually-hidden"
+                                        : ""
+                                } `}
+                                onClick={() => setToggleModalWindow("restore")}
+                                data-bs-toggle="tooltip"
+                                data-bs-title="Restore Window">
+                                <i className="fa-regular fa-window-restore modal-resize"></i>
+                            </div>
+                            <i
+                                className="fa-solid fa-xmark modal-close"
+                                onClick={() => setShow(false)}></i>
+                        </div>
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <CheckListPropsEditor setShow={setShow} />
+                </Modal.Body>
+            </Modal>
+        </ErrorBoundary>
     );
 }
 

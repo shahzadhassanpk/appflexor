@@ -60,12 +60,22 @@ const ChatBox = forwardRef(
             reader.readAsDataURL(file);
         };
 
+        const leadInitials = (() => {
+            const name = (selectedLead?.name || "").trim();
+            if (!name) return "?";
+            return name
+                .split(/\s+/)
+                .slice(0, 2)
+                .map(part => part[0]?.toUpperCase() || "")
+                .join("");
+        })();
+
         return (
             <div className="d-flex flex-column w-100 message-box shadow-sm">
                 {selectedLead ? (
                     <>
                         {/* Header */}
-                        <div className="p-2 fw-semibold lead-title d-flex align-items-center justify-content-between">
+                        <div className="p-2 fw-semibold lead-title d-flex align-items-center justify-content-between waap-chat-header">
                             <div className="d-flex align-items-center">
                                 {device === "mobile" && (
                                     <button
@@ -74,6 +84,7 @@ const ChatBox = forwardRef(
                                         <i className="bi bi-arrow-left"></i>
                                     </button>
                                 )}
+                                <div className="lead-avatar me-2">{leadInitials}</div>
                                 <div>
                                     <div className="title">
                                         {selectedLead?.name == ""
@@ -81,11 +92,17 @@ const ChatBox = forwardRef(
                                             : selectedLead.name}{" "}
                                         ({selectedLead.phone})
                                     </div>
-                                    <div className="timestamp">
+                                    <div className="timestamp d-flex align-items-center gap-1 mt-1">
                                         {formatDateTimeForUserView(
                                             selectedLead.datecreated,
                                         )}{" "}
-                                        <span className={`p-1 STAGE-${selectedLead.stage}`}>[{selectedLead?.stage}] {selectedLead.product_name}</span>
+                                        <span className={`waap-stage-badge STAGE-${selectedLead?.stage}`}>
+                                            {selectedLead?.stage}
+                                        </span>
+                                        <span className="waap-product-name text-truncate">
+                                            {selectedLead?.product_name}
+                                        </span>
+                                        {/* <span className={`p-1 STAGE-${selectedLead.stage}`}>[{selectedLead?.stage}] {selectedLead.product_name}</span> */}
                                     </div>
                                 </div>
                             </div>
@@ -95,17 +112,17 @@ const ChatBox = forwardRef(
 
                         {/* Message Input */}
                         {type && type === "chat" && (
-                            <div className="lead-message-box">
+                            <div className="lead-message-box waap-composer">
                                 <div className="col-sm-1">
                                     <FileUploader
                                         onSendMessage={
                                             onSendMessage
                                         }></FileUploader>
                                 </div>
-                                <div className="col-sm-11 d-flex align-items-center">
+                                <div className="col-sm-11 d-flex align-items-center composer-input-wrap">
                                     <input
                                         type="text"
-                                        className="form-control me-2"
+                                        className="form-control me-2 waap-message-input"
                                         value={newMessage}
                                         onChange={e =>
                                             setNewMessage(e.target.value)
@@ -116,10 +133,10 @@ const ChatBox = forwardRef(
                                         placeholder="Type a message"
                                     />
                                     <button
-                                        className="btn btn-success"
+                                        className="btn btn-success waap-send-btn"
                                         onClick={handleSend}
                                         disabled={!newMessage.trim()}>
-                                        Send
+                                        <i className="bi bi-send-fill"></i>
                                     </button>
                                 </div>
                             </div>
@@ -143,8 +160,21 @@ const ChatBox = forwardRef(
                         )}
                     </>
                 ) : (
-                    <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                        Select a user to start chatting
+                    <div className="waap-empty-state d-flex justify-content-center align-items-center flex-grow-1">
+                        <div className="waap-empty-content text-center">
+                            <div className="waap-empty-icon">
+                                <i className="bi bi-chat-dots"></i>
+                            </div>
+                            <h4 className="waap-empty-title">Welcome to WhatsApp Chat</h4>
+                            <p className="waap-empty-text">
+                                Select a user from the list to start a conversation.
+                            </p>
+                            <div className="waap-empty-sep">or</div>
+                            <button type="button" className="btn waap-empty-btn">
+                                <i className="bi bi-plus-lg me-2"></i>
+                                Start New Chat
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
