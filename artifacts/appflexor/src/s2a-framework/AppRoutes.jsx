@@ -54,6 +54,7 @@ import UserProfile from "./theme/advance/Pages/UserProfile";
 import StripeSubscription from "./modules/subscription/payment";
 import { ErrorBoundary } from "./utils/ErrorBoundry";
 import Welcome from "./theme/advance/Pages/Welcome";
+import ControlPanel from "./modules/control-panel/ControlPanel";
 
 function AppRoutes({
     errorMessage,
@@ -168,6 +169,10 @@ function AppRoutes({
                         <Route
                             path="/content-page-viewer/:id&embed=true"
                             element={<ContentPageViewer />}
+                        />
+                        <Route
+                            path="/control-panel"
+                            element={<ControlPanel />}
                         />
                         <Route
                             path="/user-profile"

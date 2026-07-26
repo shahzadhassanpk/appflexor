@@ -438,13 +438,23 @@ function TopNavbar({
                                                     }
                                                 />
                                             )}
+                                        {appContext.isAuthorized && (
+                                            <NavLink
+                                                to="/control-panel"
+                                                title="Control Panel"
+                                                className={({ isActive }) =>
+                                                    `top-navbar-icon pointer d-flex align-items-center justify-content-center${isActive ? " active" : ""}`
+                                                }>
+                                                <i className="fa fa-table-cells-large"></i>
+                                            </NavLink>
+                                        )}
                                         {appContext.userGroups &&
                                             appContext.userGroups.groupid &&
                                             appContext.userGroups.groupid.indexOf(
                                                 "ADMIN",
                                             ) > -1 && (
                                                 <div
-                                                    title="Control Panel"
+                                                    title="Settings"
                                                     className="control-panel-action pointer top-navbar-icon"
                                                     data-bs-toggle="offcanvas"
                                                     data-bs-target="#rightMenu">
