@@ -262,7 +262,7 @@ function Login({
             desc: "Automate and monitor business processes using AI-powered workflow automation.",
         },
         {
-            icon: "fa-boxes-stacked",
+            icon: "fa-link",
             iconBg: "bg-emerald-100",
             iconColor: "text-emerald-600",
             title: "Integrate",
