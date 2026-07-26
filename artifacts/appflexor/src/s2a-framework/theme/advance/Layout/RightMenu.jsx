@@ -18,7 +18,7 @@ function RightMenu(props) {
                         className="title"
                         id="rightMenuLabel">
                         <i className="me-2 fa fa-gear"></i>
-                        Control Panel
+                        Administrate
                     </span>
                     <span
                         type="button"
