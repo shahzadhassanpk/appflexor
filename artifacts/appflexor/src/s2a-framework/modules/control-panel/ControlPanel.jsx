@@ -115,7 +115,7 @@ const PANELS = [
 
 /* ─── Shared inline styles using theme CSS vars ────────────────────────────── */
 const sx = {
-    page:        { background: "var(--bg-app)",         minHeight: "100vh", padding: "1.5rem" },
+    page:        { background: "var(--secondary-color)",         minHeight: "100vh", padding: "1.5rem" },
     headTitle:   { color: "var(--text-primary)",        fontWeight: 700, fontSize: "1.375rem", margin: 0 },
     headSub:     { color: "var(--text-muted)",          fontSize: "0.8125rem", marginTop: "0.25rem" },
     card:        { background: "var(--bg-surface)",     border: "1px solid var(--border-default)", borderRadius: "1rem", boxShadow: "0 1px 4px var(--shadow-color)", display: "flex", flexDirection: "column", overflow: "hidden" },
