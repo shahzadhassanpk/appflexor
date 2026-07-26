@@ -8,9 +8,10 @@ import "react-phone-input-2/lib/bootstrap.css";
 import "react-super-responsive-table/dist/SuperResponsiveTableStyle.css";
 import "react-toastify/dist/ReactToastify.css";
 import { ErrorBoundary } from "./s2a-framework/utils/ErrorBoundry";
+import setupLocatorUI from "@locator/runtime";
 
-if (process.env.NODE_ENV === "development") {
-    import(/* @vite-ignore */ "@locator/runtime").then(m => m.default()).catch(() => {});
+if (import.meta.env.DEV) {
+    setupLocatorUI();
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(

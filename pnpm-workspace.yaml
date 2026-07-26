@@ -79,6 +79,9 @@ overrides:
   # Force all packages to use the same React instance (prevents "Invalid hook call" duplicate-React crashes)
   react: "19.1.0"
   react-dom: "19.1.0"
+  # LocatorJS relies on React 18 development Fiber source metadata in AppFlexor.
+  "@workspace/appflexor>react": "18.3.1"
+  "@workspace/appflexor>react-dom": "18.3.1"
   # Exclude non-Linux, non-Windows platforms (pnpm handles win32 natively; excluding them here breaks Windows installs)
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"
