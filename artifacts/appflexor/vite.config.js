@@ -1,6 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
+import path from "path";
 
 const port = Number(process.env.PORT ?? "3000");
 const basePath = process.env.BASE_PATH ?? "/app/";
@@ -11,6 +12,12 @@ export default defineConfig({
         tailwindcss(),
     ],
     base: basePath,
+    resolve: {
+        alias: {
+            // Stub for optional Module Federation remote — replaced by a real host at runtime
+            "app_plugins/AppView": path.resolve("./src/app_plugins/AppView.jsx"),
+        },
+    },
     server: {
         port,
         strictPort: true,
