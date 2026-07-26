@@ -5,15 +5,10 @@ import path from "path";
 
 const port = Number(process.env.PORT ?? "3000");
 const basePath = process.env.BASE_PATH ?? "/app/";
-const isDev = process.env.NODE_ENV !== "production";
 
 export default defineConfig({
     plugins: [
-        react({
-            babel: isDev ? {
-                plugins: ["@locator/babel-jsx"],
-            } : {},
-        }),
+        react(),
         tailwindcss(),
     ],
     base: basePath,
