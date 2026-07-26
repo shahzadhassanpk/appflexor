@@ -10,7 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { ErrorBoundary } from "./s2a-framework/utils/ErrorBoundry";
 
 if (process.env.NODE_ENV === "development") {
-    import("@locator/runtime").then(m => m.default()).catch(() => {});
+    import(/* @vite-ignore */ "@locator/runtime").then(m => m.default()).catch(() => {});
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(
