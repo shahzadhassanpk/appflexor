@@ -1,7 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import setupLocatorUI from "@locator/runtime";
 import S2aApp from "./s2a-framework/S2aApp";
 import "./index.css";
 
@@ -11,7 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { ErrorBoundary } from "./s2a-framework/utils/ErrorBoundry";
 
 if (process.env.NODE_ENV === "development") {
-    setupLocatorUI();
+    import("@locator/runtime").then(m => m.default()).catch(() => {});
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(
