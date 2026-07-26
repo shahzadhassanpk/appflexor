@@ -1,10 +1,11 @@
 import React from "react";
+import { HiInboxArrowDown } from "react-icons/hi2";
 
 /* ─── Panel definitions ──────────────────────────────────────────────────────── */
 const PANELS = [
     {
         id: "capture",
-        icon: "bi bi-tray-arrow-down",
+        icon: HiInboxArrowDown,
         accent: { bg: "#eef2ff", icon: "#4f46e5", btn: "#4f46e5", btnHover: "#4338ca", text: "#4f46e5", soft: "#e0e7ff" },
         title: "Capture",
         subtitle: "Receive business events from external channels.",
@@ -162,7 +163,10 @@ function PanelCard({ panel }) {
                     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                         {/* Module icon */}
                         <div style={{ width: "2.75rem", height: "2.75rem", background: ac.bg, borderRadius: "0.75rem", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <i className={panel.icon} style={{ color: ac.icon, fontSize: "1.1rem" }} />
+                            {typeof panel.icon === "string"
+                                ? <i className={panel.icon} style={{ color: ac.icon, fontSize: "1.1rem" }} />
+                                : <panel.icon style={{ color: ac.icon, fontSize: "1.25rem" }} />
+                            }
                         </div>
                         {/* Title + status */}
                         <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
