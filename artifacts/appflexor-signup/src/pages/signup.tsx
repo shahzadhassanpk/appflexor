@@ -205,12 +205,12 @@ export default function Signup() {
       <div style={{ flex: 1, display: "flex", minHeight: "100vh" }}>
 
         {/* ══ LEFT PANEL ══ */}
-        <section className="hidden lg:flex flex-col px-14 py-12 relative overflow-hidden" style={{
-          width: "55%", minHeight: "100vh",
+        <section className="s2a-login-presentation hidden lg:flex flex-col relative overflow-hidden" style={{
+          minHeight: "100vh",
           background: "radial-gradient(circle at 78% 46%, rgb(255 255 255 / 76%) 0 19%, transparent 42%), linear-gradient(135deg, #f8faff 0%, #f2f4fb 52%, #eef0fa 100%)",
         }}>
           {/* Dot grid */}
-          <div className="absolute top-10 right-10 opacity-20 pointer-events-none select-none">
+          <div className="s2a-login-dot-grid absolute top-10 right-10 opacity-20 pointer-events-none select-none">
             {[...Array(6)].map((_, r) => (
               <div key={r} className="flex gap-4 mb-4">
                 {[...Array(8)].map((_, c) => (
@@ -221,27 +221,27 @@ export default function Signup() {
           </div>
 
           {/* Brand logo */}
-          <div className="flex items-center gap-2.5 mb-10">
+          <div className="s2a-login-brand flex items-center gap-2.5 mb-10">
             <img src={logoSrc} alt="appflexor" className="h-8 object-contain" />
             <span className="text-lg font-bold text-slate-800 tracking-tight">appflexor</span>
           </div>
 
           {/* Headline */}
-          <h1 className="text-5xl font-extrabold text-slate-900 leading-[1.15] mb-4 tracking-tight" style={{ fontSize: "clamp(2.25rem, 3.25vw, 3.1rem)", lineHeight: 1.06, letterSpacing: "-0.035em" }}>
+          <h1 className="s2a-login-headline text-5xl font-extrabold text-slate-900 leading-[1.15] mb-4 tracking-tight">
             Automate Business<br />
             Services with{" "}
             <span className="text-indigo-600">AI</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-sm text-slate-600 mb-8 leading-6">
+          <p className="s2a-login-intro text-sm text-slate-600 mb-8 leading-6">
             Capture business events.<br />
             Orchestrate intelligent workflows.<br />
             Integrate enterprise systems.
           </p>
 
           {/* Flow diagram */}
-          <div className="flex items-center mb-8" style={{ width: "min(100%, 500px)", margin: "0 auto 16px", justifyContent: "center" }}>
+          <div className="s2a-login-flow flex items-center mb-8">
             {[
               { icon: HiInboxArrowDown, bg: "bg-indigo-600", label: "Capture" },
               { icon: "fa-arrows-spin", bg: "bg-violet-600", label: "Orchestrate" },
@@ -259,8 +259,8 @@ export default function Signup() {
                 </div>
                 {i < arr.length - 1 && (
                   <div className="flex items-center justify-between mx-2 w-full mb-4">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-indigo-300 opacity-60" />
+                    {[...Array(6)].map((_, j) => (
+                      <div key={j} className="w-1.5 h-1.5 rounded-full bg-indigo-300 opacity-60" />
                     ))}
                     <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-indigo-400 opacity-70" />
                   </div>
@@ -270,13 +270,13 @@ export default function Signup() {
           </div>
 
           {/* Feature cards */}
-          <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="s2a-login-feature-grid grid grid-cols-3 gap-3 mb-8">
             {[
               { icon: HiInboxArrowDown, iconBg: "bg-indigo-100", iconColor: "text-indigo-600", title: "Capture", titleColor: "text-indigo-600", desc: "Receive work from Email, WhatsApp, Forms, APIs and Business Applications." },
               { icon: "fa-arrows-spin", iconBg: "bg-violet-100", iconColor: "text-violet-600", title: "Orchestrate", titleColor: "text-violet-600", desc: "Automate and monitor business processes using AI-powered workflow automation." },
               { icon: "fa-link", iconBg: "bg-emerald-100", iconColor: "text-emerald-600", title: "Integrate", titleColor: "text-emerald-600", desc: "Connect ERP, CRM, Accounting, Messaging and enterprise systems." },
             ].map(f => (
-              <div key={f.title} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div key={f.title} className="s2a-login-feature-card bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
                 <div className="flex items-start gap-3">
                   <div className={`w-9 h-9 ${f.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
                     {typeof f.icon === "string"
@@ -294,21 +294,24 @@ export default function Signup() {
           </div>
 
           {/* Supported channels */}
-          <div className="mb-4">
+          <div className="s2a-login-supported mb-4">
             <p className="text-sm font-semibold text-slate-500 mb-2.5">Supported Channels</p>
             <div className="flex flex-wrap gap-2">
-              {[
+              {([
                 { icon: "fa-envelope", label: "Email" },
                 { icon: "fa-whatsapp", label: "WhatsApp", fab: true },
                 { icon: "fa-globe", label: "Portal" },
                 { icon: "fa-code", label: "APIs" },
-                { icon: "fa-circle-nodes", label: "Odoo ERP" },
-                { icon: "fa-calculator", label: "QuickBooks" },
-                { icon: "fa-file-invoice-dollar", label: "Xero" },
-                { icon: "fa-database", label: "Legacy Systems" },
-              ].map(ch => (
+                { logo: "s2a-channel-logo s2a-channel-logo-odoo", label: "Odoo ERP" },
+                { logo: "s2a-channel-logo s2a-channel-logo-quickbooks", label: "QuickBooks" },
+                { logo: "s2a-channel-logo s2a-channel-logo-xero", label: "Xero" },
+                { logo: "s2a-channel-logo s2a-channel-logo-kafka", label: "Legacy Systems" },
+              ] as any[]).map((ch: any) => (
                 <span key={ch.label} className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm">
-                  <i className={`${(ch as any).fab ? "fa-brands" : "fa-solid"} ${ch.icon} text-base`}></i>
+                  {ch.logo
+                    ? <i className={ch.logo} aria-hidden="true" />
+                    : <i className={`${ch.fab ? "fa-brands" : "fa-solid"} ${ch.icon} text-base`} />
+                  }
                   {ch.label}
                 </span>
               ))}
@@ -316,7 +319,7 @@ export default function Signup() {
           </div>
 
           {/* Business services */}
-          <div className="mb-6">
+          <div className="s2a-login-services mb-6">
             <p className="text-sm font-semibold text-slate-500 mb-2.5">Business Services</p>
             <div className="flex flex-wrap gap-2">
               {[
