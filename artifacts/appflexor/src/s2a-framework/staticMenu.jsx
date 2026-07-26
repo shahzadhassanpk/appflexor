@@ -34,7 +34,7 @@ export const staticAdminModules = [
         icon: "fa-solid fa-globe",
     },
     {
-        name: "Admin",
+        name: "System",
         location: ADMINOFFICE,
         id: `${said}`,
         position: "1002",

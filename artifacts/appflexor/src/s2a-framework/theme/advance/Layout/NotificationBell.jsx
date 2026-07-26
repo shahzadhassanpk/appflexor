@@ -242,17 +242,18 @@ const NotificationBell = ({ userId }) => {
 
     return (
         <div className="notification-bell position-relative">
-            <div className="top-navbar-icon">
-                <button
-                    title="Notifications"
-                    className={`btn btn-sm notification-bell-btn ${connectionStatus}`}
-                    onClick={() => setOpen(!open)}>
-                    <i className="bi bi-bell"></i>
-                    {unseenCount > 0 && (
-                        <span className="badge">{unseenCount}</span>
-                    )}
-                </button>
-            </div>            
+            <button
+                type="button"
+                title="Notifications"
+                aria-label={`${unseenCount || "No"} unread notifications`}
+                aria-expanded={open}
+                className={`top-navbar-icon navbar-action-button notification-bell-btn ${connectionStatus}`}
+                onClick={() => setOpen(!open)}>
+                <i className="bi bi-bell"></i>
+                {unseenCount > 0 && (
+                    <span className="badge">{unseenCount}</span>
+                )}
+            </button>
             {open && (
                 <div
                     className="dropdown"
