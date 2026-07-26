@@ -138,7 +138,7 @@ const sx = {
     cardFooter:  { padding: "0.75rem 1.25rem 1.25rem", display: "flex", justifyContent: "flex-end" },
     viewAll:     { fontSize: "0.7rem", fontWeight: 600, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem", padding: 0, marginTop: "0.75rem" },
     addBtn:      { background: "none", border: "none", display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.2rem 0", cursor: "pointer", fontSize: "0.75rem", fontWeight: 500, width: "100%", textAlign: "left" },
-    addBtnIcon:  { width: "1.25rem", height: "1.25rem", borderRadius: "0.3rem", border: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "0.55rem", color: "var(--text-muted)" },
+    addBtnIcon:  { width: "1.5rem", height: "1.5rem", borderRadius: "0.35rem", border: "1px solid var(--border-default)", background: "var(--bg-surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "0.75rem" },
 };
 
 /* ─── Status badge ───────────────────────────────────────────────────────────── */
@@ -201,8 +201,8 @@ function PanelCard({ panel }) {
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                         {panel.quickActions.map(a => (
                             <button key={a.label} style={{ ...sx.addBtn, color: ac.text }}>
-                                <span style={sx.addBtnIcon}>
-                                    <i className="fa-solid fa-plus" />
+                                <span style={{ ...sx.addBtnIcon, color: ac.icon }}>
+                                    <i className={a.icon} />
                                 </span>
                                 {a.label}
                             </button>
