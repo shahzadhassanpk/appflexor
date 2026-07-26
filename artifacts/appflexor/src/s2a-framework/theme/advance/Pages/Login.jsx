@@ -97,6 +97,11 @@ function Login({
     const { featuresSubscription } = appContext;
 
     useEffect(() => {
+        document.body.classList.add("s2a-login-page");
+        return () => document.body.classList.remove("s2a-login-page");
+    }, []);
+
+    useEffect(() => {
         setIsSignupAllowed(checIfSignupAllowed(featuresSubscription));
         setIsGuestLoginAllowed(checkIfGuestLoginAllowed(featuresSubscription));
     }, [featuresSubscription]);

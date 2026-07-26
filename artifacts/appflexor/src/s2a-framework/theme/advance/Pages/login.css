@@ -1,5 +1,11 @@
 /* Reset advance theme CSS variables for the modern login page so dark-mode
    body class doesn't bleed in and make text/inputs invisible on white bg. */
+
+body.s2a-login-page,
+body.s2a-login-page .s2a-main-content {
+    background-color: #f8fafc !important;
+}
+
 .s2a-modern-login {
     --primary-color: #f8fafc;
     --secondary-color: #ffffff;
