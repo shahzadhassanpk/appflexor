@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { HiInboxArrowDown } from "react-icons/hi2";
 import logoSrc from "../assets/appflexor-logo.png";
-import bgDesign from '../../../design/appflexor_Design signup p_2026-07-01T06_39_30.png';
 
 /* ── Static data ──────────────────────────────────────────────────────────── */
 const FEATURES = [
@@ -205,108 +205,136 @@ export default function Signup() {
       <div style={{ flex: 1, display: "flex", minHeight: "100vh" }}>
 
         {/* ══ LEFT PANEL ══ */}
-        <div className="hidden lg:flex" style={{
+        <section className="hidden lg:flex flex-col px-14 py-12 relative overflow-hidden" style={{
           width: "55%", minHeight: "100vh",
-          flexDirection: "column", position: "relative", overflow: "hidden",
-          backgroundImage: `url(${bgDesign})`,
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'left center',
-          backgroundSize: '120% auto',
+          background: "radial-gradient(circle at 78% 46%, rgb(255 255 255 / 76%) 0 19%, transparent 42%), linear-gradient(135deg, #f8faff 0%, #f2f4fb 52%, #eef0fa 100%)",
         }}>
-
-          {/* soft violet overlay to match design */}
-          <div style={{
-            position: "absolute", inset: 0,
-            background: 'linear-gradient(90deg, rgba(124,58,237,0.18) 0%, rgba(255,255,255,0.92) 55%)',
-            mixBlendMode: 'normal',
-            pointerEvents: "none",
-          }} />
-
-          {/* subtle vignette to match screenshot */}
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-            backgroundImage: 'radial-gradient(ellipse at left center, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0) 40%)',
-          }} />
-
-          <div style={{ position: "relative", zIndex: 1, padding: "36px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
-
-            {/* Logo + tagline */}
-            <Logo />
-            <p style={{ color: "#7c3aed", fontSize: 12, fontWeight: 600, marginTop: 6, letterSpacing: "0.3px" }}>
-              Build. Automate. Accelerate.
-            </p>
-
-            {/* Headline */}
-            <div style={{ marginTop: 36 }}>
-              <h1 style={{ fontSize: 34, fontWeight: 800, color: "#111827", lineHeight: 1.2, margin: 0 }}>
-                Build powerful apps.<br />
-                Automate processes.<br />
-                <span style={{ color: "#7c3aed" }}>Without code.</span>
-              </h1>
-              <p style={{ fontSize: 13, color: "#6b7280", marginTop: 14, lineHeight: 1.7, maxWidth: 320 }}>
-                Appflexor is a low-code platform to build business apps, automate workflows,
-                manage tasks and analyze data – all with drag-n-drop.
-              </p>
-            </div>
-
-            {/* App mockup */}
-            <AppMockup />
-
-            {/* Features grid */}
-            <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {FEATURES.map(f => (
-                <div key={f.title} style={{
-                  display: "flex", alignItems: "flex-start", gap: 10,
-                  background: "#fff", borderRadius: 10, padding: "10px 12px",
-                  border: "1px solid #f3f4f6", boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                }}>
-                  <div style={{
-                    width: 30, height: 30, borderRadius: 6, flexShrink: 0,
-                    background: f.bg, display: "flex", alignItems: "center", justifyContent: "center",
-                    color: f.ic,
-                  }}>{f.icon}</div>
-                  <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "#1f2937", margin: 0, lineHeight: 1.3 }}>{f.title}</p>
-                    <p style={{ fontSize: 11, color: "#9ca3af", margin: "2px 0 0", lineHeight: 1.4 }}>{f.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Dot grid */}
+          <div className="absolute top-10 right-10 opacity-20 pointer-events-none select-none">
+            {[...Array(6)].map((_, r) => (
+              <div key={r} className="flex gap-4 mb-4">
+                {[...Array(8)].map((_, c) => (
+                  <div key={c} className="w-1 h-1 rounded-full bg-indigo-400" />
+                ))}
+              </div>
+            ))}
           </div>
 
-          {/* Bottom badges */}
-          <div style={{
-            position: "relative", zIndex: 1,
-            borderTop: "1px solid #f3f4f6",
-            padding: "18px 40px",
-            display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12,
-          }}>
-            {BOTTOM_BADGES.map(b => (
-              <div key={b.label} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                <span style={{ color: b.ic, flexShrink: 0, marginTop: 1 }}>{b.icon}</span>
-                <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: b.ic, margin: 0 }}>{b.label}</p>
-                  <p style={{ fontSize: 11, color: "#9ca3af", margin: "2px 0 0", lineHeight: 1.4 }}>{b.sub}</p>
+          {/* Brand logo */}
+          <div className="flex items-center gap-2.5 mb-10">
+            <img src={logoSrc} alt="appflexor" className="h-8 object-contain" />
+            <span className="text-lg font-bold text-slate-800 tracking-tight">appflexor</span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-5xl font-extrabold text-slate-900 leading-[1.15] mb-4 tracking-tight" style={{ fontSize: "clamp(2.25rem, 3.25vw, 3.1rem)", lineHeight: 1.06, letterSpacing: "-0.035em" }}>
+            Automate Business<br />
+            Services with{" "}
+            <span className="text-indigo-600">AI</span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-sm text-slate-600 mb-8 leading-6">
+            Capture business events.<br />
+            Orchestrate intelligent workflows.<br />
+            Integrate enterprise systems.
+          </p>
+
+          {/* Flow diagram */}
+          <div className="flex items-center mb-8" style={{ width: "min(100%, 500px)", margin: "0 auto 16px", justifyContent: "center" }}>
+            {[
+              { icon: HiInboxArrowDown, bg: "bg-indigo-600", label: "Capture" },
+              { icon: "fa-arrows-spin", bg: "bg-violet-600", label: "Orchestrate" },
+              { icon: "fa-link", bg: "bg-emerald-600", label: "Integrate" },
+            ].map((step, i, arr) => (
+              <div key={step.label} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div className={`w-14 h-14 ${step.bg} rounded-full flex items-center justify-center shadow-md mb-2`}>
+                    {typeof step.icon === "string"
+                      ? <i className={`fa-solid ${step.icon} text-white text-xl`}></i>
+                      : <step.icon style={{ color: "#fff", fontSize: "1.25rem" }} />
+                    }
+                  </div>
+                  <span className="text-xs font-semibold text-slate-700">{step.label}</span>
+                </div>
+                {i < arr.length - 1 && (
+                  <div className="flex items-center justify-between mx-2 w-full mb-4">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-indigo-300 opacity-60" />
+                    ))}
+                    <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-indigo-400 opacity-70" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Feature cards */}
+          <div className="grid grid-cols-3 gap-3 mb-8">
+            {[
+              { icon: HiInboxArrowDown, iconBg: "bg-indigo-100", iconColor: "text-indigo-600", title: "Capture", titleColor: "text-indigo-600", desc: "Receive work from Email, WhatsApp, Forms, APIs and Business Applications." },
+              { icon: "fa-arrows-spin", iconBg: "bg-violet-100", iconColor: "text-violet-600", title: "Orchestrate", titleColor: "text-violet-600", desc: "Automate and monitor business processes using AI-powered workflow automation." },
+              { icon: "fa-link", iconBg: "bg-emerald-100", iconColor: "text-emerald-600", title: "Integrate", titleColor: "text-emerald-600", desc: "Connect ERP, CRM, Accounting, Messaging and enterprise systems." },
+            ].map(f => (
+              <div key={f.title} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className={`w-9 h-9 ${f.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                    {typeof f.icon === "string"
+                      ? <i className={`fa-solid ${f.icon} ${f.iconColor} text-sm`}></i>
+                      : <f.icon className={f.iconColor} style={{ fontSize: "1rem" }} />
+                    }
+                  </div>
+                  <div>
+                    <p className={`text-sm font-semibold ${f.titleColor} mb-1`}>{f.title}</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Footer */}
-          <div style={{
-            position: "relative", zIndex: 1,
-            borderTop: "1px solid #f3f4f6",
-            padding: "12px 40px",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            fontSize: 11, color: "#9ca3af",
-          }}>
-            <span>© 2024 Appflexor Technologies. All rights reserved.</span>
-            <div style={{ display: "flex", gap: 10 }}>
-              <a href="#" style={{ color: "#9ca3af", textDecoration: "none" }}>Privacy Policy</a>
-              <span>|</span>
-              <a href="#" style={{ color: "#9ca3af", textDecoration: "none" }}>Terms of Use</a>
+          {/* Supported channels */}
+          <div className="mb-4">
+            <p className="text-sm font-semibold text-slate-500 mb-2.5">Supported Channels</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { icon: "fa-envelope", label: "Email" },
+                { icon: "fa-whatsapp", label: "WhatsApp", fab: true },
+                { icon: "fa-globe", label: "Portal" },
+                { icon: "fa-code", label: "APIs" },
+                { icon: "fa-circle-nodes", label: "Odoo ERP" },
+                { icon: "fa-calculator", label: "QuickBooks" },
+                { icon: "fa-file-invoice-dollar", label: "Xero" },
+                { icon: "fa-database", label: "Legacy Systems" },
+              ].map(ch => (
+                <span key={ch.label} className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm">
+                  <i className={`${(ch as any).fab ? "fa-brands" : "fa-solid"} ${ch.icon} text-base`}></i>
+                  {ch.label}
+                </span>
+              ))}
             </div>
           </div>
-        </div>
+
+          {/* Business services */}
+          <div className="mb-6">
+            <p className="text-sm font-semibold text-slate-500 mb-2.5">Business Services</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { icon: "fa-shield-halved", label: "Regulatory Compliance" },
+                { icon: "fa-headset", label: "Customer Service" },
+                { icon: "fa-user-tie", label: "Employee Service" },
+                { icon: "fa-building", label: "Vendor Onboarding" },
+                { icon: "fa-coins", label: "Ecommerce Fulfillment" },
+                { icon: "fa-truck", label: "Transport Management" },
+              ].map(svc => (
+                <span key={svc.label} className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm">
+                  <i className={`fa-solid ${svc.icon} text-indigo-500 text-base`}></i>
+                  {svc.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* ══ RIGHT PANEL (form) ══ */}
         <div style={{
