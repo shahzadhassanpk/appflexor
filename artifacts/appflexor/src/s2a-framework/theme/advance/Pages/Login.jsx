@@ -1,5 +1,6 @@
 import axios from "axios";
 import React, { useContext, useEffect, useRef, useState } from "react";
+import { HiInboxArrowDown } from "react-icons/hi2";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AppContext } from "../../../../AppContext";
 import { AUTH_URL, IMAGE_BASE } from "../../../Config";
@@ -245,7 +246,7 @@ function Login({
     /* ── Feature cards data ─────────────────────────────────────── */
     const featureCards = [
         {
-            icon: "fa-envelope",
+            icon: HiInboxArrowDown,
             iconBg: "bg-indigo-100",
             iconColor: "text-indigo-600",
             title: "Capture",
@@ -253,7 +254,7 @@ function Login({
             desc: "Receive work from Email, WhatsApp, Forms, APIs and Business Applications.",
         },
         {
-            icon: "fa-network-wired",
+            icon: "fa-arrows-spin",
             iconBg: "bg-violet-100",
             iconColor: "text-violet-600",
             title: "Orchestrate",
@@ -272,9 +273,9 @@ function Login({
 
     /* ── Flow steps ─────────────────────────────────────────────── */
     const flowSteps = [
-        { icon: "fa-envelope", bg: "bg-indigo-600", label: "Capture" },
-        { icon: "fa-network-wired", bg: "bg-violet-600", label: "Orchestrate" },
-        { icon: "fa-boxes-stacked", bg: "bg-emerald-600", label: "Integrate" },
+        { icon: HiInboxArrowDown, bg: "bg-indigo-600", label: "Capture" },
+        { icon: "fa-arrows-spin", bg: "bg-violet-600", label: "Orchestrate" },
+        { icon: "fa-link", bg: "bg-emerald-600", label: "Integrate" },
     ];
 
     /* ── Supported channels ─────────────────────────────────────── */
@@ -353,7 +354,10 @@ function Login({
                                     <React.Fragment key={step.label}>
                                         <div className="flex flex-col items-center">
                                             <div className={`w-14 h-14 ${step.bg} rounded-full flex items-center justify-center shadow-md mb-2`}>
-                                                <i className={`fa-solid ${step.icon} text-white text-xl`}></i>
+                                                {typeof step.icon === "string"
+                                    ? <i className={`fa-solid ${step.icon} text-white text-xl`}></i>
+                                    : <step.icon style={{ color: "#fff", fontSize: "1.25rem" }} />
+                                }
                                             </div>
                                             <span className="text-xs font-semibold text-slate-700">{step.label}</span>
                                         </div>
@@ -368,7 +372,10 @@ function Login({
                                     <div key={f.title} className="s2a-login-feature-card bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
                                         <div className="flex items-start gap-3">
                                             <div className={`w-9 h-9 ${f.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                                                <i className={`fa-solid ${f.icon} ${f.iconColor} text-sm`}></i>
+                                                {typeof f.icon === "string"
+                                    ? <i className={`fa-solid ${f.icon} ${f.iconColor} text-sm`}></i>
+                                    : <f.icon className={f.iconColor} style={{ fontSize: "1rem" }} />
+                                }
                                             </div>
                                             <div>
                                                 <p className={`text-sm font-semibold ${f.titleColor} mb-1`}>{f.title}</p>
