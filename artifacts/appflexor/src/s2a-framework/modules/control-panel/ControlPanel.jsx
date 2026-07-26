@@ -183,12 +183,12 @@ function PanelCard({ panel }) {
             {/* Stats bar */}
             <div style={sx.statsDivider}>
                 {panel.stats.map(s => (
-                    <div key={s.label} style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: "60px" }}>
-                        <i className={s.icon} style={{ color: s.warn ? "var(--warning)" : ac.icon, fontSize: "0.875rem" }} />
-                        <div>
+                    <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.2rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                            <i className={s.icon} style={{ color: s.warn ? "var(--warning)" : ac.icon, fontSize: "0.8rem" }} />
                             <p style={s.warn ? sx.statWarnVal : sx.statVal}>{s.value}</p>
-                            <p style={sx.statLabel}>{s.label}</p>
                         </div>
+                        <p style={{ ...sx.statLabel, textAlign: "center" }}>{s.label}</p>
                     </div>
                 ))}
             </div>
