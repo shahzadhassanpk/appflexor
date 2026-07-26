@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AppContext } from "../../../../AppContext";
 import { tryToParse } from "../../../modules/data-management/form-builder/Forms/FormViewer/utils";
 import Avatar from "./Avatar";
@@ -21,6 +21,8 @@ function TopNavbar({
     toggleMiniNavbar,
     MENU,
 }) {
+    const location = useLocation();
+    const navigate = useNavigate();
     const appContext = useContext(AppContext);
     const { setOffice } = appContext;
     const { userOrgList, userOrg, setUserOrg } = appContext;
@@ -303,12 +305,14 @@ function TopNavbar({
                                     </div>
                                 )}
                             <div className="top-navbar-actions d-flex justify-content-end align-items-center">
-                                <div
+                                <button
+                                    type="button"
+                                    aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
                                     title={`Switch to ${isLight ? "Dark" : "Light"} Mode`}
-                                    className="top-navbar-icon pointer"
+                                    className="top-navbar-icon navbar-action-button"
                                     onClick={handleThemeToggle}>
-                                    <i className={`fa ${isLight ? "fa-sun" : "fa-moon"}`}></i>
-                                </div>
+                                    <i className={`fa ${isLight ? "fa-moon" : "fa-sun"}`}></i>
+                                </button>
                                 <QrShare url={url} />
                                 {appContext.isAuthorized && (
                                     <React.Fragment>
@@ -321,11 +325,11 @@ function TopNavbar({
                                                 <div
                                                     className="position-relative"
                                                     ref={orgMenuRef}>
-                                                    <div
-                                                        className="d-flex align-items-center"
-                                                        style={{
-                                                            cursor: "pointer",
-                                                        }}
+                                                    <button
+                                                        type="button"
+                                                        className="navbar-org-selector d-flex align-items-center"
+                                                        aria-expanded={showOrgMenu}
+                                                        aria-haspopup="listbox"
                                                         onClick={() =>
                                                             setShowOrgMenu(
                                                                 prev => !prev,
@@ -333,19 +337,13 @@ function TopNavbar({
                                                         }>
                                                         <span
                                                             className="org-name me-2"
-                                                            title="Orgainzation">
-                                                            <i class="fa-solid fa-building"></i>{" "}
+                                                            title="Organization">
+                                                            <i className="fa-solid fa-building"></i>{" "}
                                                             {userOrg?.name ||
                                                                 "Select Organization"}
                                                         </span>
-
-                                                        {/* <i
-                                                                className="fa-solid fa-ellipsis-vertical"
-                                                                style={{
-                                                                    fontSize:
-                                                                        "20px",
-                                                                }}></i> */}
-                                                    </div>
+                                                        <i className={`fa-solid fa-chevron-down navbar-org-chevron${showOrgMenu ? " is-open" : ""}`}></i>
+                                                    </button>
 
                                                     {showOrgMenu && (
                                                         <ul
@@ -439,27 +437,30 @@ function TopNavbar({
                                                 />
                                             )}
                                         {appContext.isAuthorized && (
-                                            <NavLink
-                                                to="/control-panel"
+                                            <button
+                                                type="button"
                                                 title="Control Panel"
-                                                className={({ isActive }) =>
-                                                    `top-navbar-icon pointer d-flex align-items-center justify-content-center${isActive ? " active" : ""}`
-                                                }>
+                                                aria-label="Open control panel"
+                                                aria-current={location.pathname === "/control-panel" ? "page" : undefined}
+                                                className={`top-navbar-icon navbar-action-button${location.pathname === "/control-panel" ? "" : ""}`}
+                                                onClick={() => navigate("/control-panel")}>
                                                 <i className="fa fa-table-cells-large"></i>
-                                            </NavLink>
+                                            </button>
                                         )}
                                         {appContext.userGroups &&
                                             appContext.userGroups.groupid &&
                                             appContext.userGroups.groupid.indexOf(
                                                 "ADMIN",
                                             ) > -1 && (
-                                                <div
+                                                <button
+                                                    type="button"
+                                                    aria-label="Open settings"
                                                     title="Settings"
-                                                    className="control-panel-action pointer top-navbar-icon"
+                                                    className="control-panel-action top-navbar-icon navbar-action-button"
                                                     data-bs-toggle="offcanvas"
                                                     data-bs-target="#rightMenu">
-                                                    <i className="fa fa-gear"></i>
-                                                </div>
+                                                    <i className="fa-solid fa-sliders"></i>
+                                                </button>
                                             )}
                                         {appContext.userGroups &&
                                             appContext.userGroups.group_code &&
@@ -467,29 +468,25 @@ function TopNavbar({
                                                 "GUEST",
                                             ) > -1 ? (
                                             <>
-                                                <div className="top-navbar-icon">
-                                                    <button
-                                                        type="button"
-                                                        title="Login"
-                                                        onClick={handleLogin}
-                                                        className="btn btn-link">
-                                                        <i class="bi bi-box-arrow-in-right"></i>
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    type="button"
+                                                    title="Login"
+                                                    aria-label="Login"
+                                                    onClick={handleLogin}
+                                                    className="top-navbar-icon navbar-action-button">
+                                                    <i className="bi bi-box-arrow-in-right"></i>
+                                                </button>
                                                 {appContext?.channel
                                                     ?.allow_signup ===
                                                     "YES" && (
-                                                        <div className="top-navbar-icon">
-                                                            <button
-                                                                onClick={
-                                                                    handleSignup
-                                                                }
-                                                                type="button"
-                                                                title="Sign up"
-                                                                className="btn btn-link top-navbar-icon">
-                                                                <i class="bi bi-person-plus"></i>
-                                                            </button>
-                                                        </div>
+                                                        <button
+                                                            onClick={handleSignup}
+                                                            type="button"
+                                                            title="Sign up"
+                                                            aria-label="Sign up"
+                                                            className="top-navbar-icon navbar-action-button">
+                                                            <i className="bi bi-person-plus"></i>
+                                                        </button>
                                                     )}
                                             </>
                                         ) : (

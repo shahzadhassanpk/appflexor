@@ -796,12 +796,8 @@ code {
 
 .navbar-brand {
     min-height: 59px;
-    color: inherit;
+    color: var(--font-color);
     margin: 0px;
-}
-
-.navbar-brand:hover {
-    color: inherit;
 }
 
 .navbar-brand-title {
