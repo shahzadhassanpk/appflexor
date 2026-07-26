@@ -1,268 +1,260 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React from "react";
 
-/* ─── Mock data ──────────────────────────────────────────────────────────────── */
+/* ─── Panel definitions ──────────────────────────────────────────────────────── */
 const PANELS = [
     {
         id: "capture",
         icon: "fa-solid fa-arrow-down-to-bracket",
-        iconBg: "bg-indigo-100",
-        iconColor: "text-indigo-600",
-        accentColor: "indigo",
+        accent: { bg: "#eef2ff", icon: "#4f46e5", btn: "#4f46e5", btnHover: "#4338ca", text: "#4f46e5", soft: "#e0e7ff" },
         title: "Capture",
         subtitle: "Receive business events from external channels.",
         status: "Healthy",
         statusOk: true,
         lastActivity: "2m ago",
         stats: [
-            { icon: "fa-solid fa-envelope",        label: "Emails Today",      value: "247" },
-            { icon: "fa-brands fa-whatsapp",        label: "WhatsApp Messages", value: "32"  },
-            { icon: "fa-regular fa-rectangle-list", label: "Forms",             value: "18"  },
-            { icon: "fa-solid fa-code",             label: "Active APIs",       value: "6"   },
-            { icon: "fa-solid fa-chart-line",       label: "Capture Success",   value: "99.8%" },
+            { icon: "fa-solid fa-envelope",                   label: "Emails Today",      value: "247"   },
+            { icon: "fa-brands fa-whatsapp",                  label: "WhatsApp Messages", value: "32"    },
+            { icon: "fa-regular fa-rectangle-list",           label: "Forms",             value: "18"    },
+            { icon: "fa-solid fa-code",                       label: "Active APIs",       value: "6"     },
+            { icon: "fa-solid fa-chart-line",                 label: "Capture Success",   value: "99.8%" },
         ],
         quickActions: [
-            { icon: "fa-solid fa-envelope",    label: "Add Email Connector"    },
-            { icon: "fa-brands fa-whatsapp",   label: "Add WhatsApp Connector" },
-            { icon: "fa-solid fa-globe",       label: "Create Portal"          },
-            { icon: "fa-solid fa-code",        label: "Create API"             },
+            { icon: "fa-solid fa-envelope",  label: "Add Email Connector"    },
+            { icon: "fa-brands fa-whatsapp", label: "Add WhatsApp Connector" },
+            { icon: "fa-solid fa-globe",     label: "Create Portal"          },
+            { icon: "fa-solid fa-code",      label: "Create API"             },
         ],
         recentActivity: [
-            { icon: "fa-solid fa-envelope",  label: "Customer Support mailbox connected", time: "10m ago" },
-            { icon: "fa-solid fa-globe",     label: "Travel Portal published",            time: "1h ago"  },
-            { icon: "fa-solid fa-link",      label: "Webhook endpoint updated",           time: "3h ago"  },
+            { icon: "fa-solid fa-envelope", label: "Customer Support mailbox connected", time: "10m ago" },
+            { icon: "fa-solid fa-globe",    label: "Travel Portal published",            time: "1h ago"  },
+            { icon: "fa-solid fa-link",     label: "Webhook endpoint updated",           time: "3h ago"  },
         ],
-        btnClass: "btn-indigo",
     },
     {
         id: "orchestrate",
         icon: "fa-solid fa-arrows-spin",
-        iconBg: "bg-emerald-100",
-        iconColor: "text-emerald-600",
-        accentColor: "emerald",
+        accent: { bg: "#ecfdf5", icon: "#059669", btn: "#059669", btnHover: "#047857", text: "#059669", soft: "#d1fae5" },
         title: "Orchestrate",
         subtitle: "Design, deploy and monitor business processes.",
         status: "Healthy",
         statusOk: true,
         lastActivity: "5m ago",
         stats: [
-            { icon: "fa-solid fa-layer-group",  label: "Business Areas",      value: "12"  },
-            { icon: "fa-regular fa-file-lines", label: "Process Definitions", value: "84"  },
-            { icon: "fa-solid fa-circle-play",  label: "Running Processes",   value: "235" },
-            { icon: "fa-solid fa-user-check",   label: "User Tasks",          value: "42"  },
-            { icon: "fa-solid fa-triangle-exclamation", label: "Process Incidents", value: "2", warn: true },
+            { icon: "fa-solid fa-layer-group",              label: "Business Areas",       value: "12"  },
+            { icon: "fa-regular fa-file-lines",             label: "Process Definitions",  value: "84"  },
+            { icon: "fa-solid fa-circle-play",              label: "Running Processes",    value: "235" },
+            { icon: "fa-solid fa-user-check",               label: "User Tasks",           value: "42"  },
+            { icon: "fa-solid fa-triangle-exclamation",     label: "Process Incidents",    value: "2",  warn: true },
         ],
         quickActions: [
-            { icon: "fa-solid fa-layer-group",  label: "Create Business Area"    },
-            { icon: "fa-solid fa-folder-plus",  label: "Create Process Category" },
-            { icon: "fa-solid fa-rocket",       label: "Deploy Process"          },
+            { icon: "fa-solid fa-layer-group", label: "Create Business Area"    },
+            { icon: "fa-solid fa-folder-plus", label: "Create Process Category" },
+            { icon: "fa-solid fa-rocket",      label: "Deploy Process"          },
         ],
         recentActivity: [
             { icon: "fa-solid fa-circle-play",  label: "Customer Complaint workflow deployed", time: "15m ago" },
             { icon: "fa-regular fa-file-lines", label: "Vendor Onboarding updated",            time: "2h ago"  },
             { icon: "fa-solid fa-user-check",   label: "Leave Approval published",             time: "5h ago"  },
         ],
-        btnClass: "btn-emerald",
     },
     {
         id: "integrate",
         icon: "fa-solid fa-link",
-        iconBg: "bg-violet-100",
-        iconColor: "text-violet-600",
-        accentColor: "violet",
+        accent: { bg: "#f5f3ff", icon: "#7c3aed", btn: "#7c3aed", btnHover: "#6d28d9", text: "#7c3aed", soft: "#ede9fe" },
         title: "Integrate",
         subtitle: "Connect enterprise applications and external services.",
         status: "Attention Required",
         statusOk: false,
         lastActivity: "8m ago",
         stats: [
-            { icon: "fa-solid fa-plug-circle-check", label: "Active Connectors",   value: "18"    },
-            { icon: "fa-solid fa-globe",             label: "External Connectors", value: "3"     },
-            { icon: "fa-solid fa-triangle-exclamation", label: "Failed Syncs",     value: "2", warn: true },
-            { icon: "fa-solid fa-message",           label: "Messages Today",      value: "1,248" },
+            { icon: "fa-solid fa-plug-circle-check",        label: "Active Connectors",   value: "18"    },
+            { icon: "fa-solid fa-globe",                    label: "External Connectors", value: "3"     },
+            { icon: "fa-solid fa-triangle-exclamation",     label: "Failed Syncs",        value: "2",    warn: true },
+            { icon: "fa-solid fa-message",                  label: "Messages Today",      value: "1,248" },
         ],
         quickActions: [
-            { icon: "fa-solid fa-plug",        label: "Add Enterprise Connector" },
-            { icon: "fa-solid fa-globe",       label: "Add External Connector"   },
-            { icon: "fa-solid fa-link",        label: "Add Webhook"              },
+            { icon: "fa-solid fa-plug",  label: "Add Enterprise Connector" },
+            { icon: "fa-solid fa-globe", label: "Add External Connector"   },
+            { icon: "fa-solid fa-link",  label: "Add Webhook"              },
         ],
         recentActivity: [
-            { icon: "fa-solid fa-circle",      label: "Odoo connected",                    time: "20m ago", dot: "bg-green-500" },
-            { icon: "fa-solid fa-gear",        label: "Kafka topic configured",             time: "1h ago"  },
-            { icon: "fa-solid fa-rotate",      label: "QuickBooks synchronization completed", time: "2h ago" },
+            { icon: "fa-solid fa-circle",  label: "Odoo connected",                      time: "20m ago", successDot: true },
+            { icon: "fa-solid fa-gear",    label: "Kafka topic configured",              time: "1h ago"  },
+            { icon: "fa-solid fa-rotate",  label: "QuickBooks synchronization completed", time: "2h ago" },
         ],
-        btnClass: "btn-violet",
     },
     {
         id: "administration",
         icon: "fa-solid fa-gear",
-        iconBg: "bg-orange-100",
-        iconColor: "text-orange-600",
-        accentColor: "orange",
+        accent: { bg: "#fff7ed", icon: "#ea580c", btn: "#ea580c", btnHover: "#c2410c", text: "#ea580c", soft: "#ffedd5" },
         title: "Administration",
         subtitle: "Manage platform configuration and security.",
         status: "Healthy",
         statusOk: true,
         lastActivity: "3m ago",
         stats: [
-            { icon: "fa-solid fa-users",           label: "Users",               value: "246" },
-            { icon: "fa-solid fa-shield-halved",   label: "Roles",               value: "18"  },
-            { icon: "fa-solid fa-robot",           label: "AI Providers",        value: "5"   },
-            { icon: "fa-solid fa-receipt",         label: "Active Subscription", value: "1"   },
-            { icon: "fa-solid fa-bell",            label: "Audit Alerts",        value: "4", warn: true },
+            { icon: "fa-solid fa-users",                label: "Users",               value: "246" },
+            { icon: "fa-solid fa-shield-halved",        label: "Roles",               value: "18"  },
+            { icon: "fa-solid fa-robot",                label: "AI Providers",        value: "5"   },
+            { icon: "fa-solid fa-receipt",              label: "Active Subscription", value: "1"   },
+            { icon: "fa-solid fa-bell",                 label: "Audit Alerts",        value: "4",  warn: true },
         ],
         quickActions: [
-            { icon: "fa-solid fa-user-plus",       label: "Add User"        },
-            { icon: "fa-solid fa-shield-halved",   label: "Add Role"        },
-            { icon: "fa-solid fa-robot",           label: "Add AI Provider" },
+            { icon: "fa-solid fa-user-plus",     label: "Add User"        },
+            { icon: "fa-solid fa-shield-halved", label: "Add Role"        },
+            { icon: "fa-solid fa-robot",         label: "Add AI Provider" },
         ],
         recentActivity: [
-            { icon: "fa-solid fa-user-shield", label: "New administrator added",    time: "30m ago" },
-            { icon: "fa-solid fa-robot",       label: "OpenAI provider updated",    time: "1h ago"  },
-            { icon: "fa-solid fa-receipt",     label: "Subscription renewed",       time: "6h ago"  },
+            { icon: "fa-solid fa-user-shield", label: "New administrator added",  time: "30m ago" },
+            { icon: "fa-solid fa-robot",       label: "OpenAI provider updated",  time: "1h ago"  },
+            { icon: "fa-solid fa-receipt",     label: "Subscription renewed",     time: "6h ago"  },
         ],
-        btnClass: "btn-orange",
     },
 ];
 
-/* ─── Accent colour map ─────────────────────────────────────────────────────── */
-const ACCENT = {
-    indigo:  { btn: "bg-indigo-600 hover:bg-indigo-700",  statIcon: "text-indigo-500",  action: "text-indigo-600 hover:text-indigo-700",  viewAll: "text-indigo-600", ring: "border-indigo-200" },
-    emerald: { btn: "bg-emerald-600 hover:bg-emerald-700", statIcon: "text-emerald-500", action: "text-emerald-600 hover:text-emerald-700", viewAll: "text-emerald-600", ring: "border-emerald-200" },
-    violet:  { btn: "bg-violet-600 hover:bg-violet-700",  statIcon: "text-violet-500",  action: "text-violet-600 hover:text-violet-700",  viewAll: "text-violet-600", ring: "border-violet-200" },
-    orange:  { btn: "bg-orange-500 hover:bg-orange-600",  statIcon: "text-orange-500",  action: "text-orange-600 hover:text-orange-700",  viewAll: "text-orange-600", ring: "border-orange-200" },
+/* ─── Shared inline styles using theme CSS vars ────────────────────────────── */
+const sx = {
+    page:        { background: "var(--bg-app)",         minHeight: "100vh", padding: "1.5rem" },
+    headTitle:   { color: "var(--text-primary)",        fontWeight: 700, fontSize: "1.375rem", margin: 0 },
+    headSub:     { color: "var(--text-muted)",          fontSize: "0.8125rem", marginTop: "0.25rem" },
+    card:        { background: "var(--bg-surface)",     border: "1px solid var(--border-default)", borderRadius: "1rem", boxShadow: "0 1px 4px var(--shadow-color)", display: "flex", flexDirection: "column", overflow: "hidden" },
+    cardHeader:  { padding: "1.25rem 1.25rem 0.75rem" },
+    panelTitle:  { color: "var(--text-primary)",        fontWeight: 700, fontSize: "1.0625rem", lineHeight: 1 },
+    panelLabel:  { color: "var(--text-muted)",          fontSize: "0.7rem" },
+    panelSub:    { color: "var(--text-muted)",          fontSize: "0.75rem", marginTop: "0.5rem" },
+    lastAct:     { color: "var(--text-muted)",          fontSize: "0.7rem", whiteSpace: "nowrap" },
+    statsDivider:{ borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", padding: "0.75rem 1.25rem", display: "flex", flexWrap: "wrap", gap: "1.25rem", alignItems: "center" },
+    statVal:     { color: "var(--text-primary)",        fontWeight: 700, fontSize: "0.875rem", lineHeight: 1 },
+    statWarnVal: { color: "var(--warning)",             fontWeight: 700, fontSize: "0.875rem", lineHeight: 1 },
+    statLabel:   { color: "var(--text-muted)",          fontSize: "0.625rem", marginTop: "0.2rem", lineHeight: 1 },
+    bodyRow:     { display: "flex", flex: 1, borderTop: "1px solid var(--border-subtle)" },
+    colLeft:     { flex: 1, padding: "1rem 1rem 1rem 1.25rem", borderRight: "1px solid var(--border-subtle)" },
+    colRight:    { flex: 1, padding: "1rem 1.25rem 1rem 1rem" },
+    sectionHead: { color: "var(--text-muted)",          fontWeight: 600, fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem" },
+    actLabel:    { color: "var(--text-secondary)",      fontSize: "0.75rem", lineHeight: 1.3 },
+    actTime:     { color: "var(--text-muted)",          fontSize: "0.625rem", whiteSpace: "nowrap" },
+    actIcon:     { color: "var(--text-muted)",          fontSize: "0.7rem", width: "1rem", textAlign: "center", flexShrink: 0, marginTop: "0.125rem" },
+    cardFooter:  { padding: "0.75rem 1.25rem 1.25rem", display: "flex", justifyContent: "flex-end" },
+    viewAll:     { fontSize: "0.7rem", fontWeight: 600, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem", padding: 0, marginTop: "0.75rem" },
+    addBtn:      { background: "none", border: "none", display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.2rem 0", cursor: "pointer", fontSize: "0.75rem", fontWeight: 500, width: "100%", textAlign: "left" },
+    addBtnIcon:  { width: "1.25rem", height: "1.25rem", borderRadius: "0.3rem", border: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "0.55rem", color: "var(--text-muted)" },
 };
 
-/* ─── Sub-components ─────────────────────────────────────────────────────────── */
+/* ─── Status badge ───────────────────────────────────────────────────────────── */
 function StatusBadge({ ok }) {
-    return ok ? (
-        <span className="flex items-center gap-1 text-xs font-medium text-emerald-600">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-            Healthy
-        </span>
-    ) : (
-        <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
-            <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
-            Attention Required
+    return (
+        <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", fontWeight: 600, color: ok ? "var(--success)" : "var(--warning)" }}>
+            <span style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: ok ? "var(--success)" : "var(--warning)", display: "inline-block" }} />
+            {ok ? "Healthy" : "Attention Required"}
         </span>
     );
 }
 
+/* ─── Panel card ─────────────────────────────────────────────────────────────── */
 function PanelCard({ panel }) {
-    const ac = ACCENT[panel.accentColor];
+    const ac = panel.accent;
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
-            {/* ── Header ── */}
-            <div className="p-5 pb-3">
-                <div className="flex items-start justify-between mb-1">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-11 h-11 ${panel.iconBg} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                            <i className={`${panel.icon} ${panel.iconColor} text-lg`}></i>
+        <div style={sx.card}>
+            {/* Header */}
+            <div style={sx.cardHeader}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        {/* Module icon */}
+                        <div style={{ width: "2.75rem", height: "2.75rem", background: ac.bg, borderRadius: "0.75rem", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <i className={panel.icon} style={{ color: ac.icon, fontSize: "1.1rem" }} />
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-none">
-                                    {panel.title}
-                                </h3>
-                                <span className="text-xs text-slate-400 dark:text-slate-500">Platform Status</span>
-                                <StatusBadge ok={panel.statusOk} />
-                            </div>
+                        {/* Title + status */}
+                        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+                            <span style={sx.panelTitle}>{panel.title}</span>
+                            <span style={sx.panelLabel}>Platform Status</span>
+                            <StatusBadge ok={panel.statusOk} />
                         </div>
                     </div>
-                    <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap ml-2 mt-1">
-                        Last activity: {panel.lastActivity}
-                    </span>
+                    <span style={sx.lastAct}>Last activity: {panel.lastActivity}</span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 ml-14">
-                    {panel.subtitle}
-                </p>
+                <p style={{ ...sx.panelSub, paddingLeft: "3.5rem" }}>{panel.subtitle}</p>
             </div>
 
-            {/* ── Stats bar ── */}
-            <div className="flex items-center gap-5 px-5 py-3 border-t border-b border-slate-100 dark:border-slate-700 flex-wrap">
+            {/* Stats bar */}
+            <div style={sx.statsDivider}>
                 {panel.stats.map(s => (
-                    <div key={s.label} className="flex items-center gap-2 min-w-[60px]">
-                        <i className={`${s.icon} ${s.warn ? "text-amber-500" : ac.statIcon} text-sm`}></i>
+                    <div key={s.label} style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: "60px" }}>
+                        <i className={s.icon} style={{ color: s.warn ? "var(--warning)" : ac.icon, fontSize: "0.875rem" }} />
                         <div>
-                            <p className={`text-sm font-bold leading-none ${s.warn ? "text-amber-600" : "text-slate-800 dark:text-slate-100"}`}>
-                                {s.value}
-                            </p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 leading-none">{s.label}</p>
+                            <p style={s.warn ? sx.statWarnVal : sx.statVal}>{s.value}</p>
+                            <p style={sx.statLabel}>{s.label}</p>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* ── Body: Quick Actions + Recent Activity ── */}
-            <div className="flex flex-1 gap-0 divide-x divide-slate-100 dark:divide-slate-700 px-0">
+            {/* Body */}
+            <div style={sx.bodyRow}>
                 {/* Quick Actions */}
-                <div className="flex-1 p-5 pr-4">
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Quick Actions</p>
-                    <div className="space-y-2">
+                <div style={sx.colLeft}>
+                    <p style={sx.sectionHead}>Quick Actions</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                         {panel.quickActions.map(a => (
-                            <button
-                                key={a.label}
-                                className={`flex items-center gap-2 text-xs font-medium ${ac.action} transition-colors group w-full text-left`}
-                            >
-                                <span className="w-5 h-5 rounded border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400 group-hover:border-current group-hover:text-current transition-colors flex-shrink-0">
-                                    <i className="fa-solid fa-plus text-[9px]"></i>
+                            <button key={a.label} style={{ ...sx.addBtn, color: ac.text }}>
+                                <span style={sx.addBtnIcon}>
+                                    <i className="fa-solid fa-plus" />
                                 </span>
-                                <span>{a.label}</span>
+                                {a.label}
                             </button>
                         ))}
                     </div>
                 </div>
 
                 {/* Recent Activity */}
-                <div className="flex-1 p-5 pl-4">
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Recent Activity</p>
-                    <div className="space-y-2.5">
+                <div style={sx.colRight}>
+                    <p style={sx.sectionHead}>Recent Activity</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
                         {panel.recentActivity.map((a, i) => (
-                            <div key={i} className="flex items-start justify-between gap-2">
-                                <div className="flex items-center gap-2 min-w-0">
-                                    {a.dot
-                                        ? <span className={`w-4 h-4 rounded-full ${a.dot} flex-shrink-0 mt-0.5`}></span>
-                                        : <i className={`${a.icon} text-slate-400 dark:text-slate-500 text-xs flex-shrink-0 mt-0.5 w-4 text-center`}></i>
+                            <div key={i} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 0 }}>
+                                    {a.successDot
+                                        ? <span style={{ width: "1rem", height: "1rem", borderRadius: "50%", background: "var(--success)", flexShrink: 0 }} />
+                                        : <i className={a.icon} style={sx.actIcon} />
                                     }
-                                    <span className="text-xs text-slate-600 dark:text-slate-300 leading-snug truncate">{a.label}</span>
+                                    <span style={{ ...sx.actLabel, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.label}</span>
                                 </div>
-                                <span className="text-[10px] text-slate-400 whitespace-nowrap">{a.time}</span>
+                                <span style={sx.actTime}>{a.time}</span>
                             </div>
                         ))}
                     </div>
-                    <button className={`mt-3 text-xs font-medium ${ac.viewAll} transition-colors flex items-center gap-1`}>
+                    <button style={{ ...sx.viewAll, color: ac.text }}>
                         View all activity
-                        <i className="fa-solid fa-arrow-right text-[9px]"></i>
+                        <i className="fa-solid fa-arrow-right" style={{ fontSize: "0.55rem" }} />
                     </button>
                 </div>
             </div>
 
-            {/* ── Footer: Open Workspace ── */}
-            <div className="px-5 pb-5 pt-2 flex justify-end">
-                <button className={`${ac.btn} text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm`}>
+            {/* Footer */}
+            <div style={sx.cardFooter}>
+                <button
+                    style={{ background: ac.btn, color: "#fff", fontSize: "0.75rem", fontWeight: 600, padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", boxShadow: "0 1px 3px var(--shadow-color)" }}
+                    onMouseEnter={e => e.currentTarget.style.background = ac.btnHover}
+                    onMouseLeave={e => e.currentTarget.style.background = ac.btn}
+                >
                     Open Workspace
-                    <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                    <i className="fa-solid fa-arrow-right" style={{ fontSize: "0.625rem" }} />
                 </button>
             </div>
         </div>
     );
 }
 
-/* ─── Main page ─────────────────────────────────────────────────────────────── */
+/* ─── Main page ──────────────────────────────────────────────────────────────── */
 export default function ControlPanel() {
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
-            {/* Page header */}
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Control Panel</h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Monitor and manage all platform modules from one place.
-                </p>
+        <div style={sx.page}>
+            <div style={{ marginBottom: "1.5rem" }}>
+                <h1 style={sx.headTitle}>Control Panel</h1>
+                <p style={sx.headSub}>Monitor and manage all platform modules from one place.</p>
             </div>
 
-            {/* 2-column grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))", gap: "1.25rem" }}>
                 {PANELS.map(panel => (
                     <PanelCard key={panel.id} panel={panel} />
                 ))}
