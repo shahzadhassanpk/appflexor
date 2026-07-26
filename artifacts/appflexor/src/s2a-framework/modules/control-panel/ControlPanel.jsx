@@ -4,7 +4,7 @@ import React from "react";
 const PANELS = [
     {
         id: "capture",
-        icon: "fa-solid fa-download",
+        icon: "fa-solid fa-inbox",
         accent: { bg: "#eef2ff", icon: "#4f46e5", btn: "#4f46e5", btnHover: "#4338ca", text: "#4f46e5", soft: "#e0e7ff" },
         title: "Capture",
         subtitle: "Receive business events from external channels.",
