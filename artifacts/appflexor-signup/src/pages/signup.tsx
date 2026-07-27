@@ -194,6 +194,18 @@ const COUNTRIES = [
   "UAE",
   "Other",
 ];
+const COUNTRY_CODES = [
+  { code: "+1", label: "United States", flag: "🇺🇸" },
+  { code: "+44", label: "United Kingdom", flag: "🇬🇧" },
+  { code: "+1", label: "Canada", flag: "🇨🇦" },
+  { code: "+61", label: "Australia", flag: "🇦🇺" },
+  { code: "+49", label: "Germany", flag: "🇩🇪" },
+  { code: "+33", label: "France", flag: "🇫🇷" },
+  { code: "+91", label: "India", flag: "🇮🇳" },
+  { code: "+92", label: "Pakistan", flag: "🇵🇰" },
+  { code: "+65", label: "Singapore", flag: "🇸🇬" },
+  { code: "+971", label: "UAE", flag: "🇦🇪" }
+];
 const EMPLOYEES = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
 
 /* ── Logo ─────────────────────────────────────────────────────────────────── */
@@ -517,7 +529,9 @@ export default function Signup() {
     website: "",
     country: "",
     agreed: false,
+    countryCode: "+1",
   });
+  const [status, setStatus] = useState<null | "idle" | "submitting" | "success" | "error">("idle");
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -527,6 +541,24 @@ export default function Signup() {
       ...p,
       [t.name]: t.type === "checkbox" ? t.checked : t.value,
     }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("submitting");
+    const webhook = "https://signup.appflexor.com/webhook/appflexor/signup";
+    try {
+      const res = await fetch(webhook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setStatus("success");
+    } catch (err) {
+      console.error("Signup webhook failed:", err);
+      setStatus("error");
+    }
   }
 
   return (
@@ -799,24 +831,38 @@ export default function Signup() {
                 <Logo />
               </div>
 
-              <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <h2
-                  style={{
-                    fontSize: 22,
-                    fontWeight: 700,
-                    color: "#111827",
-                    margin: 0,
-                  }}
-                >
-                  Create your account
-                </h2>
-                <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 6 }}>
-                  Fill in the details below to get started.
-                </p>
-              </div>
+              {status !== "success" && (
+                <div style={{ textAlign: "center", marginBottom: 24 }}>
+                  <h2
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 700,
+                      color: "#111827",
+                      margin: 0,
+                    }}
+                  >
+                    Create your account
+                  </h2>
+                  <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 6 }}>
+                    Fill in the details below to get started.
+                  </p>
+                </div>
+              )}
 
+              {status === "success" ? (
+                <div style={{ textAlign: "center", padding: 24 }}>
+                  <h2 style={{ fontSize: 28, margin: 0 }}>🎉 Thank You!</h2>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, marginTop: 12 }}>
+                    Your AppFlexor account request has been received.
+                  </h3>
+                  <p style={{ marginTop: 12, color: "#374151" }}>
+                    We're preparing your workspace and verifying your organization details. You'll
+                    receive an email shortly with instructions to activate your account.
+                  </p>
+                </div>
+              ) : (
               <form
-                onSubmit={(e) => e.preventDefault()}
+                onSubmit={handleSubmit}
                 style={{ display: "flex", flexDirection: "column", gap: 12 }}
                 data-testid="form-signup"
               >
@@ -887,23 +933,39 @@ export default function Signup() {
 
                 <Field label="Phone" required>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        padding: "0 10px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: 6,
-                        background: "#fff",
-                        fontSize: 13,
-                        color: "#374151",
-                        whiteSpace: "nowrap",
-                        userSelect: "none",
-                      }}
-                    >
-                      🇺🇸 +1
+                    <div style={{ position: "relative" }}>
+                      <select
+                        name="countryCode"
+                        value={form.countryCode}
+                        onChange={handleChange}
+                        style={{
+                          height: 40,
+                          minWidth: 80,
+                          padding: "0 10px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 6,
+                          background: "#fff",
+                          fontSize: 13,
+                          color: "#374151",
+                          cursor: "pointer",
+                          appearance: "none",
+                        }}
+                        data-testid="select-country-code"
+                      >
+                        {COUNTRY_CODES.map((c) => (
+                          <option key={c.code + c.label} value={c.code}>
+                            {c.flag} {c.code}
+                          </option>
+                        ))}
+                      </select>
                       <svg
+                        style={{
+                          position: "absolute",
+                          right: 8,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          pointerEvents: "none",
+                        }}
                         width="12"
                         height="12"
                         fill="none"
@@ -911,11 +973,7 @@ export default function Signup() {
                         stroke="#9ca3af"
                         strokeWidth="2"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M19 9l-7 7-7-7"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                     <input
@@ -1072,6 +1130,7 @@ export default function Signup() {
                 {/* Sign up button */}
                 <button
                   type="submit"
+                  disabled={status === "submitting"}
                   style={{
                     width: "100%",
                     padding: "11px 0",
@@ -1081,13 +1140,21 @@ export default function Signup() {
                     color: "#fff",
                     fontWeight: 600,
                     fontSize: 15,
-                    cursor: "pointer",
+                    cursor: status === "submitting" ? "default" : "pointer",
                     marginTop: 4,
+                    opacity: status === "submitting" ? 0.7 : 1,
                   }}
                   data-testid="button-signup"
                 >
-                  Sign up
+                  {status === "submitting" ? "Signing up..." : "Sign up"}
                 </button>
+
+                {status === "success" && (
+                  <p style={{ color: "#16a34a", fontSize: 13, marginTop: 8 }}>Signup submitted successfully.</p>
+                )}
+                {status === "error" && (
+                  <p style={{ color: "#dc2626", fontSize: 13, marginTop: 8 }}>Submission failed. Check console for details.</p>
+                )}
 
                 {/* <p
                   style={{
@@ -1111,6 +1178,7 @@ export default function Signup() {
                   </a>
                 </p> */}
               </form>
+              )}
             </div>
           </div>
 
@@ -1128,7 +1196,7 @@ export default function Signup() {
               color: "#9ca3af",
             }}
           >
-            <span>© 2024 Appflexor Technologies. All rights reserved.</span>
+            <span>© 2024 <a href="https://step2agility.com">Step 2 Agility</a>. All rights reserved.</span>
             <div style={{ display: "flex", gap: 10 }}>
               <a href="#" style={{ color: "#9ca3af", textDecoration: "none" }}>
                 Privacy Policy
