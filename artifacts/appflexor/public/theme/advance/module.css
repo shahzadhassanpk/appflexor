@@ -1,4 +1,13 @@
 /* login & SignUp styles start */
+.s2a-table.responsiveTable thead tr,
+.s2a-table.responsiveTable tbody tr {
+    display: flex;
+}
+.s2a-table.responsiveTable{
+    overflow-x: auto;
+    width: 95%;
+}
+
 
 .inbox-notification {
     position: relative;
@@ -63,7 +72,7 @@
     min-height: 100vh;
     display: flex;
     align-items: center;
-    margin:auto;
+    margin: auto;
 }
 
 .s2a-login .login-content-bg,
@@ -87,7 +96,7 @@
     color: #198754;
 }
 
-.login-content{
+.login-content {
     margin: auto;
     max-width: 90%;
 }
@@ -328,9 +337,8 @@
 }
 
 @media all and (max-width: 700px) {
-
-    .s2a-login .login-content-bg{
-        display:none;
+    .s2a-login .login-content-bg {
+        display: none;
     }
 
     .s2a-login .registerd-text,

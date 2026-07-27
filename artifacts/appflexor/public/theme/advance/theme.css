@@ -85,6 +85,7 @@ body.dark {
     --header-color: #101a2c;
     --tab-color: #1a2740;
     --shadow-color: rgba(2, 8, 23, 0.45);
+    --font-color: #f2f6fc;
 
     /* Backgrounds */
     --bg-app: var(--primary-color);
@@ -366,7 +367,7 @@ body {
     font-size: var(--font-size-md);
     font-weight: var(--font-weight-normal);
     line-height: var(--line-height-normal);
-    color: var(--font-color);
+    color: var(--text-primary);
     text-align: start;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -397,7 +398,7 @@ body {
 pre {
     font-family: var(--font-family-mono);
     font-size: var(--font-size-sm);
-    color: var(--font-color);
+    color: var(--text-primary);
     background-color: var(--navigation-color);
     padding: 12px 20px;
     border: 1px solid var(--border-color);
@@ -445,7 +446,7 @@ code {
 }
 
 .btn-signup {
-    color: var(--font-color);
+    color: var(--text-primary);
     background-color: var(--primary-color);
     border-radius: 22px;
     padding: 5px 15px;
@@ -457,35 +458,35 @@ code {
     border: 2px solid var(--border-color);
     background-color: var(--primary-color);
     text-decoration: none;
-    color: var(--font-color);
+    color: var(--text-primary);
     font-size: var(--font-size-base);
 }
 
 .btn-login {
     text-decoration: none;
     font-size: var(--font-size-base);
-    color: var(--font-color);
+    color: var(--text-primary);
     border-radius: 0px;
 }
 
 .guest-signup-btn,
 .guest-login-btn {
     text-decoration: none;
-    color: var(--font-color);
+    color: var(--text-primary);
 }
 
 .guest-signup-btn:hover,
 .guest-login-btn:hover {
     cursor: pointer;
     text-decoration: none;
-    color: var(--font-color);
+    color: var(--text-primary);
 }
 
 .btn-login:hover {
     text-decoration: none;
-    color: var(--font-color);
+    color: var(--text-primary);
     font-size: var(--font-size-base);
-    border-bottom: 1px solid var(--font-color);
+    border-bottom: 1px solid var(--text-primary);
 }
 
 .s2a-bg-primary-color {
@@ -543,7 +544,7 @@ code {
     /* bottom: -3px; */
     z-index: 10;
     overflow: hidden;
-    background-color: var(--font-color);
+    background-color: var(--text-primary);
     /* margin: 87px auto; */
     -webkit-border-radius: 20px;
     -moz-border-radius: 20px;
@@ -697,7 +698,7 @@ code {
 }
 
 .nav-link-override {
-    color: var(--font-color);
+    color: var(--text-primary);
     /* color: var(--primary-color) !important;
     padding: 0.2rem 0.5rem;
     letter-spacing: var(--letter-spacing-wider);
@@ -717,7 +718,7 @@ code {
 .top-nav-link-override:hover {
     /* color: var(--secondary-color) !important; */
     transition: all 0.1s ease;
-    color: var(--font-color);
+    color: var(--text-primary);
 }
 
 .bg-navbar-color {
@@ -736,7 +737,7 @@ code {
 
 .top-navbar-content .dropdown-item.active,
 .s2a-navbar-main .dropdown-item.active {
-    background-color: var(--font-color) !important;
+    background-color: var(--text-primary) !important;
 }
 
 .top-navbar-content .dropdown-item:hover,
@@ -828,18 +829,18 @@ code {
 }
 
 .menu-accordion .nav-items-link {
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
 }
 
 .menu-accordion .accordion-body .nav-items-link:hover,
 .menu-accordion .accordion-body .nav-items-link.active {
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
     background-color: var(--primary-color);
 }
 
 .menu-accordion .accordion-button {
     background-color: var(--navigation-color);
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
     font-size: var(--font-size-md);
     padding: 5px;
 }
@@ -967,7 +968,7 @@ code {
     display: inline-grid;
     padding-left: 8px;
     /* padding-top: 8px; */
-    color: var(--font-color);
+    color: var(--text-primary);
     position: relative;
     vertical-align: middle;
 }
@@ -992,7 +993,7 @@ code {
 
 .navbar-brand {
     min-height: 59px;
-    color: var(--font-color);
+    color: var(--text-primary);
     margin: 0px;
 }
 
@@ -1069,7 +1070,7 @@ code {
 }
 
 .nav-tabs .nav-link {
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
     background: transparent;
     text-transform: uppercase;
     padding: 5px 10px;
@@ -1089,18 +1090,18 @@ code {
 
 .nav-tabs .nav-link:hover {
     border: none;
-    border-bottom: 3px solid var(--font-color);
+    border-bottom: 3px solid var(--text-primary);
     background: transparent;
     transition: all 0.1s ease-in-out;
 }
 
 .navbar-nav .nav-link.active {
-    color: var(--font-color);
+    color: var(--text-primary);
 }
 
 .nav-tabs .nav-link.active {
     border: none;
-    border-bottom: 2px solid var(--font-color);
+    border-bottom: 2px solid var(--text-primary);
     background: transparent;
     transition: all 0.2s ease-in;
     /* border-block-end: 2px solid var(--link-active-color);  */
@@ -1126,11 +1127,11 @@ code {
 .adv-navbar-navigation .dropdown-toggle {
     padding: 5px;
     text-decoration: none;
-    color: var(--font-color);
+    color: var(--text-primary);
 }
 
 .nav-link-main {
-    color: var(--font-color);
+    color: var(--text-primary);
     text-align: center;
     min-height: 35px;
     margin-right: 2px;
@@ -1145,12 +1146,12 @@ code {
 }
 
 .nav-link-main.active {
-    border-bottom: 1px solid var(--font-color);
+    border-bottom: 1px solid var(--text-primary);
 }
 
 .nav-link-main:hover {
     /* background-color: var(--primary-color) !important; */
-    border-bottom: 1px solid var(--font-color);
+    border-bottom: 1px solid var(--text-primary);
     /* color: var(--link-active-color) !important; */
     /* font-weight: var(--font-weight-medium); */
     transition: all 0.1s ease;
@@ -1175,7 +1176,7 @@ code {
 .org-menu .list-group-item.active,
 .org-menu .list-group-item:hover {
     background-color: var(--primary-color) !important;
-    color: var(--font-color);
+    color: var(--text-primary);
     cursor: pointer;
 }
 
@@ -1224,7 +1225,7 @@ code {
 
 .nav-items-link {
     /* color: black; */
-    color: var(--font-color);
+    color: var(--text-primary);
     font-size: var(--font-size-base);
 }
 
@@ -1478,7 +1479,7 @@ div.text-color-hover > span.text-color:hover {
 
 .profile-avatar {
     /* font-size: var(--font-size-display) !important; */
-    color: var(--font-color);
+    color: var(--text-primary);
     min-width: fit-content;
 }
 
@@ -1755,7 +1756,7 @@ div.text-color-hover > span.text-color:hover {
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--secondary-color);
-    color: var(--font-color);
+    color: var(--text-primary);
     border-radius: 4px;
     box-shadow: 0px 0px 20px 0px rgb(75 75 75 / 5%);
     /* padding: 20px 20px; */
@@ -1826,11 +1827,11 @@ div.text-color-hover > span.text-color:hover {
 
 .form-check-input {
     background-color: transparent !important;
-    border: 1px solid var(--font-color);
+    border: 1px solid var(--text-primary);
 }
 
 .form-check-input:checked[type="radio"] {
-    background-color: var(--font-color) !important;
+    background-color: var(--text-primary) !important;
     border-color: var(--border-color) !important;
 }
 
@@ -1867,7 +1868,7 @@ div.text-color-hover > span.text-color:hover {
     font-size: var(--font-size-md);
     border-radius: 4px;
     background-color: transparent;
-    color: var(--font-color);
+    color: var(--text-primary);
     border: 1px solid var(--border-color);
 }
 
@@ -1883,7 +1884,7 @@ div.text-color-hover > span.text-color:hover {
     font-size: var(--font-size-md);
     border-radius: 4px;
     background-color: var(--secondary-color);
-    color: var(--font-color);
+    color: var(--text-primary);
     border: 1px solid var(--border-color);
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
 }
@@ -1895,7 +1896,7 @@ div.text-color-hover > span.text-color:hover {
 }
 
 select option {
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
     background: var(--navigation-color) !important;
     border: var(--border-color) !important;
 }
@@ -1909,14 +1910,14 @@ option:checked {
 }
 
 .form-select:focus {
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
     background-color: var(--navigation-color) !important;
     border-color: var(--border-color) !important;
     box-shadow: 0 0 0.1rem 0.05rem var(--link-active-color) !important;
 }
 
 input::file-selector-button {
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
     background: var(--link-active-color) !important;
     /* border: thin solid grey; */
 }
@@ -1924,14 +1925,14 @@ input::file-selector-button {
 .input-group-text {
     font-size: var(--font-size-md);
     border-radius: 4px;
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
     background-color: var(--primary-color) !important;
     border: 1px solid var(--border-color) !important;
     /* font-family: var(--font-family-system); */ /*  commented  */
 }
 
 .input-group-text a {
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
 }
 
 .form-control:focus,
@@ -1958,7 +1959,7 @@ pdf-viewer #toolbar {
     min-width: 100px;
     cursor: pointer;
     margin-bottom: 5px;
-    color: var(--font-color);
+    color: var(--text-primary);
     background-color: var(--primary-color);
     border: 1px solid var(--border-color);
     /* font-family: var(--font-family-system); */ /*  commented  */
@@ -1966,7 +1967,7 @@ pdf-viewer #toolbar {
 
 .button-theme:hover {
     color: var(--primary-color) !important;
-    background-color: var(--font-color) !important;
+    background-color: var(--text-primary) !important;
     font-weight: var(--font-weight-medium);
     transition: all 0.1s ease-in-out;
     /* border: none !important; */
@@ -1975,7 +1976,7 @@ pdf-viewer #toolbar {
 
 /*added by haider ali*/
 .button-theme-disable {
-    color: var(--font-color);
+    color: var(--text-primary);
     background-color: var(--primary-color);
     border: none;
     /* font-family: var(--font-family-system); */ /*  commented  */
@@ -1985,7 +1986,7 @@ pdf-viewer #toolbar {
 
 .button-theme-disable:hover {
     /* color: var(--primary-color) !important;
-    background-color: var(--font-color) !important; */
+    background-color: var(--text-primary) !important; */
     font-weight: var(--font-weight-medium);
     transition: all 0.1s ease-in-out;
     border: none;
@@ -2000,7 +2001,7 @@ pdf-viewer #toolbar {
 }
 
 .button-theme:disabled {
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
 }
 
 .del-btn-theme {
@@ -2012,7 +2013,7 @@ pdf-viewer #toolbar {
 
 .del-btn-theme:hover {
     color: #dc3545 !important;
-    background-color: var(--font-color) !important;
+    background-color: var(--text-primary) !important;
     font-weight: var(--font-weight-medium);
     transition: all 0.1s ease-in-out;
     border: none !important;
@@ -2053,7 +2054,7 @@ pdf-viewer #toolbar {
     min-height: 100%;
     max-height: none;
     overflow: auto;
-    color: var(--font-color);
+    color: var(--text-primary);
     border-inline-end: 1px solid var(--border-color);
     border-left: 1px solid var(--border-color) !important;
     background-color: var(--navigation-color);
@@ -2069,7 +2070,7 @@ pdf-viewer #toolbar {
 
 .right-menu .header {
     background-color: var(--primary-color) !important;
-    color: var(--font-color);
+    color: var(--text-primary);
 }
 
 .right-menu .moduletypes-nav {
@@ -2175,7 +2176,7 @@ pdf-viewer #toolbar {
 }
 
 .right-menu .features-container .list .feature-li:hover {
-    border-left: 2px solid var(--font-color);
+    border-left: 2px solid var(--text-primary);
     background-color: var(--secondary-color);
 }
 
@@ -2185,13 +2186,13 @@ pdf-viewer #toolbar {
 
 .right-menu .feature-li.selected {
     background-color: var(--secondary-color);
-    border-left: 2px solid var(--font-color);
+    border-left: 2px solid var(--text-primary);
     margin: 0 0 2px 0;
 }
 
 .right-menu .features-container .list .item {
     text-decoration: none !important;
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
 }
 
 .right-menu .features-container .list .item:hover {
@@ -2205,7 +2206,7 @@ pdf-viewer #toolbar {
 .right-menu .feature-label {
     display: block;
     font-size: var(--font-size-rem-sm);
-    /* color: var(--font-color); */
+    /* color: var(--text-primary); */
 }
 
 .right-menu .font-weight {
@@ -2244,7 +2245,7 @@ pdf-viewer #toolbar {
     margin-top: 10px;
     font-size: var(--font-size-xl);
     margin-right: 0px;
-    color: var(--font-color) !important;
+    color: var(--text-primary) !important;
 }
 
 .row-title,
@@ -2259,7 +2260,7 @@ pdf-viewer #toolbar {
 }
 
 .top-navbar-icon {
-    color: var(--font-color);
+    color: var(--text-primary);
     height: 40px;
     width: 40px;
     text-align: center;
@@ -2373,12 +2374,12 @@ pdf-viewer #toolbar {
 }
 
 .navlink-color {
-    color: var(--font-color);
+    color: var(--text-primary);
     font-size: var(--font-size-base-fluid);
 }
 
 .navlink-color:hover {
-    color: var(--font-color);
+    color: var(--text-primary);
 }
 
 /* .active {
@@ -2390,11 +2391,11 @@ pdf-viewer #toolbar {
 }
 
 .navlink-color-light {
-    color: var(--font-color);
+    color: var(--text-primary);
 }
 
 .navlink-color-dark {
-    color: var(--font-color);
+    color: var(--text-primary);
 }
 
 .navlink-active {
@@ -2436,7 +2437,7 @@ pdf-viewer #toolbar {
 
 .dropdown .dropdown-menu {
     border-radius: 0px;
-    color: var(--font-color);
+    color: var(--text-primary);
     padding: 4px 0px !important;
     border: 1px solid var(--border-color);
     background-color: var(--primary-color);
@@ -2455,7 +2456,7 @@ pdf-viewer #toolbar {
     font-size: var(--font-size-md);
     padding: 4px 8px;
     cursor: pointer;
-    color: var(--font-color);
+    color: var(--text-primary);
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -2469,14 +2470,14 @@ pdf-viewer #toolbar {
 }
 
 .dropdown-menu .dropdown-item:hover {
-    color: var(--font-color);
+    color: var(--text-primary);
     border-bottom: 1px solid var(--border-color);
     background-color: var(--secondary-color) !important;
     text-decoration: underline;
 }
 
 .dropdown-menu .dropdown-item.active {
-    color: var(--font-color);
+    color: var(--text-primary);
     background-color: var(--secondary-color) !important;
     /* border-bottom: 1px solid; */
     /* border-top: 1px solid; */
@@ -2497,7 +2498,7 @@ pdf-viewer #toolbar {
 } */
 
 /* .dropdown-item:first-of-type:hover {
-    color: var(--font-color);
+    color: var(--text-primary);
     background-color: inherit;
 } */
 
@@ -2536,7 +2537,7 @@ pdf-viewer #toolbar {
 }
 
 .nav-item-custom {
-    color: var(--font-color);
+    color: var(--text-primary);
 }
 
 .border-color {
@@ -2554,7 +2555,7 @@ pdf-viewer #toolbar {
 }
 
 .btn-close {
-    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='var(--font-color)'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e")
+    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='var(--text-primary)'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e")
         center/1em auto no-repeat !important;
 }
 
