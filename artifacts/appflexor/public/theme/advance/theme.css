@@ -931,7 +931,6 @@ code {
 .fa,
 .fa-solid {
     font-size: var(--font-size-lg);
-    margin-right: 5px;
 }
 
 .fa-shopping-cart {
