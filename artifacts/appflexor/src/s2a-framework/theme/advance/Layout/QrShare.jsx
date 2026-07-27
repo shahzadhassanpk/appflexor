@@ -10,14 +10,14 @@ const QrShare = ({ url }) => {
     return (
         <>
             {/* Share icon button */}
-            <button
+            {/* <button
                 type="button"
                 className="top-navbar-icon navbar-action-button"
                 title="Share page"
                 aria-label="Share page with QR code"
                 onClick={handleOpen}>
-                <span className="bi bi-share"></span> {/* Bootstrap share icon */}
-            </button>
+                <span className="bi bi-share"></span> 
+            </button> */}
 
             {/* Bootstrap modal */}
             {show && (

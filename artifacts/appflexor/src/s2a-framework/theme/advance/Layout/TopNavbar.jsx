@@ -444,7 +444,7 @@ function TopNavbar({
                                                 aria-current={location.pathname === "/control-panel" ? "page" : undefined}
                                                 className={`top-navbar-icon navbar-action-button${location.pathname === "/control-panel" ? "" : ""}`}
                                                 onClick={() => navigate("/control-panel")}>
-                                                <i className="fa fa-table-cells-large"></i>
+                                                <i className="fa-solid fa-sliders"></i>
                                             </button>
                                         )}
                                         {appContext.userGroups &&
@@ -459,7 +459,7 @@ function TopNavbar({
                                                     className="control-panel-action top-navbar-icon navbar-action-button"
                                                     data-bs-toggle="offcanvas"
                                                     data-bs-target="#rightMenu">
-                                                    <i className="fa-solid fa-sliders"></i>
+                                                    <i className="me-2 fa fa-gear"></i>
                                                 </button>
                                             )}
                                         {appContext.userGroups &&

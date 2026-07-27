@@ -33,7 +33,7 @@
 .s2a-signup .powered-by,
 .s2a-login .powered-by {
     text-align: center;
-    font-family: system-ui;
+    font-family: var(--font-family-system);
     padding: 20px;
 }
 
@@ -98,7 +98,7 @@
 
 .login-content .read-btn,
 .login-content .video-btn {
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     padding: 12px 16px;
     color: var(--font-color);
     background-color: transparent;
@@ -123,12 +123,12 @@
 }
 
 .s2a-login .navbar-brand-title {
-    font-size: 25px;
+    font-size: var(--font-size-icon-lg);
     width: 100%;
 }
 
 .s2a-login .navbar-brand-text {
-    font-size: 13px;
+    font-size: var(--font-size-base);
     width: 100%;
 }
 
@@ -170,11 +170,11 @@
 .s2a-login .login-form .form-control,
 .s2a-signup .signup-form .form-control,
 .s2a-signup .reset-pass-form .form-control {
-    font-size: 15px;
+    font-size: var(--font-size-md-plus);
     border-radius: 10px;
-    /* font-family: system-ui; */
+    /* font-family: var(--font-family-system); */
     /*  commented  */
-    /* font-family: system-ui; */
+    /* font-family: var(--font-family-system); */
     /*  commented  */
     color: var(--font-color) !important;
     border: 1px solid var(--border-color) !important;
@@ -187,7 +187,7 @@
 
 /* .s2a-signup .registerd,
 .s2a-login .registerd {
-    font-family: system-ui;
+    font-family: var(--font-family-system);
 } */
 
 .s2a-login .pass-input {
@@ -198,7 +198,7 @@
     position: absolute;
     top: 34px;
     right: 26px;
-    font-size: 15px;
+    font-size: var(--font-size-md-plus);
     cursor: pointer;
     color: var(--font-color);
 }
@@ -207,7 +207,7 @@
     position: absolute;
     top: 422px;
     right: 170px;
-    font-size: 15px;
+    font-size: var(--font-size-md-plus);
     cursor: pointer;
     color: var(--font-color);
 } */
@@ -239,11 +239,11 @@
 
 .s2a-login .registerd-text,
 .s2a-signup .registerd-text {
-    font-size: 40px;
-    /* font-size: 48px; */
-    /* font-family: system-ui; */
+    font-size: var(--font-size-display-lg);
+    /* font-size: var(--font-size-display-xl); */
+    /* font-family: var(--font-family-system); */
     /*  commented  */
-    /* font-family: system-ui; */
+    /* font-family: var(--font-family-system); */
     /*  commented  */
 }
 
@@ -254,11 +254,11 @@
     color: var(--font-color);
     background-color: var(--primary-color) !important;
     border: none !important;
-    /* font-family: system-ui; */
+    /* font-family: var(--font-family-system); */
     /*  commented  */
-    /* font-family: system-ui; */
+    /* font-family: var(--font-family-system); */
     /*  commented  */
-    font-size: 13px;
+    font-size: var(--font-size-base);
 }
 
 .s2a-login .sso-buttons:hover,
@@ -266,7 +266,7 @@
     color: var(--primary-color) !important;
     background-color: var(--font-color) !important;
     border: none !important;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     transition: all 0.1s ease-in-out;
 }
 
@@ -294,15 +294,15 @@
 }
 
 /* .s2a-login .label {
-    font-family: system-ui;
+    font-family: var(--font-family-system);
 } */
 
 .s2a-login .login-button {
     width: 100%;
-    font-size: 15px;
-    /* font-family: system-ui; */
+    font-size: var(--font-size-md-plus);
+    /* font-family: var(--font-family-system); */
     /*  commented  */
-    /* font-family: system-ui; */
+    /* font-family: var(--font-family-system); */
     /*  commented  */
     border: none !important;
     border-radius: 10px;
@@ -311,19 +311,19 @@
 }
 
 .s2a-login .login-button:hover {
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     transition: all 0.1s ease-in-out;
     color: var(--primary-color) !important;
     background-color: var(--font-color) !important;
 }
 
 .s2a-signup .show-password {
-    /* font-family: system-ui; */ /*  commented  */
-    font-size: 15px;
+    /* font-family: var(--font-family-system); */ /*  commented  */
+    font-size: var(--font-size-md-plus);
 }
 
 .s2a-signup .username-btn {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     padding: 0.375rem 0.25rem;
 }
 
@@ -335,7 +335,7 @@
 
     .s2a-login .registerd-text,
     .s2a-signup .registerd-text {
-        font-size: 31px;
+        font-size: var(--font-size-heading-2xl);
     }
 
     .login-content .content-btns {
@@ -344,7 +344,7 @@
 
     .login-content .read-btn,
     .login-content .video-btn {
-        font-size: 14px;
+        font-size: var(--font-size-md);
         padding: 8px 16px;
     }
 
@@ -387,7 +387,7 @@
     }
 
     .s2a-signup .username-btn {
-        font-size: 12px;
+        font-size: var(--font-size-sm);
         padding: 0.375rem 0.25rem;
     }
 
@@ -478,13 +478,13 @@
 }
 
 .task-title {
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     padding: 5px 0px;
     color: var(--text-primary);
 }
 
 .task-meta {
-    font-size: 0.85rem;
+    font-size: var(--font-size-rem-compact);
     padding: 5px 0px;
     color: var(--text-muted);
 }
@@ -494,7 +494,7 @@
 }
 
 .task-sub-title .task-name {
-    font-size: 14px;
+    font-size: var(--font-size-md);
 }
 
 .datalist-viewer .s2a-datalist-header {
@@ -597,8 +597,8 @@
 
 .modal-close {
     cursor: pointer;
-    font-size: 16px;
-    /* font-size: 18px; */
+    font-size: var(--font-size-lg);
+    /* font-size: var(--font-size-title-sm); */
     padding: 8px;
     color: var(--font-color);
 }
@@ -632,7 +632,7 @@
 .listing-header {
     padding: 8px 10px;
     display: flex;
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     align-items: center;
     margin-bottom: 0.5rem;
     color: var(--font-color);
@@ -659,7 +659,7 @@
     padding: 10px !important;
     border-radius: 5px;
     margin: 10px 10px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
 }
 .module-page-title p {
     padding: 0px;
@@ -688,7 +688,7 @@
     /* margin-right: 6px;
     padding: 4px 6px; */
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     text-wrap: nowrap;
 }
 
@@ -735,7 +735,7 @@
     left: 8px;
     top: 9px;
     color: var(--font-color);
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
 }
 
 /* .badge {
@@ -808,7 +808,7 @@
 }
 
 .table-row {
-    font-size: 13px;
+    font-size: var(--font-size-base);
     vertical-align: middle;
 }
 
@@ -818,7 +818,7 @@
 
 .s2a-table thead th {
     padding: 0.5rem 0.5rem !important;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
 }
 
 .s2a-table .selected-cell {
@@ -827,14 +827,14 @@
 
 .s2a-table .table-edit-font {
     padding-right: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     cursor: pointer;
     color: var(--font-color);
 }
 
 .s2a-table .table-del-font {
     padding-right: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     cursor: pointer;
     color: #dc3545;
 }
@@ -844,7 +844,7 @@
     padding: 3px 6px;
     background-color: var(--primary-color);
     border-radius: 36%;
-    font-size: 11px;
+    font-size: var(--font-size-xs);
 }
 
 .s2a-table .s2a-cell {
@@ -857,14 +857,14 @@
 
 .table-edit-font {
     padding-right: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     cursor: pointer;
     color: var(--font-color);
 }
 
 .table-del-font {
     padding-right: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     cursor: pointer;
     color: #dc3545;
 }
@@ -910,7 +910,7 @@
     /* margin-bottom: 8px; */
 }
 .select-process {
-    font-size: 14px;
+    font-size: var(--font-size-md);
 }
 
 .select-process .process-item:hover {
@@ -923,7 +923,7 @@
 }
 
 .process-form-title {
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 8px;
     padding: 8px 0px;
@@ -940,20 +940,20 @@
 
 .table-list .title1 {
     /* font-family: Nunito,sans-serif; */
-    font-weight: 600;
-    line-height: 1.1;
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-condensed);
     color: var(--font-color);
     margin-bottom: 4px;
 }
 
 .table-list .title2 {
-    font-size: 0.725rem;
+    font-size: var(--font-size-rem-2xs);
     /* padding: 0 0.25rem; */
     color: var(--font-color);
 }
 
 .page-builder .title2 {
-    font-size: 0.8125rem;
+    font-size: var(--font-size-rem-xs);
     padding: 0 0 0.25rem 0;
     color: var(--font-color);
 }
@@ -982,13 +982,13 @@
 }
 
 .dropzone-icon {
-    font-size: 2.5rem;
+    font-size: var(--font-size-rem-display);
     color: #6c63ff;
     margin-bottom: 10px;
 }
 
 .dropzone-text {
-    font-size: 0.95rem;
+    font-size: var(--font-size-rem-lg);
     color: #555;
 }
 
@@ -1027,7 +1027,7 @@
 .table-group-header {
     background-color: var(--primary-color) !important;
     color: var(--font-color);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
 }
 
 @media screen and (max-width: 40em) {
@@ -1076,7 +1076,7 @@
     position: absolute;
     top: 9px;
     right: 14px;
-    font-size: 15px;
+    font-size: var(--font-size-md-plus);
     cursor: pointer;
     color: var(--font-color);
 }
@@ -1118,7 +1118,7 @@
 
 .datalist .refresh-btn,
 .json-btn {
-    font-size: 20px;
+    font-size: var(--font-size-xl);
     padding-right: 8px;
 }
 
@@ -1152,7 +1152,7 @@
 
 .datalistactions-list .action-icon i {
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     margin-right: 6px;
 }
 
@@ -1195,7 +1195,7 @@
     position: absolute;
     margin-top: 7px;
     margin-left: 9px;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
 }
 
 .datalist .datalist-listing,
@@ -1327,7 +1327,7 @@
 }
 
 .s2a-gallery-data .label {
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
 }
 
 .datalist .datalist-actions-cell:hover {
@@ -1337,21 +1337,21 @@
 
 .datalist-edit-font {
     padding-right: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     cursor: pointer;
     color: var(--font-color);
 }
 
 .datalist-del-font {
     padding-right: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     cursor: pointer;
     color: #dc3545;
 }
 
 .datalist-custom-font {
     padding-right: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     cursor: pointer;
     color: var(--font-color);
 }
@@ -1393,7 +1393,7 @@
 }
 
 .datalist .action-font {
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
 }
 
 .datalist .delete-all-export {
@@ -1430,7 +1430,7 @@
 
 .datalist .datalist-clone,
 .form-builder .formlist-clone {
-    font-size: 13px;
+    font-size: var(--font-size-base);
     margin-right: 4px;
 }
 
@@ -1483,20 +1483,20 @@
 
 .datalist-form .action-check.heading {
     /* width: 50%; */
-    font-size: 18px;
-    font-weight: 500;
+    font-size: var(--font-size-title-sm);
+    font-weight: var(--font-weight-medium);
 }
 
 .datalist-form .sortby {
     /* width: 50%; */
-    font-size: 18px;
-    font-weight: 500;
+    font-size: var(--font-size-title-sm);
+    font-weight: var(--font-weight-medium);
 }
 
 .datalist-form .form-fields.heading {
     /* width: 60%; */
-    font-size: 18px;
-    font-weight: 500;
+    font-size: var(--font-size-title-sm);
+    font-weight: var(--font-weight-medium);
 }
 
 .datalist-form .title-and-actions {
@@ -1579,22 +1579,22 @@
 
 .datalist .search-input input {
     padding: 4px 12px 4px 32px !important;
-    font-size: 14px;
+    font-size: var(--font-size-md);
 }
 
 .form-builder .search-input input {
     padding: 4px 12px 4px 32px !important;
-    font-size: 14px;
+    font-size: var(--font-size-md);
 }
 
 .form-builder .input-search-icon {
     top: 7px;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
 }
 
 .datalist .input-search-icon {
     top: 7px;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
 }
 
 .page-count .csv-icon {
@@ -1700,7 +1700,7 @@
 .datalist .form-field-config i,
 .datalist .config-gear i {
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     color: var(--font-color);
 }
 
@@ -1766,7 +1766,7 @@
     position: absolute;
     top: 8px;
     right: 10px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     cursor: pointer;
     color: var(--font-color);
 }
@@ -1796,7 +1796,7 @@
 }
 
 .list-group .list-group-item {
-    line-height: 2em;
+    line-height: var(--line-height-loose);
     background-color: var(--secondary-color);
     color: var(--font-color);
     border-color: var(--border-color);
@@ -1811,12 +1811,12 @@
 }
 
 .org-list .list-group .list-group-item {
-    line-height: 1.5em;
+    line-height: var(--line-height-normal-em);
     margin-left: 4px;
 }
 
 .org-list .list-group {
-    line-height: 1.5em;
+    line-height: var(--line-height-normal-em);
 }
 
 .list-group .list-group-item:hover {
@@ -2008,7 +2008,7 @@
     margin: 2px;
     background-color: var(--primary-color) !important;
     border-radius: 4px;
-    font-size: 10px;
+    font-size: var(--font-size-2xs);
 }
 
 @media screen and (max-width: 40em) {
@@ -2038,7 +2038,7 @@
     table.s2a-table td::before {
         content: attr(data-cell) " ";
         text-transform: capitalize;
-        font-weight: 700;
+        font-weight: var(--font-weight-bold);
     }
 
     table.s2a-table td:first-child {
@@ -2130,7 +2130,7 @@
 .s2a-table thead th,
 .s2a-table td {
     padding: 10px 10px !important;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     vertical-align: middle;
     color: var(--font-color);
     cursor: pointer;
@@ -2192,7 +2192,7 @@
 }
 
 .table-container .pagination .page-index {
-    font-size: 15px;
+    font-size: var(--font-size-md-plus);
     color: var(--font-color);
 }
 
@@ -2201,13 +2201,13 @@
     align-items: center;
     justify-content: center;
     /* width: 100px; */
-    font-size: 15px;
+    font-size: var(--font-size-md-plus);
     margin: 0px 8px;
 }
 
 .table-container .pagination .go-to-page .form-control {
     width: 68px;
-    font-size: 15px !important;
+    font-size: var(--font-size-md-plus) !important;
     padding: 0.15rem 0.5rem !important;
     margin-left: 10px;
 }
@@ -2218,7 +2218,7 @@
 
 .table-container .pagination .form-select {
     padding: 0.15rem 1.75rem 0.15rem 0.5rem !important;
-    font-size: 15px !important;
+    font-size: var(--font-size-md-plus) !important;
 }
 
 /*  React-Table Library styles end  */
@@ -2309,7 +2309,7 @@
     display: flex;
     align-items: center;
     color: var(--font-color);
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     /* background: #fff0; */
     /* border: 1px solid var(--border-color); */
     /* border-top: 3px solid #dbdfea; */
@@ -2322,16 +2322,16 @@
 .analytics-builder .analytics-labels,
 .s2a-sites .sites-labels,
 .app-builder .app-label {
-    font-size: 0.9375rem;
+    font-size: var(--font-size-rem-medium);
     margin-bottom: 0;
     margin-right: 0.75rem;
     color: var(--font-color);
-    letter-spacing: -0.01em;
+    letter-spacing: var(--letter-spacing-condensed);
     margin-top: 0;
     /* font-family: Nunito, sans-serif;  */
     /*  commented  */
-    font-weight: 700;
-    line-height: 1.1;
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-condensed);
 }
 
 .analytics-builder .analytics-add-btn,
@@ -2592,12 +2592,12 @@
 }
 
 .chart-data.figure {
-    font-size: 35pt;
-    font-weight: 600;
+    font-size: var(--font-size-print-display);
+    font-weight: var(--font-weight-semibold);
 }
 
 .chart-data.figure__title {
-    font-size: 24pt;
+    font-size: var(--font-size-print-lg);
     text-transform: capitalize;
     padding: 1rem;
 }
@@ -2616,7 +2616,7 @@
     padding: 5px;
     display: flex;
     justify-content: space-between;
-    font-size: 20px;
+    font-size: var(--font-size-xl);
 }
 
 .chart-config {
@@ -2649,7 +2649,7 @@
 }
 
 .react-table-style .analytic-table .th {
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     /* background-color: #d9edf7 !important; */
 }
 
@@ -2783,19 +2783,19 @@
         rgba(0, 0, 0, 0.24) 0px 1px 2px;
     border-top: 2px solid var(--border-color);
     /* background: #fff; */
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     border-radius: 4px;
     padding: 6px 8px;
     margin-bottom: 0.5rem;
     margin-right: 3px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
 }
 
 .react-table-style .title-style {
     /* display: flex;
     justify-content: space-between;
     align-items: center; */
-    font-size: 14px;
+    font-size: var(--font-size-md);
     width: 85%;
     overflow-x: hidden;
     text-overflow: ellipsis;
@@ -2804,7 +2804,7 @@
 
 .react-table-style .dim-title-style {
     display: flex;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     width: 85%;
     overflow-x: hidden;
     text-overflow: ellipsis;
@@ -2942,9 +2942,9 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 20px;
+    font-size: var(--font-size-xl);
     color: var(--font-color);
-    /* font-weight: 700; */
+    /* font-weight: var(--font-weight-bold); */
 }
 
 .analytics .title-row {
@@ -2976,7 +2976,7 @@
 } */
 
 .analytics .analytic-index select {
-    font-size: 16px !important;
+    font-size: var(--font-size-lg) !important;
 }
 
 /* .analytics .add-opacity {
@@ -3017,7 +3017,7 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    font-size: 14px !important;
+    font-size: var(--font-size-md) !important;
 }
 
 .analytic-table-wrapper .filter-apply {
@@ -3059,14 +3059,14 @@
 .navbar-nav .module-title {
     width: 100%;
     padding: 5px;
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     margin: 0px !important;
     border: 0px !important;
 }
 
 .navbar-nav .module-title {
     background-color: transparent;
-    font-size: 14px;
+    font-size: var(--font-size-md);
 }
 
 .navbar-nav .accordion-button {
@@ -3085,11 +3085,11 @@
     padding: 10px;
     border-radius: 5px;
     margin: 10px 0px;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
 }
 
 .task-comment-stamp {
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     color: #676767;
 }
 .process-task-title {
@@ -3097,18 +3097,18 @@
 }
 
 .process-task-title .task-sub-title {
-    font-size: 12px;
+    font-size: var(--font-size-sm);
 }
 
 .process-task,
 .process-task-name {
-    font-size: 13px;
+    font-size: var(--font-size-base);
 }
 
 .task-row .user-fullname {
     /* max-width: 10px; */
     text-wrap: wrap;
-    line-height: 1.3;
+    line-height: var(--line-height-relaxed);
     margin-left: 5px;
 }
 
@@ -3136,7 +3136,7 @@
 }
 
 .process-task .case-ref {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     margin-bottom: 3px;
     text-overflow: ellipsis;
     text-wrap: nowrap;
@@ -3144,12 +3144,12 @@
 }
 
 .process-title {
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
 }
 
 /* .process-task {
-    font-size: larger;
-    font-weight: 500;
+    font-size: var(--font-size-keyword-larger);
+    font-weight: var(--font-weight-medium);
 } */
 
 /* .created-text {
@@ -3171,7 +3171,7 @@
 }
 
 .due-text-sm {
-    font-size: small;
+    font-size: var(--font-size-keyword-small);
     color: darkgray;
 }
 
@@ -3196,7 +3196,7 @@
 }
 
 .processes .history-item {
-    font-size: 0.9rem;
+    font-size: var(--font-size-rem-base);
     padding: 10px 0px;
     border-bottom: 1px solid var(--border-color);
 }
@@ -3235,19 +3235,19 @@
 }
 
 .processes .task-name h4 {
-    font-weight: 400;
-    line-height: 20px;
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-text);
     margin-bottom: 5px;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
     margin-top: 4px;
 }
 
 .processes .task-name h6 {
     margin-top: 5px;
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-text);
     margin-bottom: 5px;
-    font-weight: 400;
+    font-weight: var(--font-weight-normal);
 }
 
 .processes .selected-task {
@@ -3412,19 +3412,19 @@
 }
 
 .comment-box .comment-list h4 {
-    font-weight: 400;
-    line-height: 20px;
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-text);
     margin-bottom: 5px;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
     margin-top: 4px;
 }
 
 .comment-box .comment-list h6 {
     margin-top: 5px;
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-text);
     margin-bottom: 5px;
-    font-weight: 400;
+    font-weight: var(--font-weight-normal);
     font-style: oblique;
 }
 
@@ -3458,19 +3458,19 @@
 }
 
 .comment-box .attachment-list h4 {
-    font-weight: 400;
-    line-height: 20px;
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-text);
     margin-bottom: 5px;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
     margin-top: 4px;
 }
 
 .comment-box .attachment-list h6 {
     margin-top: 5px;
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-text);
     margin-bottom: 5px;
-    font-weight: 400;
+    font-weight: var(--font-weight-normal);
     font-style: oblique;
 }
 
@@ -3481,7 +3481,7 @@
 }
 
 .processes .process-stats .selected-process {
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
 }
 
 .processes .process-stats-col {
@@ -3489,7 +3489,7 @@
     /* background-color: #add; */
     margin-left: 4px;
     padding: 4px 8px;
-    font-size: 15px;
+    font-size: var(--font-size-md-plus);
     cursor: pointer;
     margin-bottom: 4px;
 }
@@ -3499,8 +3499,8 @@
 }
 
 .processes .refresh-btn i {
-    font-weight: bold;
-    font-size: 30px;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-heading-xl);
 }
 
 /*  processes styles end  */
@@ -3525,7 +3525,7 @@
 .page-design-header,
 .pages-header {
     margin: 5px 0px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
 }
 
 .page-builder .page-header-lg .btns,
@@ -3601,7 +3601,7 @@
 }
 
 .form-accordion .accordion-button {
-    font-size: 14px !important;
+    font-size: var(--font-size-md) !important;
 }
 
 .page-builder .page-header-lg .select-site,
@@ -3642,9 +3642,9 @@
 /* @import url("https://cdn.syncfusion.com/ej2/material.css"); */
 
 .DateInput_input {
-    font-size: inherit !important;
+    font-size: var(--font-size-keyword-inherit) !important;
     padding: 4px 4px 2px !important;
-    line-height: 0% !important;
+    line-height: var(--line-height-zero) !important;
     color: var(--font-color) !important;
     background-color: var(--navigation-color) !important;
 }
@@ -3652,7 +3652,7 @@
 .DateInput {
     width: auto;
     min-width: 30% !important;
-    line-height: 0% !important;
+    line-height: var(--line-height-zero) !important;
 }
 
 .DateRangePickerInput {
@@ -3965,9 +3965,9 @@ div[class*="-control"] {
     display: block;
     width: 100%;
     padding: 0.25rem 0.75rem;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.5;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-normal);
     color: var(--font-color);
     background-color: transparent;
     background-clip: padding-box;
@@ -4023,8 +4023,8 @@ div[class*="-control"] {
     background: var(--primary-color);
     color: var(--font-color);
     /* match the font styles */
-    font-size: inherit;
-    line-height: inherit;
+    font-size: var(--font-size-keyword-inherit);
+    line-height: var(--line-height-keyword-inherit);
 }
 
 .react-tags__selected-tag:after {
@@ -4067,8 +4067,8 @@ div[class*="-control"] {
     outline: none;
 
     /* match the font styles */
-    font-size: inherit;
-    line-height: inherit;
+    font-size: var(--font-size-keyword-inherit);
+    line-height: var(--line-height-keyword-inherit);
 }
 
 .react-tags__search-input::placeholder {
@@ -4107,7 +4107,7 @@ div[class*="-control"] {
     text-decoration: underline;
     color: var(--font-color);
     background: none;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
 }
 
 .react-tags__suggestions li:hover {
@@ -4171,7 +4171,7 @@ div[class*="-control"] {
 
 .datalistviewer-modal .select-all .label,
 .select-datalist .label {
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     margin-bottom: 8px;
 }
 
@@ -4378,7 +4378,7 @@ div[class*="-control"] {
 }
 
 .react-pivot .dataset-title {
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     padding: 5px 0px;
     text-transform: capitalize;
     display: flex;
@@ -4447,7 +4447,7 @@ div[class*="-control"] {
 }
 
 table.pvtTable {
-    font-size: 8pt;
+    font-size: var(--font-size-print-sm);
     text-align: left;
     border-collapse: collapse;
     margin-top: 3px;
@@ -4461,7 +4461,7 @@ table.pvtTable tbody tr th {
     background-color: var(--primary-color) !important;
     border: 1px solid var(--border-color) !important;
     color: var(--font-color) !important;
-    font-size: 8pt !important;
+    font-size: var(--font-size-print-sm) !important;
     padding: 5px !important;
 }
 
@@ -4486,7 +4486,7 @@ table.pvtTable tbody tr td {
 
 .pvtTotal,
 .pvtGrandTotal {
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     background-color: white;
     color: black !important;
 }
@@ -4565,7 +4565,7 @@ table.pvtTable tbody tr td {
 
 .pvtDropdownValue {
     padding: 2px 5px;
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     text-align: left;
 }
 
@@ -4646,7 +4646,7 @@ table.pvtTable tbody tr td {
     position: absolute;
     right: 5px;
     top: 5px;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
     cursor: pointer;
     text-decoration: none !important;
     color: var(--font-color);
@@ -4656,7 +4656,7 @@ table.pvtTable tbody tr td {
     position: absolute;
     left: 5px;
     top: 5px;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
     cursor: move;
     color: var(--font-color) !important;
 }
@@ -4668,7 +4668,7 @@ table.pvtTable tbody tr td {
     background: var(--primary-color);
     border: 1px solid;
     border-color: var(--border-color);
-    font-size: 14px;
+    font-size: var(--font-size-md);
     margin: 3px;
     transition: 0.34s all cubic-bezier(0.19, 1, 0.22, 1);
     text-decoration: none !important;
@@ -4688,7 +4688,7 @@ table.pvtTable tbody tr td {
     border-radius: 5px;
     color: var(--font-color);
     padding: 0 3px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
 }
 
 .pvtFilterBox input:focus {
@@ -4732,7 +4732,7 @@ table.pvtTable tbody tr td {
 
 .pvtCheckContainer {
     text-align: left;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     white-space: nowrap;
     overflow-y: scroll;
     width: 100%;
@@ -4757,7 +4757,7 @@ table.pvtTable tbody tr td {
     display: none;
     width: 35px;
     float: left;
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     padding-left: 5px;
     cursor: pointer;
 }
@@ -4788,7 +4788,7 @@ table.pvtTable tbody tr td {
 }
 
 .data-set .edit {
-    font-size: 14px;
+    font-size: var(--font-size-md);
 }
 
 .data-set .border-dataset {
@@ -4828,7 +4828,7 @@ table.pvtTable tbody tr td {
     align-items: center;
     margin: 10px 0px 5px 0px;
     padding-left: 5px;
-    /* font-weight: bold; */
+    /* font-weight: var(--font-weight-bold); */
     /* d-flex justify-content-between mt-3 mb-2 align-items-center */
 }
 
@@ -4916,7 +4916,7 @@ table.pvtTable tbody tr td {
     margin-top: 9px;
     margin-left: 8px;
     color: var(--font-color);
-    font-size: 20px;
+    font-size: var(--font-size-xl);
 }
 
 .chart-form .recharts-text {
@@ -4991,13 +4991,13 @@ chart color picker component
 
 .chart__colorpicker .palette-info h3 {
     margin: 0;
-    font-size: 20px;
+    font-size: var(--font-size-xl);
 }
 
 .chart__colorpicker .palette-info span {
     vertical-align: middle;
-    font-weight: 700;
-    font-size: 14px;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-md);
 }
 
 .chart__colorpicker .tile-sm {
@@ -5044,8 +5044,8 @@ chart color picker component
 }
 
 .chart__colorpicker .label {
-    font-size: 16px;
-    font-weight: 700;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
     visibility: hidden;
     opacity: 0;
     position: absolute;
@@ -5118,19 +5118,19 @@ chart color picker component
         Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
         "Segoe UI Symbol"; */
     /*  commented  */
-    font-weight: 400;
-    letter-spacing: -0.005em;
+    font-weight: var(--font-weight-normal);
+    letter-spacing: var(--letter-spacing-subtle);
     -webkit-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
     -webkit-font-kerning: normal;
     font-kerning: normal;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     color: var(--font-color);
     padding: 12px;
     padding-right: 40px;
     display: block;
     text-align: left;
-    line-height: 40px;
+    line-height: var(--line-height-display);
     padding-top: 0;
     padding-bottom: 0;
     overflow: hidden;
@@ -5147,7 +5147,7 @@ chart color picker component
     padding: 8px;
     border-radius: 2px;
     padding-right: 16px;
-    line-height: 32px;
+    line-height: var(--line-height-heading);
     padding-top: 0;
     padding-bottom: 0;
 }
@@ -5176,7 +5176,7 @@ chart color picker component
 /* Tooltip Label */
 
 .custom-tooltip .label {
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
 }
 
 /* Tooltip Data Point */
@@ -5199,20 +5199,20 @@ chart color picker component
     margin-right: 8px;
     color: var(--font-color);
     background-color: var(--navigation-color);
-    font-size: 8px;
+    font-size: var(--font-size-3xs);
 }
 
 /* Text for Tooltip Data */
 
 .custom-tooltip .tooltip-text {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     margin: 0;
 }
 
 /* Optional Styling for Value */
 
 .custom-tooltip .value {
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     color: var(--font-color);
     /* Customize the color of the value text */
     margin: 0;
@@ -5252,7 +5252,7 @@ chart color picker component
 }
 
 /* .form-submit-msg {
-    font-size: large;
+    font-size: var(--font-size-keyword-large);
 } */
 
 /* security users.jsx*/
@@ -5275,7 +5275,7 @@ chart color picker component
 }
 
 .eye-icon i {
-    font-size: 20px;
+    font-size: var(--font-size-xl);
 }
 
 .c_password-input {
@@ -5296,7 +5296,7 @@ chart color picker component
 }
 
 .eye-icon_c_pass i {
-    font-size: 20px;
+    font-size: var(--font-size-xl);
 }
 
 /*app-builder styles start*/
@@ -5391,7 +5391,7 @@ chart color picker component
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
 }
 .module__config .header .select__all {
     padding-left: 15px;
@@ -5409,13 +5409,13 @@ chart color picker component
         rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
 }
 .module-card h6.title {
-    line-height: normal;
+    line-height: var(--line-height-keyword-normal);
     word-wrap: break-word !important;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     margin-top: 9px;
     min-height: 2em;
 }
@@ -5428,9 +5428,9 @@ chart color picker component
 .module-card .description {
     overflow-y: auto;
     overflow-x: hidden;
-    line-height: normal;
+    line-height: var(--line-height-keyword-normal);
     word-wrap: break-word !important;
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     height: 5.5em;
     display: -webkit-box;
     -webkit-line-clamp: 4;
@@ -5502,14 +5502,14 @@ chart color picker component
 
 .s2a-modal .modal-title .modal-close {
     cursor: pointer;
-    font-size: 22px;
+    font-size: var(--font-size-heading-sm);
     padding: 8px;
     color: var(--font-color);
 }
 
 .s2a-modal .modal-resize {
     cursor: pointer;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
     padding: 8px;
     color: var(--font-color);
 }
@@ -5584,7 +5584,7 @@ chart color picker component
 }
 
 .fallback__datalist .search__icon {
-    font-size: 20px;
+    font-size: var(--font-size-xl);
 }
 
 .datalist-component {
@@ -5695,7 +5695,7 @@ chart color picker component
 .s2a-schema-management .s2a-export,
 .s2a-schema-management .s2a-import {
     margin: 3px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
 }
 
 .s2a-schema-management .instances {
@@ -5759,7 +5759,7 @@ chart color picker component
 /* HTMLPropsEditor  end*/
 
 .default-fontsize {
-    font-size: 12px;
+    font-size: var(--font-size-sm);
 }
 
 /* .tag-filtered {
@@ -5851,7 +5851,7 @@ chart color picker component
 }
 
 .s2a-schema-management .tab {
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     border-radius: 22px;
     padding: 5px 10px;
     background-color: var(--primary-color);
@@ -5864,7 +5864,7 @@ chart color picker component
 }
 
 .s2a-schema-management .selected-tab {
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     background-color: var(--font-color);
     color: var(--primary-color);
     border-radius: 22px;
@@ -5883,11 +5883,11 @@ chart color picker component
 .s2a-schema-management .fa-align-left,
 .s2a-schema-management .fa-eye,
 .s2a-schema-management .fa-play {
-    font-size: 12px;
+    font-size: var(--font-size-sm);
 }
 
 .s2a-schema-management .button-theme {
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     padding: 5px 15px;
     min-width: fit-content;
 }
@@ -5944,7 +5944,7 @@ chart color picker component
 }
 
 .datalist-viewer .title-text {
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
 }
 
 /*27-02-2024*/
@@ -5953,7 +5953,7 @@ chart color picker component
     background-color: var(--primary-color);
     border-radius: 22px;
     color: var(--font-color);
-    font-size: 13px;
+    font-size: var(--font-size-base);
     text-decoration: none;
     float: right;
     margin-top: 5px;
@@ -5962,14 +5962,14 @@ chart color picker component
 .login-btn {
     text-decoration: none;
     color: var(--font-color);
-    font-size: 13px;
+    font-size: var(--font-size-base);
     margin-top: 5px;
 }
 
 /*  Web-content css  */
 
 .content-actions {
-    font-size: 20px;
+    font-size: var(--font-size-xl);
 }
 
 .list-group .items-listing .selected-item {
@@ -5989,7 +5989,7 @@ chart color picker component
     padding: 10px;
     margin-bottom: 10px;
     display: flex;
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     text-wrap: nowrap;
 }
 
@@ -5998,20 +5998,20 @@ chart color picker component
 }
 
 .assets-viewer .breadcrumb-item {
-    font-size: 20px;
+    font-size: var(--font-size-xl);
 }
 
 .assets-viewer .image-url {
-    font-size: 14px;
+    font-size: var(--font-size-md);
 }
 .assets-viewer .image-url .copy-msg {
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     padding-top: 2px;
     float: right !important;
 }
 
 .assets-viewer .image-url i {
-    font-size: 12px;
+    font-size: var(--font-size-sm);
 }
 
 /* Assset Manager */
@@ -6146,7 +6146,7 @@ chart color picker component
     padding: 10px;
     border-radius: 5px;
     margin: 10px -5px;
-    font-size: 18px;
+    font-size: var(--font-size-title-sm);
 }
 #subscription {
     margin: 10px;
@@ -6251,20 +6251,20 @@ chart color picker component
 }
 
 #subscription .package-name {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
 }
 
 #subscription .package-pricing {
-    font-size: 25px;
-    font-weight: 700;
+    font-size: var(--font-size-icon-lg);
+    font-weight: var(--font-weight-bold);
 }
 
 /* #subscription .package-features {
 } */
 
 #subscription .bolder-info {
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
 }
 
 /*react-table components*/
@@ -6278,7 +6278,7 @@ chart color picker component
 }
 
 .s2a-table-body {
-    font-size: 0.875rem;
+    font-size: var(--font-size-rem-sm);
 }
 
 .table-header {
@@ -6359,7 +6359,7 @@ chart color picker component
 
 .s2a-list .list-item .s2a-list-data.heading {
     text-transform: capitalize;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
 }
 
 /* react datalist listing view end */
@@ -6527,7 +6527,7 @@ body.__className_017dd3 {
 /* service-params-listing start */
 .service-params-listing .std-icon-size {
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     margin-right: 6px;
 }
 /* service-params-listing end*/
@@ -6690,7 +6690,7 @@ body.__className_017dd3 {
 .chat .message-datecreated {
     color: var(--font-color);
     filter: brightness(0.85);
-    font-size: 12px;
+    font-size: var(--font-size-sm);
 }
 
 .chat .message-recording-btn {
@@ -6807,7 +6807,7 @@ body.__className_017dd3 {
 
 .chat .header {
     background-color: var(--primary-color);
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     margin-top: 10px;
     padding: 10px 15px;
 }
@@ -6868,7 +6868,7 @@ body.__className_017dd3 {
     border: none;
     cursor: pointer;
     color: var(--font-color);
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     margin-top: 5px;
 }
 
