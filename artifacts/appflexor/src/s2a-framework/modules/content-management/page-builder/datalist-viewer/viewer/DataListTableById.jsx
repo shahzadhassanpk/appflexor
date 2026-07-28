@@ -968,238 +968,106 @@ export default function DataListTableById(props) {
                     accessor: "allactions",
                     Cell: ({ cell }) => {
                         let data = cell.row.original;
+                        const hasEdit = actionKeyValue?.edit?.code === "edit" && defaultActionEval(actionKeyValue.edit, data, appContext);
+                        const hasDelete = actionKeyValue?.delete?.code === "delete" && defaultActionEval(actionKeyValue.delete, data, appContext);
+                        const hasSave = actionKeyValue?.save?.code === "save" && defaultActionEval(actionKeyValue.save, data, appContext);
+                        const hasCustom = customActions?.length > 0;
+
                         return (
-                            <div
-                                key={data?.id}
-                                className="datalist-actions-row">
-                                {actionKeyValue &&
-                                    actionKeyValue.edit &&
-                                    actionKeyValue.edit.code === "edit" &&
-                                    defaultActionEval(
-                                        actionKeyValue.edit,
-                                        data,
-                                        appContext,
-                                    ) && (
-                                        <div
-                                            className="datalist-actions-cell datalist-edit-font"
-                                            title={
-                                                actionKeyValue.edit.list_title
-                                                    ? actionKeyValue.edit
-                                                          .list_title
-                                                    : "Edit"
-                                            }
-                                            onClick={() =>
-                                                handleEdit(
-                                                    cell.row.original,
-                                                    undefined,
-                                                    actionKeyValue.edit,
-                                                )
-                                            }>
-                                            {/* <i className="fa-solid fa-pen-to-square"></i> */}
-                                            <Interweave
-                                                content={
-                                                    actionKeyValue.edit.title
-                                                }></Interweave>
-                                        </div>
-                                    )}
+                            <div key={data?.id} className="datalist-actions-row">
+                                <div className="dropdown">
+                                    <button
+                                        className="s2a-kebab-btn"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                        title="Actions">
+                                        <i className="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                    <ul className="dropdown-menu dropdown-menu-end">
+                                        {/* Edit */}
+                                        {hasEdit && (
+                                            <li className="dropdown-list-item">
+                                                <div
+                                                    className="datalist-actions-cell datalist-edit-font dropdown-item"
+                                                    title={actionKeyValue.edit.list_title || "Edit"}
+                                                    onClick={() => handleEdit(cell.row.original, undefined, actionKeyValue.edit)}>
+                                                    <i className="fa-solid fa-pen-to-square"></i>
+                                                    <Interweave content={actionKeyValue.edit.title} />
+                                                </div>
+                                            </li>
+                                        )}
 
-                                {actionKeyValue &&
-                                actionKeyValue.delete &&
-                                actionKeyValue.delete.code === "delete" &&
-                                defaultActionEval(
-                                    actionKeyValue.delete,
-                                    data,
-                                    appContext,
-                                ) ? (
-                                    <div
-                                        className="datalist-actions-cell datalist-delete-font"
-                                        title={
-                                            actionKeyValue.delete.list_title
-                                                ? actionKeyValue.delete
-                                                      .list_title
-                                                : "Delete"
-                                        }
-                                        onClick={() => {
-                                            handleDelete(
-                                                cell.row.original?.id,
-                                                undefined,
-                                                actionKeyValue.delete,
-                                                cell.row.id,
-                                                cell.row,
+                                        {/* Save */}
+                                        {hasSave && (
+                                            <li className="dropdown-list-item">
+                                                <div
+                                                    className="datalist-actions-cell datalist-edit-font dropdown-item"
+                                                    title={actionKeyValue.save.list_title || "Save"}
+                                                    onClick={() => updateDbData(cell.row.original, cell)}>
+                                                    <i className="fa-solid fa-floppy-disk"></i>
+                                                    <Interweave content={actionKeyValue.save.title} />
+                                                </div>
+                                            </li>
+                                        )}
+
+                                        {/* Divider before custom actions */}
+                                        {(hasEdit || hasSave) && hasCustom && (
+                                            <hr className="dropdown-divider" />
+                                        )}
+
+                                        {/* Custom actions */}
+                                        {customActions?.map((item, i) => {
+                                            const params = returnParams(item, cell.row.original, appContext);
+                                            const content = (
+                                                <div
+                                                    className="datalist-actions-cell datalist-custom-font dropdown-item"
+                                                    title={item.list_title}>
+                                                    <RenderCustomActions
+                                                        item={item}
+                                                        params={params}
+                                                        record={cell.row.original}
+                                                        handleActions={handleActions}
+                                                        i={i}
+                                                        formDetails={formDetails}
+                                                        processDetail={processDetail}
+                                                        getData={getDatalistData}
+                                                        selectedItem={selectedItem}
+                                                        setFormAndModalConfig={setFormAndModalConfig}
+                                                        moveAsideForm={moveAsideForm}
+                                                    />
+                                                </div>
                                             );
-                                        }}>
-                                        {/* <i className="fa-solid fa-pen-to-square"></i> */}
-                                        <Interweave
-                                            content={
-                                                actionKeyValue.delete.title
-                                            }></Interweave>
-                                    </div>
-                                ) : (
-                                    <></>
-                                )}
+                                            return (
+                                                <React.Fragment key={item?.id}>
+                                                    {item.visibility_expression
+                                                        ? checkExpression(item, cell, data) && (
+                                                            <li className="dropdown-list-item">{content}</li>
+                                                        )
+                                                        : <li className="dropdown-list-item">{content}</li>
+                                                    }
+                                                </React.Fragment>
+                                            );
+                                        })}
 
-                                {actionKeyValue &&
-                                    actionKeyValue.save &&
-                                    actionKeyValue.save.code === "save" &&
-                                    (defaultActionEval(
-                                        actionKeyValue.save,
-                                        data,
-                                        appContext,
-                                    ) ? (
-                                        <div
-                                            className="datalist-actions-cell datalist-edit-font"
-                                            title={
-                                                actionKeyValue.save.list_title
-                                                    ? actionKeyValue.save
-                                                          .list_title
-                                                    : "save"
-                                            }
-                                            onClick={() =>
-                                                updateDbData(
-                                                    cell.row.original,
-                                                    cell,
-                                                )
-                                            }>
-                                            {/* <i className="fa-regular fa-trash-can text-danger"></i> */}
-                                            <Interweave
-                                                content={
-                                                    actionKeyValue.save.title
-                                                }></Interweave>
-                                        </div>
-                                    ) : (
-                                        <></>
-                                    ))}
-                                {/* <span>{JSON.stringify(customActions)}</span> */}
-                                {customActions && customActions.length > 0 && (
-                                    <div className="dropdown">
-                                        <span
-                                            type="button"
-                                            className="dropdown-trigger fa-solid fa-ellipsis-vertical show-hide-button p-2"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false"></span>
-                                        <ul className="dropdown-menu">
-                                            {customActions &&
-                                                customActions.map((item, i) => {
-                                                    let data =
-                                                        cell.row.original;
+                                        {/* Divider before delete */}
+                                        {(hasEdit || hasSave || hasCustom) && hasDelete && (
+                                            <hr className="dropdown-divider" />
+                                        )}
 
-                                                    let params = returnParams(
-                                                        item,
-                                                        cell.row.original,
-                                                        appContext,
-                                                    );
-
-                                                    return (
-                                                        <React.Fragment
-                                                            key={item?.id}>
-                                                            {item.visibility_expression ? (
-                                                                checkExpression(
-                                                                    item,
-                                                                    cell,
-                                                                    data,
-                                                                ) && (
-                                                                    <li className="dropdown-list-item">
-                                                                        <div
-                                                                            className="datalist-actions-cell datalist-custom-font dropdown-item"
-                                                                            title={
-                                                                                item.list_title
-                                                                            }>
-                                                                            <RenderCustomActions
-                                                                                item={
-                                                                                    item
-                                                                                }
-                                                                                params={
-                                                                                    params
-                                                                                }
-                                                                                record={
-                                                                                    cell
-                                                                                        .row
-                                                                                        .original
-                                                                                }
-                                                                                handleActions={
-                                                                                    handleActions
-                                                                                }
-                                                                                i={
-                                                                                    i
-                                                                                }
-                                                                                formDetails={
-                                                                                    formDetails
-                                                                                }
-                                                                                processDetail={
-                                                                                    processDetail
-                                                                                }
-                                                                                getData={
-                                                                                    getDatalistData
-                                                                                }
-                                                                                selectedItem={
-                                                                                    selectedItem
-                                                                                }
-                                                                                setFormAndModalConfig={
-                                                                                    setFormAndModalConfig
-                                                                                }
-                                                                                moveAsideForm={
-                                                                                    moveAsideForm
-                                                                                }
-                                                                            />
-                                                                        </div>
-                                                                    </li>
-                                                                )
-                                                            ) : (
-                                                                <li className="dropdown-list-item">
-                                                                    <div
-                                                                        className="datalist-actions-cell datalist-custom-font dropdown-item"
-                                                                        title={
-                                                                            item.list_title
-                                                                        }>
-                                                                        {item &&
-                                                                            cell && (
-                                                                                <RenderCustomActions
-                                                                                    item={
-                                                                                        item
-                                                                                    }
-                                                                                    params={
-                                                                                        params
-                                                                                    }
-                                                                                    record={
-                                                                                        cell
-                                                                                            .row
-                                                                                            .original
-                                                                                    }
-                                                                                    handleActions={
-                                                                                        handleActions
-                                                                                    }
-                                                                                    i={
-                                                                                        i
-                                                                                    }
-                                                                                    formDetails={
-                                                                                        formDetails
-                                                                                    }
-                                                                                    processDetail={
-                                                                                        processDetail
-                                                                                    }
-                                                                                    getData={
-                                                                                        getDatalistData
-                                                                                    }
-                                                                                    selectedItem={
-                                                                                        selectedItem
-                                                                                    }
-                                                                                    setFormAndModalConfig={
-                                                                                        setFormAndModalConfig
-                                                                                    }
-                                                                                    moveAsideForm={
-                                                                                        moveAsideForm
-                                                                                    }
-                                                                                />
-                                                                            )}
-                                                                    </div>
-                                                                </li>
-                                                            )}
-                                                        </React.Fragment>
-                                                    );
-                                                })}
-                                        </ul>
-                                    </div>
-                                )}
+                                        {/* Delete — always last */}
+                                        {hasDelete && (
+                                            <li className="dropdown-list-item">
+                                                <div
+                                                    className="datalist-actions-cell datalist-delete-font dropdown-item s2a-action-delete"
+                                                    title={actionKeyValue.delete.list_title || "Delete"}
+                                                    onClick={() => handleDelete(cell.row.original?.id, undefined, actionKeyValue.delete, cell.row.id, cell.row)}>
+                                                    <i className="fa-solid fa-trash"></i>
+                                                    <Interweave content={actionKeyValue.delete.title} />
+                                                </div>
+                                            </li>
+                                        )}
+                                    </ul>
+                                </div>
                             </div>
                         );
                     },
@@ -2358,64 +2226,76 @@ function DatalistHeader(_props) {
         hideFormDatalistLabel,
         rows,
     } = _props;
+
+    const totalRecords = viewerBtn?.listLength ?? 0;
+    const hasActiveSearch = Boolean(viewerBtn?.globalFilter);
+
+    const handleClearSearch = () => {
+        if (viewerBtn?.setGlobalFilter) viewerBtn.setGlobalFilter("");
+    };
+
+    const isVisible =
+        modeType.preview === mode ||
+        modeType.render === mode ||
+        modeType.readonly === mode;
+
+    if (!isVisible) return null;
+
     return (
-        <>
-            <div className="s2a-datalist-header row">
-                {modeType.preview === mode ||
-                modeType.render === mode ||
-                modeType.readonly === mode ? (
+        <div className="s2a-datalist-header">
+            {/* ── Left: title + record count ── */}
+            <div className="s2a-dl-title">
+                {!Boolean(hideFormDatalistLabel) && selectedItem && (
                     <>
-                        <div className="datalist-title col-sm">
-                            <div className="col title-text">
-                                <span>
-                                    {!Boolean(hideFormDatalistLabel) &&
-                                        selectedItem &&
-                                        (selectedItem?.title ||
-                                            selectedItem?.name)}
-                                </span>
-                            </div>
-                            <div className="col-sm-1 refresh-count">
-                                {selectedItem &&
-                                    selectedItem.refresh_interval && (
-                                        <div className="refresh ps-2">
-                                            <i
-                                                title={`Refresh in ${selectedItem?.refresh_interval} Second`}
-                                                className="fa-solid fa-arrows-rotate"></i>
-                                        </div>
-                                    )}
-                            </div>
-                        </div>
-                        {viewerBtn &&
-                            viewerBtn.flag &&
-                            viewerBtn.flag.search === true && (
-                                <div className="datalist-search flex-between col-sm-4 ms-auto">
-                                    <div className="count pe-2">
-                                        {viewerBtn && viewerBtn?.listLength
-                                            ? selectedRowsLength
-                                            : 0}{" "}
-                                        /{" "}
-                                        {viewerBtn && viewerBtn?.listLength
-                                            ? viewerBtn?.listLength
-                                            : 0}
-                                    </div>
-                                    <GlobalFilter
-                                        preGlobalFilteredRows={
-                                            viewerBtn.preGlobalFilteredRows
-                                        }
-                                        globalFilter={viewerBtn.globalFilter}
-                                        setGlobalFilter={
-                                            viewerBtn.setGlobalFilter
-                                        }
-                                    />
-                                    <div className="fw-bold refresh-json-btn"></div>
-                                </div>
-                            )}
+                        <span>{selectedItem?.title || selectedItem?.name}</span>
+                        <span className="s2a-dl-count">({totalRecords})</span>
                     </>
-                ) : (
-                    <></>
+                )}
+                {selectedItem?.refresh_interval && (
+                    <i
+                        className="fa-solid fa-arrows-rotate"
+                        title={`Auto-refresh every ${selectedItem.refresh_interval}s`}
+                        style={{ fontSize: "var(--font-size-sm)", color: "var(--text-muted)", marginLeft: 4 }}
+                    />
                 )}
             </div>
-        </>
+
+            {/* ── Right: search + icon toolbar ── */}
+            {viewerBtn?.flag?.search === true && (
+                <div className="s2a-dl-toolbar">
+                    {/* Global search */}
+                    <div className="s2a-dl-search">
+                        <i className="fa-solid fa-magnifying-glass s2a-dl-search-icon"></i>
+                        <GlobalFilter
+                            preGlobalFilteredRows={viewerBtn.preGlobalFilteredRows}
+                            globalFilter={viewerBtn.globalFilter}
+                            setGlobalFilter={viewerBtn.setGlobalFilter}
+                        />
+                        {hasActiveSearch && (
+                            <button
+                                className="s2a-dl-search-clear"
+                                onClick={handleClearSearch}
+                                title="Clear search">
+                                <i className="fa-solid fa-xmark"></i>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Column chooser icon */}
+                    <button className="s2a-dl-icon-btn" title="Column visibility">
+                        <i className="fa-solid fa-table-cells-large"></i>
+                    </button>
+
+                    {/* Filter indicator */}
+                    <button
+                        className={`s2a-dl-icon-btn${hasActiveSearch ? " active" : ""}`}
+                        title="Filters active">
+                        <i className="fa-solid fa-filter"></i>
+                        {hasActiveSearch && <span className="s2a-dl-filter-dot"></span>}
+                    </button>
+                </div>
+            )}
+        </div>
     );
 }
 
