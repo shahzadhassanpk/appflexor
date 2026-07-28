@@ -397,6 +397,36 @@ export default function DataListForm(props) {
                                     />
                                 </div>
                             </div>
+                            <div className="col-sm-12 mb-1">
+                                <div className="form-group">
+                                    <div className="mt-1 d-flex">
+                                        <div className="col-sm-2 fw-bold">
+                                            Description&nbsp;
+                                            <span className="text-danger">
+                                                *
+                                            </span>
+                                        </div>
+                                        <div
+                                            className={`${
+                                                error.indexOf("description") === -1
+                                                    ? "visually-hidden col-sm-10"
+                                                    : "col-sm-10 error-msg"
+                                            }`}>
+                                            Description Required
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        name="description"
+                                        value={
+                                            selectedItem &&
+                                            selectedItem["description"]
+                                        }
+                                        onChange={e => handleInputField(e)}
+                                    />
+                                </div>
+                            </div>
                             <div className="datalist-taglist">
                                 <label className="fw-bold my-1">
                                     Search Tag

@@ -345,7 +345,7 @@ export default function DataListTableById(props) {
                     }
                 }
             });
-        } catch (e) {}
+        } catch (e) { }
         return params;
     };
 
@@ -360,8 +360,8 @@ export default function DataListTableById(props) {
                         : fkColumn
                     : ""
                 : fkColumn
-                  ? fkColumn
-                  : "";
+                    ? fkColumn
+                    : "";
 
         if (selectedItem.type === "FORM") {
             if (fkColumn !== "" && fkValue !== "") {
@@ -985,7 +985,7 @@ export default function DataListTableById(props) {
                                             title={
                                                 actionKeyValue.edit.list_title
                                                     ? actionKeyValue.edit
-                                                          .list_title
+                                                        .list_title
                                                     : "Edit"
                                             }
                                             onClick={() =>
@@ -1004,19 +1004,19 @@ export default function DataListTableById(props) {
                                     )}
 
                                 {actionKeyValue &&
-                                actionKeyValue.delete &&
-                                actionKeyValue.delete.code === "delete" &&
-                                defaultActionEval(
-                                    actionKeyValue.delete,
-                                    data,
-                                    appContext,
-                                ) ? (
+                                    actionKeyValue.delete &&
+                                    actionKeyValue.delete.code === "delete" &&
+                                    defaultActionEval(
+                                        actionKeyValue.delete,
+                                        data,
+                                        appContext,
+                                    ) ? (
                                     <div
                                         className="datalist-actions-cell datalist-delete-font"
                                         title={
                                             actionKeyValue.delete.list_title
                                                 ? actionKeyValue.delete
-                                                      .list_title
+                                                    .list_title
                                                 : "Delete"
                                         }
                                         onClick={() => {
@@ -1051,7 +1051,7 @@ export default function DataListTableById(props) {
                                             title={
                                                 actionKeyValue.save.list_title
                                                     ? actionKeyValue.save
-                                                          .list_title
+                                                        .list_title
                                                     : "save"
                                             }
                                             onClick={() =>
@@ -1252,7 +1252,7 @@ export default function DataListTableById(props) {
                 item &&
                 cell
             );
-        } catch (error) {}
+        } catch (error) { }
         return false;
     }
 
@@ -1665,7 +1665,7 @@ export default function DataListTableById(props) {
                     listLength: tableData.length,
                 }));
             }
-        } catch (error) {}
+        } catch (error) { }
 
         if (updatedObj !== "process" && showMsg) {
             toastEmitter("Record Saved", true);
@@ -1683,7 +1683,7 @@ export default function DataListTableById(props) {
                     setAllowId("");
                 }
             }
-        } catch (error) {}
+        } catch (error) { }
     }
 
     const EditableCell = ({
@@ -1714,7 +1714,7 @@ export default function DataListTableById(props) {
         );
 
         // We'll only update the external data when the input is blurred
-        const onBlur = useCallback((type, _value) => {}, []);
+        const onBlur = useCallback((type, _value) => { }, []);
 
         const EditableGridRender = useCallback(
             (row, column, value, onChange, onBlur) => {
@@ -2036,298 +2036,296 @@ export default function DataListTableById(props) {
                     />
                     {(tableColumns.length > 0 ||
                         tableColumns !== undefined) && (
-                        <>
-                            <Modal
-                                show={formAndModalConfig.show}
-                                className="s2a-modal data-list-modal"
-                                dialogClassName="modal-style"
-                                size={
-                                    currentAction.modal_size
-                                        ? currentAction.modal_size
-                                        : "lg"
-                                }
-                                fullscreen={
-                                    currentAction.modal_size === "xxl-down"
-                                        ? true
-                                        : false
-                                }
-                                backdrop={"static"}
-                                onEntered={element =>
-                                    element.removeAttribute("tabindex")
-                                }
-                                onHide={handleClose}>
-                                <Modal.Header>
-                                    <Modal.Title className="s2a-form-title">
-                                        <span>{ModalTitle()}</span>
-                                        <div className="flex-between">
-                                            <div
-                                                className="me-2"
-                                                style={{
-                                                    textAlign: "right",
-                                                    paddingRight: "16px",
-                                                    fontSize: "14px",
-                                                }}></div>
-                                            <i
-                                                className="fa-solid fa-xmark modal-close"
-                                                onClick={handleClose}></i>
-                                        </div>
-                                    </Modal.Title>
-                                </Modal.Header>
+                            <>
+                                <Modal
+                                    show={formAndModalConfig.show}
+                                    className="s2a-modal data-list-modal"
+                                    dialogClassName="modal-style"
+                                    size={
+                                        currentAction.modal_size
+                                            ? currentAction.modal_size
+                                            : "lg"
+                                    }
+                                    fullscreen={
+                                        currentAction.modal_size === "xxl-down"
+                                            ? true
+                                            : false
+                                    }
+                                    backdrop={"static"}
+                                    onEntered={element =>
+                                        element.removeAttribute("tabindex")
+                                    }
+                                    onHide={handleClose}>
+                                    <Modal.Header>
+                                        <Modal.Title className="s2a-form-title">
+                                            <span>{ModalTitle()}</span>
+                                            <div className="flex-between">
+                                                <div
+                                                    className="me-2"
+                                                    style={{
+                                                        textAlign: "right",
+                                                        paddingRight: "16px",
+                                                        fontSize: "14px",
+                                                    }}></div>
+                                                <i
+                                                    className="fa-solid fa-xmark modal-close"
+                                                    onClick={handleClose}></i>
+                                            </div>
+                                        </Modal.Title>
+                                    </Modal.Header>
 
-                                <Modal.Body className="">
-                                    <>
-                                        {formAndModalConfig.show && (
-                                            <FormViewerWrap
-                                                formKey={FormKey()}
-                                                businessKey={BusinessKey()}
-                                                handleActions={handleActions}
-                                                fkColumn={fkColumn}
-                                                fkValue={fkValue}
-                                                nextElementId={allowId}
-                                                handleClose={handleClose}
-                                                mode={
-                                                    formAndModalConfig.mode
-                                                        ? formAndModalConfig.mode
-                                                        : undefined
-                                                }
-                                                showTitle={false}
-                                                tenantIdMain={tenantId}
-                                                confirmationMessage={
-                                                    currentAction.enable_modal
-                                                        ? currentAction.confirmation_message
-                                                        : ""
-                                                }
-                                                formVars={
-                                                    formAndModalConfig?.formVars
-                                                }
-                                            />
-                                        )}
-                                    </>
-                                </Modal.Body>
-                            </Modal>
-                            <div className={tableAndFormClass()}>
-                                {formAndModalConfig.type !== "switch" && (
-                                    <div
-                                        className={`datalist-table ${
-                                            formAndModalConfig.type
-                                        } ${
-                                            formAndModalConfig?.aside_position
-                                        } ${tableClasses()}`}>
-                                        {checkArray(tableColumns) && (
-                                            <>
-                                            {/* {hideLabel?"hide":"show"} */}
-                                                {!hideLabel && (
-                                                    <DatalistHeader
-                                                        selectedItem={
-                                                            selectedItem
-                                                        }
-                                                        viewerBtn={viewerBtn}
-                                                        mode={mode}
-                                                        modeType={modeType}
-                                                        selectedRowsLength={
-                                                            selectedRowsLength
-                                                        }
-                                                        hideLabel={hideLabel}
-                                                        hideFormDatalistLabel={
-                                                            hideFormDatalistLabel
-                                                        }
-                                                        rows={
-                                                            dbData ? dbData : []
-                                                        }
-                                                    />
-                                                )}
-
-                                                <DatalistSqlFilters
-                                                    selectedItem={selectedItem}
-                                                    setFilter={setFilter}
-                                                    getDatalistData={
-                                                        getDatalistData
+                                    <Modal.Body className="">
+                                        <>
+                                            {formAndModalConfig.show && (
+                                                <FormViewerWrap
+                                                    formKey={FormKey()}
+                                                    businessKey={BusinessKey()}
+                                                    handleActions={handleActions}
+                                                    fkColumn={fkColumn}
+                                                    fkValue={fkValue}
+                                                    nextElementId={allowId}
+                                                    handleClose={handleClose}
+                                                    mode={
+                                                        formAndModalConfig.mode
+                                                            ? formAndModalConfig.mode
+                                                            : undefined
+                                                    }
+                                                    showTitle={false}
+                                                    tenantIdMain={tenantId}
+                                                    confirmationMessage={
+                                                        currentAction.enable_modal
+                                                            ? currentAction.confirmation_message
+                                                            : ""
+                                                    }
+                                                    formVars={
+                                                        formAndModalConfig?.formVars
                                                     }
                                                 />
+                                            )}
+                                        </>
+                                    </Modal.Body>
+                                </Modal>
+                                <div className={tableAndFormClass()}>
+                                    {formAndModalConfig.type !== "switch" && (
+                                        <div
+                                            className={`datalist-table ${formAndModalConfig.type
+                                                } ${formAndModalConfig?.aside_position
+                                                } ${tableClasses()}`}>
+                                            {checkArray(tableColumns) && (
                                                 <>
-                                                    {/* <PivotTable
+                                                    {/* {hideLabel?"hide":"show"} */}
+                                                    {!hideLabel && (
+                                                        <DatalistHeader
+                                                            selectedItem={
+                                                                selectedItem
+                                                            }
+                                                            viewerBtn={viewerBtn}
+                                                            mode={mode}
+                                                            modeType={modeType}
+                                                            selectedRowsLength={
+                                                                selectedRowsLength
+                                                            }
+                                                            hideLabel={hideLabel}
+                                                            hideFormDatalistLabel={
+                                                                hideFormDatalistLabel
+                                                            }
+                                                            rows={
+                                                                dbData ? dbData : []
+                                                            }
+                                                        />
+                                                    )}
+
+                                                    <DatalistSqlFilters
+                                                        selectedItem={selectedItem}
+                                                        setFilter={setFilter}
+                                                        getDatalistData={
+                                                            getDatalistData
+                                                        }
+                                                    />
+                                                    <>
+                                                        {/* <PivotTable
                                                         data={
                                                             dbData
                                                         }></PivotTable> */}
 
-                                                    {selectedItem.datalist_type ===
-                                                        "TABLE" && (
-                                                        <ReactTable
-                                                            columns={
-                                                                tableColumns
-                                                            }
-                                                            data={
-                                                                dbData
-                                                                    ? dbData
-                                                                    : []
-                                                            }
-                                                            flag={flag}
-                                                            setViewerBtn={
-                                                                setViewerBtn
-                                                            }
-                                                            setFlag={setFlag}
-                                                            setSelectedRowsLength={
-                                                                setSelectedRowsLength
-                                                            }
-                                                            selectedItem={
-                                                                selectedItem
-                                                            }
-                                                            selectedObject={
-                                                                selectedObject
-                                                            }
-                                                            updateMyData={
-                                                                updateMyData
-                                                            }
-                                                            EditableCell={
-                                                                EditableCell
-                                                            }
-                                                            deleteAllAction={
-                                                                deleteAll
-                                                            }
-                                                            selectedExportAction={
-                                                                selectedExport
-                                                            }
-                                                            resetAllFiltersAction={
-                                                                resetAllFilters
-                                                            }
-                                                            handleAddNewAction={
-                                                                handleAddNew
-                                                            }
-                                                            handleListEdit={
-                                                                handleListEdit
-                                                            }
-                                                            viewerBtnAction={
-                                                                viewerBtn
-                                                            }
-                                                            setViewerBtnAction={
-                                                                setViewerBtn
-                                                            }
-                                                            apiResponse={
-                                                                apiResponse
-                                                            }
-                                                            hideActions={
-                                                                hideActions
-                                                            }
-                                                            hideSearch={
-                                                                hideSearch
-                                                            }
-                                                            hidePagination={
-                                                                hidePagination
-                                                            }
-                                                            hideCheckBoxes={
-                                                                hideCheckBoxes
-                                                            }
-                                                            mode={mode}
-                                                        />
-                                                    )}
+                                                        {selectedItem.datalist_type ===
+                                                            "TABLE" && (
+                                                                <ReactTable
+                                                                    columns={
+                                                                        tableColumns
+                                                                    }
+                                                                    data={
+                                                                        dbData
+                                                                            ? dbData
+                                                                            : []
+                                                                    }
+                                                                    flag={flag}
+                                                                    setViewerBtn={
+                                                                        setViewerBtn
+                                                                    }
+                                                                    setFlag={setFlag}
+                                                                    setSelectedRowsLength={
+                                                                        setSelectedRowsLength
+                                                                    }
+                                                                    selectedItem={
+                                                                        selectedItem
+                                                                    }
+                                                                    selectedObject={
+                                                                        selectedObject
+                                                                    }
+                                                                    updateMyData={
+                                                                        updateMyData
+                                                                    }
+                                                                    EditableCell={
+                                                                        EditableCell
+                                                                    }
+                                                                    deleteAllAction={
+                                                                        deleteAll
+                                                                    }
+                                                                    selectedExportAction={
+                                                                        selectedExport
+                                                                    }
+                                                                    resetAllFiltersAction={
+                                                                        resetAllFilters
+                                                                    }
+                                                                    handleAddNewAction={
+                                                                        handleAddNew
+                                                                    }
+                                                                    handleListEdit={
+                                                                        handleListEdit
+                                                                    }
+                                                                    viewerBtnAction={
+                                                                        viewerBtn
+                                                                    }
+                                                                    setViewerBtnAction={
+                                                                        setViewerBtn
+                                                                    }
+                                                                    apiResponse={
+                                                                        apiResponse
+                                                                    }
+                                                                    hideActions={
+                                                                        hideActions
+                                                                    }
+                                                                    hideSearch={
+                                                                        hideSearch
+                                                                    }
+                                                                    hidePagination={
+                                                                        hidePagination
+                                                                    }
+                                                                    hideCheckBoxes={
+                                                                        hideCheckBoxes
+                                                                    }
+                                                                    mode={mode}
+                                                                />
+                                                            )}
+                                                    </>
+                                                    <>
+                                                        {selectedItem.datalist_type ===
+                                                            "EDITABLE-GRID" &&
+                                                            !isEmpty(
+                                                                formComponets,
+                                                            ) && (
+                                                                <ReactTable
+                                                                    columns={
+                                                                        tableColumns
+                                                                    }
+                                                                    data={
+                                                                        dbData
+                                                                            ? dbData
+                                                                            : []
+                                                                    }
+                                                                    flag={flag}
+                                                                    setViewerBtn={
+                                                                        setViewerBtn
+                                                                    }
+                                                                    setFlag={
+                                                                        setFlag
+                                                                    }
+                                                                    setSelectedRowsLength={
+                                                                        setSelectedRowsLength
+                                                                    }
+                                                                    selectedItem={
+                                                                        selectedItem
+                                                                    }
+                                                                    updateMyData={
+                                                                        updateMyData
+                                                                    }
+                                                                    EditableCell={
+                                                                        EditableCell
+                                                                    }
+                                                                    deleteAllAction={
+                                                                        deleteAll
+                                                                    }
+                                                                    selectedExportAction={
+                                                                        selectedExport
+                                                                    }
+                                                                    resetAllFiltersAction={
+                                                                        resetAllFilters
+                                                                    }
+                                                                    handleAddNewAction={
+                                                                        handleAddNew
+                                                                    }
+                                                                    viewerBtnAction={
+                                                                        viewerBtn
+                                                                    }
+                                                                    setViewerBtnAction={
+                                                                        setViewerBtn
+                                                                    }
+                                                                    apiResponse={
+                                                                        apiResponse
+                                                                    }
+                                                                    mode={mode}
+                                                                />
+                                                            )}
+                                                    </>
                                                 </>
-                                                <>
-                                                    {selectedItem.datalist_type ===
-                                                        "EDITABLE-GRID" &&
-                                                        !isEmpty(
-                                                            formComponets,
-                                                        ) && (
-                                                            <ReactTable
-                                                                columns={
-                                                                    tableColumns
-                                                                }
-                                                                data={
-                                                                    dbData
-                                                                        ? dbData
-                                                                        : []
-                                                                }
-                                                                flag={flag}
-                                                                setViewerBtn={
-                                                                    setViewerBtn
-                                                                }
-                                                                setFlag={
-                                                                    setFlag
-                                                                }
-                                                                setSelectedRowsLength={
-                                                                    setSelectedRowsLength
-                                                                }
-                                                                selectedItem={
-                                                                    selectedItem
-                                                                }
-                                                                updateMyData={
-                                                                    updateMyData
-                                                                }
-                                                                EditableCell={
-                                                                    EditableCell
-                                                                }
-                                                                deleteAllAction={
-                                                                    deleteAll
-                                                                }
-                                                                selectedExportAction={
-                                                                    selectedExport
-                                                                }
-                                                                resetAllFiltersAction={
-                                                                    resetAllFilters
-                                                                }
-                                                                handleAddNewAction={
-                                                                    handleAddNew
-                                                                }
-                                                                viewerBtnAction={
-                                                                    viewerBtn
-                                                                }
-                                                                setViewerBtnAction={
-                                                                    setViewerBtn
-                                                                }
-                                                                apiResponse={
-                                                                    apiResponse
-                                                                }
-                                                                mode={mode}
-                                                            />
-                                                        )}
-                                                </>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
-                                {
-                                    <div
-                                        id="form-viewer"
-                                        className={formClasses()}
-                                        ref={asideFormRef}>
-                                        {dbData?.length > 0 &&
-                                            (formAndModalConfig.type ===
-                                                "aside" ||
-                                                formAndModalConfig.type ===
-                                                    "switch") && (
-                                                <div className="form-view-border">
-                                                    <FormViewerWrap
-                                                        formKey={
-                                                            formAndModalConfig.form
-                                                        }
-                                                        businessKey={
-                                                            formAndModalConfig.formId
-                                                        }
-                                                        fkColumn={fkColumn}
-                                                        fkValue={fkValue}
-                                                        handleClose={
-                                                            handleClose
-                                                        }
-                                                        handleActions={
-                                                            handleActions
-                                                        }
-                                                        nextElementId={allowId}
-                                                        mode={
-                                                            formAndModalConfig.mode
-                                                                ? formAndModalConfig.mode
-                                                                : undefined
-                                                        }
-                                                        showTitle={true}
-                                                        formVars={
-                                                            formAndModalConfig?.formVars
-                                                        }
-                                                    />
-                                                </div>
                                             )}
-                                    </div>
-                                }
-                            </div>
-                        </>
-                    )}
+                                        </div>
+                                    )}
+                                    {
+                                        <div
+                                            id="form-viewer"
+                                            className={formClasses()}
+                                            ref={asideFormRef}>
+                                            {dbData?.length > 0 &&
+                                                (formAndModalConfig.type ===
+                                                    "aside" ||
+                                                    formAndModalConfig.type ===
+                                                    "switch") && (
+                                                    <div className="form-view-border">
+                                                        <FormViewerWrap
+                                                            formKey={
+                                                                formAndModalConfig.form
+                                                            }
+                                                            businessKey={
+                                                                formAndModalConfig.formId
+                                                            }
+                                                            fkColumn={fkColumn}
+                                                            fkValue={fkValue}
+                                                            handleClose={
+                                                                handleClose
+                                                            }
+                                                            handleActions={
+                                                                handleActions
+                                                            }
+                                                            nextElementId={allowId}
+                                                            mode={
+                                                                formAndModalConfig.mode
+                                                                    ? formAndModalConfig.mode
+                                                                    : undefined
+                                                            }
+                                                            showTitle={true}
+                                                            formVars={
+                                                                formAndModalConfig?.formVars
+                                                            }
+                                                        />
+                                                    </div>
+                                                )}
+                                        </div>
+                                    }
+                                </div>
+                            </>
+                        )}
                 </div>
             </SqlServiceParams.Provider>
         );
@@ -2362,8 +2360,8 @@ function DatalistHeader(_props) {
         <>
             <div className="s2a-datalist-header row">
                 {modeType.preview === mode ||
-                modeType.render === mode ||
-                modeType.readonly === mode ? (
+                    modeType.render === mode ||
+                    modeType.readonly === mode ? (
                     <>
                         <div className="datalist-title col-sm">
                             <div className="col title-text">
@@ -2374,6 +2372,10 @@ function DatalistHeader(_props) {
                                             selectedItem?.name)}
                                 </span>
                             </div>
+                            <p>{!Boolean(hideFormDatalistLabel) &&
+                                selectedItem &&
+                                (selectedItem?.description)}
+                            </p>
                             <div className="col-sm-1 refresh-count">
                                 {selectedItem &&
                                     selectedItem.refresh_interval && (
