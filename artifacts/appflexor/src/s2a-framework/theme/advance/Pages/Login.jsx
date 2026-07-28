@@ -255,7 +255,7 @@ function Login({
             iconColor: "text-indigo-600",
             title: "Business Events",
             titleColor: "text-indigo-600",
-            desc: "Receive work from Email, WhatsApp, Forms, APIs and Business Applications.",
+            desc: "Receive work from Email, WhatsApp, Forms, APIs and External Systems.",
         },
         {
             icon: "fa-arrows-spin",
@@ -263,7 +263,7 @@ function Login({
             iconColor: "text-violet-600",
             title: "Business Services",
             titleColor: "text-violet-600",
-            desc: "Automate and monitor business processes using AI-powered BPMN workflow automation.",
+            desc: "Automate and monitor business processes using AI-powered workflows.",
         },
         {
             icon: "fa-link",
@@ -286,12 +286,12 @@ function Login({
     const channels = [
         { icon: "fa-envelope", label: "Email" },
         { icon: "fa-whatsapp", label: "WhatsApp", fab: true },
-        { icon: "fa-globe", label: "Portal" },
+        { icon: "fa-globe", label: "Forms" },
         { icon: "fa-code", label: "APIs" },
         { icon: "s2a-channel-logo s2a-channel-logo-odoo", label: "Odoo ERP" },
         { icon: "s2a-channel-logo s2a-channel-logo-quickbooks", label: "QuickBooks" },
         { icon: "s2a-channel-logo s2a-channel-logo-xero", label: "Xero" },
-        { icon: "s2a-channel-logo s2a-channel-logo-kafka", label: "Enterprise Connectors" },
+        { icon: "s2a-channel-logo s2a-channel-logo-kafka", label: "Connectors" },
     ];
 
     /* ── Business services ──────────────────────────────────────── */
