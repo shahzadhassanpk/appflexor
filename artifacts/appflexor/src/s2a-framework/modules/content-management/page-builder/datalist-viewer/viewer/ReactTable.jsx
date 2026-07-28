@@ -197,6 +197,7 @@ export default function ReactTable({
         previousPage,
         setPageSize,
         selectedFlatRows,
+        toggleAllRowsSelected,
         visibleColumns,
         preGlobalFilteredRows,
         setGlobalFilter,
@@ -679,6 +680,21 @@ export default function ReactTable({
         <div
             ref={currentDivRef}
             className="table-container s2a-react-table">
+            {/* Action buttons — above table */}
+            {mode === modeType.render && !hideActions && (
+                <DatalistActionsButtons
+                    deleteAll={deleteAllAction}
+                    selectedExport={selectedExportAction}
+                    resetAllFilters={resetAllFiltersAction}
+                    flag={flag}
+                    handleAddNew={handleAddNewAction}
+                    viewerBtn={viewerBtnAction}
+                    setViewerBtn={setViewerBtnAction}
+                    bulkActions={bulkActions}
+                    executeBulkAction={executeBulkAction}
+                />
+            )}
+
             <ChildrenModal
                 ref={lookupModalRef}
                 resetCallback={resetCallback}
@@ -767,38 +783,61 @@ export default function ReactTable({
                     <DatalistNotification message={message} />
                 )}
             </div>
-            {mode === modeType.render && !hideActions && (
-                <div className="datalist-footer flex-between flex-wrap">
-                    <div className="s2a-datalist-actions">
-                        <DatalistActionsButtons
-                            deleteAll={deleteAllAction}
-                            selectedExport={selectedExportAction}
-                            resetAllFilters={resetAllFiltersAction}
-                            flag={flag}
-                            handleAddNew={handleAddNewAction}
-                            viewerBtn={viewerBtnAction}
-                            setViewerBtn={setViewerBtnAction}
-                            bulkActions={bulkActions}
-                            executeBulkAction={executeBulkAction}
-                        />
-                    </div>
-                    <div className="s2a-datalist-pagination">
-                        {flag.pagination === true && (
-                            <Pagination
-                                gotoPage={gotoPage}
-                                canPreviousPage={canPreviousPage}
-                                previousPage={previousPage}
-                                pageOptions={pageOptions}
-                                pageIndex={pageIndex}
-                                canNextPage={canNextPage}
-                                nextPage={nextPage}
-                                pageCount={pageCount}
-                                pageSize={pageSize}
-                                setPageSize={setPageSize}
-                                pageArray={pageArray}
-                            />
-                        )}
-                    </div>
+            {/* Bulk selection tray — shows when rows are selected */}
+            {mode === modeType.render && selectedFlatRows?.length > 0 && (
+                <div className="s2a-bulk-tray">
+                    <span className="s2a-bulk-count">
+                        {selectedFlatRows.length} Selected
+                    </span>
+                    <div className="s2a-bulk-divider"></div>
+                    {flag.delete === true && (
+                        <button
+                            className="s2a-bulk-btn s2a-bulk-danger"
+                            onClick={deleteAllAction}>
+                            <i className="fa-solid fa-trash"></i> Delete
+                        </button>
+                    )}
+                    {viewerBtnAction?.showExport === true && (
+                        <button
+                            className="s2a-bulk-btn"
+                            onClick={selectedExportAction}>
+                            <i className="fa-solid fa-file-export"></i> Export
+                        </button>
+                    )}
+                    {bulkActions?.map(ba => (
+                        <button
+                            key={ba.id}
+                            className="s2a-bulk-btn"
+                            onClick={() => executeBulkAction(ba)}>
+                            {ba.title}
+                        </button>
+                    ))}
+                    <button
+                        className="s2a-bulk-close"
+                        title="Clear selection"
+                        onClick={() => toggleAllRowsSelected(false)}>
+                        <i className="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            )}
+
+            {/* Pagination */}
+            {mode === modeType.render && flag.pagination === true && (
+                <div className="s2a-dl-footer">
+                    <Pagination
+                        gotoPage={gotoPage}
+                        canPreviousPage={canPreviousPage}
+                        previousPage={previousPage}
+                        pageOptions={pageOptions}
+                        pageIndex={pageIndex}
+                        canNextPage={canNextPage}
+                        nextPage={nextPage}
+                        pageCount={pageCount}
+                        pageSize={pageSize}
+                        setPageSize={setPageSize}
+                        pageArray={pageArray}
+                        totalRows={rows.length}
+                    />
                 </div>
             )}
         </div>

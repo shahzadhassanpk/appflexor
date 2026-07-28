@@ -106,45 +106,39 @@ export const DatalistHeader = props => {
                     {...headerGroup.getHeaderGroupProps()}
                     key={i}>
                     {headerGroup.headers.map((column, i) => {
+                        const isAction = column?.parent?.Header === "Action";
                         return column.hideHeader === false ||
                             column.id === "selection_placeholder_0" ? null : (
                             <th
                                 className={`datalist-header ${column.className}`}
                                 key={i}>
                                 <div className="d-flex">
-                                    {column &&
-                                        column.parent &&
-                                        column.parent.Header !== "Action" &&
-                                        column.hideFilter && (
-                                            <span
-                                                className="me-1 column-filter cursor-pointer"
-                                                onClick={() =>
-                                                    onFilterClick(column)
-                                                }>
-                                                <i
-                                                    className={
-                                                        !column.filterValue
-                                                            ? "fa-solid fa-filter"
-                                                            : "fa-solid fa-filter apply-filter-color"
-                                                    }></i>
-                                            </span>
-                                        )}
+                                    {!isAction && column?.parent && column.hideFilter && (
+                                        <span
+                                            className="me-1 column-filter cursor-pointer"
+                                            onClick={() => onFilterClick(column)}>
+                                            <i
+                                                className={
+                                                    !column.filterValue
+                                                        ? "fa-solid fa-filter"
+                                                        : "fa-solid fa-filter apply-filter-color"
+                                                }></i>
+                                        </span>
+                                    )}
                                     <div
                                         className="sortBy"
                                         {...column.getHeaderProps(
                                             column.getSortByToggleProps(),
                                         )}>
                                         {column.render("Header")}
-                                        {column.isSorted &&
-                                            (column.isSortedDesc ? (
-                                                <span className="ps-1">
-                                                    <i className="fa-solid fa-sort-down"></i>
-                                                </span>
-                                            ) : (
-                                                <span className="ps-1">
-                                                    <i className="fa-solid fa-sort-up"></i>
-                                                </span>
-                                            ))}
+                                        {/* Always-visible sort arrows */}
+                                        {!isAction && column.canSort && (
+                                            <span
+                                                className={`s2a-sort-pair${column.isSorted ? " is-sorted" : ""}`}>
+                                                <i className={`fa-solid fa-sort-up${column.isSorted && !column.isSortedDesc ? "" : ""}`}></i>
+                                                <i className={`fa-solid fa-sort-down${column.isSorted && column.isSortedDesc ? "" : ""}`}></i>
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </th>

@@ -1,27 +1,561 @@
+/* ── Maximized overlay ───────────────────────────────────────────────────── */
 .maximized-view {
   position: fixed !important;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100vw; height: 100vh;
   z-index: 9999;
-  background: #fff;
+  background: var(--bg-surface);
   overflow: auto;
   padding: 1rem;
 }
+.view-controls { position: absolute; top: 10px; right: 10px; z-index: 10000; }
+.btn-maximize { background: transparent; border: none; cursor: pointer; font-size: 20px; color: var(--font-color); }
 
-.view-controls {
+/* ── DatalistHeader toolbar ──────────────────────────────────────────────── */
+.s2a-datalist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 2px 6px;
+}
+
+.s2a-dl-title {
+  font-size: var(--font-size-title-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--font-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.s2a-dl-count {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-muted);
+}
+
+.s2a-dl-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Search wrapper — constrains GlobalFilter (which renders .s2a-global-filter) */
+.s2a-dl-search {
+  flex-shrink: 0;
+}
+
+/* GlobalFilter renders: div.search-input.input-group.s2a-global-filter > i + input */
+.s2a-global-filter {
+  width: 200px !important;
+  flex-wrap: nowrap !important;
+  position: relative;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 6px !important;
+  background: var(--bg-surface) !important;
+  overflow: hidden;
+}
+
+.s2a-global-filter .input-search-icon {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 10000;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 5;
 }
 
-.btn-maximize {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 20px;
+.s2a-global-filter .form-control,
+.s2a-global-filter input {
+  padding: 5px 10px 5px 28px !important;
+  font-size: var(--font-size-sm) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: var(--font-color) !important;
+  outline: none !important;
+  box-shadow: none !important;
+  width: 100% !important;
+  height: 32px;
 }
+.s2a-global-filter:focus-within {
+  border-color: var(--theme-color) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-color) 15%, transparent) !important;
+}
+.s2a-global-filter input::placeholder { color: var(--text-muted) !important; }
+
+.s2a-dl-icon-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  color: var(--font-color);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+  outline: none;
+}
+.s2a-dl-icon-btn:hover { background: var(--bg-hover); }
+.s2a-dl-icon-btn.active { border-color: var(--theme-color); color: var(--theme-color); }
+
+.s2a-dl-filter-dot {
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--theme-color);
+}
+
+/* ── Action button bar ───────────────────────────────────────────────────── */
+.s2a-dl-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0 8px;
+}
+
+.s2a-dl-btn-primary {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px !important;
+  font-size: var(--font-size-sm) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  background: var(--theme-color) !important;
+  color: #fff !important;
+  border: 1px solid var(--theme-color) !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  min-width: unset !important;
+  margin-bottom: 0 !important;
+}
+.s2a-dl-btn-primary:hover { opacity: 0.88; color: #fff !important; background: var(--theme-color) !important; }
+
+.s2a-dl-btn-ghost {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px !important;
+  font-size: var(--font-size-sm) !important;
+  font-weight: var(--font-weight-medium) !important;
+  background: var(--bg-surface) !important;
+  color: var(--font-color) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  transition: background 0.15s;
+  min-width: unset !important;
+  margin-bottom: 0 !important;
+}
+.s2a-dl-btn-ghost:hover { background: var(--bg-hover) !important; color: var(--font-color) !important; }
+
+.s2a-dl-btn-danger {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px !important;
+  font-size: var(--font-size-sm) !important;
+  font-weight: var(--font-weight-medium) !important;
+  background: var(--bg-surface) !important;
+  color: var(--danger) !important;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent) !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  transition: background 0.15s;
+  min-width: unset !important;
+  margin-bottom: 0 !important;
+}
+.s2a-dl-btn-danger:hover { background: var(--danger-soft, #fde7e7) !important; color: var(--danger) !important; }
+
+/* ── Table header typography ─────────────────────────────────────────────── */
+.s2a-table thead.table-header tr:first-child th {
+  background: var(--bg-surface-alt) !important;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border-default) !important;
+  white-space: nowrap;
+}
+
+.s2a-table thead.table-header tr:nth-child(2) th {
+  background: var(--bg-surface-alt) !important;
+  padding: 4px 6px 6px;
+  border-bottom: 1px solid var(--border-default) !important;
+}
+
+/* Sort icons — always visible, muted when unsorted */
+.s2a-sort-pair {
+  display: inline-flex;
+  flex-direction: column;
+  margin-left: 4px;
+  line-height: 1;
+  gap: 0;
+  vertical-align: middle;
+  opacity: 0.3;
+}
+.s2a-sort-pair.is-sorted { opacity: 1; color: var(--theme-color); }
+.s2a-sort-pair i { font-size: 8px; line-height: 1.1; display: block; }
+
+.datalist-header .d-flex { align-items: center; gap: 3px; }
+
+/* Column filter icon */
+.column-filter i { font-size: 9px; color: var(--text-muted); opacity: 0.6; }
+.column-filter:hover i { color: var(--theme-color); opacity: 1; }
+.apply-filter-color { color: var(--theme-color) !important; opacity: 1 !important; }
+
+/* ── Table rows ──────────────────────────────────────────────────────────── */
+.s2a-table tbody tr.table-row { transition: background 0.1s; }
+.s2a-table tbody tr.table-row:hover { background: var(--bg-hover) !important; }
+.s2a-table tbody tr.table-row.row-selected { background: var(--bg-active) !important; }
+
+.s2a-table td.s2a-table-data {
+  padding: 9px 12px;
+  vertical-align: middle;
+  font-size: var(--font-size-sm);
+  color: var(--font-color);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.s2a-table td.s2a-table-data .s2a-cell { min-height: 20px; }
+
+/* ── Boolean pill cells ──────────────────────────────────────────────────── */
+.s2a-bool-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.s2a-bool-pill.s2a-pill-yes {
+  background: var(--success-soft, color-mix(in srgb, var(--success) 12%, var(--bg-surface)));
+  color: var(--success);
+  border: 1px solid color-mix(in srgb, var(--success) 25%, transparent);
+}
+.s2a-bool-pill.s2a-pill-no {
+  background: var(--danger-soft, color-mix(in srgb, var(--danger) 10%, var(--bg-surface)));
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent);
+}
+.s2a-bool-pill.s2a-pill-neutral {
+  background: var(--bg-surface-alt);
+  color: var(--text-muted);
+  border: 1px solid var(--border-default);
+}
+.s2a-bool-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* ── Tag / category pills ────────────────────────────────────────────────── */
+.s2a-tag-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background: var(--bg-surface-alt);
+  color: var(--font-color);
+  border: 1px solid var(--border-default);
+}
+
+/* ── Row-level action column ─────────────────────────────────────────────── */
+.datalist-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.s2a-kebab-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 14px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  outline: none;
+}
+.s2a-kebab-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-default);
+  color: var(--font-color);
+}
+
+/* Bootstrap dropdown overrides using theme vars */
+.dropdown-menu {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.14) !important;
+  border-radius: 8px !important;
+  padding: 4px !important;
+  min-width: 160px !important;
+  color: var(--font-color) !important;
+}
+
+.dropdown-list-item { border-radius: 6px; overflow: visible; }
+
+.dropdown-list-item .dropdown-item,
+.datalist-actions-cell.dropdown-item {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px !important;
+  font-size: var(--font-size-sm) !important;
+  color: var(--font-color) !important;
+  background: transparent !important;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s;
+  white-space: nowrap;
+}
+
+.dropdown-list-item .dropdown-item:hover,
+.datalist-actions-cell.dropdown-item:hover {
+  background: var(--bg-hover) !important;
+  color: var(--font-color) !important;
+}
+
+.dropdown-list-item .dropdown-item.s2a-action-delete,
+.datalist-actions-cell.dropdown-item.s2a-action-delete,
+.datalist-actions-cell.datalist-delete-font.dropdown-item {
+  color: var(--danger) !important;
+}
+.dropdown-list-item .dropdown-item.s2a-action-delete:hover,
+.datalist-actions-cell.dropdown-item.s2a-action-delete:hover,
+.datalist-actions-cell.datalist-delete-font.dropdown-item:hover {
+  background: var(--danger-soft, color-mix(in srgb, var(--danger) 10%, var(--bg-surface))) !important;
+}
+
+.dropdown-divider { border-color: var(--border-subtle) !important; margin: 3px 0 !important; }
+
+.datalist-actions-cell.datalist-edit-font,
+.datalist-actions-cell.datalist-custom-font {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--font-color) !important;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+.datalist-actions-cell.datalist-edit-font:hover,
+.datalist-actions-cell.datalist-custom-font:hover { background: var(--bg-hover); }
+
+.datalist-actions-cell.datalist-delete-font {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--danger) !important;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+.datalist-actions-cell.datalist-delete-font:hover {
+  background: var(--danger-soft, color-mix(in srgb, var(--danger) 10%, var(--bg-surface)));
+}
+
+/* ── Bulk action tray ────────────────────────────────────────────────────── */
+.s2a-bulk-tray {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 9px 14px;
+  background: var(--bg-surface);
+  border-top: 2px solid var(--theme-color);
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
+  animation: s2a-tray-in 0.15s ease;
+}
+@keyframes s2a-tray-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.s2a-bulk-count {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--font-color);
+  white-space: nowrap;
+  margin-right: 2px;
+}
+.s2a-bulk-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-default);
+  flex-shrink: 0;
+}
+.s2a-bulk-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: color 0.1s, background 0.1s;
+}
+.s2a-bulk-close:hover { color: var(--font-color); background: var(--bg-hover); }
+
+.s2a-bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background: transparent;
+  color: var(--font-color);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  outline: none;
+}
+.s2a-bulk-btn:hover { background: var(--bg-hover); }
+.s2a-bulk-btn.s2a-bulk-danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+}
+.s2a-bulk-btn.s2a-bulk-danger:hover {
+  background: var(--danger-soft, color-mix(in srgb, var(--danger) 10%, var(--bg-surface)));
+}
+
+/* ── Pagination bar ──────────────────────────────────────────────────────── */
+.s2a-dl-pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 2px 4px;
+}
+
+.s2a-dl-pag-info {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.s2a-dl-pag-rows {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+.s2a-dl-pag-rows select {
+  padding: 3px 6px;
+  font-size: var(--font-size-sm);
+  background: var(--bg-surface);
+  color: var(--font-color);
+  border: 1px solid var(--border-default);
+  border-radius: 5px;
+  cursor: pointer;
+  outline: none;
+}
+.s2a-dl-pag-rows select:focus { border-color: var(--theme-color); }
+
+.s2a-dl-pag-nav {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.s2a-dl-pag-prev,
+.s2a-dl-pag-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: var(--font-size-sm);
+  background: var(--bg-surface);
+  color: var(--font-color);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  outline: none;
+}
+.s2a-dl-pag-prev:hover:not(:disabled),
+.s2a-dl-pag-next:hover:not(:disabled) { background: var(--bg-hover); }
+.s2a-dl-pag-prev:disabled,
+.s2a-dl-pag-next:disabled { opacity: 0.38; cursor: not-allowed; }
+
+.s2a-dl-pag-num {
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--font-size-sm);
+  background: var(--bg-surface);
+  color: var(--font-color);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s;
+  outline: none;
+}
+.s2a-dl-pag-num:hover { background: var(--bg-hover); }
+.s2a-dl-pag-num.s2a-pag-active {
+  background: var(--theme-color);
+  color: #fff;
+  border-color: var(--theme-color);
+  font-weight: var(--font-weight-semibold);
+}
+
+.s2a-dl-pag-ellipsis {
+  padding: 0 3px;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 30px;
+}
+
+/* ── Datalist footer layout ──────────────────────────────────────────────── */
+.s2a-dl-footer {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 2px;
+}
+
+/* Filter row inputs uniform sizing */
+.s2a-default-filter .form-control,
+.s2a-default-filter .form-select,
+.s2a-default-filter input,
+.s2a-default-filter select {
+  font-size: var(--font-size-xs) !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  padding: 2px 6px !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 4px !important;
+  background: var(--bg-surface) !important;
+  color: var(--font-color) !important;
+  box-shadow: none !important;
+}
+
+/* ── old pagination compat (keep working if referenced) ─────────────────── */
+.pagination { display: none; } /* replaced by s2a-dl-pagination */
