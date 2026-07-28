@@ -15,10 +15,10 @@ export default function DatalistActionsButtons(props) {
 
     return (
         <div className="s2a-dl-actions">
-            {/* ── New (primary) ── */}
+            {/* ── New — primary filled button ── */}
             {flag.add === true && (
                 <button
-                    className="s2a-dl-btn-primary"
+                    className="btn btn-sm s2a-dl-btn-primary"
                     title="Add"
                     onClick={() => handleAddNew(flag)}>
                     <Interweave content={flag?.titles?.add} />
@@ -29,7 +29,7 @@ export default function DatalistActionsButtons(props) {
             {viewerBtn?.showImport === true && flag?.selectedItem?.type !== "SQL" && (
                 <button
                     title="Import"
-                    className="s2a-dl-btn-ghost"
+                    className="btn btn-sm s2a-dl-btn-ghost"
                     onClick={() =>
                         setViewerBtn(prev => ({ ...prev, import: true }))
                     }>
@@ -40,7 +40,7 @@ export default function DatalistActionsButtons(props) {
             {/* ── Export ── */}
             {viewerBtn?.showExport === true && (
                 <button
-                    className="s2a-dl-btn-ghost"
+                    className="btn btn-sm s2a-dl-btn-ghost"
                     title="Export"
                     onClick={() => selectedExport()}>
                     <Interweave content={flag?.titles?.export} />
@@ -50,7 +50,7 @@ export default function DatalistActionsButtons(props) {
             {/* ── Refresh ── */}
             {viewerBtn?.showRefresh === true && (
                 <button
-                    className="s2a-dl-btn-ghost"
+                    className="btn btn-sm s2a-dl-btn-ghost"
                     title="Refresh"
                     onClick={() =>
                         setViewerBtn(prev => ({ ...prev, refresh: true }))
@@ -62,7 +62,7 @@ export default function DatalistActionsButtons(props) {
             {/* ── Reset Filters ── */}
             {viewerBtn?.showReset === true && (
                 <button
-                    className="s2a-dl-btn-ghost"
+                    className="btn btn-sm s2a-dl-btn-ghost"
                     title="Reset All Filters"
                     onClick={() => resetAllFilters()}>
                     <Interweave content={flag?.titles?.resetfilter} />
@@ -74,7 +74,7 @@ export default function DatalistActionsButtons(props) {
                 <button
                     key={bulkAction.id}
                     title={bulkAction.list_title}
-                    className="s2a-dl-btn-ghost"
+                    className="btn btn-sm s2a-dl-btn-ghost"
                     onClick={() => executeBulkAction(bulkAction)}>
                     {bulkAction.title}
                 </button>
