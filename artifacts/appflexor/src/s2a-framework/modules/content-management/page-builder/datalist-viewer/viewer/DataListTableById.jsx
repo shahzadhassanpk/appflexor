@@ -991,7 +991,6 @@ export default function DataListTableById(props) {
                                                     className="datalist-actions-cell datalist-edit-font dropdown-item"
                                                     title={actionKeyValue.edit.list_title || "Edit"}
                                                     onClick={() => handleEdit(cell.row.original, undefined, actionKeyValue.edit)}>
-                                                    <i className="fa-solid fa-pen-to-square"></i>
                                                     <Interweave content={actionKeyValue.edit.title} />
                                                 </div>
                                             </li>
@@ -1004,7 +1003,6 @@ export default function DataListTableById(props) {
                                                     className="datalist-actions-cell datalist-edit-font dropdown-item"
                                                     title={actionKeyValue.save.list_title || "Save"}
                                                     onClick={() => updateDbData(cell.row.original, cell)}>
-                                                    <i className="fa-solid fa-floppy-disk"></i>
                                                     <Interweave content={actionKeyValue.save.title} />
                                                 </div>
                                             </li>
@@ -1061,7 +1059,6 @@ export default function DataListTableById(props) {
                                                     className="datalist-actions-cell datalist-delete-font dropdown-item s2a-action-delete"
                                                     title={actionKeyValue.delete.list_title || "Delete"}
                                                     onClick={() => handleDelete(cell.row.original?.id, undefined, actionKeyValue.delete, cell.row.id, cell.row)}>
-                                                    <i className="fa-solid fa-trash"></i>
                                                     <Interweave content={actionKeyValue.delete.title} />
                                                 </div>
                                             </li>
@@ -2263,23 +2260,24 @@ function DatalistHeader(_props) {
             {/* ── Right: search + icon toolbar ── */}
             {viewerBtn?.flag?.search === true && (
                 <div className="s2a-dl-toolbar">
-                    {/* Global search */}
+                    {/* Global search — GlobalFilter renders its own icon inside */}
                     <div className="s2a-dl-search">
-                        <i className="fa-solid fa-magnifying-glass s2a-dl-search-icon"></i>
                         <GlobalFilter
                             preGlobalFilteredRows={viewerBtn.preGlobalFilteredRows}
                             globalFilter={viewerBtn.globalFilter}
                             setGlobalFilter={viewerBtn.setGlobalFilter}
                         />
-                        {hasActiveSearch && (
-                            <button
-                                className="s2a-dl-search-clear"
-                                onClick={handleClearSearch}
-                                title="Clear search">
-                                <i className="fa-solid fa-xmark"></i>
-                            </button>
-                        )}
                     </div>
+
+                    {/* Refresh icon */}
+                    {viewerBtn?.showRefresh === true && (
+                        <button
+                            className="s2a-dl-icon-btn"
+                            title="Refresh"
+                            onClick={() => viewerBtn?.setGlobalFilter && viewerBtn.setGlobalFilter("")}>
+                            <i className="fa-solid fa-rotate-right"></i>
+                        </button>
+                    )}
 
                     {/* Column chooser icon */}
                     <button className="s2a-dl-icon-btn" title="Column visibility">

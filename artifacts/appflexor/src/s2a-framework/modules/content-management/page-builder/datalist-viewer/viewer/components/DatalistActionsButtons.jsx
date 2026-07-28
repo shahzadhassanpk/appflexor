@@ -21,7 +21,6 @@ export default function DatalistActionsButtons(props) {
                     className="s2a-dl-btn-primary"
                     title="Add"
                     onClick={() => handleAddNew(flag)}>
-                    <i className="fa-solid fa-plus"></i>
                     <Interweave content={flag?.titles?.add} />
                 </button>
             )}
@@ -34,7 +33,6 @@ export default function DatalistActionsButtons(props) {
                     onClick={() =>
                         setViewerBtn(prev => ({ ...prev, import: true }))
                     }>
-                    <i className="fa-solid fa-file-import"></i>
                     <Interweave content={flag?.titles?.import} />
                 </button>
             )}
@@ -45,7 +43,6 @@ export default function DatalistActionsButtons(props) {
                     className="s2a-dl-btn-ghost"
                     title="Export"
                     onClick={() => selectedExport()}>
-                    <i className="fa-solid fa-file-export"></i>
                     <Interweave content={flag?.titles?.export} />
                 </button>
             )}
@@ -58,7 +55,6 @@ export default function DatalistActionsButtons(props) {
                     onClick={() =>
                         setViewerBtn(prev => ({ ...prev, refresh: true }))
                     }>
-                    <i className="fa-solid fa-rotate-right"></i>
                     <Interweave content={flag?.titles?.refresh} />
                 </button>
             )}
@@ -69,7 +65,6 @@ export default function DatalistActionsButtons(props) {
                     className="s2a-dl-btn-ghost"
                     title="Reset All Filters"
                     onClick={() => resetAllFilters()}>
-                    <i className="fa-solid fa-filter-circle-xmark"></i>
                     <Interweave content={flag?.titles?.resetfilter} />
                 </button>
             )}

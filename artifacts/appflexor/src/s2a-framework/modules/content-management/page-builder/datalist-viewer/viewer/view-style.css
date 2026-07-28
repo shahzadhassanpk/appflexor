@@ -42,52 +42,51 @@
   gap: 5px;
 }
 
-/* Search wrapper — GlobalFilter lives inside this */
+/* Search wrapper — constrains GlobalFilter (which renders .s2a-global-filter) */
 .s2a-dl-search {
-  position: relative;
-  display: flex;
-  align-items: center;
+  flex-shrink: 0;
 }
 
-.s2a-dl-search .global-search-input,
-.s2a-dl-search input[type="text"],
-.s2a-dl-search input {
-  padding: 5px 28px 5px 30px !important;
-  font-size: var(--font-size-sm) !important;
+/* GlobalFilter renders: div.search-input.input-group.s2a-global-filter > i + input */
+.s2a-global-filter {
+  width: 200px !important;
+  flex-wrap: nowrap !important;
+  position: relative;
   border: 1px solid var(--border-default) !important;
   border-radius: 6px !important;
   background: var(--bg-surface) !important;
-  color: var(--font-color) !important;
-  width: 210px;
-  outline: none !important;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  box-shadow: none !important;
+  overflow: hidden;
 }
-.s2a-dl-search input:focus { border-color: var(--theme-color) !important; }
-.s2a-dl-search input::placeholder { color: var(--text-muted) !important; }
 
-.s2a-dl-search-icon {
+.s2a-global-filter .input-search-icon {
   position: absolute;
   left: 9px;
-  color: var(--text-muted);
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 11px;
+  color: var(--text-muted);
   pointer-events: none;
-  z-index: 1;
+  z-index: 5;
 }
 
-.s2a-dl-search-clear {
-  position: absolute;
-  right: 7px;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0;
-  font-size: 11px;
-  line-height: 1;
-  z-index: 1;
+.s2a-global-filter .form-control,
+.s2a-global-filter input {
+  padding: 5px 10px 5px 28px !important;
+  font-size: var(--font-size-sm) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: var(--font-color) !important;
+  outline: none !important;
+  box-shadow: none !important;
+  width: 100% !important;
+  height: 32px;
 }
-.s2a-dl-search-clear:hover { color: var(--font-color); }
+.s2a-global-filter:focus-within {
+  border-color: var(--theme-color) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-color) 15%, transparent) !important;
+}
+.s2a-global-filter input::placeholder { color: var(--text-muted) !important; }
 
 .s2a-dl-icon-btn {
   width: 30px;
