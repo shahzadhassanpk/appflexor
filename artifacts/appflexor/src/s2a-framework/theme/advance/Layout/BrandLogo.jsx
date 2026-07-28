@@ -5,12 +5,15 @@ import { AppContext } from "../../../../AppContext";
 import { API_URL, IMAGE_BASE } from "../../../Config";
 import { tryToParse } from "../../../modules/data-management/form-builder/Forms/FormViewer/utils";
 import { Interweave } from "interweave";
+
+const FALLBACK_LOGO_URL = `${import.meta.env.BASE_URL}theme/images/appflexor-logo.png`;
+
 function BrandLogo({}) {
     const appContext = useContext(AppContext);
     let navigate = useNavigate();
 
     const [brand, setBrand] = useState({});
-    const [imageUrl, setImageUrl] = useState("/theme/images/default-logo.png");
+    const [imageUrl, setImageUrl] = useState(FALLBACK_LOGO_URL);
     const tableName = "app_site";
 
     useEffect(() => {
@@ -50,7 +53,7 @@ function BrandLogo({}) {
         if (brand?.brand_logo) {
             imgUrl = `${IMAGE_BASE}/${tableName}/${brand.id}/${brand.brand_logo}?datasource=master`;
         } else {
-            imgUrl = "/theme/images/default-logo.png";
+            imgUrl = FALLBACK_LOGO_URL;
         }
         setImageUrl(imgUrl);
 
@@ -125,6 +128,10 @@ function BrandLogo({}) {
                                 : imageUrl
                         }
                         alt={brand?.brand_title}
+                        onError={event => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = FALLBACK_LOGO_URL;
+                        }}
                     />
                 </span>
                 <div className="navbar-brand d-flex flex-column justify-content-center">

@@ -7,6 +7,8 @@ import SideNavbarMini from "./SideNavbarMini";
 import SideNavbarMobile from "./SideNavbarMobile";
 import TopNavbar from "./TopNavbar";
 
+const FALLBACK_LOGO_URL = `${import.meta.env.BASE_URL}theme/images/appflexor-logo.png`;
+
 const MENU = {
   HOVER: "HOVER",
   FIXED: "FIXED",
@@ -34,8 +36,6 @@ function Layout() {
   // Update favicon when brand changes
   useEffect(() => {
     const brand = appContext.channel;
-    const defaultLogo = "/theme/images/default-logo.png";
-
     if (brand && !isEmpty(brand)) {
       let link = document.querySelector("link[rel~='icon']");
       if (!link) {
@@ -46,7 +46,7 @@ function Layout() {
       link.href =
         brand.brand_logo && brand.brand_logo !== ""
           ? `/file/service/app_site/${brand.id}/${brand.brand_logo}`
-          : defaultLogo;
+          : FALLBACK_LOGO_URL;
     }
   }, [appContext.channel]);
 

@@ -20,6 +20,8 @@ import {
 import DynamicCheckBoxs from "../../../components/dynamic-checkbox/Checkbox";
 import "./login.css";
 
+const LOGIN_FALLBACK_LOGO = `${import.meta.env.BASE_URL}theme/images/appflexor-logo.png`;
+
 function Delayed({ children, waitBeforeShow = 250 }) {
     const [isShown, setIsShown] = useState(false);
     useEffect(() => {
@@ -32,16 +34,13 @@ function Delayed({ children, waitBeforeShow = 250 }) {
 /* ─── Appflexor "A" SVG logo mark ─────────────────────────────────────────── */
 function AppflexorMark({ size = 28 }) {
     return (
-        <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 4L36 34H4L20 4Z" fill="url(#af_grad)" />
-            <path d="M13 28h14M16 22h8" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-            <defs>
-                <linearGradient id="af_grad" x1="4" y1="4" x2="36" y2="34" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#6366f1" />
-                    <stop offset="1" stopColor="#4f46e5" />
-                </linearGradient>
-            </defs>
-        </svg>
+        <img
+            src={LOGIN_FALLBACK_LOGO}
+            alt="AppFlexor"
+            width={size}
+            height={size}
+            className="object-contain"
+        />
     );
 }
 
@@ -334,7 +333,15 @@ function Login({
                             {/* Brand logo */}
                             <div className="s2a-login-brand flex items-center gap-2.5 mb-10">
                                 {logoUrl
-                                    ? <img src={logoUrl} alt={brandTitle} className="h-8 object-contain" />
+                                    ? <img
+                                        src={logoUrl}
+                                        alt={brandTitle}
+                                        className="h-8 object-contain"
+                                        onError={event => {
+                                            event.currentTarget.onerror = null;
+                                            event.currentTarget.src = LOGIN_FALLBACK_LOGO;
+                                        }}
+                                    />
                                     : <AppflexorMark size={30} />}
                                 <span className="text-lg font-bold text-slate-800 tracking-tight">{brandTitle}</span>
                             </div>
@@ -461,7 +468,15 @@ function Login({
                                 <div className="flex flex-col items-center mb-6">
                                     <div className="flex items-center gap-2 mb-1">
                                         {logoUrl
-                                            ? <img src={logoUrl} alt={brandTitle} className="h-7 object-contain" />
+                                            ? <img
+                                                src={logoUrl}
+                                                alt={brandTitle}
+                                                className="h-7 object-contain"
+                                                onError={event => {
+                                                    event.currentTarget.onerror = null;
+                                                    event.currentTarget.src = LOGIN_FALLBACK_LOGO;
+                                                }}
+                                            />
                                             : <AppflexorMark size={26} />}
                                         <span className="text-base font-bold text-slate-800 tracking-tight">{brandTitle}</span>
                                     </div>

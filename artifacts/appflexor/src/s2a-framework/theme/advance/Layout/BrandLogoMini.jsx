@@ -4,6 +4,9 @@ import { AppContext } from "../../../../AppContext";
 import { API_URL, IMAGE_BASE } from "../../../Config";
 import { NAVBAR_STATE } from "../../../contants";
 import { tryToParse } from "../../../modules/data-management/form-builder/Forms/FormViewer/utils";
+
+const FALLBACK_LOGO_URL = `${import.meta.env.BASE_URL}theme/images/appflexor-logo.png`;
+
 function BrandLogoMini({
     children,
     classes = "",
@@ -14,7 +17,7 @@ function BrandLogoMini({
     const appContext = useContext(AppContext);
 
     const [brand, setBrand] = useState({});
-    const [imageUrl, setImageUrl] = useState("/theme/images/default-logo.png");
+    const [imageUrl, setImageUrl] = useState(FALLBACK_LOGO_URL);
     const tableName = "app_site";
     const site_preference = tryToParse(brand?.site_preference);
     const menu_position = site_preference
@@ -48,7 +51,7 @@ function BrandLogoMini({
         if (brand?.brand_logo) {
             imgUrl = `${IMAGE_BASE}/${tableName}/${brand.id}/${brand.brand_logo}?datasource=master`;
         } else {
-            imgUrl = "/theme/images/default-logo.png";
+            imgUrl = FALLBACK_LOGO_URL;
         }
         setImageUrl(imgUrl);
     }
@@ -71,6 +74,10 @@ function BrandLogoMini({
                                     : imageUrl
                             }
                             alt={brand?.brand_title}
+                            onError={event => {
+                                event.currentTarget.onerror = null;
+                                event.currentTarget.src = FALLBACK_LOGO_URL;
+                            }}
                         />
 
                         {typeof children !== "undefined" && (
@@ -107,6 +114,10 @@ function BrandLogoMini({
                                     : imageUrl
                             }
                             alt={brand?.brand_title}
+                            onError={event => {
+                                event.currentTarget.onerror = null;
+                                event.currentTarget.src = FALLBACK_LOGO_URL;
+                            }}
                         />
                     </span>
                     <div className="d-flex flex-column justify-content-center px-2">
