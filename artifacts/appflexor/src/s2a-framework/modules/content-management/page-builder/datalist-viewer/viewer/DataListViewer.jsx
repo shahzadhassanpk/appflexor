@@ -1,5 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useRef, useState, lazy, useContext } from "react";
+import "./view-style.css";
 import { API_URL } from "../../../../../Config";
 import { tryParseJSONObject } from "../../../../../utils/utils";
 import DatalistListing from "../datalist-listing-modal/DatalistListing";
