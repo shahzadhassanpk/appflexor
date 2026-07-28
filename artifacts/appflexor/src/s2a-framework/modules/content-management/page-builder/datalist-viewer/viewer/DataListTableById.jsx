@@ -2239,11 +2239,16 @@ function DatalistHeader(_props) {
     return (
         <div className="s2a-datalist-header">
             {/* ── Left: title + record count ── */}
-            <div className="s2a-dl-title">
+            <div className="s2a-dl-title-wrapper">
+                {!Boolean(hideFormDatalistLabel) && selectedItem && (
+                    <div className="s2a-dl-title">
+                        <span>{selectedItem?.title || selectedItem?.name}</span>
+                        <span className="s2a-dl-count">({totalRecords} records)</span>
+                    </div>
+                )}
                 {!Boolean(hideFormDatalistLabel) && selectedItem && (
                     <>
-                        <span>{selectedItem?.title || selectedItem?.name}</span>
-                        <span className="s2a-dl-count">({totalRecords})</span>
+                        <span>{selectedItem?.description}</span>
                     </>
                 )}
                 {selectedItem?.refresh_interval && (
@@ -2268,27 +2273,27 @@ function DatalistHeader(_props) {
                     </div>
 
                     {/* Refresh icon */}
-                    {viewerBtn?.showRefresh === true && (
+                    {/* {viewerBtn?.showRefresh === true && (
                         <button
                             className="s2a-dl-icon-btn"
                             title="Refresh"
                             onClick={() => viewerBtn?.setGlobalFilter && viewerBtn.setGlobalFilter("")}>
                             <i className="fa-solid fa-rotate-right"></i>
                         </button>
-                    )}
+                    )} */}
 
                     {/* Column chooser icon */}
-                    <button className="s2a-dl-icon-btn" title="Column visibility">
+                    {/* <button className="s2a-dl-icon-btn" title="Column visibility">
                         <i className="fa-solid fa-table-cells-large"></i>
-                    </button>
+                    </button> */}
 
                     {/* Filter indicator */}
-                    <button
+                    {/* <button
                         className={`s2a-dl-icon-btn${hasActiveSearch ? " active" : ""}`}
                         title="Filters active">
                         <i className="fa-solid fa-filter"></i>
                         {hasActiveSearch && <span className="s2a-dl-filter-dot"></span>}
-                    </button>
+                    </button> */}
                 </div>
             )}
         </div>
