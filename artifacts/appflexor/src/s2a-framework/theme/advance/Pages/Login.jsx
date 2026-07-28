@@ -253,7 +253,7 @@ function Login({
             icon: HiInboxArrowDown,
             iconBg: "bg-indigo-100",
             iconColor: "text-indigo-600",
-            title: "Capture",
+            title: "Business Events",
             titleColor: "text-indigo-600",
             desc: "Receive work from Email, WhatsApp, Forms, APIs and Business Applications.",
         },
@@ -261,17 +261,17 @@ function Login({
             icon: "fa-arrows-spin",
             iconBg: "bg-violet-100",
             iconColor: "text-violet-600",
-            title: "Orchestrate",
+            title: "Business Services",
             titleColor: "text-violet-600",
-            desc: "Automate and monitor business processes using AI-powered workflow automation.",
+            desc: "Automate and monitor business processes using AI-powered BPMN workflow automation.",
         },
         {
             icon: "fa-link",
             iconBg: "bg-emerald-100",
             iconColor: "text-emerald-600",
-            title: "Integrate",
+            title: "Enterprise Systems",
             titleColor: "text-emerald-600",
-            desc: "Connect ERP, CRM, Accounting, Messaging and enterprise systems.",
+            desc: "Connect ERP, CRM, Accounting, Ecommerce, and Enterprise Applications.",
         },
     ];
 
@@ -291,17 +291,16 @@ function Login({
         { icon: "s2a-channel-logo s2a-channel-logo-odoo", label: "Odoo ERP" },
         { icon: "s2a-channel-logo s2a-channel-logo-quickbooks", label: "QuickBooks" },
         { icon: "s2a-channel-logo s2a-channel-logo-xero", label: "Xero" },
-        { icon: "s2a-channel-logo s2a-channel-logo-kafka", label: "Legacy Systems" },
+        { icon: "s2a-channel-logo s2a-channel-logo-kafka", label: "Enterprise Connectors" },
     ];
 
     /* ── Business services ──────────────────────────────────────── */
     const services = [        
-        { icon: "fa-shield-halved", label: "Regulatory Compliance" },
-        { icon: "fa-headset", label: "Customer Service" },
-        { icon: "fa-user-tie", label: "Employee Service" },
-        { icon: "fa-building", label: "Vendor Onboarding" },
-        { icon: "fa-coins", label: "Ecommerce Fulfillment" },
-        { icon: "fa-truck", label: "Transport Management" },
+        { icon: "fa-shield-halved", label: "Compliance Management" },
+        { icon: "fa-coins", label: "Financial Reconciliation" },
+        { icon: "fa-cart-shopping", label: "Order Fulfillment" },
+        { icon: "fa-folder-open", label: "Document Management" },
+        { icon: "fa-puzzle-piece", label: "And more..." },
     ];
 
     return (
@@ -356,7 +355,7 @@ function Login({
                             {/* Subtitle */}
                             <p className="s2a-login-intro text-sm text-slate-600 mb-8 leading-6">
                                 Capture business events.<br />
-                                Orchestrate intelligent workflows.<br />
+                                Orchestrate business services.<br />
                                 Integrate enterprise systems.
                             </p>
 

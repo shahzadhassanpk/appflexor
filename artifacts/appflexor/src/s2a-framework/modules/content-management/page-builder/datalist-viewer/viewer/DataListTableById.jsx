@@ -2223,6 +2223,10 @@ function DatalistHeader(_props) {
     } = _props;
 
     const totalRecords = viewerBtn?.listLength ?? 0;
+    const filteredRecords = viewerBtn?.filteredRowCount ?? totalRecords;
+    const recordCountLabel = viewerBtn?.hasActiveFilters
+        ? `${filteredRecords} of ${totalRecords} records`
+        : `${totalRecords} records`;
     const hasActiveSearch = Boolean(viewerBtn?.globalFilter);
 
     const handleClearSearch = () => {
@@ -2243,7 +2247,7 @@ function DatalistHeader(_props) {
                 {!Boolean(hideFormDatalistLabel) && selectedItem && (
                     <div className="s2a-dl-title">
                         <span>{selectedItem?.title || selectedItem?.name}</span>
-                        <span className="s2a-dl-count">({totalRecords} records)</span>
+                        <span className="s2a-dl-count">({recordCountLabel})</span>
                     </div>
                 )}
                 {!Boolean(hideFormDatalistLabel) && selectedItem && (

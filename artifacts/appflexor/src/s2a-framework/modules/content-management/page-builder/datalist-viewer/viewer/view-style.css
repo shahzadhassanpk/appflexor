@@ -38,8 +38,8 @@
 
     /* Typography — unitless values; we use em/rem in the rules below */
     --dl-fs-xs: 0.72rem;
-    --dl-fs-sm: 0.8125rem;
-    --dl-fs-base: 0.875rem;
+    --dl-fs-sm: var(--font-size-base, 0.8125rem);
+    --dl-fs-base: var(--font-size-base, 0.8125rem);
     --dl-fs-title: 0.9375rem;
 
     /* Shape */
@@ -428,7 +428,7 @@
 /* Bootstrap dropdown overrides */
 .dropdown-menu {
     background: var(--dl-bg, #fff) !important;
-    border: 1px solid var(--dl-border) !important;
+    border: 1px solid var(--border-color) !important;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12) !important;
     border-radius: 8px !important;
     padding: 4px !important;
@@ -504,7 +504,7 @@
 }
 
 .dropdown-divider {
-    border-color: var(--dl-border-subtle) !important;
+    border-color: var(--border-color) !important;
     margin: 3px 0 !important;
 }
 

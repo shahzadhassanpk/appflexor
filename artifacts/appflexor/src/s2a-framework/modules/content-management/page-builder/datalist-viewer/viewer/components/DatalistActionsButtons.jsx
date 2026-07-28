@@ -38,14 +38,14 @@ export default function DatalistActionsButtons(props) {
             )}
 
             {/* ── Export ── */}
-            {viewerBtn?.showExport === true && (
+            {/* {viewerBtn?.showExport === true && (
                 <button
                     className="btn btn-sm s2a-dl-btn-ghost"
                     title="Export"
                     onClick={() => selectedExport()}>
                     <Interweave content={flag?.titles?.export} />
                 </button>
-            )}
+            )} */}
 
             {/* ── Refresh ── */}
             {viewerBtn?.showRefresh === true && (

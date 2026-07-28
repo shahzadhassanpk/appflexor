@@ -505,10 +505,6 @@
     font-size: var(--font-size-md);
 }
 
-.datalist-viewer .s2a-datalist-header {
-    margin: 0px !important;
-}
-
 .datalist-viewer .datalist-service-params {
     padding: 10px;
     border: 1px solid var(--border-color);
@@ -1319,10 +1315,10 @@
 
 .datalist .datalist-actions-cell {
     color: #6ea8fe;
-    text-decoration: underline;
+    /* text-decoration: underline; */
     padding: 0px 8px;
     text-wrap: nowrap;
-    border-left: 1px solid var(--border-color);
+    /* border-left: 1px solid var(--font-color); */
     min-width: 40px;
 }
 
@@ -1341,6 +1337,8 @@
 .datalist .datalist-actions-cell:hover {
     color: red;
     text-decoration: none;
+    border-radius: 0px;
+    border-left: 2px solid var(--font-color);
 }
 
 .datalist-edit-font {
@@ -5837,7 +5835,7 @@ chart color picker component
 }
 
 .datalist-viewer .table-header {
-    background-color: var(--secondary-color);
+    background-color: var(--primary-color);
 }
 
 .task-panel .count,
@@ -6438,12 +6436,13 @@ chart color picker component
 }
 
 .s2a-custom-action .s2a-link {
-    text-decoration: underline var(--font-color) solid 1px;
+    text-decoration:none;
+    /* text-decoration: underline var(--font-color) solid 1px; */
     color: var(--font-color);
 }
 
 .s2a-custom-action .s2a-link:hover {
-    text-decoration: underline solid 1px;
+    /* text-decoration: underline solid 1px; */
     cursor: pointer;
 }
 
@@ -6865,10 +6864,11 @@ body.__className_017dd3 {
     background-color: transparent !important;
 }
 
-.view-controls {
+.form-panel .view-controls {
     position: relative;
     text-align: right;
     color: var(--font-color);
+    z-index: 0;
 }
 
 .btn-maximize {

@@ -201,7 +201,13 @@ export default function ReactTable({
         visibleColumns,
         preGlobalFilteredRows,
         setGlobalFilter,
-        state: { pageIndex, pageSize, globalFilter, selectedRowIds },
+        state: {
+            pageIndex,
+            pageSize,
+            globalFilter,
+            selectedRowIds,
+            filters,
+        },
         ...setAllFilters
     } = useTable(
         {
@@ -323,6 +329,29 @@ export default function ReactTable({
             setSelectedRowsLength(0);
         }
     }, [rows]);
+
+    useEffect(() => {
+        const filteredRowCount = rows?.length ?? 0;
+        const hasActiveFilters =
+            Boolean(globalFilter) || Boolean(filters?.length);
+
+        setViewerBtn(previous => {
+            if (
+                previous.filteredRowCount === filteredRowCount &&
+                previous.hasActiveFilters === hasActiveFilters &&
+                previous.globalFilter === globalFilter
+            ) {
+                return previous;
+            }
+
+            return {
+                ...previous,
+                filteredRowCount,
+                hasActiveFilters,
+                globalFilter,
+            };
+        });
+    }, [filters, globalFilter, rows, setViewerBtn]);
 
     useEffect(() => {
         if (flag.defaultpage) {

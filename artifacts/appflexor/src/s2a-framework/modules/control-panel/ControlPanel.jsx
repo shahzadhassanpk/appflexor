@@ -13,22 +13,23 @@ const PANELS = [
         statusOk: true,
         lastActivity: "2m ago",
         stats: [
-            { icon: "fa-solid fa-envelope",                   label: "Emails Today",      value: "247"   },
-            { icon: "fa-brands fa-whatsapp",                  label: "WhatsApp Messages", value: "32"    },
-            { icon: "fa-regular fa-rectangle-list",           label: "Forms",             value: "18"    },
-            { icon: "fa-solid fa-code",                       label: "Active APIs",       value: "6"     },
-            { icon: "fa-solid fa-chart-line",                 label: "Capture Success",   value: "99.8%" },
+            { icon: "fa-solid fa-envelope", label: "Emails Today", value: "247" },
+            // { icon: "fa-brands fa-whatsapp",                  label: "WhatsApp Messages", value: "32"    },
+            { icon: "fa-regular fa-rectangle-list", label: "Forms Submissions", value: "18" },
+            { icon: "fa-solid fa-code", label: "Webhooks Calls", value: "6" },
+            { icon: "fa-solid fa-triangle-exclamation", label: "Capture Failed", value: "2", warn: true },
+            { icon: "fa-solid fa-chart-line", label: "Capture Success", value: "99.8%" },
         ],
         quickActions: [
-            { icon: "fa-solid fa-envelope",  label: "Add Email Connector"    },
-            { icon: "fa-brands fa-whatsapp", label: "Add WhatsApp Connector" },
-            { icon: "fa-solid fa-globe",     label: "Create Portal"          },
-            { icon: "fa-solid fa-code",      label: "Create API"             },
+            { icon: "fa-solid fa-envelope", label: "Email Connectors" },
+            // { icon: "fa-brands fa-whatsapp", label: "WhatsApp Connectors" },
+            { icon: "fa-solid fa-globe", label: "Web Forms" },
+            { icon: "fa-solid fa-code", label: "Webhooks" },
         ],
         recentActivity: [
             { icon: "fa-solid fa-envelope", label: "Customer Support mailbox connected", time: "10m ago" },
-            { icon: "fa-solid fa-globe",    label: "Travel Portal published",            time: "1h ago"  },
-            { icon: "fa-solid fa-link",     label: "Webhook endpoint updated",           time: "3h ago"  },
+            { icon: "fa-solid fa-globe", label: "Travel Portal published", time: "1h ago" },
+            { icon: "fa-solid fa-link", label: "Webhook endpoint updated", time: "3h ago" },
         ],
     },
     {
@@ -41,21 +42,21 @@ const PANELS = [
         statusOk: true,
         lastActivity: "5m ago",
         stats: [
-            { icon: "fa-solid fa-layer-group",              label: "Business Areas",       value: "12"  },
-            { icon: "fa-regular fa-file-lines",             label: "Process Definitions",  value: "84"  },
-            { icon: "fa-solid fa-circle-play",              label: "Running Processes",    value: "235" },
-            { icon: "fa-solid fa-user-check",               label: "User Tasks",           value: "42"  },
-            { icon: "fa-solid fa-triangle-exclamation",     label: "Process Incidents",    value: "2",  warn: true },
+            { icon: "fa-solid fa-layer-group", label: "Business Areas", value: "12" },
+            { icon: "fa-regular fa-file-lines", label: "Process Definitions", value: "84" },
+            { icon: "fa-solid fa-circle-play", label: "Running Processes", value: "235" },
+            { icon: "fa-solid fa-user-check", label: "User Tasks", value: "42" },
+            { icon: "fa-solid fa-triangle-exclamation", label: "Process Incidents", value: "2", warn: true },
         ],
         quickActions: [
-            { icon: "fa-solid fa-layer-group", label: "Create Business Area"    },
-            { icon: "fa-solid fa-folder-plus", label: "Create Process Category" },
-            { icon: "fa-solid fa-rocket",      label: "Deploy Process"          },
+            { icon: "fa-solid fa-layer-group", label: "Business Areas" },
+            { icon: "fa-solid fa-folder-plus", label: "Process Categories" },
+            { icon: "fa-solid fa-rocket", label: "Deploy Process" },
         ],
         recentActivity: [
-            { icon: "fa-solid fa-circle-play",  label: "Customer Complaint workflow deployed", time: "15m ago" },
-            { icon: "fa-regular fa-file-lines", label: "Vendor Onboarding updated",            time: "2h ago"  },
-            { icon: "fa-solid fa-user-check",   label: "Leave Approval published",             time: "5h ago"  },
+            { icon: "fa-solid fa-circle-play", label: "Customer Complaint workflow deployed", time: "15m ago" },
+            { icon: "fa-regular fa-file-lines", label: "Vendor Onboarding updated", time: "2h ago" },
+            { icon: "fa-solid fa-user-check", label: "Leave Approval published", time: "5h ago" },
         ],
     },
     {
@@ -68,20 +69,19 @@ const PANELS = [
         statusOk: false,
         lastActivity: "8m ago",
         stats: [
-            { icon: "fa-solid fa-plug-circle-check",        label: "Active Connectors",   value: "18"    },
-            { icon: "fa-solid fa-globe",                    label: "External Connectors", value: "3"     },
-            { icon: "fa-solid fa-triangle-exclamation",     label: "Failed Syncs",        value: "2",    warn: true },
-            { icon: "fa-solid fa-message",                  label: "Messages Today",      value: "1,248" },
+            { icon: "fa-solid fa-plug-circle-check", label: "Active Connectors", value: "18" },
+            { icon: "fa-solid fa-globe", label: "External Connectors", value: "3" },
+            { icon: "fa-solid fa-triangle-exclamation", label: "Failed Syncs", value: "2", warn: true },
+            { icon: "fa-solid fa-message", label: "Messages Today", value: "1,248" },
         ],
         quickActions: [
-            { icon: "fa-solid fa-plug",  label: "Add Enterprise Connector" },
-            { icon: "fa-solid fa-globe", label: "Add External Connector"   },
-            { icon: "fa-solid fa-link",  label: "Add Webhook"              },
+            { icon: "fa-solid fa-plug", label: "Enterprise Connector" },
+            { icon: "fa-solid fa-globe", label: "External Connector" },
         ],
         recentActivity: [
-            { icon: "fa-solid fa-circle",  label: "Odoo connected",                      time: "20m ago", successDot: true },
-            { icon: "fa-solid fa-gear",    label: "Kafka topic configured",              time: "1h ago"  },
-            { icon: "fa-solid fa-rotate",  label: "QuickBooks synchronization completed", time: "2h ago" },
+            { icon: "fa-solid fa-circle", label: "Odoo connected", time: "20m ago", successDot: true },
+            { icon: "fa-solid fa-gear", label: "Kafka topic configured", time: "1h ago" },
+            { icon: "fa-solid fa-rotate", label: "QuickBooks synchronization completed", time: "2h ago" },
         ],
     },
     {
@@ -94,51 +94,51 @@ const PANELS = [
         statusOk: true,
         lastActivity: "3m ago",
         stats: [
-            { icon: "fa-solid fa-users",                label: "Users",               value: "246" },
-            { icon: "fa-solid fa-shield-halved",        label: "Roles",               value: "18"  },
-            { icon: "fa-solid fa-robot",                label: "AI Providers",        value: "5"   },
-            { icon: "fa-solid fa-receipt",              label: "Active Subscription", value: "1"   },
-            { icon: "fa-solid fa-bell",                 label: "Audit Alerts",        value: "4",  warn: true },
+            { icon: "fa-solid fa-users", label: "Users", value: "246" },
+            { icon: "fa-solid fa-shield-halved", label: "Roles", value: "18" },
+            { icon: "fa-solid fa-brain", label: "AI Providers", value: "5" },
+            { icon: "fa-solid fa-receipt", label: "Active Subscription", value: "1" },
+            { icon: "fa-solid fa-bell", label: "System Alerts", value: "4", warn: true },
         ],
         quickActions: [
-            { icon: "fa-solid fa-user-plus",     label: "Add User"        },
-            { icon: "fa-solid fa-shield-halved", label: "Add Role"        },
-            { icon: "fa-solid fa-robot",         label: "Add AI Provider" },
+            { icon: "fa-solid fa-building", label: "Users, Groups, Organizations"},
+            { icon: "fa-solid fa-brain", label: "AI Provider" },
+            { icon: "fa-solid fa-credit-card", label: "Subscription" },
         ],
         recentActivity: [
-            { icon: "fa-solid fa-user-shield", label: "New administrator added",  time: "30m ago" },
-            { icon: "fa-solid fa-robot",       label: "OpenAI provider updated",  time: "1h ago"  },
-            { icon: "fa-solid fa-receipt",     label: "Subscription renewed",     time: "6h ago"  },
+            { icon: "fa-solid fa-user-shield", label: "New administrator added", time: "30m ago" },
+            { icon: "fa-solid fa-robot", label: "OpenAI provider updated", time: "1h ago" },
+            { icon: "fa-solid fa-receipt", label: "Subscription renewed", time: "6h ago" },
         ],
     },
 ];
 
 /* ─── Shared inline styles using theme CSS vars ────────────────────────────── */
 const sx = {
-    page:        { background: "var(--secondary-color)",         minHeight: "100vh", padding: "1.5rem" },
-    headTitle:   { color: "var(--text-primary)",        fontWeight: 700, fontSize: "1.375rem", margin: 0 },
-    headSub:     { color: "var(--text-muted)",          fontSize: "0.8125rem", marginTop: "0.25rem" },
-    card:        { background: "var(--bg-surface)",     border: "1px solid var(--border-default)", borderRadius: "1rem", boxShadow: "0 1px 4px var(--shadow-color)", display: "flex", flexDirection: "column", overflow: "hidden" },
-    cardHeader:  { padding: "1.25rem 1.25rem 0.75rem" },
-    panelTitle:  { color: "var(--text-primary)",        fontWeight: 700, fontSize: "1.0625rem", lineHeight: 1 },
-    panelLabel:  { color: "var(--text-muted)",          fontSize: "0.7rem" },
-    panelSub:    { color: "var(--text-muted)",          fontSize: "0.75rem", marginTop: "0.5rem" },
-    lastAct:     { color: "var(--text-muted)",          fontSize: "0.7rem", whiteSpace: "nowrap" },
-    statsDivider:{ borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", padding: "0.75rem 1.25rem", display: "flex", flexWrap: "wrap", gap: "1.25rem", alignItems: "center" },
-    statVal:     { color: "var(--text-primary)",        fontWeight: 700, fontSize: "0.875rem", lineHeight: 1 },
-    statWarnVal: { color: "var(--warning)",             fontWeight: 700, fontSize: "0.875rem", lineHeight: 1 },
-    statLabel:   { color: "var(--text-muted)",          fontSize: "0.625rem", marginTop: "0.2rem", lineHeight: 1 },
-    bodyRow:     { display: "flex", flex: 1, borderTop: "1px solid var(--border-subtle)" },
-    colLeft:     { flex: 1, padding: "1rem 1rem 1rem 1.25rem", borderRight: "1px solid var(--border-subtle)" },
-    colRight:    { flex: 1, padding: "1rem 1.25rem 1rem 1rem" },
-    sectionHead: { color: "var(--text-muted)",          fontWeight: 600, fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem" },
-    actLabel:    { color: "var(--text-secondary)",      fontSize: "0.75rem", lineHeight: 1.3 },
-    actTime:     { color: "var(--text-muted)",          fontSize: "0.625rem", whiteSpace: "nowrap" },
-    actIcon:     { color: "var(--text-muted)",          fontSize: "0.7rem", width: "1rem", textAlign: "center", flexShrink: 0, marginTop: "0.125rem" },
-    cardFooter:  { padding: "0.75rem 1.25rem 1.25rem", display: "flex", justifyContent: "flex-end" },
-    viewAll:     { fontSize: "0.7rem", fontWeight: 600, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem", padding: 0, marginTop: "0.75rem" },
-    addBtn:      { background: "none", border: "none", display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.2rem 0", cursor: "pointer", fontSize: "0.75rem", fontWeight: 500, width: "100%", textAlign: "left" },
-    addBtnIcon:  { width: "1.5rem", height: "1.5rem", borderRadius: "0.35rem", border: "1px solid var(--border-default)", background: "var(--bg-surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "0.75rem" },
+    page: { background: "var(--secondary-color)", minHeight: "100vh", padding: "1.5rem" },
+    headTitle: { color: "var(--text-primary)", fontWeight: 700, fontSize: "1.375rem", margin: 0 },
+    headSub: { color: "var(--text-muted)", fontSize: "0.8125rem", marginTop: "0.25rem" },
+    card: { background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: "1rem", boxShadow: "0 1px 4px var(--shadow-color)", display: "flex", flexDirection: "column", overflow: "hidden" },
+    cardHeader: { padding: "1.25rem 1.25rem 0.75rem" },
+    panelTitle: { color: "var(--text-primary)", fontWeight: 700, fontSize: "1.0625rem", lineHeight: 1 },
+    panelLabel: { color: "var(--text-muted)", fontSize: "0.7rem" },
+    panelSub: { color: "var(--text-muted)", fontSize: "0.75rem", marginTop: "0.5rem" },
+    lastAct: { color: "var(--text-muted)", fontSize: "0.7rem", whiteSpace: "nowrap" },
+    statsDivider: { borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", padding: "0.75rem 1.25rem", display: "flex", flexWrap: "wrap", gap: "1.25rem", alignItems: "center" },
+    statVal: { color: "var(--text-primary)", fontWeight: 700, fontSize: "0.875rem", lineHeight: 1 },
+    statWarnVal: { color: "var(--warning)", fontWeight: 700, fontSize: "0.875rem", lineHeight: 1 },
+    statLabel: { color: "var(--text-muted)", fontSize: "0.625rem", marginTop: "0.2rem", lineHeight: 1 },
+    bodyRow: { display: "flex", flex: 1, borderTop: "1px solid var(--border-subtle)" },
+    colLeft: { flex: 1, padding: "1rem 1rem 1rem 1.25rem", borderRight: "1px solid var(--border-subtle)" },
+    colRight: { flex: 1, padding: "1rem 1.25rem 1rem 1rem" },
+    sectionHead: { color: "var(--text-muted)", fontWeight: 600, fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem" },
+    actLabel: { color: "var(--text-secondary)", fontSize: "0.75rem", lineHeight: 1.3 },
+    actTime: { color: "var(--text-muted)", fontSize: "0.625rem", whiteSpace: "nowrap" },
+    actIcon: { color: "var(--text-muted)", fontSize: "0.7rem", width: "1rem", textAlign: "center", flexShrink: 0, marginTop: "0.125rem" },
+    cardFooter: { padding: "0.75rem 1.25rem 1.25rem", display: "flex", justifyContent: "flex-end" },
+    viewAll: { fontSize: "0.7rem", fontWeight: 600, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem", padding: 0, marginTop: "0.75rem" },
+    addBtn: { background: "none", border: "none", display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.2rem 0", cursor: "pointer", fontSize: "0.75rem", fontWeight: 500, width: "100%", textAlign: "left" },
+    addBtnIcon: { width: "1.5rem", height: "1.5rem", borderRadius: "0.35rem", border: "1px solid var(--border-default)", background: "var(--bg-surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "0.75rem" },
 };
 
 /* ─── Status badge ───────────────────────────────────────────────────────────── */
@@ -235,7 +235,7 @@ function PanelCard({ panel }) {
             </div>
 
             {/* Footer */}
-            <div style={sx.cardFooter}>
+            {/* <div style={sx.cardFooter}>
                 <button
                     style={{ background: ac.btn, color: "#fff", fontSize: "0.75rem", fontWeight: 600, padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", boxShadow: "0 1px 3px var(--shadow-color)" }}
                     onMouseEnter={e => e.currentTarget.style.background = ac.btnHover}
@@ -244,7 +244,7 @@ function PanelCard({ panel }) {
                     Open Workspace
                     <i className="fa-solid fa-arrow-right" style={{ fontSize: "0.625rem" }} />
                 </button>
-            </div>
+            </div> */}
         </div>
     );
 }

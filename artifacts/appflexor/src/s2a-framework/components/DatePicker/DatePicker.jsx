@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { DatePicker as MuiDatePicker } from "@mui/x-date-pickers/DatePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TextField } from "@mui/material";
 import { Box } from "@mui/material";
 // import {
@@ -105,38 +107,40 @@ function DateRangePicker(props) {
     };
 
     return (
-        <div className="date-range-picker d-flex justify-content-between gap-2 mt-2">
-            <MuiDatePicker
-                label="Start Date"
-                value={startDate}
-                format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
-                disabled={props.disabled}
-                shouldDisableDate={shouldDisableDate}
-                onChange={handleStartDateChange}
-                slotProps={{
-                    textField: {
-                        size: "small",
-                        fullWidth: true,
-                    },
-                }}
-            />
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <div className="date-range-picker d-flex justify-content-between gap-2 mt-2">
+                <MuiDatePicker
+                    label="Start Date"
+                    value={startDate}
+                    format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
+                    disabled={props.disabled}
+                    shouldDisableDate={shouldDisableDate}
+                    onChange={handleStartDateChange}
+                    slotProps={{
+                        textField: {
+                            size: "small",
+                            fullWidth: true,
+                        },
+                    }}
+                />
 
-            <MuiDatePicker
-                label="End Date"
-                value={endDate}
-                format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
-                disabled={props.disabled}
-                shouldDisableDate={shouldDisableDate}
-                minDate={startDate}
-                onChange={handleEndDateChange}
-                slotProps={{
-                    textField: {
-                        size: "small",
-                        fullWidth: true,
-                    },
-                }}
-            />
-        </div>
+                <MuiDatePicker
+                    label="End Date"
+                    value={endDate}
+                    format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
+                    disabled={props.disabled}
+                    shouldDisableDate={shouldDisableDate}
+                    minDate={startDate}
+                    onChange={handleEndDateChange}
+                    slotProps={{
+                        textField: {
+                            size: "small",
+                            fullWidth: true,
+                        },
+                    }}
+                />
+            </div>
+        </LocalizationProvider>
     );
 }
 // Takes 2 parameters
@@ -171,20 +175,22 @@ function SingleDatePicker(props) {
     };
 
     return (
-        <MuiDatePicker
-            value={date}
-            onChange={newValue => setDate(newValue)}
-            format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
-            disabled={props.disabled}
-            shouldDisableDate={shouldDisableDate}
-            slotProps={{
-                textField: {
-                    size: "small",
-                    fullWidth: true,
-                    variant: "outlined",
-                },
-            }}
-        />
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <MuiDatePicker
+                value={date}
+                onChange={newValue => setDate(newValue)}
+                format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
+                disabled={props.disabled}
+                shouldDisableDate={shouldDisableDate}
+                slotProps={{
+                    textField: {
+                        size: "small",
+                        fullWidth: true,
+                        variant: "outlined",
+                    },
+                }}
+            />
+        </LocalizationProvider>
     );
 }
 

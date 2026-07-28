@@ -364,7 +364,7 @@ body {
     /* padding: 0px !important; */
     font-family: var(--font-family);
     /* font-family: "IBM Plex Sans", sans-serif;   */
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-base);
     font-weight: var(--font-weight-normal);
     line-height: var(--line-height-normal);
     color: var(--text-primary);
@@ -2001,7 +2001,8 @@ pdf-viewer #toolbar {
 }
 
 .button-theme:disabled {
-    color: var(--text-primary) !important;
+    color: var(--text-muted) !important;
+    background-color: var(--primary-color) !important;
 }
 
 .del-btn-theme {
@@ -2473,7 +2474,7 @@ pdf-viewer #toolbar {
     color: var(--text-primary);
     border-bottom: 1px solid var(--border-color);
     background-color: var(--secondary-color) !important;
-    text-decoration: underline;
+    /* text-decoration: underline; */
 }
 
 .dropdown-menu .dropdown-item.active {
