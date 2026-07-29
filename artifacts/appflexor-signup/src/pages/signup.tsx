@@ -1165,6 +1165,7 @@ export default function Signup() {
                       I have read and agree with the{" "}
                       <a
                         href="https://appflexor.com/terms-of-use"
+                        target="_blank"
                         style={{
                           color: "#7c3aed",
                           fontWeight: 500,
@@ -1234,30 +1235,36 @@ export default function Signup() {
                 </form>
               )}
             </div>
-          </div>
-
-          {/* Mobile footer */}
-          <div
-            className="lg:hidden"
-            style={{
-              padding: "14px 24px",
-              borderTop: "1px solid #f3f4f6",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 4,
-              fontSize: 11,
-              color: "#9ca3af",
-            }}
-          >
-            <span>
-             <a href="https://appflexor.com" target="_blank">AppFlexor</a> © <a href="https://step2agility.com">Step 2 Agility</a>. All
-              rights reserved.
-            </span>
-            <div style={{ display: "flex", gap: 10 }}>
-              <a href="https://appflexor.com/privacy" target="_blank" style={{ color: "#9ca3af", textDecoration: "none" }}>
-                Privacy Policy
-              </a>
+            {/* Mobile footer */}
+            <div
+              className="lg:hidden"
+              style={{
+                padding: "14px 24px",
+                borderTop: "1px solid #f3f4f6",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 11,
+                color: "#9ca3af",
+              }}
+            >
+              <span>
+                <a href="https://appflexor.com" target="_blank">
+                  AppFlexor
+                </a>{" "}
+                © <a href="https://step2agility.com">Step 2 Agility</a>. All
+                rights reserved.
+              </span>
+              <div style={{ display: "flex", gap: 10 }}>
+                <a
+                  href="https://appflexor.com/privacy"
+                  target="_blank"
+                  style={{ color: "#9ca3af", textDecoration: "none" }}
+                >
+                  Privacy Policy
+                </a>
+              </div>
             </div>
           </div>
         </div>
