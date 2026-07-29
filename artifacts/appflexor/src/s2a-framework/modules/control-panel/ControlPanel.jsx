@@ -1,5 +1,6 @@
 import React from "react";
 import { HiInboxArrowDown } from "react-icons/hi2";
+import { useNavigate } from "react-router-dom";
 
 /* ─── Panel definitions ──────────────────────────────────────────────────────── */
 const PANELS = [
@@ -21,10 +22,10 @@ const PANELS = [
             { icon: "fa-solid fa-chart-line", label: "Capture Success", value: "99.8%" },
         ],
         quickActions: [
-            { icon: "fa-solid fa-envelope", label: "Email Connectors" },
+            { icon: "fa-solid fa-envelope", label: "Email Connectors", route: "/email-connectors" },
             // { icon: "fa-brands fa-whatsapp", label: "WhatsApp Connectors" },
-            { icon: "fa-solid fa-globe", label: "Web Forms" },
-            { icon: "fa-solid fa-code", label: "Webhooks" },
+            { icon: "fa-solid fa-globe", label: "Web Forms", route: "/web-forms" },
+            { icon: "fa-solid fa-code", label: "Webhooks", route: "/webhooks" },
         ],
         recentActivity: [
             { icon: "fa-solid fa-envelope", label: "Customer Support mailbox connected", time: "10m ago" },
@@ -49,9 +50,9 @@ const PANELS = [
             { icon: "fa-solid fa-triangle-exclamation", label: "Process Incidents", value: "2", warn: true },
         ],
         quickActions: [
-            { icon: "fa-solid fa-layer-group", label: "Business Areas" },
-            { icon: "fa-solid fa-folder-plus", label: "Process Categories" },
-            { icon: "fa-solid fa-rocket", label: "Deploy Process" },
+            { icon: "fa-solid fa-layer-group", label: "Business Areas", route: "/process-configuration" },
+            { icon: "fa-solid fa-folder-plus", label: "Process Categories", route: "/process-configuration" },
+            { icon: "fa-solid fa-rocket", label: "Deploy Process", route: "/process-configuration" },
         ],
         recentActivity: [
             { icon: "fa-solid fa-circle-play", label: "Customer Complaint workflow deployed", time: "15m ago" },
@@ -75,8 +76,8 @@ const PANELS = [
             { icon: "fa-solid fa-message", label: "Messages Today", value: "1,248" },
         ],
         quickActions: [
-            { icon: "fa-solid fa-plug", label: "Enterprise Connector" },
-            { icon: "fa-solid fa-globe", label: "External Connector" },
+            { icon: "fa-solid fa-plug", label: "Enterprise Connector", route: "/enterprise-connector" },
+            { icon: "fa-solid fa-globe", label: "External Connector", route: "/external-connector" },
         ],
         recentActivity: [
             { icon: "fa-solid fa-circle", label: "Odoo connected", time: "20m ago", successDot: true },
@@ -88,7 +89,7 @@ const PANELS = [
         id: "administration",
         icon: "fa-solid fa-gear",
         accent: { bg: "#fff7ed", icon: "#ea580c", btn: "#ea580c", btnHover: "#c2410c", text: "#ea580c", soft: "#ffedd5" },
-        title: "Administration",
+        title: "Administrate",
         subtitle: "Manage platform configuration and security.",
         status: "Healthy",
         statusOk: true,
@@ -101,9 +102,12 @@ const PANELS = [
             { icon: "fa-solid fa-bell", label: "System Alerts", value: "4", warn: true },
         ],
         quickActions: [
-            { icon: "fa-solid fa-building", label: "Users, Groups, Organizations"},
-            { icon: "fa-solid fa-brain", label: "AI Provider" },
-            { icon: "fa-solid fa-credit-card", label: "Subscription" },
+            { icon: "fa-solid fa-building", label: "Users, Groups, Organizations", route: "/user-management" },
+            { icon: "fa-solid fa-globe", label: "Web Sites", route: "/site-administration" },
+            { icon: "fa-solid fa-file-alt", label: "Web Content", route: "/content-management" },
+            { icon: "fa-solid fa-database", label: "Forms, Datalist, SQL APIs", route: "/data-management" },
+            { icon: "fa-solid fa-brain", label: "AI Provider", route: "/ai-providers" },
+            { icon: "fa-solid fa-credit-card", label: "Subscription", route: "/payment-processor" },
         ],
         recentActivity: [
             { icon: "fa-solid fa-user-shield", label: "New administrator added", time: "30m ago" },
@@ -154,6 +158,7 @@ function StatusBadge({ ok }) {
 /* ─── Panel card ─────────────────────────────────────────────────────────────── */
 function PanelCard({ panel }) {
     const ac = panel.accent;
+    const navigate = useNavigate();
 
     return (
         <div style={sx.card}>
@@ -200,7 +205,11 @@ function PanelCard({ panel }) {
                     <p style={sx.sectionHead}>Quick Actions</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                         {panel.quickActions.map(a => (
-                            <button key={a.label} style={{ ...sx.addBtn, color: ac.text }}>
+                            <button
+                                key={a.label}
+                                style={{ ...sx.addBtn, color: ac.text }}
+                                onClick={() => navigate(a.route)}
+                            >
                                 <span style={{ ...sx.addBtnIcon, color: ac.icon }}>
                                     <i className={a.icon} />
                                 </span>

@@ -38,7 +38,7 @@ const TABS = [
     },
 
     {
-        name: "Process Config",
+        name: "Process Configuration",
         code: "PROCESS_MAP",
         active: "false",
     },
@@ -61,6 +61,7 @@ const componentRegistry = {
 function ProcessConfiguration() {
     const [tabs, setTabs] = useState([]);
     const [activeTab, setActiveTab] = useState("");
+    const [refreshKeys, setRefreshKeys] = useState({});
 
     const appContext = useContext(AppContext);
     const { profile, userGroups, featuresSubscription, tenantSubscription } =
@@ -100,6 +101,25 @@ function ProcessConfiguration() {
         setActiveTab(activetab);
         // setTabs(updatedTabs);
     }
+
+    function refreshTable(code) {
+        setRefreshKeys(current => ({
+            ...current,
+            [code]: (current[code] || 0) + 1,
+        }));
+    }
+
+    const renderRefreshButton = code => (
+        <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2"
+            onClick={() => refreshTable(code)}
+            aria-label={`Refresh ${code.toLowerCase().replaceAll("_", " ")} table`}
+            title="Refresh table">
+            <i className="fa-solid fa-rotate-right" aria-hidden="true" />
+            <span>Refresh</span>
+        </button>
+    );
 
     const showProcessDeploymentsTab = tab => {
         if (tab.name !== "Process Deployments") {
@@ -164,43 +184,46 @@ function ProcessConfiguration() {
                                 return (
                                     <>
                                         <div className="row">
-                                            <div className="col-md-6">
-                                                    {hasCategory && (() => {
-                                                        const tab = visible.find(t => t.code === "PROCESS_CATEGORY") || { code: "PROCESS_CATEGORY", name: "Process Categories" };
-                                                        const Component = componentRegistry[tab.code];
-                                                        return (
-                                                            <div className="card mb-3 bg-transparent" key={tab.code}>
-                                                                <div className="card-header border-0">
-                                                                    <strong>{tab.name}</strong>
-                                                                </div>
-                                                                <div className="card-body p-0 bg-transparent">
-                                                                    <Suspense fallback={<Loading message={`Loading ${tab.name}`} />}>
-                                                                        {React.createElement(Component, { key: tab.code, activeTab: tab.code })}
-                                                                    </Suspense>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            <div className="col-md-6">
+                                                                                        <div className="col-md-12">
                                                 {true && (() => {
                                                     const tab = visible.find(t => t.code === "BUSINESS_AREA") || { code: "BUSINESS_AREA", name: "Business Area" };
                                                     const Component = componentRegistry[tab.code];
                                                     if (!Component) return null;
                                                     return (
                                                         <div className="card mb-3 bg-transparent" key={tab.code}>
-                                                            <div className="card-header border-0">
+                                                            <div className="card-header border-0 d-flex align-items-center justify-content-between gap-2">
                                                                 <strong>{tab.name}</strong>
+                                                                {renderRefreshButton(tab.code)}
                                                             </div>
                                                             <div className="card-body p-0 bg-transparent">
                                                                 <Suspense fallback={<Loading message={`Loading ${tab.name}`} />}>
-                                                                    {React.createElement(Component, { key: tab.code, activeTab: tab.code })}
+                                                                    {React.createElement(Component, { key: `${tab.code}-${refreshKeys[tab.code] || 0}`, activeTab: tab.code })}
                                                                 </Suspense>
                                                             </div>
                                                         </div>
                                                     );
                                                 })()}
                                             </div>
+                                            <div className="col-md-12">
+                                                    {hasCategory && (() => {
+                                                        const tab = visible.find(t => t.code === "PROCESS_CATEGORY") || { code: "PROCESS_CATEGORY", name: "Process Categories" };
+                                                        const Component = componentRegistry[tab.code];
+                                                        return (
+                                                            <div className="card mb-3 bg-transparent" key={tab.code}>
+                                                                <div className="card-header border-0 d-flex align-items-center justify-content-between gap-2">
+                                                                    <strong>{tab.name}</strong>
+                                                                    {renderRefreshButton(tab.code)}
+                                                                </div>
+                                                                <div className="card-body p-0 bg-transparent">
+                                                                    <Suspense fallback={<Loading message={`Loading ${tab.name}`} />}>
+                                                                        {React.createElement(Component, { key: `${tab.code}-${refreshKeys[tab.code] || 0}`, activeTab: tab.code })}
+                                                                    </Suspense>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+
                                         </div>
 
                                         {remaining.map(tab => {
@@ -208,12 +231,13 @@ function ProcessConfiguration() {
                                             if (!Component) return null;
                                             return (
                                                 <div className="card mb-3 bg-transparent" key={tab.code}>
-                                                    <div className="card-header border-0">
+                                                    <div className="card-header border-0 d-flex align-items-center justify-content-between gap-2">
                                                         <strong>{tab.name}</strong>
+                                                        {renderRefreshButton(tab.code)}
                                                     </div>
                                                     <div className="card-body p-0 bg-transparent">
                                                         <Suspense fallback={<Loading message={`Loading ${tab.name}`} />}>
-                                                            {React.createElement(Component, { key: tab.code, activeTab: tab.code })}
+                                                            {React.createElement(Component, { key: `${tab.code}-${refreshKeys[tab.code] || 0}`, activeTab: tab.code })}
                                                         </Suspense>
                                                     </div>
                                                 </div>

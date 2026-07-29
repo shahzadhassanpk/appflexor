@@ -82,7 +82,7 @@ body.dark {
     --primary-color: #0f171d;
     --secondary-color: #111b2e;
     --navigation-color: #0f171d;
-    --header-color: #101a2c;
+    --header-color: #16233b;
     --tab-color: #1a2740;
     --shadow-color: rgba(2, 8, 23, 0.45);
     --font-color: #f2f6fc;
@@ -133,7 +133,7 @@ body.light {
     --primary-color: #f4f7fb;
     --secondary-color: #ffffff;
     --border-color: #d7e0ed;
-    --header-color: #ffffff;
+    --header-color: #f0f6ff;
     --accent-primary: #2563eb;
     --accent-primary-hover: #1d4ed8;
     --accent-primary-soft: #e8f0ff;
@@ -145,7 +145,6 @@ body.light {
     --bg-hover: #eaf1fb;
     --bg-active: #dfe9f8;
     --navigation-color: #f4f7fb;
-    --header-color: #ffffff;
     --tab-color: #edf3fb;
 
     /* Borders & Dividers */
@@ -202,10 +201,6 @@ body.light .login-brand-bg {
     background-color: #bdd0fb;
 }
 
-/* body.light :root {
-    --navigation-color: #f0f0f0;
-    --header-color: #bccce0;
-} */
 
 html,
 body {
@@ -357,8 +352,7 @@ select {
 }
 
 body {
-    margin: 0;
-    min-width: 100% !important;
+    margin: auto;
     padding: 0px !important;
     /* padding: 0px !important; */
     font-family: var(--font-family);

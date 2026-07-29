@@ -619,10 +619,10 @@ function Processes({ activeTab }) {
                                                 ? "selected-cell"
                                                 : " "
                                         }`}>
-                                        <Td className="col-sm-3 table-row text-left">
+                                        <Td className="col-sm-2 table-row text-left">
                                             {item.title}
                                         </Td>
-                                        <Td className="col-sm-3 table-row text-left">
+                                        <Td className="col-sm-2 table-row text-left">
                                             {item.process_def_key}
                                         </Td>
                                         <Td className="col-sm-2 table-row text-left">

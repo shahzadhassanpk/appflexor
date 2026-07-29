@@ -27,7 +27,7 @@ const TABS = [
         active: "false",
     },
     {
-        name: "APIs",
+        name: "SQL APIs",
         code: "DATA_APIS",
         active: "false",
     },
