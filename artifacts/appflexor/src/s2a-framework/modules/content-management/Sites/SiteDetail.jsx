@@ -661,21 +661,19 @@ function SiteDetails({
                                 name="landing_page"
                                 value={selectedItem.landing_page}
                                 onChange={handleInputField}
-                            />
-                            {/* <select
-                                className="form-select"
-                                name="landing_page"
-                                value={selectedItem.landing_page}
-                                onChange={handleInputField}>
-                                <option value="">Select Page</option>
-                                {contentList.map((item, index) => (
-                                    <option
-                                        key={index}
-                                        value={item.id}>
-                                        {item.name}
-                                    </option>
-                                ))}
-                            </select> */}
+                            />                            
+                        </div>
+                        <div className="col-sm-12">
+                            <label className="mt-1 fw-bold">
+                                Public Signup Page
+                            </label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                name="signup_page"
+                                value={selectedItem.signup_page}
+                                onChange={handleInputField}
+                            />                            
                         </div>
                         <div className="col-sm-12">
                             <label className="mt-1 fw-bold">

@@ -162,6 +162,13 @@ function Login({
         }
     }
 
+    const isExternalUrl = (url) => {
+        if (!url) return false;
+        return /^https?:\/\//i.test(url);
+    };
+
+
+
     function login(creds) {
         localStorage.removeItem("SHOW_SESSION_TIMEOUT");
         if (keepMeLogin === "YES" || checkCookie()) {
@@ -295,7 +302,7 @@ function Login({
     ];
 
     /* ── Business services ──────────────────────────────────────── */
-    const services = [        
+    const services = [
         { icon: "fa-shield-halved", label: "Compliance Management" },
         { icon: "fa-coins", label: "Financial Reconciliation" },
         { icon: "fa-cart-shopping", label: "Order Fulfillment" },
@@ -366,9 +373,9 @@ function Login({
                                         <div className="flex flex-col items-center">
                                             <div className={`w-14 h-14 ${step.bg} rounded-full flex items-center justify-center shadow-md mb-2`}>
                                                 {typeof step.icon === "string"
-                                    ? <i className={`fa-solid ${step.icon} text-white text-xl`}></i>
-                                    : <step.icon style={{ color: "#fff", fontSize: "1.25rem" }} />
-                                }
+                                                    ? <i className={`fa-solid ${step.icon} text-white text-xl`}></i>
+                                                    : <step.icon style={{ color: "#fff", fontSize: "1.25rem" }} />
+                                                }
                                             </div>
                                             <span className="text-xs font-semibold text-slate-700">{step.label}</span>
                                         </div>
@@ -384,9 +391,9 @@ function Login({
                                         <div className="flex items-start gap-3">
                                             <div className={`w-9 h-9 ${f.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
                                                 {typeof f.icon === "string"
-                                    ? <i className={`fa-solid ${f.icon} ${f.iconColor} text-sm`}></i>
-                                    : <f.icon className={f.iconColor} style={{ fontSize: "1rem" }} />
-                                }
+                                                    ? <i className={`fa-solid ${f.icon} ${f.iconColor} text-sm`}></i>
+                                                    : <f.icon className={f.iconColor} style={{ fontSize: "1rem" }} />
+                                                }
                                             </div>
                                             <div>
                                                 <p className={`text-sm font-semibold ${f.titleColor} mb-1`}>{f.title}</p>
@@ -609,13 +616,13 @@ function Login({
                                 {/* Sign Up button — always visible */}
                                 <p className="mt-2 text-sm text-slate-600">
                                     Don’t have an account?{" "}
-                                    <button
+                                    {isExternalUrl(brand?.signup_page) ? <a href={brand.signup_page} className="text-indigo-600 font-semibold hover:underline">Sign Up</a> : <button
                                         type="button"
-                                        onClick={() => navigate("/register")}
+                                        onClick={() => navigate(brand?.signup_page ? brand.signup_page : "/register")}
                                         className="text-indigo-600 font-semibold hover:underline"
                                     >
                                         Sign Up
-                                    </button>
+                                    </button>}
                                 </p>
 
                                 {/* Guest login */}

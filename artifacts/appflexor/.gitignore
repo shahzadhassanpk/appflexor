@@ -38,6 +38,7 @@ TEST*.xml
 Thumbs.db
 
 # Applications
+*.zip
 *.app
 *.exe
 *.war

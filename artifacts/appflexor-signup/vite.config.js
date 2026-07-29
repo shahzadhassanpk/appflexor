@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT ?? 3002);
-const basePath = process.env.BASE_PATH ?? '/app/';
+const basePath = process.env.BASE_PATH ?? '/signup/';
 
 export default defineConfig({
   base: basePath,

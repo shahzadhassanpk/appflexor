@@ -204,7 +204,7 @@ const COUNTRY_CODES = [
   { code: "+91", label: "India", flag: "🇮🇳" },
   { code: "+92", label: "Pakistan", flag: "🇵🇰" },
   { code: "+65", label: "Singapore", flag: "🇸🇬" },
-  { code: "+971", label: "UAE", flag: "🇦🇪" }
+  { code: "+971", label: "UAE", flag: "🇦🇪" },
 ];
 const EMPLOYEES = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
 
@@ -531,7 +531,49 @@ export default function Signup() {
     agreed: false,
     countryCode: "+1",
   });
-  const [status, setStatus] = useState<null | "idle" | "submitting" | "success" | "error">("idle");
+
+  const logoUrl = logoSrc; // Replace with your logo URL or import
+  const brandTitle = "appflexor";
+
+  function Delayed({ children, waitBeforeShow = 250 }) {
+    const [isShown, setIsShown] = useState(false);
+    useEffect(() => {
+      const timer = setTimeout(() => setIsShown(true), waitBeforeShow);
+      return () => clearTimeout(timer);
+    }, [waitBeforeShow]);
+    return isShown ? children : null;
+  }
+
+  /* ─── Appflexor "A" SVG logo mark ─────────────────────────────────────────── */
+  function AppflexorMark({ size = 28 }) {
+    return (
+      <img
+        src={logoSrc}
+        alt="AppFlexor"
+        width={size}
+        height={size}
+        className="object-contain"
+      />
+    );
+  }
+
+  /* ─── Dotted arrow between flow steps ─────────────────────────────────────── */
+  function DottedArrow() {
+    return (
+      <div className="flex items-center justify-between mx-2 w-full mb-4">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="w-1.5 h-1.5 rounded-full bg-indigo-300 opacity-60"
+          />
+        ))}
+        <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-indigo-400 opacity-70" />
+      </div>
+    );
+  }
+  const [status, setStatus] = useState<
+    null | "idle" | "submitting" | "success" | "error"
+  >("idle");
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -561,6 +603,65 @@ export default function Signup() {
     }
   }
 
+  /* ── Feature cards data ─────────────────────────────────────── */
+  const featureCards = [
+    {
+      icon: HiInboxArrowDown,
+      iconBg: "bg-indigo-100",
+      iconColor: "text-indigo-600",
+      title: "Business Events",
+      titleColor: "text-indigo-600",
+      desc: "Receive work from Email, WhatsApp, Forms, APIs and External Systems.",
+    },
+    {
+      icon: "fa-arrows-spin",
+      iconBg: "bg-violet-100",
+      iconColor: "text-violet-600",
+      title: "Business Services",
+      titleColor: "text-violet-600",
+      desc: "Automate and monitor business processes using AI-powered workflows.",
+    },
+    {
+      icon: "fa-link",
+      iconBg: "bg-emerald-100",
+      iconColor: "text-emerald-600",
+      title: "Enterprise Systems",
+      titleColor: "text-emerald-600",
+      desc: "Connect ERP, CRM, Accounting, Ecommerce, and Enterprise Applications.",
+    },
+  ];
+
+  /* ── Flow steps ─────────────────────────────────────────────── */
+  const flowSteps = [
+    { icon: HiInboxArrowDown, bg: "bg-indigo-600", label: "Capture" },
+    { icon: "fa-arrows-spin", bg: "bg-violet-600", label: "Orchestrate" },
+    { icon: "fa-link", bg: "bg-emerald-600", label: "Integrate" },
+  ];
+
+  /* ── Supported channels ─────────────────────────────────────── */
+  const channels = [
+    { icon: "fa-envelope", label: "Email" },
+    { icon: "fa-whatsapp", label: "WhatsApp", fab: true },
+    { icon: "fa-globe", label: "Forms" },
+    { icon: "fa-code", label: "APIs" },
+    { icon: "s2a-channel-logo s2a-channel-logo-odoo", label: "Odoo ERP" },
+    {
+      icon: "s2a-channel-logo s2a-channel-logo-quickbooks",
+      label: "QuickBooks",
+    },
+    { icon: "s2a-channel-logo s2a-channel-logo-xero", label: "Xero" },
+    { icon: "s2a-channel-logo s2a-channel-logo-kafka", label: "Connectors" },
+  ];
+
+  /* ── Business services ──────────────────────────────────────── */
+  const services = [
+    { icon: "fa-shield-halved", label: "Compliance Management" },
+    { icon: "fa-coins", label: "Financial Reconciliation" },
+    { icon: "fa-cart-shopping", label: "Order Fulfillment" },
+    { icon: "fa-folder-open", label: "Document Management" },
+    { icon: "fa-puzzle-piece", label: "And more..." },
+  ];
+
   return (
     <div
       style={{
@@ -572,15 +673,8 @@ export default function Signup() {
     >
       <div style={{ flex: 1, display: "flex", minHeight: "100vh" }}>
         {/* ══ LEFT PANEL ══ */}
-        <section
-          className="s2a-login-presentation hidden lg:flex w-[58%] flex-col relative overflow-hidden"
-          style={{
-            minHeight: "100vh",
-            background:
-              "radial-gradient(circle at 78% 46%, rgb(255 255 255 / 76%) 0 19%, transparent 42%), linear-gradient(135deg, #f8faff 0%, #f2f4fb 52%, #eef0fa 100%)",
-          }}
-        >
-          {/* Dot grid */}
+        <section className="s2a-login-presentation hidden lg:flex w-[58%] flex-col px-14 py-12 relative overflow-hidden">
+          {/* Subtle dot grid decoration */}
           <div className="s2a-login-dot-grid absolute top-10 right-10 opacity-20 pointer-events-none select-none">
             {[...Array(6)].map((_, r) => (
               <div key={r} className="flex gap-4 mb-4">
@@ -593,9 +687,21 @@ export default function Signup() {
 
           {/* Brand logo */}
           <div className="s2a-login-brand flex items-center gap-2.5 mb-10">
-            <img src={logoSrc} alt="appflexor" className="h-8 object-contain" />
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={brandTitle}
+                className="h-8 object-contain"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = LOGIN_FALLBACK_LOGO;
+                }}
+              />
+            ) : (
+              <AppflexorMark size={30} />
+            )}
             <span className="text-lg font-bold text-slate-800 tracking-tight">
-              appflexor
+              {brandTitle}
             </span>
           </div>
 
@@ -610,24 +716,15 @@ export default function Signup() {
           <p className="s2a-login-intro text-sm text-slate-600 mb-8 leading-6">
             Capture business events.
             <br />
-            Orchestrate intelligent workflows.
+            Orchestrate business services.
             <br />
             Integrate enterprise systems.
           </p>
 
           {/* Flow diagram */}
           <div className="s2a-login-flow flex items-center mb-8">
-            {[
-              { icon: HiInboxArrowDown, bg: "bg-indigo-600", label: "Capture" },
-              {
-                icon: "fa-arrows-spin",
-                bg: "bg-violet-600",
-                label: "Orchestrate",
-              },
-              { icon: "fa-link", bg: "bg-emerald-600", label: "Integrate" },
-            ].map((step, i, arr) => (
+            {flowSteps.map((step, i) => (
               <React.Fragment key={step.label}>
-                {/* Circle + label */}
                 <div className="flex flex-col items-center">
                   <div
                     className={`w-14 h-14 ${step.bg} rounded-full flex items-center justify-center shadow-md mb-2`}
@@ -646,51 +743,14 @@ export default function Signup() {
                     {step.label}
                   </span>
                 </div>
-
-                {/* Arrow only if not last */}
-                {i < arr.length - 1 && (
-                  <div className="flex items-center justify-between mx-2 w-full mb-4">
-                    {[...Array(6)].map((_, j) => (
-                      <div
-                        key={j}
-                        className="w-1.5 h-1.5 rounded-full bg-indigo-300 opacity-60 mx-0.5"
-                      />
-                    ))}
-                    <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-indigo-400 opacity-70 ml-1" />
-                  </div>
-                )}
+                {i < flowSteps.length - 1 && <DottedArrow />}
               </React.Fragment>
             ))}
           </div>
 
           {/* Feature cards */}
           <div className="s2a-login-feature-grid grid grid-cols-3 gap-3 mb-8">
-            {[
-              {
-                icon: HiInboxArrowDown,
-                iconBg: "bg-indigo-100",
-                iconColor: "text-indigo-600",
-                title: "Capture",
-                titleColor: "text-indigo-600",
-                desc: "Receive work from Email, WhatsApp, Forms, APIs and Business Applications.",
-              },
-              {
-                icon: "fa-arrows-spin",
-                iconBg: "bg-violet-100",
-                iconColor: "text-violet-600",
-                title: "Orchestrate",
-                titleColor: "text-violet-600",
-                desc: "Automate and monitor business processes using AI-powered workflow automation.",
-              },
-              {
-                icon: "fa-link",
-                iconBg: "bg-emerald-100",
-                iconColor: "text-emerald-600",
-                title: "Integrate",
-                titleColor: "text-emerald-600",
-                desc: "Connect ERP, CRM, Accounting, Messaging and enterprise systems.",
-              },
-            ].map((f) => (
+            {featureCards.map((f) => (
               <div
                 key={f.title}
                 className="s2a-login-feature-card bg-white rounded-xl border border-slate-200 p-4 shadow-sm"
@@ -729,41 +789,23 @@ export default function Signup() {
               Supported Channels
             </p>
             <div className="flex flex-wrap gap-2">
-              {(
-                [
-                  { icon: "fa-envelope", label: "Email" },
-                  { icon: "fa-whatsapp", label: "WhatsApp", fab: true },
-                  { icon: "fa-globe", label: "Portal" },
-                  { icon: "fa-code", label: "APIs" },
-                  {
-                    logo: "s2a-channel-logo s2a-channel-logo-odoo",
-                    label: "Odoo ERP",
-                  },
-                  {
-                    logo: "s2a-channel-logo s2a-channel-logo-quickbooks",
-                    label: "QuickBooks",
-                  },
-                  {
-                    logo: "s2a-channel-logo s2a-channel-logo-xero",
-                    label: "Xero",
-                  },
-                  {
-                    logo: "s2a-channel-logo s2a-channel-logo-kafka",
-                    label: "Legacy Systems",
-                  },
-                ] as any[]
-              ).map((ch: any) => (
+              {channels.map((ch) => (
                 <span
                   key={ch.label}
                   className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm"
                 >
-                  {ch.logo ? (
-                    <i className={ch.logo} aria-hidden="true" />
-                  ) : (
+                  {ch.fab ? (
+                    <i className={`fa-brands ${ch.icon} text-base`}></i>
+                  ) : ch.icon ? (
                     <i
-                      className={`${ch.fab ? "fa-brands" : "fa-solid"} ${ch.icon} text-base`}
-                    />
-                  )}
+                      className={
+                        ch.icon.includes("s2a-channel-logo")
+                          ? ch.icon
+                          : `fa-solid ${ch.icon} text-base`
+                      }
+                      aria-hidden="true"
+                    ></i>
+                  ) : null}
                   {ch.label}
                 </span>
               ))}
@@ -776,26 +818,29 @@ export default function Signup() {
               Business Services
             </p>
             <div className="flex flex-wrap gap-2">
-              {[
-                { icon: "fa-shield-halved", label: "Regulatory Compliance" },
-                { icon: "fa-headset", label: "Customer Service" },
-                { icon: "fa-user-tie", label: "Employee Service" },
-                { icon: "fa-building", label: "Vendor Onboarding" },
-                { icon: "fa-coins", label: "Ecommerce Fulfillment" },
-                { icon: "fa-truck", label: "Transport Management" },
-              ].map((svc) => (
+              {services.map((svc) => (
                 <span
                   key={svc.label}
                   className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm"
                 >
                   <i
                     className={`fa-solid ${svc.icon} text-indigo-500 text-base`}
+                    aria-hidden="true"
                   ></i>
                   {svc.label}
                 </span>
               ))}
             </div>
           </div>
+
+          {/* Trust badge */}
+          {/* <div className="flex items-start gap-3 bg-white/60 border border-slate-200 rounded-xl px-4 py-3 max-w-lg">
+                                <i className="fa-solid fa-shield-halved text-indigo-500 mt-0.5 flex-shrink-0"></i>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    Trusted for Customer Service, Employee Services, Finance,<br />
+                                    Procurement and Compliance Automation.
+                                </p>
+                            </div> */}
         </section>
 
         {/* ══ RIGHT PANEL (form) ══ */}
@@ -856,307 +901,316 @@ export default function Signup() {
                     Your AppFlexor account request has been received.
                   </h3>
                   <p style={{ marginTop: 12, color: "#374151" }}>
-                    We're preparing your workspace and verifying your organization details. You'll
-                    receive an email shortly with instructions to activate your account.
+                    We're preparing your workspace and verifying your
+                    organization details. You'll receive an email shortly with
+                    instructions to activate your account.
                   </p>
                 </div>
               ) : (
-              <form
-                onSubmit={handleSubmit}
-                style={{ display: "flex", flexDirection: "column", gap: 12 }}
-                data-testid="form-signup"
-              >
-                <Field label="First Name" required>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={form.firstName}
-                    onChange={handleChange}
-                    placeholder="Enter your first name"
-                    style={inp}
-                    data-testid="input-first-name"
-                    required
-                  />
-                </Field>
+                <form
+                  onSubmit={handleSubmit}
+                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                  data-testid="form-signup"
+                >
+                  <Field label="First Name" required>
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={form.firstName}
+                      onChange={handleChange}
+                      placeholder="Enter your first name"
+                      style={inp}
+                      data-testid="input-first-name"
+                      required
+                    />
+                  </Field>
 
-                <Field label="Last Name" required>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={form.lastName}
-                    onChange={handleChange}
-                    placeholder="Enter your last name"
-                    style={inp}
-                    data-testid="input-last-name"
-                    required
-                  />
-                </Field>
+                  <Field label="Last Name" required>
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={form.lastName}
+                      onChange={handleChange}
+                      placeholder="Enter your last name"
+                      style={inp}
+                      data-testid="input-last-name"
+                      required
+                    />
+                  </Field>
 
-                <Field label="Company / Business Name" required>
-                  <input
-                    type="text"
-                    name="company"
-                    value={form.company}
-                    onChange={handleChange}
-                    placeholder="Enter your company or business name"
-                    style={inp}
-                    data-testid="input-company"
-                    required
-                  />
-                </Field>
+                  <Field label="Company / Business Name" required>
+                    <input
+                      type="text"
+                      name="company"
+                      value={form.company}
+                      onChange={handleChange}
+                      placeholder="Enter your company or business name"
+                      style={inp}
+                      data-testid="input-company"
+                      required
+                    />
+                  </Field>
 
-                <Field label="Site Name" required>
-                  <input
-                    type="text"
-                    name="siteName"
-                    value={form.siteName}
-                    onChange={handleChange}
-                    placeholder="Enter your site name"
-                    style={inp}
-                    data-testid="input-site-name"
-                    required
-                  />
-                </Field>
+                  <Field label="Site Name" required>
+                    <input
+                      type="text"
+                      name="siteName"
+                      value={form.siteName}
+                      onChange={handleChange}
+                      placeholder="Enter your site name"
+                      style={inp}
+                      data-testid="input-site-name"
+                      required
+                    />
+                  </Field>
 
-                <Field label="Email" required>
-                  <input
-                    type="email"
-                    name="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="Enter your email"
-                    style={inp}
-                    data-testid="input-email"
-                    required
-                  />
-                </Field>
+                  <Field label="Email" required>
+                    <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="Enter your email"
+                      style={inp}
+                      data-testid="input-email"
+                      required
+                    />
+                  </Field>
 
-                <Field label="Phone" required>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <Field label="Phone" required>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ position: "relative" }}>
+                        <select
+                          name="countryCode"
+                          value={form.countryCode}
+                          onChange={handleChange}
+                          style={{
+                            height: 40,
+                            minWidth: 80,
+                            padding: "0 10px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: 6,
+                            background: "#fff",
+                            fontSize: 13,
+                            color: "#374151",
+                            cursor: "pointer",
+                            appearance: "none",
+                          }}
+                          data-testid="select-country-code"
+                        >
+                          {COUNTRY_CODES.map((c) => (
+                            <option key={c.code + c.label} value={c.code}>
+                              {c.flag} {c.code}
+                            </option>
+                          ))}
+                        </select>
+                        <svg
+                          style={{
+                            position: "absolute",
+                            right: 8,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            pointerEvents: "none",
+                          }}
+                          width="12"
+                          height="12"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="#9ca3af"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </div>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={form.phone}
+                        onChange={handleChange}
+                        placeholder="Enter your phone number"
+                        style={{ ...inp, flex: 1 }}
+                        data-testid="input-phone"
+                        required
+                      />
+                    </div>
+                  </Field>
+
+                  <Field label="No of Employees" required>
                     <div style={{ position: "relative" }}>
                       <select
-                        name="countryCode"
-                        value={form.countryCode}
+                        name="employees"
+                        value={form.employees}
                         onChange={handleChange}
-                        style={{
-                          height: 40,
-                          minWidth: 80,
-                          padding: "0 10px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: 6,
-                          background: "#fff",
-                          fontSize: 13,
-                          color: "#374151",
-                          cursor: "pointer",
-                          appearance: "none",
-                        }}
-                        data-testid="select-country-code"
+                        style={selStyle}
+                        data-testid="select-employees"
+                        required
                       >
-                        {COUNTRY_CODES.map((c) => (
-                          <option key={c.code + c.label} value={c.code}>
-                            {c.flag} {c.code}
+                        <option value="" disabled>
+                          Select number of employees
+                        </option>
+                        {EMPLOYEES.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
                           </option>
                         ))}
                       </select>
                       <svg
                         style={{
                           position: "absolute",
-                          right: 8,
+                          right: 10,
                           top: "50%",
                           transform: "translateY(-50%)",
                           pointerEvents: "none",
                         }}
-                        width="12"
-                        height="12"
+                        width="14"
+                        height="14"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="#9ca3af"
                         strokeWidth="2"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
+                  </Field>
+
+                  <Field label="Web Site (Optional)">
                     <input
-                      type="tel"
-                      name="phone"
-                      value={form.phone}
+                      type="url"
+                      name="website"
+                      value={form.website}
                       onChange={handleChange}
-                      placeholder="Enter your phone number"
-                      style={{ ...inp, flex: 1 }}
-                      data-testid="input-phone"
+                      placeholder="Enter your website"
+                      style={inp}
+                      data-testid="input-website"
+                    />
+                  </Field>
+
+                  <Field label="Country" required>
+                    <div style={{ position: "relative" }}>
+                      <select
+                        name="country"
+                        value={form.country}
+                        onChange={handleChange}
+                        style={selStyle}
+                        data-testid="select-country"
+                        required
+                      >
+                        <option value="" disabled>
+                          Select your country
+                        </option>
+                        {COUNTRIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                      <svg
+                        style={{
+                          position: "absolute",
+                          right: 10,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          pointerEvents: "none",
+                        }}
+                        width="14"
+                        height="14"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="#9ca3af"
+                        strokeWidth="2"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
+                  </Field>
+
+                  {/* Terms */}
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      cursor: "pointer",
+                      marginTop: 2,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      name="agreed"
+                      checked={form.agreed}
+                      onChange={handleChange}
+                      style={{
+                        marginTop: 2,
+                        width: 14,
+                        height: 14,
+                        accentColor: "#7c3aed",
+                      }}
+                      data-testid="checkbox-terms"
                       required
                     />
-                  </div>
-                </Field>
+                    <span style={{ fontSize: 13, color: "#6b7280" }}>
+                      I have read and agree with the{" "}
+                      <a
+                        href="https://appflexor.com/terms-of-use"
+                        style={{
+                          color: "#7c3aed",
+                          fontWeight: 500,
+                          textDecoration: "none",
+                        }}
+                      >
+                        Terms of Use
+                      </a>
+                      . <span style={{ color: "#ef4444" }}>*</span>
+                    </span>
+                  </label>
 
-                <Field label="No of Employees" required>
-                  <div style={{ position: "relative" }}>
-                    <select
-                      name="employees"
-                      value={form.employees}
-                      onChange={handleChange}
-                      style={selStyle}
-                      data-testid="select-employees"
-                      required
-                    >
-                      <option value="" disabled>
-                        Select number of employees
-                      </option>
-                      {EMPLOYEES.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                    <svg
-                      style={{
-                        position: "absolute",
-                        right: 10,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        pointerEvents: "none",
-                      }}
-                      width="14"
-                      height="14"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="#9ca3af"
-                      strokeWidth="2"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                </Field>
-
-                <Field label="Web Site (Optional)">
-                  <input
-                    type="url"
-                    name="website"
-                    value={form.website}
-                    onChange={handleChange}
-                    placeholder="Enter your website"
-                    style={inp}
-                    data-testid="input-website"
-                  />
-                </Field>
-
-                <Field label="Country" required>
-                  <div style={{ position: "relative" }}>
-                    <select
-                      name="country"
-                      value={form.country}
-                      onChange={handleChange}
-                      style={selStyle}
-                      data-testid="select-country"
-                      required
-                    >
-                      <option value="" disabled>
-                        Select your country
-                      </option>
-                      {COUNTRIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                    <svg
-                      style={{
-                        position: "absolute",
-                        right: 10,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        pointerEvents: "none",
-                      }}
-                      width="14"
-                      height="14"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="#9ca3af"
-                      strokeWidth="2"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                </Field>
-
-                {/* Terms */}
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 10,
-                    cursor: "pointer",
-                    marginTop: 2,
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    name="agreed"
-                    checked={form.agreed}
-                    onChange={handleChange}
+                  {/* Sign up button */}
+                  <button
+                    type="submit"
+                    disabled={status === "submitting"}
                     style={{
-                      marginTop: 2,
-                      width: 14,
-                      height: 14,
-                      accentColor: "#7c3aed",
+                      width: "100%",
+                      padding: "11px 0",
+                      borderRadius: 6,
+                      border: "none",
+                      background: "#4f46e5",
+                      color: "#fff",
+                      fontWeight: 600,
+                      fontSize: 15,
+                      cursor: status === "submitting" ? "default" : "pointer",
+                      marginTop: 4,
+                      opacity: status === "submitting" ? 0.7 : 1,
                     }}
-                    data-testid="checkbox-terms"
-                    required
-                  />
-                  <span style={{ fontSize: 13, color: "#6b7280" }}>
-                    I have read and agree with the{" "}
-                    <a
-                      href="#"
-                      style={{
-                        color: "#7c3aed",
-                        fontWeight: 500,
-                        textDecoration: "none",
-                      }}
-                    >
-                      Terms of Use
-                    </a>
-                    . <span style={{ color: "#ef4444" }}>*</span>
-                  </span>
-                </label>
+                    data-testid="button-signup"
+                  >
+                    {status === "submitting" ? "Signing up..." : "Sign up"}
+                  </button>
 
-                {/* Sign up button */}
-                <button
-                  type="submit"
-                  disabled={status === "submitting"}
-                  style={{
-                    width: "100%",
-                    padding: "11px 0",
-                    borderRadius: 6,
-                    border: "none",
-                    background: "#4f46e5",
-                    color: "#fff",
-                    fontWeight: 600,
-                    fontSize: 15,
-                    cursor: status === "submitting" ? "default" : "pointer",
-                    marginTop: 4,
-                    opacity: status === "submitting" ? 0.7 : 1,
-                  }}
-                  data-testid="button-signup"
-                >
-                  {status === "submitting" ? "Signing up..." : "Sign up"}
-                </button>
+                  {status === "success" && (
+                    <p style={{ color: "#16a34a", fontSize: 13, marginTop: 8 }}>
+                      Signup submitted successfully.
+                    </p>
+                  )}
+                  {status === "error" && (
+                    <p style={{ color: "#dc2626", fontSize: 13, marginTop: 8 }}>
+                      Submission failed. Check console for details.
+                    </p>
+                  )}
 
-                {status === "success" && (
-                  <p style={{ color: "#16a34a", fontSize: 13, marginTop: 8 }}>Signup submitted successfully.</p>
-                )}
-                {status === "error" && (
-                  <p style={{ color: "#dc2626", fontSize: 13, marginTop: 8 }}>Submission failed. Check console for details.</p>
-                )}
-
-                {/* <p
+                  {/* <p
                   style={{
                     textAlign: "center",
                     fontSize: 13,
@@ -1177,7 +1231,7 @@ export default function Signup() {
                     Sign in
                   </a>
                 </p> */}
-              </form>
+                </form>
               )}
             </div>
           </div>
@@ -1196,14 +1250,13 @@ export default function Signup() {
               color: "#9ca3af",
             }}
           >
-            <span>© 2024 <a href="https://step2agility.com">Step 2 Agility</a>. All rights reserved.</span>
+            <span>
+             <a href="https://appflexor.com" target="_blank">AppFlexor</a> © <a href="https://step2agility.com">Step 2 Agility</a>. All
+              rights reserved.
+            </span>
             <div style={{ display: "flex", gap: 10 }}>
-              <a href="#" style={{ color: "#9ca3af", textDecoration: "none" }}>
+              <a href="https://appflexor.com/privacy" target="_blank" style={{ color: "#9ca3af", textDecoration: "none" }}>
                 Privacy Policy
-              </a>
-              <span>|</span>
-              <a href="#" style={{ color: "#9ca3af", textDecoration: "none" }}>
-                Terms of Use
               </a>
             </div>
           </div>

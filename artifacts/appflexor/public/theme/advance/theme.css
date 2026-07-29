@@ -219,8 +219,7 @@ body,
     color: var(--text-secondary);
 }
 .page-title,
-.module-title,
-h1 {
+.module-title{
     color: var(--text-primary);
     font-weight: 700;
     font-size: 1.375rem;
