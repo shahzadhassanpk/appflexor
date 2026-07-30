@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Select, { components } from "react-select";
 
 /**
@@ -58,24 +58,6 @@ function ReactSelect(props) {
               .map(findCurrentOption)
               .filter(Boolean)
         : findCurrentOption(selectedOption);
-    const externalSelectionKey = multiSelect
-        ? JSON.stringify(
-              externalValue.map(option => String(option?.[fieldValue])),
-          )
-        : String(externalValue?.[fieldValue] ?? "");
-    const [currentValue, setCurrentValue] = useState(externalValue);
-
-    useEffect(() => {
-        setCurrentValue(externalValue);
-        // Sync only when the external selection changes, not on every options-array render.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [externalSelectionKey]);
-
-    const handleSelectionChange = (newValue, action) => {
-        setCurrentValue(newValue);
-        handleChange(newValue, action);
-    };
-
     const colourStyles = {
         container: provider => ({
             ...provider,
@@ -145,7 +127,7 @@ function ReactSelect(props) {
         return (
             <Select
                 placeholder={placeholder}
-                onChange={handleSelectionChange}
+                onChange={handleChange}
                 getOptionLabel={option => {
                     if (fieldLabel) return option[fieldLabel];
                     return option.label;
@@ -154,7 +136,7 @@ function ReactSelect(props) {
                     if (fieldValue) return option[fieldValue];
                     return option.value;
                 }}
-                value={currentValue}
+                value={externalValue}
                 options={options}
                 isMulti={multiSelect}
                 isDisabled={disabled}
@@ -172,7 +154,7 @@ function ReactSelect(props) {
         <>
         <Select
             placeholder={placeholder}
-            onChange={handleSelectionChange}
+            onChange={handleChange}
             getOptionLabel={option => {
                 if (fieldLabel) return option[fieldLabel];
                 return option.label;
@@ -181,7 +163,7 @@ function ReactSelect(props) {
                 if (fieldValue) return option[fieldValue];
                 return option.value;
             }}
-            value={currentValue}
+            value={externalValue}
             options={options}
             isMulti={multiSelect}
             isDisabled={disabled}

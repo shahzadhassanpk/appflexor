@@ -221,6 +221,18 @@ function getSingleFormValidationSchemaExp(
 
     try {
         layout.map(row => {
+            const rowVisibilityExp = row.visibilityExpression;
+            if (
+                rowVisibilityExp &&
+                !evaluateExpression(
+                    { expression: rowVisibilityExp },
+                    data,
+                    ...expressionProps,
+                )
+            ) {
+                return;
+            }
+
             row.children.map(column => {
                 column.children.map(component => {
                     let foundComponent = components[component.id];
@@ -403,6 +415,18 @@ function getMultiFormValidationSchemaExp(
 
     multipageDesign.map(form => {
         form.design.layout.map(row => {
+            const rowVisibilityExp = row.visibilityExpression;
+            if (
+                rowVisibilityExp &&
+                !evaluateExpression(
+                    { expression: rowVisibilityExp },
+                    data,
+                    ...expressionProps,
+                )
+            ) {
+                return;
+            }
+
             row.children.map(column => {
                 column.children.map(component => {
                     let foundComponent = form.design.components[component.id];

@@ -153,7 +153,7 @@ function CheckBox(props) {
                                     className="m-2 fa-regular fa-pen-to-square mx-1 pointer"
                                     onClick={() => setShow(true)}></span>
                             )}
-                        <div className="form-check">
+                        <div className="form-check mb-0">
                             {props.mode &&
                                 props.modeType &&
                                 (props.mode === props.modeType.design ||

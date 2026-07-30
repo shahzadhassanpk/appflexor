@@ -53,7 +53,11 @@ function Select(props) {
         if (
             componentData.db_column &&
             props.handleInputFields &&
-            defaultValue !== ""
+            defaultValue !== "" &&
+            (props.formData?.id === "new" ||
+                props.formData?.[componentData.db_column] === undefined ||
+                props.formData?.[componentData.db_column] === null ||
+                props.formData?.[componentData.db_column] === "")
         ) {
             let valid = true;
 
@@ -312,14 +316,19 @@ function Select(props) {
             mapValue = props.component.data.mapValue;
         }
 
-        let value = obj[mapValue];
+        const getOptionValue = option =>
+            option?.[mapValue] ?? option?.value ?? option?.id ?? "";
+        const value = Array.isArray(obj)
+            ? obj.map(getOptionValue)
+            : getOptionValue(obj);
 
         setObj(prev => ({
             ...prev,
             [key]: value,
         }));
-        let selection = getObjByValue(value, list, mapValue);
-        setSelectedOption(selection);
+        if (!Array.isArray(obj)) {
+            setSelectedOption(obj);
+        }
         if (props.handleInputFields) {
             props.handleInputFields(
                 componentData.db_column,
@@ -392,13 +401,6 @@ function Select(props) {
                           )
                         : list;
                     setList(filterList);
-                    // set default value exists
-                    if (!isEmpty(props.component.data)) {
-                        let data = props.component.data;
-                        let value = data.value;
-                        let selection = getObjByValue(value, list, mapValue);
-                        setSelectedOption(selection);
-                    }
                 } else {
                     setList([]);
                 }
@@ -454,6 +456,16 @@ function Select(props) {
         return result;
     };
 
+    const selectedValueKey =
+        componentData.use_static === "YES"
+            ? "value"
+            : componentData.mapValue;
+    const formSelectedOption = list.find(
+        option =>
+            String(option?.[selectedValueKey]) ===
+            String(props.formData?.[componentData.db_column]),
+    );
+
     return (
         <ErrorBoundary render={() => Error}>
             {visible && (
@@ -502,7 +514,9 @@ function Select(props) {
                                 <ReactSelect
                                     placeholder="Choose option"
                                     options={list}
-                                    selectedOption={selectedOption}
+                                    selectedOption={
+                                        formSelectedOption || selectedOption
+                                    }
                                     handleChange={handleChange}
                                     fieldLabel={
                                         componentData.use_static === "YES"
