@@ -175,11 +175,36 @@ export default function SelectListPropsEditor({ setShow }) {
     const handleUpdateComponentData = () => {
         let _components = { ...context.components };
         let tempData = _components[currentComponent.id].data;
+        let componentProps = _components[currentComponent.id].props;
 
         if (inputField.use_static === "YES") {
-            // drag and drop options by haider
-            var props = currentComponent.props;
-            props[0].options = JSON.stringify(options);
+            const serializedOptions = JSON.stringify(options);
+            const existingProps = Array.isArray(componentProps)
+                ? componentProps
+                : [];
+            const optionPropIndex = existingProps.findIndex(
+                prop => prop.id === "options" || prop.type === "array",
+            );
+
+            if (optionPropIndex >= 0) {
+                componentProps = existingProps.map((prop, index) =>
+                    index === optionPropIndex
+                        ? { ...prop, options: serializedOptions }
+                        : prop,
+                );
+            } else {
+                componentProps = [
+                    ...existingProps,
+                    {
+                        id: "options",
+                        label: "Static Options",
+                        type: "array",
+                        value: "",
+                        options: serializedOptions,
+                        hidden: false,
+                    },
+                ];
+            }
         }
 
         let strToValidate = inputField["db_column"];
@@ -190,8 +215,7 @@ export default function SelectListPropsEditor({ setShow }) {
         tempData = { ...tempData, ...inputField, db_column: strToValidate };
         _components[currentComponent.id].data = tempData;
         if (inputField.use_static === "YES") {
-            // drag and drop options by haider
-            _components[currentComponent.id].props = props;
+            _components[currentComponent.id].props = componentProps;
         }
         context.setComponents(_components);
     };
