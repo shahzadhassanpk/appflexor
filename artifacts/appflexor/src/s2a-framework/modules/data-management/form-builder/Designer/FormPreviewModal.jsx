@@ -1,11 +1,36 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import FormContext from "../Context/FormContext";
 import { modeType } from "./Designer";
 import RenderPreview from "./RenderPreview";
 
+const PREVIEW_DATA_KEYS = {};
+
 function FormPreviewModal() {
     const formContext = useContext(FormContext);
     const [toggleModalWindow, setToggleModalWindow] = useState("restore");
+    const [previewFormData, setPreviewFormData] = useState({ id: "new" });
+
+    useEffect(() => {
+        if (formContext.renderPreview) {
+            setPreviewFormData({ id: "new" });
+        }
+    }, [formContext.renderPreview]);
+
+    const handlePreviewInput = (name, value, _valid, meta = {}) => {
+        setPreviewFormData(current => {
+            const hasCurrentValue =
+                current[name] !== undefined &&
+                current[name] !== null &&
+                current[name] !== "";
+
+            if (meta.source === "default" && hasCurrentValue) {
+                return current;
+            }
+
+            return { ...current, [name]: value };
+        });
+    };
+
     return (
         <div
             id="form-preview"
@@ -90,7 +115,10 @@ function FormPreviewModal() {
                                 images={formContext.images}
                                 htmlCollection={formContext.htmlCollection}
                                 mode={modeType.preview}
-                                modeType={modeType}></RenderPreview>
+                                modeType={modeType}
+                                formData={previewFormData}
+                                dataKeys={PREVIEW_DATA_KEYS}
+                                handleInputFields={handlePreviewInput}></RenderPreview>
                         ) : null}
                     </div>
                     {/* <div className="modal-footer">

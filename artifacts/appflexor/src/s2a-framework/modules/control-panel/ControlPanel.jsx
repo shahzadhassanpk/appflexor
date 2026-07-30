@@ -106,6 +106,7 @@ const PANELS = [
             { icon: "fa-solid fa-globe", label: "Web Sites", route: "/site-administration" },
             { icon: "fa-solid fa-file-alt", label: "Web Content", route: "/content-management" },
             { icon: "fa-solid fa-database", label: "Forms, Datalist, SQL APIs", route: "/data-management" },
+            { icon: "fa-solid fa-brain", label: "Reports and Analytics", route: "/data-analysis" },
             { icon: "fa-solid fa-brain", label: "AI Provider", route: "/ai-providers" },
             { icon: "fa-solid fa-credit-card", label: "Subscription", route: "/payment-processor" },
         ],

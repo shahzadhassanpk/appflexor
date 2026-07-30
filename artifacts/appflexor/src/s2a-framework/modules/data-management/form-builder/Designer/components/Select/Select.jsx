@@ -61,6 +61,7 @@ function Select(props) {
                 componentData.db_column,
                 defaultValue,
                 valid,
+                { source: "default" },
             );
         }
     }, [defaultValue, props.dataKeys]);
@@ -300,6 +301,8 @@ function Select(props) {
     }, [props.formData, list, render, componentData]);
 
     function handleChange(obj) {
+        if (!obj) return;
+
         let data = props.component.data;
         let key = data.db_column;
         let mapValue = "";
@@ -318,7 +321,12 @@ function Select(props) {
         let selection = getObjByValue(value, list, mapValue);
         setSelectedOption(selection);
         if (props.handleInputFields) {
-            props.handleInputFields(componentData.db_column, value);
+            props.handleInputFields(
+                componentData.db_column,
+                value,
+                true,
+                { source: "change" },
+            );
             // If you want to store the entire selection object
             // props.handleInputFields(componentData.db_column+'_data', JSON.stringify(selection));
             if (props.handleOnFieldBlur) {
@@ -335,7 +343,7 @@ function Select(props) {
 
         list &&
             list.map(item => {
-                if (item[map] === value) {
+                if (String(item[map]) === String(value)) {
                     obj = item;
                 }
             });
@@ -470,7 +478,7 @@ function Select(props) {
                                         <span className="text-danger">
                                             &nbsp;*
                                         </span>
-                                    )}{" "}
+                                    )}{" "} {props?.formData?.connector_type}
                             </label>
                         )}
                     </>

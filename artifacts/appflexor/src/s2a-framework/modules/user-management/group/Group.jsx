@@ -266,7 +266,7 @@ function Group({ activeTab }) {
                     <Table className="s2a-table table-bordered table-hover mb-0">
                         <Thead className="thead">
                             <Tr className="tableHeader">
-                                <Th className="col-sm-3 table-row text-left">
+                                <Th className="col-sm-2 table-row text-left">
                                     <TableSorting
                                         state={filteredItems}
                                         setState={setFilteredItems}
@@ -275,7 +275,7 @@ function Group({ activeTab }) {
                                         activeTab={activeTab.group}
                                     />
                                 </Th>
-                                <Th className="col-sm-3 table-row text-left">
+                                <Th className="col-sm-2 table-row text-left">
                                     <TableSorting
                                         state={filteredItems}
                                         setState={setFilteredItems}
@@ -284,7 +284,7 @@ function Group({ activeTab }) {
                                         activeTab={activeTab.group}
                                     />
                                 </Th>
-                                <Th className="col-sm-3 table-row text-left">
+                                <Th className="col-sm-2 table-row text-left">
                                     <TableSorting
                                         state={filteredItems}
                                         setState={setFilteredItems}
@@ -293,7 +293,7 @@ function Group({ activeTab }) {
                                         activeTab={activeTab.group}
                                     />
                                 </Th>
-                                <Th className="col-sm-4 table-row text-left">
+                                <Th className="col-sm-3 table-row text-left">
                                     <TableSorting
                                         state={filteredItems}
                                         setState={setFilteredItems}
@@ -302,7 +302,7 @@ function Group({ activeTab }) {
                                         activeTab={activeTab.group}
                                     />
                                 </Th>
-                                <Th className="col-sm-1 table-row text-left">
+                                <Th className="col-sm-2 table-row text-left">
                                     <TableSorting
                                         state={filteredItems}
                                         setState={setFilteredItems}
@@ -325,27 +325,27 @@ function Group({ activeTab }) {
                                                 ? "selected-cell"
                                                 : " "
                                         }`}>
-                                        <Td className="col-sm-3 table-row text-left">
+                                        <Td className="col-sm-2 table-row text-left">
                                             <div className="data-cell">
                                                 {item.name}
                                             </div>
                                         </Td>
-                                        <Td className="col-sm-3 table-row text-left">
+                                        <Td className="col-sm-2 table-row text-left">
                                             <div className="data-cell">
                                                 {item.code}
                                             </div>
                                         </Td>
-                                        <Td className="col-sm-3 table-row text-left">
+                                        <Td className="col-sm-2 table-row text-left">
                                             <div className="data-cell">
                                                 {item.category}
                                             </div>
                                         </Td>
-                                        <Td className="col-sm-4 table-row text-left">
+                                        <Td className="col-sm-3 table-row text-left">
                                             <div className="data-cell">
                                                 {item.description}
                                             </div>
                                         </Td>
-                                        <Td className="col-sm-1 table-row text-left">
+                                        <Td className="col-sm-2 table-row text-left">
                                             <div className="data-cell">
                                                 {item.type}
                                             </div>
@@ -385,7 +385,7 @@ function Group({ activeTab }) {
                 </div>
             </div>
             <div className="row m-0">
-                <div className="col-sm-8 p-0">
+                <div className="col-sm-7 p-0">
                     <span
                         type="button"
                         className="button-theme btn btn-sm pull-left my-2"

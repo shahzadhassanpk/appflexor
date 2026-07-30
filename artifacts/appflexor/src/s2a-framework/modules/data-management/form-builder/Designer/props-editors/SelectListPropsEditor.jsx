@@ -8,6 +8,7 @@ import { ErrorBoundary } from "../../../../../utils/ErrorBoundry";
 import { makeid, tryParseJSONObject } from "../../../../../utils/utils";
 import DesignerContext from "../../Context/DesignerContext";
 import { moveChecker } from "./utils";
+import "./props-editors.css";
 
 export default function SelectListPropsEditor({ setShow }) {
     const context = useContext(DesignerContext);
@@ -205,82 +206,22 @@ export default function SelectListPropsEditor({ setShow }) {
         currentState.push(newOption);
 
         setOptions(currentState);
-        let fieldId = "array";
-
-        let str = JSON.stringify(currentState);
-        handleRadioOptions(str, fieldId);
     }
 
-    function handleRadioOptions(radioList) {
-        // let _radioList = [];
-        // let arr = [...radioList];
-
-        // arr.map((opt) => {
-        //     delete opt.id;
-        //     _radioList.push(opt);
-        // });
-        let _components = { ...context.components };
-
-        let componentProps = _components[currentComponent.id].props;
-        let newProps = [];
-
-        if (isEmpty(componentProps)) {
-            let prop = {
-                id: "options",
-                label: "Static Options",
-                type: "array",
-                value: "",
-                options: "",
-                hidden: false,
-            };
-            let temp = prop;
-            temp.options = radioList;
-            newProps.push(temp);
-        } else {
-            componentProps &&
-                componentProps.map(props => {
-                    let temp = props;
-                    temp.options = radioList;
-                    newProps.push(temp);
-                });
-        }
-
-        _components[currentComponent.id].props = newProps;
-        context.setComponents(_components);
-    }
-
-    function handleOptionsChange(e, fieldId) {
-        // ;
+    function handleOptionsChange(e) {
         let id = e.target.getAttribute("data-id");
         let value = e.target.value;
         let name = e.target.name;
 
-        let _updatedArr = [];
-
-        options &&
-            options.map(opt => {
-                if (opt.id === id) {
-                    let obj = opt;
-                    obj[name] = value;
-
-                    _updatedArr.push(obj);
-                } else {
-                    _updatedArr.push(opt);
-                }
-            });
+        const _updatedArr = options.map(opt =>
+            opt.id === id ? { ...opt, [name]: value } : opt,
+        );
         setOptions(_updatedArr);
-        let str = JSON.stringify(_updatedArr);
-        handleRadioOptions(str, fieldId);
     }
 
-    function handleRadioOptDelete(option, fieldId) {
-        let _updatedArr = [];
-
-        _updatedArr = options.filter(opt => opt.id !== option.id);
-
+    function handleRadioOptDelete(option) {
+        const _updatedArr = options.filter(opt => opt.id !== option.id);
         setOptions(_updatedArr);
-        let str = JSON.stringify(_updatedArr);
-        handleRadioOptions(str, fieldId);
     }
 
     function handleCheckListOptions(checkList, fieldId) {
@@ -624,8 +565,11 @@ export default function SelectListPropsEditor({ setShow }) {
                                     options.map((option, index) => {
                                         const accordionId =
                                             "accord" + option?.id;
+                                        const collapseId =
+                                            "option-" + option?.id;
                                         return (
                                             <DndCard
+                                                key={option.id}
                                                 id={option.id}
                                                 index={index}
                                                 setItems={setOptions}
@@ -644,15 +588,16 @@ export default function SelectListPropsEditor({ setShow }) {
                                                                     moveChecker(
                                                                         accordionId,
                                                                         setMoveCard,
-                                                                    )
+                                                                )
                                                                 }
                                                                 data-bs-toggle="collapse"
-                                                                data-bs-target={`#a${index}`}>
+                                                                data-bs-target={`#${collapseId}`}
+                                                                aria-controls={collapseId}>
                                                                 {option.label}
                                                             </button>
                                                         </h2>
                                                         <div
-                                                            id={`a${index}`}
+                                                            id={collapseId}
                                                             className="accordion-collapse collapse"
                                                             data-bs-parent={`#array-selection`}>
                                                             <div className="accordion-body py-1 px-2 d-flex gap-2">
@@ -673,7 +618,6 @@ export default function SelectListPropsEditor({ setShow }) {
                                                                         onChange={e =>
                                                                             handleOptionsChange(
                                                                                 e,
-                                                                                "array",
                                                                             )
                                                                         }
                                                                     />
@@ -695,7 +639,6 @@ export default function SelectListPropsEditor({ setShow }) {
                                                                         onChange={e =>
                                                                             handleOptionsChange(
                                                                                 e,
-                                                                                "array",
                                                                             )
                                                                         }
                                                                     />
@@ -717,7 +660,6 @@ export default function SelectListPropsEditor({ setShow }) {
                                                                         onChange={e =>
                                                                             handleOptionsChange(
                                                                                 e,
-                                                                                "array",
                                                                             )
                                                                         }
                                                                     />
@@ -726,7 +668,6 @@ export default function SelectListPropsEditor({ setShow }) {
                                                                     onClick={() =>
                                                                         handleRadioOptDelete(
                                                                             option,
-                                                                            "array",
                                                                         )
                                                                     }
                                                                     className="pointer mt-4">

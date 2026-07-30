@@ -1,7 +1,7 @@
 .sorted-header {
   font-size: 13px;
   display: flex;
-  justify-content: space-between;
+  /* justify-content: space-between; */
   width: auto;
   cursor: pointer;
   /* padding: 0.5rem 0.5rem 0.5rem 0rem; */

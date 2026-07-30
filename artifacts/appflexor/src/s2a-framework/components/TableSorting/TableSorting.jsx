@@ -74,9 +74,9 @@ export default function TableSorting({
     return (
         <div
             className="sorted-header s2a-table-sorting"
-            onClick={() => toggleStates(automate)}>
+            onClick={() => toggleStates(automate)}>            
             <div className="header-title">{headerTitle}</div>
-            <div className="sort-btn">
+            <div className="sort-btn ms-2">
                 {automate === "def" && <i className="fa-solid fa-sort"></i>}
                 {automate === "asc" && <i className="fa-solid fa-sort-up"></i>}
                 {automate === "desc" && (

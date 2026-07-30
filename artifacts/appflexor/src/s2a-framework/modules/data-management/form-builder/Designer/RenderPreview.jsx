@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { AppContext } from "../../../../../AppContext";
+import { evaluateExpression } from "../../../content-management/page-builder/datalist-viewer/datalist-filter-helpers/DatalistFilters";
 import { componentList } from "./ComponentRegistry";
 
 const RenderPreview = ({
@@ -9,7 +11,24 @@ const RenderPreview = ({
     mode,
     modeType,
     pageId,
+    formData = {},
+    dataKeys = {},
+    handleInputFields,
 }) => {
+    const appContext = useContext(AppContext);
+
+    const isVisible = expression =>
+        evaluateExpression(
+            { expression },
+            formData,
+            appContext?.channel,
+            appContext?.userGroups,
+            appContext?.profile,
+            appContext?.isAuthorized,
+            appContext?.tenantSubscription,
+            appContext,
+        );
+
     function renderRow(row) {
         return (
             <Row
@@ -19,7 +38,10 @@ const RenderPreview = ({
                 images={images}
                 htmlCollection={htmlCollection}
                 mode={mode}
-                modeType={modeType}></Row>
+                modeType={modeType}
+                formData={formData}
+                handleInputFields={handleInputFields}
+                isVisible={isVisible}></Row>
         );
     }
 
@@ -28,6 +50,7 @@ const RenderPreview = ({
             {layout.map((row, index) => {
                 let _enableTabView = row.enableTabView;
                 let _renderMode = row.renderMode;
+                if (!isVisible(row.visibilityExpression)) return null;
                 if (
                     _enableTabView &&
                     _enableTabView !== "" &&
@@ -44,6 +67,10 @@ const RenderPreview = ({
                             mode={mode}
                             modeType={modeType}
                             pageId={pageId}
+                            formData={formData}
+                            dataKeys={dataKeys}
+                            handleInputFields={handleInputFields}
+                            isVisible={isVisible}
                         />
                     );
                 } else {
@@ -60,6 +87,10 @@ const RenderPreview = ({
                                 htmlCollection={htmlCollection}
                                 mode={mode}
                                 modeType={modeType}
+                                formData={formData}
+                                dataKeys={dataKeys}
+                                handleInputFields={handleInputFields}
+                                isVisible={isVisible}
                                 pageId={pageId}></Row>
                         </div>
                     );
@@ -77,6 +108,10 @@ function RenderTabs({
     mode,
     modeType,
     pageId,
+    formData,
+    dataKeys,
+    handleInputFields,
+    isVisible,
     renderMode = "ALL_TIME_ACTIVE",
 }) {
     const [tabs, setTabs] = useState({});
@@ -122,6 +157,10 @@ function RenderTabs({
         setTabs(newTabs);
     }
 
+    const visibleTabs = rowData.children.filter(tab =>
+        isVisible(tab.visibilityExpression),
+    );
+
     return (
         <React.Fragment>
             <ul
@@ -129,7 +168,7 @@ function RenderTabs({
                     rowData.classes ? rowData.classes : ""
                 } nav nav-tabs pt-2`}
                 key={rowData.id}>
-                {rowData.children.map((tab, index) => {
+                {visibleTabs.map((tab, index) => {
                     return (
                         <li className={`nav-item`}>
                             <button
@@ -148,7 +187,7 @@ function RenderTabs({
                 })}
             </ul>
             <div className="tab-content">
-                {rowData.children.map((tab, index) => {
+                {visibleTabs.map((tab, index) => {
                     return (
                         <div
                             className={`tab-pane fade ${
@@ -165,7 +204,10 @@ function RenderTabs({
                                 images={images}
                                 mode={mode}
                                 htmlCollection={htmlCollection}
-                                modeType={modeType}></Tab>
+                                modeType={modeType}
+                                formData={formData}
+                                dataKeys={dataKeys}
+                                handleInputFields={handleInputFields}></Tab>
                         </div>
                     );
                 })}
@@ -184,6 +226,9 @@ function Tab({
     htmlCollection,
     modeType,
     pageId,
+    formData,
+    dataKeys,
+    handleInputFields,
 }) {
     return (
         <React.Fragment>
@@ -198,6 +243,9 @@ function Tab({
                             htmlCollection={htmlCollection}
                             mode={mode}
                             modeType={modeType}
+                            formData={formData}
+                            dataKeys={dataKeys}
+                            handleInputFields={handleInputFields}
                         />
                     </React.Fragment>
                 );
@@ -206,8 +254,20 @@ function Tab({
     );
 }
 
-function Row({ rowData, components, images, htmlCollection, mode, modeType }) {
+function Row({
+    rowData,
+    components,
+    images,
+    htmlCollection,
+    mode,
+    modeType,
+    formData,
+    dataKeys,
+    handleInputFields,
+    isVisible,
+}) {
     function renderColumn(column) {
+        if (!isVisible(column.visibilityExpression)) return null;
         return (
             <React.Fragment>
                 <div className={`${column.classes} col-style p-0`}>
@@ -221,7 +281,10 @@ function Row({ rowData, components, images, htmlCollection, mode, modeType }) {
                         htmlCollection={htmlCollection}
                         images={images}
                         mode={mode}
-                        modeType={modeType}></Column>
+                        modeType={modeType}
+                        formData={formData}
+                        dataKeys={dataKeys}
+                        handleInputFields={handleInputFields}></Column>
                 </div>
             </React.Fragment>
         );
@@ -246,6 +309,9 @@ function Column({
     htmlCollection,
     mode,
     modeType,
+    formData,
+    dataKeys,
+    handleInputFields,
 }) {
     const renderComponent = component => {
         return (
@@ -259,6 +325,9 @@ function Column({
                         htmlCollection={htmlCollection}
                         mode={mode}
                         modeType={modeType}
+                        formData={formData}
+                        dataKeys={dataKeys}
+                        handleInputFields={handleInputFields}
                     />
                 </div>
             </React.Fragment>
@@ -285,6 +354,9 @@ function Component({
     htmlCollection,
     mode,
     modeType,
+    formData,
+    dataKeys,
+    handleInputFields,
 }) {
     const [component, setComponent] = useState(null);
 
@@ -311,6 +383,9 @@ function Component({
                     htmlCollection,
                     mode,
                     modeType,
+                    formData,
+                    dataKeys,
+                    handleInputFields,
                 )}
         </React.Fragment>
     );
@@ -323,6 +398,9 @@ function CreateComponent(
     htmlCollection,
     mode,
     modeType,
+    formData,
+    dataKeys,
+    handleInputFields,
 ) {
     if (typeof componentList[component.type] !== "undefined") {
         return React.createElement(componentList[component.type], {
@@ -332,6 +410,9 @@ function CreateComponent(
             htmlCollection,
             mode: mode,
             modeType: modeType,
+            formData,
+            dataKeys,
+            handleInputFields,
         });
     }
     return React.createElement(

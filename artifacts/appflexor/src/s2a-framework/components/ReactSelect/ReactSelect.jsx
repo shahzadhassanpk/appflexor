@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Select, { components } from "react-select";
 
 /**
@@ -36,6 +36,46 @@ function ReactSelect(props) {
         isSearchable = true,
         width="100%",
     } = props;
+    const multiSelect =
+        isMulti === true || isMulti === "true" || isMulti === "YES";
+
+    const findCurrentOption = selected => {
+        if (!selected || typeof selected !== "object") return null;
+
+        const selectedValue = selected[fieldValue];
+        if (selectedValue === undefined || selectedValue === null) return null;
+
+        return (
+            options.find(
+                option =>
+                    String(option?.[fieldValue]) === String(selectedValue),
+            ) || selected
+        );
+    };
+
+    const externalValue = multiSelect
+        ? (Array.isArray(selectedOptions) ? selectedOptions : [])
+              .map(findCurrentOption)
+              .filter(Boolean)
+        : findCurrentOption(selectedOption);
+    const externalSelectionKey = multiSelect
+        ? JSON.stringify(
+              externalValue.map(option => String(option?.[fieldValue])),
+          )
+        : String(externalValue?.[fieldValue] ?? "");
+    const [currentValue, setCurrentValue] = useState(externalValue);
+
+    useEffect(() => {
+        setCurrentValue(externalValue);
+        // Sync only when the external selection changes, not on every options-array render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [externalSelectionKey]);
+
+    const handleSelectionChange = (newValue, action) => {
+        setCurrentValue(newValue);
+        handleChange(newValue, action);
+    };
+
     const colourStyles = {
         container: provider => ({
             ...provider,
@@ -105,7 +145,7 @@ function ReactSelect(props) {
         return (
             <Select
                 placeholder={placeholder}
-                onChange={(newValue, action) => handleChange(newValue, action)}
+                onChange={handleSelectionChange}
                 getOptionLabel={option => {
                     if (fieldLabel) return option[fieldLabel];
                     return option.label;
@@ -114,8 +154,9 @@ function ReactSelect(props) {
                     if (fieldValue) return option[fieldValue];
                     return option.value;
                 }}
-                value={isMulti ? selectedOptions : selectedOption}
+                value={currentValue}
                 options={options}
+                isMulti={multiSelect}
                 isDisabled={disabled}
                 styles={colourStyles}
                 isSearchable={isSearchable}
@@ -131,7 +172,7 @@ function ReactSelect(props) {
         <>
         <Select
             placeholder={placeholder}
-            onChange={(newValue, action) => handleChange(newValue, action)}
+            onChange={handleSelectionChange}
             getOptionLabel={option => {
                 if (fieldLabel) return option[fieldLabel];
                 return option.label;
@@ -140,9 +181,9 @@ function ReactSelect(props) {
                 if (fieldValue) return option[fieldValue];
                 return option.value;
             }}
-            value={isMulti ? selectedOptions : selectedOption}
+            value={currentValue}
             options={options}
-            isMulti={isMulti}
+            isMulti={multiSelect}
             isDisabled={disabled}
             styles={colourStyles}
             isSearchable={isSearchable}
