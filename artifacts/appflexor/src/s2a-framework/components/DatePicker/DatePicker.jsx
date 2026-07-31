@@ -100,6 +100,15 @@ function DateRangePicker(props) {
             return false;
         }
 
+        // Existing/default values may predate the current selection cutoff.
+        // Keep those values valid while still preventing other earlier dates.
+        if (
+            day?.isSame(startDate, "day") ||
+            day?.isSame(endDate, "day")
+        ) {
+            return false;
+        }
+
         return day.isBefore(
             dayjs(props.disableDaysFrom, DATE_FORMAT_FOR_DATABASE),
             "day"
@@ -120,7 +129,16 @@ function DateRangePicker(props) {
                         textField: {
                             size: "small",
                             fullWidth: true,
-                        },
+                            sx: {
+                                fontSize: "var(--font-size-base) !important", // sets font size for the input
+                                "& .MuiInputBase-input": {
+                                    fontSize: "var(--font-size-base) !important", // ensures the actual input text is styled
+                                },
+                                "& .MuiInputLabel-root": {
+                                    fontSize: "var(--font-size) !important", // label font size
+                                },
+                            },
+                        }
                     }}
                 />
 
@@ -136,9 +154,21 @@ function DateRangePicker(props) {
                         textField: {
                             size: "small",
                             fullWidth: true,
+                            sx: {
+                                "& .MuiInputBase-input": {
+                                    fontSize: "var(--font-size)",   // input text
+                                },
+                                "& .MuiInputLabel-root": {
+                                    fontSize: "var(--font-size)",   // label text
+                                },
+                                "& .MuiPickersSectionList-sectionContent": {
+                                    fontSize: "var(--font-size)",   // date sections (day, month, year)
+                                },
+                            },
                         },
                     }}
                 />
+
             </div>
         </LocalizationProvider>
     );

@@ -1158,7 +1158,7 @@ const Designer = ({ updateData, setDesignMode }) => {
                             </div>
                         </div>
                         <div className="col-sm-10">
-                            <div className="form-view">
+                            <div className="form-view enable-scroll max-height-screen-80">
                                 {/* <div className="d-flex justify-content-center">
                                         <span
                                             onClick={insertRowToEnd}

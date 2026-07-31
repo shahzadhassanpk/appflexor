@@ -5,6 +5,7 @@
 .date-range-picker .MuiSvgIcon-root,
 .date-range-picker .MuiInputBase-root {
     color: var(--font-color) !important;
+    font-size: var(--font-size-base) !important;
 }
 
 .date-range-picker .MuiPickersInputBase-root {

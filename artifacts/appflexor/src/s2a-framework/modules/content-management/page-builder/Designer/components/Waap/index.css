@@ -313,28 +313,6 @@
     float: right;
 }
 
-.enable-scroll.scroll-y {
-    /* max-height: 100% !important; */
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-}
-.enable-scroll::-webkit-scrollbar-track {
-    -webkit-box-shadow: var(--primary-color);
-    background-color: var(--secondary-color);
-}
-
-.enable-scroll::-webkit-scrollbar {
-    height: 8px;
-    width: 8px;
-    background-color: var(--primary-color);
-}
-
-.enable-scroll::-webkit-scrollbar-thumb {
-    background-color: var(--primary-color);
-    border-radius: 5px;
-    cursor: pointer;
-}
-
 input.form-control::placeholder {
     color: var(--text-placeholder);
     opacity: 1; /* Optional: makes the color fully opaque */

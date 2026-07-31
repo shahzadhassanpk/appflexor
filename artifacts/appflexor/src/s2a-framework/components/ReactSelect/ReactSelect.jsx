@@ -38,6 +38,29 @@ function ReactSelect(props) {
     } = props;
     const multiSelect =
         isMulti === true || isMulti === "true" || isMulti === "YES";
+    const hasEmptyOption = options.some(
+        option =>
+            option?.[fieldValue] === "" ||
+            option?.[fieldValue] === null ||
+            option?.[fieldValue] === undefined,
+    );
+    const emptyOption = {
+        label: placeholder,
+        value: "",
+        [fieldLabel]: placeholder,
+        [fieldValue]: "",
+    };
+    const optionsWithEmptyLabel = options.map(option =>
+        option?.[fieldValue] === "" ||
+        option?.[fieldValue] === null ||
+        option?.[fieldValue] === undefined
+            ? { ...option, label: placeholder, [fieldLabel]: placeholder }
+            : option,
+    );
+    const selectOptions =
+        !multiSelect && !hasEmptyOption
+            ? [emptyOption, ...optionsWithEmptyLabel]
+            : optionsWithEmptyLabel;
 
     const findCurrentOption = selected => {
         if (!selected || typeof selected !== "object") return null;
@@ -46,7 +69,7 @@ function ReactSelect(props) {
         if (selectedValue === undefined || selectedValue === null) return null;
 
         return (
-            options.find(
+            selectOptions.find(
                 option =>
                     String(option?.[fieldValue]) === String(selectedValue),
             ) || selected
@@ -137,7 +160,7 @@ function ReactSelect(props) {
                     return option.value;
                 }}
                 value={externalValue}
-                options={options}
+                options={selectOptions}
                 isMulti={multiSelect}
                 isDisabled={disabled}
                 styles={colourStyles}
@@ -164,7 +187,7 @@ function ReactSelect(props) {
                 return option.value;
             }}
             value={externalValue}
-            options={options}
+            options={selectOptions}
             isMulti={multiSelect}
             isDisabled={disabled}
             styles={colourStyles}

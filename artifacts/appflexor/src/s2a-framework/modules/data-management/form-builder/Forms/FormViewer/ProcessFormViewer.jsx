@@ -23,6 +23,7 @@ import {
 import { AppContext } from "../../../../../../AppContext";
 import _default from "react-select";
 import useGlobalData from "../../../../../components/useGlobal";
+import { evaluateExpression } from "../../../../content-management/page-builder/datalist-viewer/datalist-filter-helpers/DatalistFilters";
 // import { useNavigation } from "react-router-dom";
 
 const ProcessFormViewer = ({
@@ -55,7 +56,8 @@ const ProcessFormViewer = ({
     const [fileDataParsed, setFileDataParsed] = useState({});
     const [filesToDelete, setFilesToDelete] = useState([]);
     const [processVar, setProcessVar] = useState({});
-    const [isValid, setIsValid] = useState(true);
+    const [isValid, setIsValid] = useState(false);
+    const [fieldValidity, setFieldValidity] = useState({});
     // Layout
     const [layout, setLayout] = useState([]);
     const [layoutLoaded, setLayoutLoaded] = useState(false);
@@ -257,12 +259,24 @@ const ProcessFormViewer = ({
     const handleInputFields = (
         key = "",
         value = "",
-        isValid = false,
+        isValid,
         type = "text",
         fileData = "",
         state = {},
         formDetails = {},
     ) => {
+        if (key && typeof isValid === "boolean") {
+            setFieldValidity(current =>
+                current[key] === isValid
+                    ? current
+                    : { ...current, [key]: isValid },
+            );
+        }
+
+        if (type === "validation") {
+            return;
+        }
+
         switch (type) {
             case "daterange": {
                 let obj = tryParseJSONObject(value, {});
@@ -454,9 +468,18 @@ const ProcessFormViewer = ({
         );
         const formKeys = Object.keys(variableMap);
         formKeys.map(formKey => {
-            let value = processData.hasOwnProperty(formKey)
+            const processValue = Object.prototype.hasOwnProperty.call(
+                processData,
+                formKey,
+            )
                 ? processData[formKey]
                 : undefined;
+            const value =
+                processValue &&
+                typeof processValue === "object" &&
+                Object.prototype.hasOwnProperty.call(processValue, "value")
+                    ? processValue.value
+                    : processValue;
             let db_column = variableMap[formKey];
             formData[db_column] = value;
         });
@@ -486,6 +509,102 @@ const ProcessFormViewer = ({
         return validations;
     }
 
+    function getVisibleRequiredSelectKeys() {
+        const designs =
+            formDetails.enableMultipage === "YES"
+                ? multipageDesign.map(item => item.design)
+                : [{ layout, components }];
+        const requiredSelectKeys = [];
+
+        designs.forEach(design => {
+            design.layout?.forEach(row => {
+                if (
+                    row.visibilityExpression &&
+                    !evaluateExpression(
+                        { expression: row.visibilityExpression },
+                        formData,
+                        ...expressionProps,
+                    )
+                ) {
+                    return;
+                }
+
+                row.children?.forEach(column => {
+                    if (
+                        column.visibilityExpression &&
+                        !evaluateExpression(
+                            { expression: column.visibilityExpression },
+                            formData,
+                            ...expressionProps,
+                        )
+                    ) {
+                        return;
+                    }
+
+                    column.children?.forEach(componentRef => {
+                        const component =
+                            design.components?.[componentRef.id];
+                        if (
+                            !component ||
+                            component.type !== "select" ||
+                            component.data?.required !== "YES"
+                        ) {
+                            return;
+                        }
+
+                        const hideExpression = component.data?.condition;
+                        if (
+                            hideExpression &&
+                            evaluateExpression(
+                                { expression: hideExpression },
+                                formData,
+                                ...expressionProps,
+                            )
+                        ) {
+                            return;
+                        }
+
+                        if (component.data?.db_column) {
+                            requiredSelectKeys.push(
+                                component.data.db_column,
+                            );
+                        }
+                    });
+                });
+            });
+        });
+
+        return requiredSelectKeys;
+    }
+
+    useEffect(() => {
+        if (!layoutLoaded || isEmpty(formData)) {
+            setIsValid(false);
+            return;
+        }
+
+        const validations = validateFormData();
+        const hasInvalidField = Object.values(fieldValidity).some(
+            value => value === false,
+        );
+        const requiredSelectsAreValid = getVisibleRequiredSelectKeys().every(
+            key => fieldValidity[key] === true,
+        );
+        setIsValid(
+            validations.isValid === true &&
+                !hasInvalidField &&
+                requiredSelectsAreValid,
+        );
+    }, [
+        formData,
+        layout,
+        components,
+        multipageDesign,
+        formDetails.enableMultipage,
+        layoutLoaded,
+        fieldValidity,
+    ]);
+
     async function handleMainSave(actionType) {
         let validations = validateFormData();
         if (validations.isValid) {
@@ -493,9 +612,20 @@ const ProcessFormViewer = ({
 
             if (result) {
                 window.scrollTo(0, 0);
-                setLayoutLoaded(false);
                 let { mainId, resObj, reqPayload } = result;
-                if (!isEmpty(resObj)) setFormData(resObj);
+                const savedFormData = {
+                    ...formData,
+                    ...resObj,
+                    id: resObj?.id || mainId || formData.id,
+                };
+
+                if (!isEmpty(resObj)) {
+                    setFormData(savedFormData);
+                }
+
+                if (actionType !== actions.draft) {
+                    setLayoutLoaded(false);
+                }
                 // console.log("***************** processVar > "+JSON.stringify(processVar));
                 // setFilesToDelete([]);
                 if (handleActions) {
@@ -751,6 +881,7 @@ const ProcessFormViewer = ({
                                                 )}
                                                 <button
                                                     type="button"
+                                                    disabled={!isValid}
                                                     onClick={() =>
                                                         handleMainSave(
                                                             actions.complete,

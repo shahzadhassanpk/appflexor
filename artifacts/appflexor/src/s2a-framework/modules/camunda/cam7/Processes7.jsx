@@ -91,9 +91,29 @@ function Processes(props) {
     ];
 
     const [show, setShow] = useState(false);
-    const [showComments, setShowComments] = useState(true);
+    const [showComments, setShowComments] = useState(() => {
+        try {
+            const savedState = localStorage.getItem(
+                "camunda7.inbox.showComments",
+            );
+            return savedState === null ? true : savedState === "true";
+        } catch {
+            return true;
+        }
+    });
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(
+                "camunda7.inbox.showComments",
+                String(showComments),
+            );
+        } catch {
+            // Keep the in-memory preference when storage is unavailable.
+        }
+    }, [showComments]);
 
     // Side Effects
     useEffect(() => {
@@ -474,6 +494,8 @@ function Processes(props) {
                 userList={userList}
                 userDetails={userDetails}
                 handleProcessActions={handleStepProcessActions}
+                showComments={showComments}
+                setShowComments={setShowComments}
             />
         );
     }

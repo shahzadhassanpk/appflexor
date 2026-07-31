@@ -607,6 +607,22 @@ function getMultiFormValidationSchema(multipageDesign) {
 }
 // Common utils function between Single and Multi form
 
+function isEmptyRequiredValue(value) {
+    if (value === undefined || value === null) return true;
+    if (Array.isArray(value)) return value.length === 0;
+    if (
+        typeof value === "object" &&
+        Object.prototype.hasOwnProperty.call(value, "value")
+    ) {
+        return isEmptyRequiredValue(value.value);
+    }
+    if (typeof value === "string") {
+        const normalizedValue = value.trim();
+        return normalizedValue === "" || normalizedValue === "[]";
+    }
+    return false;
+}
+
 function validateDataFromSchema(objToValidate, schemaArr, requiredFields = []) {
     let invalidKeys = [];
     let invalidLabels = [];
@@ -788,7 +804,7 @@ function validateDataFromSchema(objToValidate, schemaArr, requiredFields = []) {
                 validationSchema.required === "YES"
             ) {
                 if (!selfValidatingComponents.includes(validationSchema.type)) {
-                    stringIsValid = stringToVaidate !== "" ? true : false;
+                    stringIsValid = !isEmptyRequiredValue(stringToVaidate);
                 }
             }
             if (!stringIsValid) {
@@ -992,7 +1008,7 @@ function validateDataFromSchemaExp(
                 validationSchema.required === "YES"
             ) {
                 if (!selfValidatingComponents.includes(validationSchema.type)) {
-                    stringIsValid = stringToVaidate !== "" ? true : false;
+                    stringIsValid = !isEmptyRequiredValue(stringToVaidate);
                 }
             }
             if (!stringIsValid) {
@@ -1281,7 +1297,16 @@ export const getObjectSchemeForValidation8 = (
             mappedProcessVars.map(processVar => {
                 if (processVarKey === processVar.process_variable) {
                     let dbColumn = processVar.db_column;
-                    processData[dbColumn] = processVariables[processVarKey];
+                    const processValue = processVariables[processVarKey];
+                    processData[dbColumn] =
+                        processValue &&
+                        typeof processValue === "object" &&
+                        Object.prototype.hasOwnProperty.call(
+                            processValue,
+                            "value",
+                        )
+                            ? processValue.value
+                            : processValue;
                 }
             });
         });

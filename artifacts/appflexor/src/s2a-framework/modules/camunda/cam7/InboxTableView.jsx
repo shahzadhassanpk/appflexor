@@ -482,7 +482,7 @@ function RenderTableView({
         }
         return (
             <div className="row">
-                <div className="col-sm-7">
+                <div className={showComments ? "col-sm-7" : "col-sm-12"}>
                     <StepProcessor
                         task={selectedTask}
                         userList={userList}
@@ -494,13 +494,17 @@ function RenderTableView({
                         getDisplayName={getDisplayName}
                     />
                 </div>
-                <div className="col-sm-5 comment-panel">
-                    <CommentBox
-                        task={selectedTask}
-                        getProfileImage={getProfileImage}
-                        getDisplayName={getDisplayName}
-                    />
-                </div>
+                {showComments && (
+                    <div
+                        id="task-comment-panel"
+                        className="col-sm-5 comment-panel">
+                        <CommentBox
+                            task={selectedTask}
+                            getProfileImage={getProfileImage}
+                            getDisplayName={getDisplayName}
+                        />
+                    </div>
+                )}
             </div>
         );
     }

@@ -417,25 +417,6 @@
     overflow-x: hidden;
 }
 
-.enable-scroll::-webkit-scrollbar-track {
-    -webkit-box-shadow: var(--primary-color);
-    /* background-color: var(--background-color); */
-}
-
-.enable-scroll::-webkit-scrollbar {
-    width: 8px;
-    /* background-color: var(--background-color); */
-}
-
-.enable-scroll::-webkit-scrollbar-thumb {
-    background-color: var(--primary-color);
-    border-radius: 5px;
-}
-
-.enable-scroll::-webkit-scrollbar-thumb:hover {
-    background-color: var(--primary-color);
-    border-radius: 5px;
-}
 
 .form-builder .layout-style::-webkit-scrollbar-track,
 .form-builder .widgets-style::-webkit-scrollbar-track,

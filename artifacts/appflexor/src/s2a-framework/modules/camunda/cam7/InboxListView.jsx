@@ -76,10 +76,10 @@ function RenderListView({
     const allCount = taskList ? taskList.length : 0;
     const myCount = taskList
         ? taskList.filter(
-              t =>
-                  (t.assignee || "").toString().toLowerCase() ===
-                  (userDetails?.username || "").toString().toLowerCase(),
-          ).length
+            t =>
+                (t.assignee || "").toString().toLowerCase() ===
+                (userDetails?.username || "").toString().toLowerCase(),
+        ).length
         : 0;
     // keep single total counts (as before)
 
@@ -183,15 +183,15 @@ function RenderListView({
             className="processes container-fluid">
             <div className="row">
                 <div className="col-sm-3 task-panel">
-                    <div className="p-2">
+                    <div className="p-2 task-panel-content">
                         <div className="task-panel-filters process-task-title chart-title">
-                            <div className="col-sm-12 d-flex">
-                                <div className="col-sm-9 tasks-select d-flex align-items-center">
+                            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <div className="tasks-select d-flex align-items-center gap-2">
                                     {/* Tab-like buttons showing counts */}
                                     {((data && data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups && appContext.userGroups.groupid && (
                                         <button
                                             type="button"
-                                            className={`btn btn-sm me-2 ${taskFilterType === 'allTask' || (data && data?.show_task === 'ALL-TASK') ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                            className={`btn btn-sm task-filter-button ${taskFilterType === 'allTask' || (data && data?.show_task === 'ALL-TASK') ? 'btn-primary' : 'btn-outline-secondary'}`}
                                             onClick={() => { setTaskFilterType('allTask'); setSelectedTask(taskInitState); setCurrentProcessState({ initial: true, start: false, step: false, loading: false }); }}>
                                             <span>All Tasks</span>
                                             <span className="badge bg-light text-dark ms-2">{allCount}</span>
@@ -200,173 +200,188 @@ function RenderListView({
                                     {((data && data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
                                         <button
                                             type="button"
-                                            className={`btn btn-sm ${taskFilterType === 'myTask' || (data && data?.show_task === 'MY-TASK') ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                            className={`btn btn-sm task-filter-button ${taskFilterType === 'myTask' || (data && data?.show_task === 'MY-TASK') ? 'btn-primary' : 'btn-outline-secondary'}`}
                                             onClick={() => { setTaskFilterType('myTask'); setSelectedTask(taskInitState); setCurrentProcessState({ initial: true, start: false, step: false, loading: false }); }}>
                                             <span>My Tasks</span>
                                             <span className="badge bg-light text-dark ms-2">{myCount}</span>
                                         </button>
                                     )}
                                 </div>
-                                <div className="col-sm-3 d-flex action-bar m-auto">
+                                <div className="d-flex align-items-center gap-1 action-bar task-panel-actions">
                                     <div
-                                        className={`float-right inbox-notification ${
-                                            data && data?.allow_start_task
-                                                ? "tasks-refresh"
-                                                : "tasks-refresh"
-                                        }
+                                        className={`float-right inbox-notification ${data && data?.allow_start_task
+                                            ? "tasks-refresh"
+                                            : "tasks-refresh"
+                                            }
                             `}>
-                                        <span
-                                            className=""
-                                            data-bs-toggle="tooltip"
-                                            data-bs-title="Sync tasklist">
-                                            <i
-                                                title={
-                                                    // data?.auto_refresh
-                                                    //     ? `auto refresh in ${data?.auto_refresh} seconds`
-                                                    //     : ""
-                                                    notification.message
-                                                }
-                                                className={`fa-solid fa-arrows-rotate ${
-                                                    data?.auto_refresh &&
-                                                    data?.auto_refresh !==
-                                                        "0" &&
-                                                    data?.auto_refresh !== ""
-                                                        ? "refresh_interval"
-                                                        : ""
-                                                } ${
-                                                    notification?.count > 0
-                                                        ? "active"
-                                                        : ""
-                                                }`}
-                                                // className=""
-                                                onClick={() =>
-                                                    syncTaskList()
-                                                }></i>
-                                        </span>
+
                                     </div>
                                     {data && data?.allow_start_task && (
                                         <div className="start-process">
-                                            <span
-                                                data-bs-toggle="tooltip"
-                                                data-bs-title="Start process instance">
-                                                <i
-                                                    className="fa fa-bolt pointer"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#startProcessModal"
-                                                    onClick={() =>
-                                                        handleProcessModal()
-                                                    }></i>
-                                            </span>
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm task-icon-button"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#startProcessModal"
+                                                title="Start process instance"
+                                                aria-label="Start process instance"
+                                                onClick={() =>
+                                                    handleProcessModal()
+                                                }>
+                                                <i className="fa fa-bolt pointer"></i>
+                                            </button>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         </div>
-                        <div className="pb-2 row s2a-border m-0">
-                            <div className="col-sm-9 mt-2">
+                        <div className="task-search-bar d-flex align-items-center gap-2 p-2 s2a-border">
+                            <div className="input-group input-group-sm flex-grow-1">
+                                <span className="input-group-text" aria-hidden="true">
+                                    <i className="fa-solid fa-magnifying-glass"></i>
+                                </span>
                                 <input
                                     id="task-search-input"
                                     type="text"
-                                    className="form-control rounded-0"
+                                    className="form-control"
                                     onChange={handleTaskSearch}
-                                    placeholder="Search..."
+                                    placeholder="Search tasks"
+                                    aria-label="Search tasks"
                                 />
                             </div>
-                            <div className="col-sm-3 mt-3">
-                                <span className="count">
+                            <div className="d-flex">
+                                <span className="count task-result-count" title="Visible tasks">
                                     {filteredTaskList &&
                                         filteredTaskList.length}
                                     /{taskList && taskList.length}
                                 </span>
+                                <button
+                                    type="button"
+                                    className="btn btn-sm task-icon-button"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-title="Refresh task list"
+                                    aria-label="Refresh task list"
+                                    onClick={() => syncTaskList()}>
+                                    <i
+                                        title={
+                                            // data?.auto_refresh
+                                            //     ? `auto refresh in ${data?.auto_refresh} seconds`
+                                            //     : ""
+                                            notification.message
+                                        }
+                                        className={`fa-solid fa-arrows-rotate ${data?.auto_refresh &&
+                                            data?.auto_refresh !==
+                                            "0" &&
+                                            data?.auto_refresh !== ""
+                                            ? "refresh_interval"
+                                            : ""
+                                            } ${notification?.count > 0
+                                                ? "active"
+                                                : ""
+                                            }`}></i>
+                                </button>
                             </div>
                         </div>
                         <div className="row enable-vertical-scroll">
-                            <ol className="task-list">
-                                {filteredTaskList &&
-                                    filteredTaskList.map(currentTask => {
-                                        return (
-                                            <li
-                                                className={`task-item ${
-                                                    currentTask.id ==
-                                                    selectedTask.id
+                            <div className="p-2">
+                                <ol className="task-list p-0">
+                                    {filteredTaskList &&
+                                        filteredTaskList.map(currentTask => {
+                                            return (
+                                                <li
+                                                    className={`task-item ${currentTask.id ==
+                                                        selectedTask.id
                                                         ? "selected-task"
                                                         : "un-selected-task"
-                                                } `}
-                                                key={currentTask.id}
-                                                onClick={() => {
-                                                    handleTaskSelection(
-                                                        currentTask,
-                                                    );
-                                                }}>
-                                                <div className="col-sm-12 task-name">
-                                                    {currentTask?.ref_code && (
-                                                        <div className="process-task">
-                                                            <div className="case-ref">
-                                                                <span>
-                                                                    Ref:{" "}
-                                                                    {
-                                                                        currentTask?.ref_code
-                                                                    }
-                                                                </span>
+                                                        } `}
+                                                    key={currentTask.id}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    aria-current={
+                                                        currentTask.id == selectedTask.id
+                                                            ? "true"
+                                                            : undefined
+                                                    }
+                                                    onClick={() => {
+                                                        handleTaskSelection(
+                                                            currentTask,
+                                                        );
+                                                    }}
+                                                    onKeyDown={event => {
+                                                        if (event.key === "Enter" || event.key === " ") {
+                                                            event.preventDefault();
+                                                            handleTaskSelection(currentTask);
+                                                        }
+                                                    }}>
+                                                    <div className="col-sm-12 task-name">
+                                                        {currentTask?.ref_code && (
+                                                            <div className="process-task">
+                                                                <div className="case-ref">
+                                                                    <span>
+                                                                        Ref:{" "}
+                                                                        {
+                                                                            currentTask?.ref_code
+                                                                        }
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    )}
-                                                    <div className="process-task-name d-flex">
-                                                        {/* {currentTask?JSON.stringify(currentTask):""} */}
-                                                        <div className="col-sm-10">
-                                                            <div className="process-task task-title">
-                                                                <span>
+                                                        )}
+                                                        <div className="process-task-name d-flex">
+                                                            {/* {currentTask?JSON.stringify(currentTask):""} */}
+                                                            <div className="col-sm-10">
+                                                                <div className="process-task task-title">
+                                                                    <span>
+                                                                        {" "}
+                                                                        {
+                                                                            currentTask.task_name
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                                <div className="task-meta">
                                                                     {" "}
-                                                                    {
-                                                                        currentTask.task_name
-                                                                    }
-                                                                </span>
-                                                            </div>
-                                                            <div className="task-meta">
-                                                                {" "}
-                                                                {currentTask
-                                                                    ?.variables
-                                                                    ?.subject
-                                                                    ? currentTask
-                                                                          ?.variables
-                                                                          ?.subject
-                                                                    : currentTask.process_name}
-                                                            </div>
+                                                                    {currentTask
+                                                                        ?.variables
+                                                                        ?.subject
+                                                                        ? currentTask
+                                                                            ?.variables
+                                                                            ?.subject
+                                                                        : currentTask.process_name}
+                                                                </div>
 
-                                                            {data?.use_dynamic ===
-                                                                true &&
-                                                                parsedOptions.length >
+                                                                {data?.use_dynamic ===
+                                                                    true &&
+                                                                    parsedOptions.length >
                                                                     0 &&
-                                                                parsedOptions.map(
-                                                                    option => (
-                                                                        <div
-                                                                            key={
-                                                                                option.id
-                                                                            }
-                                                                            className="process-task">
-                                                                            <span>
-                                                                                {
-                                                                                    option.label
+                                                                    parsedOptions.map(
+                                                                        option => (
+                                                                            <div
+                                                                                key={
+                                                                                    option.id
                                                                                 }
+                                                                                className="process-task">
+                                                                                <span>
+                                                                                    {
+                                                                                        option.label
+                                                                                    }
 
-                                                                                :{" "}
-                                                                                {currentTask
-                                                                                    .variables[
-                                                                                    option
-                                                                                        .value
-                                                                                ] ||
-                                                                                    ""}
-                                                                            </span>
-                                                                        </div>
-                                                                    ),
-                                                                )}
+                                                                                    :{" "}
+                                                                                    {currentTask
+                                                                                        .variables[
+                                                                                        option
+                                                                                            .value
+                                                                                    ] ||
+                                                                                        ""}
+                                                                                </span>
+                                                                            </div>
+                                                                        ),
+                                                                    )}
 
-                                                            {currentTask.date_created && (
-                                                                <div className="task-comment-stamp row">
-                                                                    <div className="col-sm-12 d-flex">
-                                                                        <div className="col-sm-10">
-                                                                            <div className="col-sm-12">
-                                                                                {/* <span
+                                                                {currentTask.date_created && (
+                                                                    <div className="task-comment-stamp row">
+                                                                        <div className="col-sm-12 d-flex">
+                                                                            <div className="col-sm-10">
+                                                                                <div className="col-sm-12">
+                                                                                    {/* <span
                                                                             title={formatDateTimeForUserView(
                                                                                 currentTask?.followup,
                                                                             )}>
@@ -381,38 +396,38 @@ function RenderListView({
                                                                                 : " "}{" "}
                                                                         </span>
                                                                         |{" "} */}
-                                                                                {currentTask?.due_date && (
-                                                                                    <span
-                                                                                        title={formatDateTimeForUserView(
-                                                                                            currentTask?.due_date,
-                                                                                        )}>
-                                                                                        {" "}
-                                                                                        {new Date(
-                                                                                            currentTask?.due_date,
-                                                                                        ) <
-                                                                                        new Date() ? (
-                                                                                            <>
-                                                                                                Over
-                                                                                                Due{" "}
-                                                                                                {getTimeAgo(
-                                                                                                    currentTask.due_date,
-                                                                                                )}
-                                                                                            </>
-                                                                                        ) : (
-                                                                                            <>
-                                                                                                Due{" "}
-                                                                                                {currentTask?.due_date !==
-                                                                                                ""
-                                                                                                    ? getTimeAgo(
-                                                                                                          currentTask.due_date,
-                                                                                                      )
-                                                                                                    : " "}
-                                                                                            </>
-                                                                                        )}
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-                                                                            {/* <div className="col-sm-12">
+                                                                                    {currentTask?.due_date && (
+                                                                                        <span
+                                                                                            title={formatDateTimeForUserView(
+                                                                                                currentTask?.due_date,
+                                                                                            )}>
+                                                                                            {" "}
+                                                                                            {new Date(
+                                                                                                currentTask?.due_date,
+                                                                                            ) <
+                                                                                                new Date() ? (
+                                                                                                <>
+                                                                                                    Over
+                                                                                                    Due{" "}
+                                                                                                    {getTimeAgo(
+                                                                                                        currentTask.due_date,
+                                                                                                    )}
+                                                                                                </>
+                                                                                            ) : (
+                                                                                                <>
+                                                                                                    Due{" "}
+                                                                                                    {currentTask?.due_date !==
+                                                                                                        ""
+                                                                                                        ? getTimeAgo(
+                                                                                                            currentTask.due_date,
+                                                                                                        )
+                                                                                                        : " "}
+                                                                                                </>
+                                                                                            )}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                {/* <div className="col-sm-12">
                                                                         <span>
                                                                             Created:{" "}
                                                                             {formatDateTimeForUserView(
@@ -420,39 +435,50 @@ function RenderListView({
                                                                             )}
                                                                         </span>
                                                                     </div> */}
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="col-sm-2 mt-2 text-center">
-                                                            <img
-                                                                className="image-styling-navbar"
-                                                                src={getProfileImage(
-                                                                    currentTask.assignee
-                                                                        ? currentTask.assignee
-                                                                        : currentTask
-                                                                              .variables[
-                                                                              "assignee"
-                                                                          ],
                                                                 )}
-                                                                alt="image"
-                                                                onError="this.src='/theme/images/default-user-profile-img.png';this.onerror='';"
-                                                                title={`Assignee: ${getDisplayName(
-                                                                    currentTask.assignee
-                                                                        ? currentTask.assignee
-                                                                        : currentTask
-                                                                              .variables[
-                                                                              "assignee"
-                                                                          ],
-                                                                )}`}></img>
+                                                            </div>
+                                                            <div className="col-sm-2 mt-2 text-center">
+                                                                <img
+                                                                    className="image-styling-navbar"
+                                                                    src={getProfileImage(
+                                                                        currentTask.assignee
+                                                                            ? currentTask.assignee
+                                                                            : currentTask
+                                                                                .variables[
+                                                                            "assignee"
+                                                                            ],
+                                                                    )}
+                                                                    alt={`Assignee: ${getDisplayName(
+                                                                        currentTask.assignee
+                                                                            ? currentTask.assignee
+                                                                            : currentTask.variables["assignee"],
+                                                                    )}`}
+                                                                    onError="this.src='/theme/images/default-user-profile-img.png';this.onerror='';"
+                                                                    title={`Assignee: ${getDisplayName(
+                                                                        currentTask.assignee
+                                                                            ? currentTask.assignee
+                                                                            : currentTask
+                                                                                .variables[
+                                                                            "assignee"
+                                                                            ],
+                                                                    )}`}></img>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                            </ol>
+                                                </li>
+                                            );
+                                        })}
+                                    {filteredTaskList?.length === 0 && (
+                                        <li className="task-list-empty">
+                                            <i className="fa-regular fa-folder-open" aria-hidden="true"></i>
+                                            <span>No tasks match your search.</span>
+                                        </li>
+                                    )}
+                                </ol>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -519,7 +545,9 @@ function RenderListView({
                                 {renderStepProcessor()}
                             </div>
                             {showComments && (
-                                <div className="col-sm-3 comment-panel">
+                                <div
+                                    id="task-comment-panel"
+                                    className="col-sm-3 comment-panel">
                                     <CommentBox
                                         task={selectedTask}
                                         getProfileImage={getProfileImage}
@@ -536,21 +564,19 @@ function RenderListView({
                 data-bs-backdrop="static"
                 data-bs-keyboard="false">
                 <div
-                    className={`modal-dialog ${
-                        toggleModalWindow === "maximize"
-                            ? "modal-fullscreen"
-                            : ""
-                    } `}>
+                    className={`modal-dialog ${toggleModalWindow === "maximize"
+                        ? "modal-fullscreen"
+                        : ""
+                        } `}>
                     <div className="modal-content">
                         <div className="modal-header">
                             <h5 className="modal-title">Start Process</h5>
                             <div className="d-flex">
                                 <div
-                                    className={`m-2 pointer ${
-                                        toggleModalWindow === "maximize"
-                                            ? "visually-hidden"
-                                            : ""
-                                    } `}
+                                    className={`m-2 pointer ${toggleModalWindow === "maximize"
+                                        ? "visually-hidden"
+                                        : ""
+                                        } `}
                                     onClick={() =>
                                         setToggleModalWindow("maximize")
                                     }
@@ -560,11 +586,10 @@ function RenderListView({
                                 </div>
 
                                 <div
-                                    className={`m-2 pointer ${
-                                        toggleModalWindow === "restore"
-                                            ? "visually-hidden"
-                                            : ""
-                                    } `}
+                                    className={`m-2 pointer ${toggleModalWindow === "restore"
+                                        ? "visually-hidden"
+                                        : ""
+                                        } `}
                                     onClick={() =>
                                         setToggleModalWindow("restore")
                                     }

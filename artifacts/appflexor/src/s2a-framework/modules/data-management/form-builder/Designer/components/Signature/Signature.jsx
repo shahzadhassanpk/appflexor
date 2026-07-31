@@ -152,26 +152,32 @@ function Signature(props) {
                     {props.mode &&
                         props.modeType &&
                         props.mode === props.modeType.design && (
-                            <div className="d-flex flex-column align-items-center">
+                            <div>
+                                <label className="form-label">
+                                    {componentData.label || "Signature"}
+                                    {componentData.required === "YES" && (
+                                        <span className="text-danger">
+                                            &nbsp;*
+                                        </span>
+                                    )}
+                                </label>
+                                <div className="d-flex flex-column align-items-center">
                                 <div>
                                     <i className="fas fa-signature"></i>
                                 </div>
-                                <div>
-                                    {componentData.label
-                                        ? componentData.label
-                                        : "Signature"}
-                                    {componentData.required &&
-                                        componentData.required === "YES" && (
-                                            <span className="text-danger">
-                                                &nbsp;*
-                                            </span>
-                                        )}
                                 </div>
                             </div>
                         )}
                     {props.mode === props.modeType.readonly && (
                         <div>
-                            <div className="d-flex justify-content-center">
+                            {!props.isInDatalistMode && (
+                                <label className="form-label">
+                                    {componentData.label || "Signature"}
+                                </label>
+                            )}
+                            <div
+                                className="d-flex justify-content-center align-items-end"
+                                style={{ minHeight: 72 }}>
                                 <img
                                     className="disable-drag"
                                     src={obj[componentData.db_column]}
@@ -179,11 +185,6 @@ function Signature(props) {
                                 />
                             </div>
                             <hr />
-                            <center>
-                                {componentData.label
-                                    ? componentData.label
-                                    : "Signature"}
-                            </center>
                             <p className="text-danger">
                                 {message && <span>{message}</span>}
                             </p>
@@ -192,6 +193,17 @@ function Signature(props) {
                     {(props.mode === props.modeType.preview ||
                         props.mode === props.modeType.render) && (
                         <div>
+                            {!props.isInDatalistMode && (
+                                <label className="form-label">
+                                    {componentData.label || "Signature"}
+                                    {props.component.data.required ===
+                                        "YES" && (
+                                        <span className="text-danger">
+                                            &nbsp;*
+                                        </span>
+                                    )}
+                                </label>
+                            )}
                             <div className="d-flex flex-row">
                                 {props.component.data.disabled === "true" ||
                                 props.component.data.readonly === "YES" ? (
@@ -247,7 +259,9 @@ function Signature(props) {
                                     />
                                 </div>
                             ) : (
-                                <div className="d-flex justify-content-center">
+                                <div
+                                    className="d-flex justify-content-center align-items-end"
+                                    style={{ minHeight: 72 }}>
                                     <img
                                         className="disable-drag"
                                         src={obj[componentData.db_column]}
@@ -257,20 +271,6 @@ function Signature(props) {
                             )}
 
                             <hr />
-                            {!props.isInDatalistMode && (
-                                <center>
-                                    {componentData.label
-                                        ? componentData.label
-                                        : "Signature"}
-                                    {props.component.data.required &&
-                                        props.component.data.required ===
-                                            "YES" && (
-                                            <span className="text-danger">
-                                                &nbsp;*
-                                            </span>
-                                        )}
-                                </center>
-                            )}
                             <p className="text-danger">
                                 {message && <span>{message}</span>}
                             </p>

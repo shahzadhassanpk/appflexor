@@ -33,6 +33,8 @@ function StepProcessor({
     handleProcessActions,
     getProfileImage,
     getDisplayName,
+    showComments,
+    setShowComments,
     hideHeader = false,
     userList = [],
     userDetails = {
@@ -74,9 +76,6 @@ function StepProcessor({
 
     const lastTaskId = useRef(null);
 
-    const [isMaximized, setIsMaximized] = useState(false);
-    const toggleMaximize = () => setIsMaximized(!isMaximized);
-
     // side effects
 
     // useEffect(() => {
@@ -88,10 +87,6 @@ function StepProcessor({
     //     console.log(`lastTaskId`);
     //     console.log(lastTaskId);
     // }, [lastTaskId]);
-
-    useEffect(() => {
-        document.body.style.overflow = isMaximized ? "hidden" : "auto";
-    }, [isMaximized]);
 
     useEffect(() => {
         enableTooltip();
@@ -1237,7 +1232,7 @@ function StepProcessor({
     }
 
     return (
-        <div className={`${isMaximized ? "maximized-view" : ""}`}>
+        <div>
             {/* <div className="process-task-title">
                 {task.process_name && task.process_name}
                 {" > "}
@@ -1280,13 +1275,20 @@ function StepProcessor({
                 <div className="col text-end">
                     <div className="view-controls">
                         <button
+                            type="button"
                             className="btn-maximize"
-                            onClick={toggleMaximize}
-                            title={isMaximized ? "Restore" : "Maximize"}>
-                            {isMaximized ? (
-                                <i className="bi-fullscreen-exit"></i>
+                            onClick={() => setShowComments(!showComments)}
+                            title={
+                                showComments
+                                    ? "Collapse comments"
+                                    : "Expand comments"
+                            }
+                            aria-expanded={showComments}
+                            aria-controls="task-comment-panel">
+                            {showComments ? (
+                                <i className="fa-solid fa-angles-right" aria-hidden="true"></i>
                             ) : (
-                                <i className="bi-arrows-fullscreen"></i>
+                                <i className="fa-solid fa-angles-left" aria-hidden="true"></i>
                             )}
                         </button>
                     </div>

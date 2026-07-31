@@ -304,11 +304,58 @@ function Select(props) {
         setData(props.formData);
     }, [props.formData, list, render, componentData]);
 
-    function handleChange(obj) {
-        if (!obj) return;
+    useEffect(() => {
+        if (
+            componentData.required !== "YES" ||
+            !componentData.db_column ||
+            !render ||
+            !props.handleInputFields
+        ) {
+            return;
+        }
 
+        const mapValue =
+            componentData.use_static === "YES"
+                ? "value"
+                : componentData.mapValue;
+        const fieldValue = props.formData?.[componentData.db_column];
+        const hasSelectedOption = list.some(
+            option =>
+                String(option?.[mapValue]) === String(fieldValue) &&
+                fieldValue !== undefined &&
+                fieldValue !== null &&
+                String(fieldValue).trim() !== "",
+        );
+
+        props.handleInputFields(
+            componentData.db_column,
+            fieldValue ?? "",
+            hasSelectedOption,
+            "validation",
+        );
+    }, [
+        componentData,
+        list,
+        props.formData,
+        props.handleInputFields,
+        render,
+    ]);
+
+    function handleChange(obj) {
         let data = props.component.data;
         let key = data.db_column;
+
+        if (!obj) {
+            setSelectedOption(null);
+            setObj(prev => ({ ...prev, [key]: "" }));
+            if (props.handleInputFields) {
+                props.handleInputFields(key, "", false, {
+                    source: "change",
+                });
+            }
+            return;
+        }
+
         let mapValue = "";
         if (props.component.data.use_static === "YES") {
             mapValue = "value";
