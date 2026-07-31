@@ -487,10 +487,11 @@
 /* ── Task header (StepProcessor) ────────────────────── */
 
 .s2a-task-header {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0;
-    padding: 10px 14px;
+    padding: 10px 44px 10px 14px;
     border-bottom: 1px solid var(--border-color);
     background: var(--primary-color);
     flex-shrink: 0;
@@ -505,18 +506,20 @@
 .s2a-task-header-right { display: none; }
 
 .s2a-task-header-back {
+    position: absolute;
+    top: 10px;
+    right: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     background: var(--secondary-color);
     cursor: pointer;
     color: var(--font-color);
     font-size: 12px;
-    flex-shrink: 0;
     transition: background 0.15s;
 }
 

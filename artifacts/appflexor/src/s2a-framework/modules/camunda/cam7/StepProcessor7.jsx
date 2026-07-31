@@ -1240,18 +1240,18 @@ function StepProcessor({
 
             {/* ── Task Header ──────────────────────────────── */}
             <div className="s2a-task-header">
+                <button
+                    type="button"
+                    className="s2a-task-header-back"
+                    onClick={() => setShowComments(!showComments)}
+                    title={showComments ? "Collapse panel" : "Expand panel"}
+                    aria-expanded={showComments}
+                    aria-controls="task-comment-panel">
+                    <i className={`fa-solid fa-angles-${showComments ? "right" : "left"}`}></i>
+                </button>
                 {/* Col 1: task name + process badge + creator */}
                 <div className="s2a-task-header-centre">
                     <div className="s2a-task-header-title-row">
-                        <button
-                            type="button"
-                            className="s2a-task-header-back"
-                            onClick={() => setShowComments(!showComments)}
-                            title={showComments ? "Collapse panel" : "Expand panel"}
-                            aria-expanded={showComments}
-                            aria-controls="task-comment-panel">
-                            <i className={`fa-solid fa-angles-${showComments ? "right" : "left"}`}></i>
-                        </button>
                         <span className="s2a-task-header-name">{task.task_name}</span>
                         {task.process_name && (
                             <span className="s2a-task-process-badge">{task.process_name}</span>
