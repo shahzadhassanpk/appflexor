@@ -1243,6 +1243,15 @@ function StepProcessor({
                 {/* Col 1: task name + process badge + creator */}
                 <div className="s2a-task-header-centre">
                     <div className="s2a-task-header-title-row">
+                        <button
+                            type="button"
+                            className="s2a-task-header-back"
+                            onClick={() => setShowComments(!showComments)}
+                            title={showComments ? "Collapse panel" : "Expand panel"}
+                            aria-expanded={showComments}
+                            aria-controls="task-comment-panel">
+                            <i className={`fa-solid fa-angles-${showComments ? "right" : "left"}`}></i>
+                        </button>
                         <span className="s2a-task-header-name">{task.task_name}</span>
                         {task.process_name && (
                             <span className="s2a-task-process-badge">{task.process_name}</span>
@@ -1256,17 +1265,8 @@ function StepProcessor({
                     </div>
                 </div>
 
-                {/* Col 2: collapse + priority + due date */}
+                {/* Col 2: priority + due date */}
                 <div className="s2a-task-header-right">
-                    <button
-                        type="button"
-                        className="s2a-task-header-back"
-                        onClick={() => setShowComments(!showComments)}
-                        title={showComments ? "Collapse panel" : "Expand panel"}
-                        aria-expanded={showComments}
-                        aria-controls="task-comment-panel">
-                        <i className={`fa-solid fa-angles-${showComments ? "right" : "left"}`}></i>
-                    </button>
                     {(() => {
                         const pRaw = (task.variables?.priority || task.priority || "").toString().toLowerCase();
                         const level = pRaw === "high" || pRaw === "1" ? "high"
