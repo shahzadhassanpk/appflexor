@@ -1238,76 +1238,73 @@ function StepProcessor({
                 {" > "}
                 {task.variables["task_name"]} */}
 
-            <div className={`process-task-title d-flex`}>
-                <div className="col-sm-2 ps-1" style={{maxWidth:"60px"}}>
-                    <span className="avatar">
-                        <img
-                            className="image-styling-navbar dropdown"
-                            src={getProfileImage(task.assignee)}
-                            alt="image"
-                            title={getDisplayName(task.assignee)}></img>
-                    </span>
-                </div>
-                <div className="col-sm-8">
-                    {/* <code>{JSON.stringify(task)}</code> */}
-                    {task?.case_ref && <span>Ref: {task?.case_ref}</span>}
-                    <div className="col-sm-12 task-sub-title">
-                        <div col-sm-12>
-                            {task?.case_ref && (
-                                <span>Ref: {task?.case_ref}</span>
-                            )}
-                        </div>
-                        <div col-sm-12>
-                            <span className="task-name">
-                                {task.process_name}
-                                {" > "}
-                                {task.task_name}
-                            </span>
-                        </div>
-                        <div col-sm-12>
-                            <span className="task-comment-stamp">
-                                Created:{" "}
-                                {formatDateTimeForUserView(task.date_created)}
-                            </span>
-                        </div>
+            {/* ── Task Header ──────────────────────────────── */}
+            <div className="s2a-task-header">
+                {/* Left: collapse toggle */}
+                <button
+                    type="button"
+                    className="s2a-task-header-back"
+                    onClick={() => setShowComments(!showComments)}
+                    title={showComments ? "Collapse panel" : "Expand panel"}
+                    aria-expanded={showComments}
+                    aria-controls="task-comment-panel">
+                    <i className={`fa-solid fa-angles-${showComments ? "right" : "left"}`}></i>
+                </button>
+
+                {/* Centre: task name + process badge + creator */}
+                <div className="s2a-task-header-centre">
+                    <div className="s2a-task-header-title-row">
+                        <span className="s2a-task-header-name">{task.task_name}</span>
+                        {task.process_name && (
+                            <span className="s2a-task-process-badge">{task.process_name}</span>
+                        )}
                     </div>
-                </div>
-                <div className="col text-end">
-                    <div className="view-controls">
-                        <button
-                            type="button"
-                            className="btn-maximize"
-                            onClick={() => setShowComments(!showComments)}
-                            title={
-                                showComments
-                                    ? "Collapse comments"
-                                    : "Expand comments"
-                            }
-                            aria-expanded={showComments}
-                            aria-controls="task-comment-panel">
-                            {showComments ? (
-                                <i className="fa-solid fa-angles-right" aria-hidden="true"></i>
-                            ) : (
-                                <i className="fa-solid fa-angles-left" aria-hidden="true"></i>
-                            )}
-                        </button>
+                    <div className="s2a-task-header-meta">
+                        {task.assignee
+                            ? <>Created by <strong>{getDisplayName(task.assignee)}</strong> &bull; </>
+                            : null}
+                        {formatDateTimeForUserView(task.date_created)}
                     </div>
                 </div>
 
-                {/* <div className=""> 
-                    {showComments ? (
-                        <i
-                            className="fa-solid fa-align-left pointer me-1"
-                            title="Hide Comments & Attachments"
-                            onClick={() => setShowComments(false)}></i>
-                    ) : (
-                        <i
-                            className="fa-solid fa-align-right pointer me-1"
-                            title="Show Comments & Attachments"
-                            onClick={() => setShowComments(true)}></i>
-                    )}
+                {/* Right: priority + due date */}
+                <div className="s2a-task-header-right">
+                    {(() => {
+                        const pRaw = (task.variables?.priority || task.priority || "").toString().toLowerCase();
+                        const level = pRaw === "high" || pRaw === "1" ? "high"
+                            : pRaw === "low" || pRaw === "3" ? "low"
+                            : "medium";
+                        const label = { high: "High Priority", medium: "Medium Priority", low: "Low Priority" }[level];
+                        const flagColor = { high: "#e05252", medium: "#d4820a", low: "#38a169" }[level];
+                        return (
+                            <span className="s2a-task-priority-flag" style={{ color: flagColor }}>
+                                <i className="fa-solid fa-flag" style={{ fontSize: 11 }}></i>
+                                {label}
+                            </span>
+                        );
+                    })()}
+                    {task.due_date && (() => {
+                        const due = new Date(task.due_date);
+                        const now = new Date();
+                        const timeStr = due.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                        const dueDay = new Date(due); dueDay.setHours(0,0,0,0);
+                        const today  = new Date(now); today.setHours(0,0,0,0);
+                        const diff   = Math.round((dueDay - today) / 86400000);
+                        const dayLabel = diff === 0 ? "Today"
+                            : diff === 1 ? "Tomorrow"
+                            : diff === -1 ? "Yesterday"
+                            : diff > 1 && diff < 7
+                                ? due.toLocaleDateString([], { weekday: "short" })
+                                : due.toLocaleDateString([], { day: "numeric", month: "short" });
+                        const isOverdue = due < now;
+                        return (
+                            <span className={`s2a-task-due-label ${isOverdue ? "overdue" : ""}`}>
+                                <i className="fa-regular fa-clock" style={{ fontSize: 11 }}></i>
+                                Due {dayLabel}, {timeStr}
+                            </span>
+                        );
+                    })()}
                 </div>
-                */}
             </div>
             <div className="s2a-process-form">
                 <>
