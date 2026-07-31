@@ -89,15 +89,14 @@ function UploadFile({ item, entity, record_id, field_id, getData }) {
         entityForm.formId = entity;
         entityForm.entity = entity;
         entityForm.action = "update";
-        if (!record.id || record.id == "") {
+        if (!record.id || record.id == "" || record.id === "new") {
             record.id = "new";
             entityForm.id = "new";
-            if (record.id !== record_id) {
+            if (record_id && record.id !== record_id) {
                 entityForm.record_id = record_id;
             }
         } else {
             entityForm.id = record.id;
-            // console.log("Update");
         }
 
         record[field_id] = fileArray.join(";");
