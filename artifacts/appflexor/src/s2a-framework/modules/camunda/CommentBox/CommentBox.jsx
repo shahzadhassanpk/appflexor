@@ -10,6 +10,7 @@ import { BPM_API_URL } from "../CamundaConfig";
 // import ProcessesContext from "../ProcessesContext";
 import { UploadFile } from "./UploadFile/UploadFile";
 import { get } from "jquery";
+import "../inbox-style.css";
 
 function CommentBox({ task, getProfileImage, getDisplayName }) {
     const processKey = task.process_def_key;
@@ -305,331 +306,291 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
             });
     }
 
-    return (
-        <React.Fragment>
-            {/* <div className="col-sm-12 process-task-title">
-                <span className="col-sm-6 text-nowrap">Communication Log</span>
-            </div> */}
-            {/* {JSON.stringify(tabs)  } */}
-            <div
-                id="comment-box"
-                className="comment-box col-sm-12 mb-2">
-                <ul
-                    className="nav nav-tabs"
-                    id="commentbox-nav-tab"
-                    role="tablist">
-                    <li
-                        className={`task-tab nav-link ${tabs.comments ? "active" : ""}`}
-                        name="comments"
-                        data-bs-toggle="tab"
-                        data-bs-target="#comments"
-                        onClick={event => handleTabsChange("comments")}
-                        role="presentation">
-                        <span
-                            className="fa fa-comments"
-                            aria-hidden="true"></span>
-                        {comments.length > 0 && (
-                            <span className="badge text-bg-secondary mx-1">
-                                {comments.length}
-                            </span>
-                        )}
-                    </li>
-                    <li
-                        className={`task-tab nav-link ${tabs.attachments ? "active" : ""}`}
-                        name="attachments"
-                        data-bs-toggle="tab"
-                        data-bs-target="#attachments"
-                        onClick={event => handleTabsChange("attachments")}
-                        role="presentation">
-                        <i
-                            className="fa fa-paperclip"
-                            aria-hidden="true"></i>
-                        {attachments.length > 0 && (
-                            <span className="badge text-bg-secondary mx-1">
-                                {attachments.length}
-                            </span>
-                        )}
-                    </li>
-                    <li
-                        className={`task-tab nav-link ${tabs.history ? "active" : ""}`}
-                        name="history"
-                        data-bs-toggle="tab"
-                        data-bs-target="#task-history"
-                        onClick={event => handleTabsChange("history")}
-                        role="presentation">
-                        <i
-                            className="fa fa-history"
-                            aria-hidden="true"></i>
-                        {history.length > 0 && (
-                            <span className="badge text-bg-secondary mx-1">
-                                {history.length}
-                            </span>
-                        )}
-                    </li>
-                    {/* <li
-                        className="nav-item"
-                        role="presentation">
-                        <button
-                            className="nav-link"
-                            name="trackHistory"
-                            data-bs-toggle="tab"
-                            data-bs-target="#trackHistory"
-                            type="button"
-                            onClick={event => handleTabsChange(event)}>
-                            <i
-                                className="fa fa-check-circle"
-                                aria-hidden="true"></i>{trackHistory.length > 0 && (
-                                <span className="badge text-bg-secondary mx-1">
-                                    {trackHistory.length}
-                                </span>
-                            )}
-                        </button>
-                    </li> */}
-                </ul>
-                <div className="">
-                    {tabs.comments && (
-                        <div
-                            className="tab-pane fade show active"
-                            id="comments">
-                            <div className="process-task-title d-flex">
-                                <span className="mt-2">Process Comments </span>
-                                <div className="d-flex justify-content-end">
-                                    <button
-                                        className="btn button-theme btn-sm mx-2"
-                                        onClick={() => addComment()}>
-                                        <span
-                                            className="fa fa-comments"
-                                            aria-hidden="true"></span>{" "}
-                                        Add
-                                    </button>
-                                </div>
-                            </div>
-                            {commentMode === "list" && (
-                                <div className="col-sm-12">
-                                    <div className="mt-1 comment-content">
-                                        {comments &&
-                                            comments.length > 0 &&
-                                            comments.map((comment, index) => {
-                                                return (
-                                                    <ol className="comment-list">
-                                                        <li
-                                                            className="comment-item"
-                                                            key={index}
-                                                            // title={JSON.stringify(
-                                                            //     comment
-                                                            // )}
-                                                        >
-                                                            <div className="col-sm-12">
-                                                                <div className="comment-details">
-                                                                    <Interweave
-                                                                        content={
-                                                                            comment.comment
-                                                                        }></Interweave>
-                                                                </div>
+    // ── Helpers ──────────────────────────────────────
+    function getFileIcon(filename = "") {
+        const ext = (filename.split(".").pop() || "").toLowerCase();
+        if (["jpg","jpeg","png","gif","webp","svg"].includes(ext)) return { cls: "img-type", icon: "fa-regular fa-image" };
+        if (["doc","docx"].includes(ext)) return { cls: "doc-type", icon: "fa-regular fa-file-word" };
+        if (["xls","xlsx","csv"].includes(ext)) return { cls: "doc-type", icon: "fa-regular fa-file-excel" };
+        return { cls: "", icon: "fa-regular fa-file-pdf" };
+    }
 
-                                                                <div className="task-comment-stamp">
-                                                                    <span className="avatar">
-                                                                        <img
-                                                                            className="image-styling-navbar dropdown"
-                                                                            src={getProfileImage(
-                                                                                comment.createdby,
-                                                                            )}
-                                                                            alt="image"
-                                                                            title={getDisplayName(
-                                                                                comment.createdby,
-                                                                            )}></img>
-                                                                    </span>
-                                                                    <span
-                                                                        className="mt-3"
-                                                                        title={convertDBDateToUserView(
-                                                                            comment.datecreated,
-                                                                        )}>
-                                                                        {
-                                                                            "Commented "
-                                                                        }
-                                                                        {convertDBDateToFromNow(
-                                                                            comment.datecreated,
-                                                                        )}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </li>
-                                                    </ol>
-                                                );
-                                            })}
-                                    </div>
-                                </div>
+    function getHistoryDotClass(h) {
+        if (h.task_type === "startEvent") return "created";
+        if (h.completed_time && h.completed_time !== "") return "completed";
+        if (h.assigned_time && h.assigned_time !== "") return "assigned";
+        return "assigned";
+    }
+
+    function formatHistoryAction(h) {
+        if (h.task_type === "startEvent" && h.created_time)
+            return "Process started";
+        if (h.completed_time && h.completed_time !== "")
+            return `${h.task_name || "Task"} completed`;
+        if (h.assigned_time && h.assigned_time !== "")
+            return h.assignee
+                ? `Assigned to ${getDisplayName(h.assignee)}`
+                : `${h.task_name || "Task"} unassigned`;
+        if (h.created_time && h.created_time !== "")
+            return `${h.task_name || "Task"} created`;
+        return h.task_name || "Activity";
+    }
+
+    function formatHistoryBy(h) {
+        const who = h.assignee ? `by ${getDisplayName(h.assignee)}` : "by System";
+        const when = h.completed_time
+            ? convertDBDateToUserView(h.completed_time)
+            : h.assigned_time
+            ? convertDBDateToUserView(h.assigned_time)
+            : h.created_time
+            ? convertDBDateToUserView(h.created_time)
+            : "";
+        return { who, when };
+    }
+
+    const [quickComment, setQuickComment] = useState("");
+    const [showHistoryAll, setShowHistoryAll] = useState(false);
+    const visibleHistory = showHistoryAll ? history : history.slice(0, 5);
+
+    function handleQuickComment() {
+        if (!quickComment.trim()) return;
+        const _comment = {
+            id: "new",
+            business_key: businessKey,
+            process_key: processKey,
+            comment: quickComment,
+        };
+        saveComment(_comment);
+        setQuickComment("");
+    }
+
+    return (
+        <div className="cb-panel">
+            <div className="cb-scroll-area">
+
+                {/* ── COMMENTS ──────────────────────────────── */}
+                <div className="cb-section">
+                    <div className="cb-section-header">
+                        <span className="cb-section-title">
+                            <i className="fa-regular fa-comments"></i>
+                            Comments
+                            {comments.length > 0 && (
+                                <span className="cb-section-badge">{comments.length}</span>
                             )}
-                            {commentMode === "form" && (
-                                <form>
-                                    <div className="my-2 d-flex justify-content-end">
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm button-theme"
-                                            onClick={() =>
-                                                saveComment(comment)
-                                            }>
-                                            Save
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm button-theme mx-2"
-                                            onClick={() =>
-                                                setCommentMode("list")
-                                            }>
-                                            Cancel
-                                        </button>
-                                    </div>
-                                    <div className="row">
-                                        <div className="form-outline mb-2">
-                                            <TextEditor
-                                                id="comment"
-                                                value={comment.comment || ""}
-                                                // height="220px"
-                                                onChange={handleComment}
-                                                mode="BASIC"
-                                            />
+                        </span>
+                        <button className="cb-add-btn" onClick={() => addComment()}>
+                            <i className="fa-solid fa-plus" style={{ fontSize: 11 }}></i>
+                            Add Comment
+                        </button>
+                    </div>
+
+                    {/* Rich editor form */}
+                    {commentMode === "form" && (
+                        <div className="cb-comment-form">
+                            <div className="cb-form-actions">
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-secondary"
+                                    onClick={() => setCommentMode("list")}>
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-primary"
+                                    onClick={() => saveComment(comment)}>
+                                    Save
+                                </button>
+                            </div>
+                            <TextEditor
+                                id="comment"
+                                value={comment.comment || ""}
+                                onChange={handleComment}
+                                mode="BASIC"
+                            />
+                        </div>
+                    )}
+
+                    {/* Comment list */}
+                    {comments.length === 0 && commentMode !== "form" ? (
+                        <div className="cb-empty">
+                            <i className="fa-regular fa-comment-dots"></i>
+                            No comments yet
+                        </div>
+                    ) : (
+                        <div className="cb-comment-list">
+                            {comments.map((c, i) => (
+                                <div className="cb-comment-item" key={i}>
+                                    <img
+                                        className="cb-comment-avatar"
+                                        src={getProfileImage(c.createdby)}
+                                        alt={getDisplayName(c.createdby)}
+                                        onError={e => { e.target.src = "/theme/images/default-user-profile-img.png"; e.target.onerror = null; }}
+                                    />
+                                    <div className="cb-comment-body">
+                                        <div className="cb-comment-header-row">
+                                            <div>
+                                                <div className="cb-commenter-name">{getDisplayName(c.createdby)}</div>
+                                            </div>
+                                            <span className="cb-comment-time" title={convertDBDateToUserView(c.datecreated)}>
+                                                {convertDBDateToFromNow(c.datecreated)}
+                                            </span>
+                                        </div>
+                                        <div className="cb-comment-text">
+                                            <Interweave content={c.comment} />
+                                        </div>
+                                        <div className="cb-comment-actions-row">
+                                            <button className="cb-reply-link">Reply</button>
                                         </div>
                                     </div>
-                                </form>
-                            )}
-                        </div>
-                    )}
-                    {tabs.attachments && (
-                        <div
-                            className="tab-pane fade show active"
-                            id="attachments">
-                            <div className="process-task-title d-flex">
-                                <span className="mt-2">
-                                    Process Attachments{" "}
-                                </span>
-                                <div className="d-flex justify-content-end">
-                                    <button
-                                        className="btn button-theme btn-sm mx-2"
-                                        onClick={() => addAttachment()}>
-                                        <i
-                                            className="fa fa-paperclip"
-                                            aria-hidden="true"></i>{" "}
-                                        Add
-                                    </button>
                                 </div>
-                            </div>
-                            {attachmentMode === "list" && (
-                                <div className="col-sm-12">
-                                    <div className="attachment-content mt-1">
-                                        {attachments &&
-                                            attachments.length > 0 &&
-                                            attachments.map(
-                                                (attachment, index) => {
-                                                    return (
-                                                        <ol className="comment-list">
-                                                            {
-                                                                <li
-                                                                    className="attachment-item"
-                                                                    key={index}>
-                                                                    <div className="col-sm-12 attachment-details">
-                                                                        <div className="col-sm-12 mb-2">
-                                                                            <a
-                                                                                href={`/file/service/process_attachments/${attachment.id}/${attachment.files}`}>
-                                                                                {
-                                                                                    attachment.files
-                                                                                }
-                                                                            </a>
-                                                                        </div>
-                                                                        <div className="col-sm-12 task-comment-stamp">
-                                                                            <span className="avatar">
-                                                                                <img
-                                                                                    className="image-styling-navbar dropdown"
-                                                                                    src={getProfileImage(
-                                                                                        attachment.createdby,
-                                                                                    )}
-                                                                                    alt="image"
-                                                                                    title={getDisplayName(
-                                                                                        attachment.createdby,
-                                                                                    )}></img>
-                                                                            </span>
-                                                                            <span
-                                                                                className="mt-3"
-                                                                                title={convertDBDateToUserView(
-                                                                                    attachment.datecreated,
-                                                                                )}>
-                                                                                {
-                                                                                    "Uploaded "
-                                                                                }
-                                                                                {convertDBDateToFromNow(
-                                                                                    attachment.datecreated,
-                                                                                )}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                </li>
-                                                            }
-                                                        </ol>
-                                                    );
-                                                },
-                                            )}
-                                    </div>
-                                </div>
-                            )}
-                            {attachmentMode === "form" && (
-                                <form>
-                                    <div className="my-2 d-flex justify-content-end">
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm button-theme mx-2"
-                                            onClick={() =>
-                                                setAttachmentMode("list")
-                                            }>
-                                            Cancel
-                                        </button>
-                                    </div>
-                                    <div className="row">
-                                        <UploadFile
-                                            item={attachment}
-                                            entity={"process_attachments"}
-                                            record_id={businessKey}
-                                            field_id="files"
-                                            getData={getAttachments}
-                                        />
-                                    </div>
-                                </form>
-                            )}
+                            ))}
                         </div>
                     )}
-                    {tabs?.history && (
-                        <div
-                            className="tab-pane"
-                            id="task-history">
-                            <div className="process-task-title">
-                                Process History
-                            </div>
-                            <HistoryViewer
-                                taskHistory={history}
-                                tabs={tabs}
-                                convertDBDateToUserView={
-                                    convertDBDateToUserView
-                                }
-                                getProfileImage={getProfileImage}
-                                getDisplayName={getDisplayName}
+
+                    {/* Quick comment input */}
+                    {commentMode === "list" && (
+                        <div className="cb-quick-input-row">
+                            <input
+                                className="cb-quick-input"
+                                placeholder="Write a comment…"
+                                value={quickComment}
+                                onChange={e => setQuickComment(e.target.value)}
+                                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleQuickComment(); } }}
                             />
-                        </div>
-                    )}
-                    {tabs.trackHistory && (
-                        <div
-                            className="tab-pane container"
-                            id="trackHistory">
-                            <TrackHistoryViewer
-                                trackHistory={trackHistory}
-                                tabs={tabs}
-                                convertDBDateToUserView={
-                                    convertDBDateToUserView
-                                }
-                            />
+                            <button
+                                className="cb-send-btn"
+                                onClick={handleQuickComment}
+                                title="Send comment"
+                                aria-label="Send comment">
+                                <i className="fa-solid fa-paper-plane" style={{ fontSize: 11 }}></i>
+                            </button>
                         </div>
                     )}
                 </div>
+
+                {/* ── ATTACHMENTS ───────────────────────────── */}
+                <div className="cb-section">
+                    <div className="cb-section-header">
+                        <span className="cb-section-title">
+                            <i className="fa-solid fa-paperclip"></i>
+                            Attachments
+                            {attachments.length > 0 && (
+                                <span className="cb-section-badge">{attachments.length}</span>
+                            )}
+                        </span>
+                        <button
+                            className="cb-action-btn"
+                            onClick={() => addAttachment()}>
+                            <i className="fa-solid fa-upload" style={{ fontSize: 11 }}></i>
+                            Upload
+                        </button>
+                    </div>
+
+                    {/* Upload form */}
+                    {attachmentMode === "form" && (
+                        <div className="cb-comment-form">
+                            <div className="cb-form-actions">
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-secondary"
+                                    onClick={() => setAttachmentMode("list")}>
+                                    Cancel
+                                </button>
+                            </div>
+                            <UploadFile
+                                item={attachment}
+                                entity={"process_attachments"}
+                                record_id={businessKey}
+                                field_id="files"
+                                getData={getAttachments}
+                            />
+                        </div>
+                    )}
+
+                    {attachments.length === 0 && attachmentMode !== "form" ? (
+                        <div className="cb-empty">
+                            <i className="fa-regular fa-folder-open"></i>
+                            No attachments
+                        </div>
+                    ) : (
+                        <div className="cb-attachment-list">
+                            {attachments.map((att, i) => {
+                                const { cls, icon } = getFileIcon(att.files || "");
+                                return (
+                                    <div className="cb-attachment-item" key={i}>
+                                        <div className={`cb-file-icon ${cls}`}>
+                                            <i className={icon}></i>
+                                        </div>
+                                        <div className="cb-file-info">
+                                            <div className="cb-file-name">{att.files}</div>
+                                            <div className="cb-file-meta">
+                                                Uploaded {convertDBDateToFromNow(att.datecreated)}
+                                                {att.createdby ? ` · ${getDisplayName(att.createdby)}` : ""}
+                                            </div>
+                                        </div>
+                                        <div className="cb-file-actions">
+                                            <a
+                                                className="cb-icon-btn"
+                                                href={`/file/service/process_attachments/${att.id}/${att.files}`}
+                                                title="Download"
+                                                aria-label="Download">
+                                                <i className="fa-solid fa-download" style={{ fontSize: 12 }}></i>
+                                            </a>
+                                            <button className="cb-icon-btn" title="More options" aria-label="More options">
+                                                <i className="fa-solid fa-ellipsis-vertical" style={{ fontSize: 12 }}></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                {/* ── TASK HISTORY ──────────────────────────── */}
+                <div className="cb-section">
+                    <div className="cb-section-header">
+                        <span className="cb-section-title">
+                            <i className="fa-regular fa-clock"></i>
+                            Task History
+                            {history.length > 0 && (
+                                <span className="cb-section-badge">{history.length}</span>
+                            )}
+                        </span>
+                        {history.length > 5 && (
+                            <button className="cb-view-all" onClick={() => setShowHistoryAll(v => !v)}>
+                                {showHistoryAll ? "Show Less" : "View All"}
+                            </button>
+                        )}
+                    </div>
+
+                    {history.length === 0 ? (
+                        <div className="cb-empty">
+                            <i className="fa-regular fa-calendar-xmark"></i>
+                            No history yet
+                        </div>
+                    ) : (
+                        <div className="cb-history-list">
+                            {visibleHistory.map((h, i) => {
+                                const dotCls = getHistoryDotClass(h);
+                                const { who, when } = formatHistoryBy(h);
+                                return (
+                                    <div className="cb-history-item" key={i}>
+                                        <div className={`cb-history-dot ${dotCls}`}></div>
+                                        <div className="cb-history-content">
+                                            <div className="cb-history-action">{formatHistoryAction(h)}</div>
+                                            <div className="cb-history-by">{who}</div>
+                                        </div>
+                                        <div className="cb-history-date">{when}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
             </div>
-        </React.Fragment>
+        </div>
     );
 }
 

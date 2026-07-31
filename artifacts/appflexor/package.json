@@ -64,7 +64,7 @@
         "randomcolor": "^0.6.2",
         "rc-pagination": "^3.2.0",
         "re-resizable": "^6.11.2",
-        "react": "^18.3.1",
+        "react": "18.2.0",
         "react-bootstrap": "^2.10.5",
         "react-bpmn": "^0.2.0",
         "react-cookie-consent": "^9.0.0",

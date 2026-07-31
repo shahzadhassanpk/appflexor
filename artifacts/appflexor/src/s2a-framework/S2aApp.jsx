@@ -76,7 +76,7 @@ function S2aApp() {
 
     useEffect(() => {
         let newTheme = localStorage.getItem("theme");
-        let themeClass = "dark";
+        let themeClass = "light";
         if (newTheme) {
             themeClass = newTheme;
         }
@@ -928,11 +928,11 @@ function S2aApp() {
 
     async function getChannelData() {
         localStorage.removeItem("SHOW_SESSION_TIMEOUT");
-        const response = await axios.post(
-            `${API_URL}?service.key=sys.subscription.site`,
-        );
         try {
-            if (response.data.C_STATUS == "SUCCESS") {
+            const response = await axios.post(
+                `${API_URL}?service.key=sys.subscription.site`,
+            );
+            if (response?.data?.C_STATUS == "SUCCESS") {
                 if (response.data.C_DATA) {
                     let channel = {};
                     channel = response.data.C_DATA[0];

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { AppContext } from "../../../../AppContext";
 import { formatDateTimeForUserView } from "../../../utils/utils";
 import StartStepProcessor from "./StartStepProcessor7";
@@ -7,6 +7,7 @@ import { CommentBox } from "../CommentBox/CommentBox";
 import { actions } from "../constants";
 import { filterArrayByTerms, tryParseJSONObject } from "../../../utils/utils";
 import { eventBus } from "../../../eventBus";
+import "../inbox-style.css";
 
 function RenderListView({
     processList,
@@ -55,6 +56,117 @@ function RenderListView({
         dynamicFields?.length > 0
             ? tryParseJSONObject(dynamicFields[0].options, [])
             : [];
+
+    // ── Inbox UI state ────────────────────────────────
+    const [filters, setFilters] = useState({ priority: "all", dueDate: "all" });
+    const [activeFilterDropdown, setActiveFilterDropdown] = useState(null); // "priority" | "dueDate" | null
+    const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 15;
+    const filterRef = useRef(null);
+
+    // Close filter dropdown when clicking outside
+    useEffect(() => {
+        function handleClick(e) {
+            if (filterRef.current && !filterRef.current.contains(e.target)) {
+                setActiveFilterDropdown(null);
+            }
+        }
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
+
+    // ── Helpers ──────────────────────────────────────
+    function getPriorityLevel(task) {
+        const p = (
+            task.variables?.priority ||
+            task.priority ||
+            ""
+        ).toString().toLowerCase();
+        if (p === "high" || p === "1") return "high";
+        if (p === "low" || p === "3") return "low";
+        if (p === "medium" || p === "2" || p === "") return "medium";
+        return "medium";
+    }
+
+    function groupTasksByDue(tasks) {
+        const now = new Date();
+        const todayEnd = new Date(now);
+        todayEnd.setHours(23, 59, 59, 999);
+        const weekEnd = new Date(now);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        weekEnd.setHours(23, 59, 59, 999);
+
+        const groups = { "Due Today": [], "Due This Week": [], "Due Later": [] };
+        tasks.forEach(task => {
+            const due = task.due_date ? new Date(task.due_date) : null;
+            if (!due || due > weekEnd) {
+                groups["Due Later"].push(task);
+            } else if (due <= todayEnd) {
+                groups["Due Today"].push(task);
+            } else {
+                groups["Due This Week"].push(task);
+            }
+        });
+        return groups;
+    }
+
+    function applyLocalFilters(tasks) {
+        return (tasks || []).filter(task => {
+            if (filters.priority !== "all") {
+                if (getPriorityLevel(task) !== filters.priority) return false;
+            }
+            if (filters.dueDate !== "all") {
+                const due = task.due_date ? new Date(task.due_date) : null;
+                const now = new Date();
+                const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+                const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + 7); weekEnd.setHours(23, 59, 59, 999);
+                if (filters.dueDate === "today" && (!due || due > todayEnd)) return false;
+                if (filters.dueDate === "overdue" && (!due || due >= now)) return false;
+                if (filters.dueDate === "thisWeek" && (!due || due > weekEnd)) return false;
+            }
+            return true;
+        });
+    }
+
+    function toggleGroup(key) {
+        setCollapsedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    }
+
+    function hasActiveFilters() {
+        return filters.priority !== "all" || filters.dueDate !== "all";
+    }
+
+    function clearFilters() {
+        setFilters({ priority: "all", dueDate: "all" });
+        setActiveFilterDropdown(null);
+        setCurrentPage(1);
+    }
+
+    const localFiltered = applyLocalFilters(filteredTaskList);
+    const totalFiltered = localFiltered.length;
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
+    const safePage = Math.min(currentPage, totalPages);
+    const pagedTasks = localFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+    const grouped = groupTasksByDue(pagedTasks);
+
+    const priorityOptions = [
+        { value: "all", label: "All Priorities" },
+        { value: "high", label: "High" },
+        { value: "medium", label: "Medium" },
+        { value: "low", label: "Low" },
+    ];
+    const dueDateOptions = [
+        { value: "all", label: "Any Date" },
+        { value: "overdue", label: "Overdue" },
+        { value: "today", label: "Due Today" },
+        { value: "thisWeek", label: "Due This Week" },
+    ];
     useEffect(() => {
         eventBus.on("update", data => {
             if (data === "task_list") {
@@ -177,309 +289,277 @@ function RenderListView({
         });
     }
 
-    return (
-        <div
-            id="processes"
-            className="processes container-fluid">
-            <div className="row">
-                <div className="col-sm-3 task-panel">
-                    <div className="p-2 task-panel-content">
-                        <div className="task-panel-filters process-task-title chart-title">
-                            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                                <div className="tasks-select d-flex align-items-center gap-2">
-                                    {/* Tab-like buttons showing counts */}
-                                    {((data && data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups && appContext.userGroups.groupid && (
-                                        <button
-                                            type="button"
-                                            className={`btn btn-sm task-filter-button ${taskFilterType === 'allTask' || (data && data?.show_task === 'ALL-TASK') ? 'btn-primary' : 'btn-outline-secondary'}`}
-                                            onClick={() => { setTaskFilterType('allTask'); setSelectedTask(taskInitState); setCurrentProcessState({ initial: true, start: false, step: false, loading: false }); }}>
-                                            <span>All Tasks</span>
-                                            <span className="badge bg-light text-dark ms-2">{allCount}</span>
-                                        </button>
-                                    )}
-                                    {((data && data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
-                                        <button
-                                            type="button"
-                                            className={`btn btn-sm task-filter-button ${taskFilterType === 'myTask' || (data && data?.show_task === 'MY-TASK') ? 'btn-primary' : 'btn-outline-secondary'}`}
-                                            onClick={() => { setTaskFilterType('myTask'); setSelectedTask(taskInitState); setCurrentProcessState({ initial: true, start: false, step: false, loading: false }); }}>
-                                            <span>My Tasks</span>
-                                            <span className="badge bg-light text-dark ms-2">{myCount}</span>
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="d-flex align-items-center gap-1 action-bar task-panel-actions">
-                                    <div
-                                        className={`float-right inbox-notification ${data && data?.allow_start_task
-                                            ? "tasks-refresh"
-                                            : "tasks-refresh"
-                                            }
-                            `}>
+    // ── Render helpers ───────────────────────────────
 
-                                    </div>
-                                    {data && data?.allow_start_task && (
-                                        <div className="start-process">
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm task-icon-button"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#startProcessModal"
-                                                title="Start process instance"
-                                                aria-label="Start process instance"
-                                                onClick={() =>
-                                                    handleProcessModal()
-                                                }>
-                                                <i className="fa fa-bolt pointer"></i>
-                                            </button>
+    function renderDueBadge(task) {
+        if (!task.due_date) return null;
+        const due = new Date(task.due_date);
+        const now = new Date();
+        const isOverdue = due < now;
+        const formatted = formatDateTimeForUserView(task.due_date);
+        return (
+            <span className={`inbox-due-badge ${isOverdue ? "overdue" : ""}`}>
+                <i className="fa-regular fa-calendar" style={{ fontSize: 10 }}></i>
+                {isOverdue ? "Overdue · " : ""}{formatted}
+            </span>
+        );
+    }
+
+    function renderPriorityBadge(task) {
+        const level = getPriorityLevel(task);
+        const labels = { high: "High", medium: "Medium", low: "Low" };
+        return (
+            <span className={`inbox-priority-badge ${level}`}>
+                {labels[level]}
+            </span>
+        );
+    }
+
+    function renderTaskGroup(groupLabel, tasks) {
+        if (tasks.length === 0) return null;
+        const isCollapsed = collapsedGroups.has(groupLabel);
+        return (
+            <div key={groupLabel}>
+                <div
+                    className="inbox-group-header"
+                    onClick={() => toggleGroup(groupLabel)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => { if (e.key === "Enter") toggleGroup(groupLabel); }}>
+                    <span className="inbox-group-label">
+                        {groupLabel}
+                        <span className="inbox-group-count">{tasks.length}</span>
+                    </span>
+                    <i className={`fa-solid fa-chevron-down inbox-group-chevron ${isCollapsed ? "collapsed" : ""}`}></i>
+                </div>
+                {!isCollapsed && tasks.map(currentTask => {
+                    const assigneeKey = currentTask.assignee || currentTask.variables?.["assignee"] || "";
+                    const metaText = [
+                        getDisplayName(assigneeKey),
+                        currentTask?.variables?.subject || currentTask.process_name,
+                    ].filter(Boolean).join(" · ");
+
+                    return (
+                        <div
+                            className={`inbox-task-card ${currentTask.id === selectedTask.id ? "selected" : ""}`}
+                            key={currentTask.id}
+                            role="button"
+                            tabIndex={0}
+                            aria-current={currentTask.id === selectedTask.id ? "true" : undefined}
+                            onClick={() => handleTaskSelection(currentTask)}
+                            onKeyDown={e => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    handleTaskSelection(currentTask);
+                                }
+                            }}>
+                            <img
+                                className="inbox-task-avatar"
+                                src={getProfileImage(assigneeKey)}
+                                alt={getDisplayName(assigneeKey)}
+                                onError={e => { e.target.src = "/theme/images/default-user-profile-img.png"; e.target.onerror = null; }}
+                            />
+                            <div className="inbox-task-body">
+                                <div className="inbox-task-name">{currentTask.task_name}</div>
+                                <div className="inbox-task-process">{currentTask.process_name}</div>
+                                {metaText && <div className="inbox-task-meta-row">{metaText}</div>}
+                                {data?.use_dynamic === true && parsedOptions.length > 0 &&
+                                    parsedOptions.map(option => (
+                                        <div key={option.id} className="inbox-task-meta-row">
+                                            {option.label}: {currentTask.variables[option.value] || ""}
                                         </div>
-                                    )}
+                                    ))
+                                }
+                                <div className="inbox-task-footer">
+                                    {renderDueBadge(currentTask)}
+                                    {renderPriorityBadge(currentTask)}
                                 </div>
                             </div>
                         </div>
-                        <div className="task-search-bar d-flex align-items-center gap-2 p-2 s2a-border">
-                            <div className="input-group input-group-sm flex-grow-1">
-                                <span className="input-group-text" aria-hidden="true">
-                                    <i className="fa-solid fa-magnifying-glass"></i>
-                                </span>
+                    );
+                })}
+            </div>
+        );
+    }
+
+    return (
+        <div id="processes" className="processes container-fluid">
+            <div className="row" style={{ height: "100%" }}>
+                {/* ── LEFT PANEL ─────────────────────────────── */}
+                <div className="col-sm-3 task-panel p-0">
+                    <div className="inbox-panel">
+
+                        {/* Header */}
+                        <div className="inbox-panel-header">
+                            <span className="inbox-panel-title">
+                                <i className="fa-solid fa-inbox" style={{ fontSize: 14 }}></i>
+                                Tasks
+                                <span className="inbox-panel-title-count">{taskList?.length || 0}</span>
+                            </span>
+                            <div className="inbox-header-actions">
+                                <button
+                                    type="button"
+                                    className="inbox-icon-btn"
+                                    title="Refresh task list"
+                                    aria-label="Refresh task list"
+                                    onClick={() => syncTaskList()}>
+                                    <i className={`fa-solid fa-arrows-rotate ${notification?.count > 0 ? "active" : ""}`}
+                                        title={notification.message}></i>
+                                </button>
+                                {data?.allow_start_task && (
+                                    <button
+                                        type="button"
+                                        className="inbox-icon-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#startProcessModal"
+                                        title="Start process instance"
+                                        aria-label="Start process instance"
+                                        onClick={() => handleProcessModal()}>
+                                        <i className="fa fa-bolt"></i>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* My Tasks / All Tasks tabs */}
+                        <div className="inbox-tab-row">
+                            {((data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
+                                <button
+                                    type="button"
+                                    className={`inbox-tab-btn ${taskFilterType === "myTask" || data?.show_task === "MY-TASK" ? "active" : ""}`}
+                                    onClick={() => { setTaskFilterType("myTask"); setSelectedTask(taskInitState); setCurrentProcessState({ initial: true, start: false, step: false, loading: false }); setCurrentPage(1); }}>
+                                    My Tasks
+                                    <span className="inbox-tab-badge">{myCount}</span>
+                                </button>
+                            )}
+                            {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
+                                <button
+                                    type="button"
+                                    className={`inbox-tab-btn ${taskFilterType === "allTask" || data?.show_task === "ALL-TASK" ? "active" : ""}`}
+                                    onClick={() => { setTaskFilterType("allTask"); setSelectedTask(taskInitState); setCurrentProcessState({ initial: true, start: false, step: false, loading: false }); setCurrentPage(1); }}>
+                                    All Tasks
+                                    <span className="inbox-tab-badge">{allCount}</span>
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Search */}
+                        <div className="inbox-search-row">
+                            <div className="inbox-search-wrap">
+                                <i className="fa-solid fa-magnifying-glass"></i>
                                 <input
                                     id="task-search-input"
                                     type="text"
-                                    className="form-control"
-                                    onChange={handleTaskSearch}
-                                    placeholder="Search tasks"
+                                    className="inbox-search-input"
+                                    onChange={e => { handleTaskSearch(e); setCurrentPage(1); }}
+                                    placeholder="Search tasks…"
                                     aria-label="Search tasks"
                                 />
                             </div>
-                            <div className="d-flex">
-                                <span className="count task-result-count" title="Visible tasks">
-                                    {filteredTaskList &&
-                                        filteredTaskList.length}
-                                    /{taskList && taskList.length}
-                                </span>
+                            <button className="inbox-icon-btn" title="Filter" aria-label="Filter">
+                                <i className="fa-solid fa-filter" style={{ fontSize: 12 }}></i>
+                            </button>
+                            <button className="inbox-icon-btn" title="Sort" aria-label="Sort">
+                                <i className="fa-solid fa-arrow-up-wide-short" style={{ fontSize: 12 }}></i>
+                            </button>
+                        </div>
+
+                        {/* Filter chips */}
+                        <div className="inbox-filter-row" ref={filterRef}>
+                            {/* Priority filter */}
+                            <div className="inbox-filter-chip-wrap">
                                 <button
-                                    type="button"
-                                    className="btn btn-sm task-icon-button"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-title="Refresh task list"
-                                    aria-label="Refresh task list"
-                                    onClick={() => syncTaskList()}>
-                                    <i
-                                        title={
-                                            // data?.auto_refresh
-                                            //     ? `auto refresh in ${data?.auto_refresh} seconds`
-                                            //     : ""
-                                            notification.message
-                                        }
-                                        className={`fa-solid fa-arrows-rotate ${data?.auto_refresh &&
-                                            data?.auto_refresh !==
-                                            "0" &&
-                                            data?.auto_refresh !== ""
-                                            ? "refresh_interval"
-                                            : ""
-                                            } ${notification?.count > 0
-                                                ? "active"
-                                                : ""
-                                            }`}></i>
+                                    className={`inbox-filter-chip ${filters.priority !== "all" ? "active" : ""}`}
+                                    onClick={() => setActiveFilterDropdown(activeFilterDropdown === "priority" ? null : "priority")}>
+                                    Priority
+                                    {filters.priority !== "all" && `: ${priorityOptions.find(o => o.value === filters.priority)?.label}`}
+                                    <i className={`fa-solid fa-chevron-${activeFilterDropdown === "priority" ? "up" : "down"}`} style={{ fontSize: 9 }}></i>
                                 </button>
+                                {activeFilterDropdown === "priority" && (
+                                    <div className="inbox-filter-dropdown">
+                                        {priorityOptions.map(opt => (
+                                            <div
+                                                key={opt.value}
+                                                className={`inbox-filter-option ${filters.priority === opt.value ? "selected" : ""}`}
+                                                onClick={() => { setFilters(f => ({ ...f, priority: opt.value })); setActiveFilterDropdown(null); setCurrentPage(1); }}>
+                                                {opt.label}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                        <div className="row enable-vertical-scroll">
-                            <div className="p-2">
-                                <ol className="task-list p-0">
-                                    {filteredTaskList &&
-                                        filteredTaskList.map(currentTask => {
-                                            return (
-                                                <li
-                                                    className={`task-item ${currentTask.id ==
-                                                        selectedTask.id
-                                                        ? "selected-task"
-                                                        : "un-selected-task"
-                                                        } `}
-                                                    key={currentTask.id}
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    aria-current={
-                                                        currentTask.id == selectedTask.id
-                                                            ? "true"
-                                                            : undefined
-                                                    }
-                                                    onClick={() => {
-                                                        handleTaskSelection(
-                                                            currentTask,
-                                                        );
-                                                    }}
-                                                    onKeyDown={event => {
-                                                        if (event.key === "Enter" || event.key === " ") {
-                                                            event.preventDefault();
-                                                            handleTaskSelection(currentTask);
-                                                        }
-                                                    }}>
-                                                    <div className="col-sm-12 task-name">
-                                                        {currentTask?.ref_code && (
-                                                            <div className="process-task">
-                                                                <div className="case-ref">
-                                                                    <span>
-                                                                        Ref:{" "}
-                                                                        {
-                                                                            currentTask?.ref_code
-                                                                        }
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        <div className="process-task-name d-flex">
-                                                            {/* {currentTask?JSON.stringify(currentTask):""} */}
-                                                            <div className="col-sm-10">
-                                                                <div className="process-task task-title">
-                                                                    <span>
-                                                                        {" "}
-                                                                        {
-                                                                            currentTask.task_name
-                                                                        }
-                                                                    </span>
-                                                                </div>
-                                                                <div className="task-meta">
-                                                                    {" "}
-                                                                    {currentTask
-                                                                        ?.variables
-                                                                        ?.subject
-                                                                        ? currentTask
-                                                                            ?.variables
-                                                                            ?.subject
-                                                                        : currentTask.process_name}
-                                                                </div>
 
-                                                                {data?.use_dynamic ===
-                                                                    true &&
-                                                                    parsedOptions.length >
-                                                                    0 &&
-                                                                    parsedOptions.map(
-                                                                        option => (
-                                                                            <div
-                                                                                key={
-                                                                                    option.id
-                                                                                }
-                                                                                className="process-task">
-                                                                                <span>
-                                                                                    {
-                                                                                        option.label
-                                                                                    }
-
-                                                                                    :{" "}
-                                                                                    {currentTask
-                                                                                        .variables[
-                                                                                        option
-                                                                                            .value
-                                                                                    ] ||
-                                                                                        ""}
-                                                                                </span>
-                                                                            </div>
-                                                                        ),
-                                                                    )}
-
-                                                                {currentTask.date_created && (
-                                                                    <div className="task-comment-stamp row">
-                                                                        <div className="col-sm-12 d-flex">
-                                                                            <div className="col-sm-10">
-                                                                                <div className="col-sm-12">
-                                                                                    {/* <span
-                                                                            title={formatDateTimeForUserView(
-                                                                                currentTask?.followup,
-                                                                            )}>
-                                                                            Followup{" "}
-                                                                            {currentTask?.followup !==
-                                                                            ""
-                                                                                ? getTimeAgo(
-                                                                                      formatDateTimeForUserView(
-                                                                                          currentTask.followup,
-                                                                                      ),
-                                                                                  )
-                                                                                : " "}{" "}
-                                                                        </span>
-                                                                        |{" "} */}
-                                                                                    {currentTask?.due_date && (
-                                                                                        <span
-                                                                                            title={formatDateTimeForUserView(
-                                                                                                currentTask?.due_date,
-                                                                                            )}>
-                                                                                            {" "}
-                                                                                            {new Date(
-                                                                                                currentTask?.due_date,
-                                                                                            ) <
-                                                                                                new Date() ? (
-                                                                                                <>
-                                                                                                    Over
-                                                                                                    Due{" "}
-                                                                                                    {getTimeAgo(
-                                                                                                        currentTask.due_date,
-                                                                                                    )}
-                                                                                                </>
-                                                                                            ) : (
-                                                                                                <>
-                                                                                                    Due{" "}
-                                                                                                    {currentTask?.due_date !==
-                                                                                                        ""
-                                                                                                        ? getTimeAgo(
-                                                                                                            currentTask.due_date,
-                                                                                                        )
-                                                                                                        : " "}
-                                                                                                </>
-                                                                                            )}
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
-                                                                                {/* <div className="col-sm-12">
-                                                                        <span>
-                                                                            Created:{" "}
-                                                                            {formatDateTimeForUserView(
-                                                                                currentTask.date_created,
-                                                                            )}
-                                                                        </span>
-                                                                    </div> */}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="col-sm-2 mt-2 text-center">
-                                                                <img
-                                                                    className="image-styling-navbar"
-                                                                    src={getProfileImage(
-                                                                        currentTask.assignee
-                                                                            ? currentTask.assignee
-                                                                            : currentTask
-                                                                                .variables[
-                                                                            "assignee"
-                                                                            ],
-                                                                    )}
-                                                                    alt={`Assignee: ${getDisplayName(
-                                                                        currentTask.assignee
-                                                                            ? currentTask.assignee
-                                                                            : currentTask.variables["assignee"],
-                                                                    )}`}
-                                                                    onError="this.src='/theme/images/default-user-profile-img.png';this.onerror='';"
-                                                                    title={`Assignee: ${getDisplayName(
-                                                                        currentTask.assignee
-                                                                            ? currentTask.assignee
-                                                                            : currentTask
-                                                                                .variables[
-                                                                            "assignee"
-                                                                            ],
-                                                                    )}`}></img>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            );
-                                        })}
-                                    {filteredTaskList?.length === 0 && (
-                                        <li className="task-list-empty">
-                                            <i className="fa-regular fa-folder-open" aria-hidden="true"></i>
-                                            <span>No tasks match your search.</span>
-                                        </li>
-                                    )}
-                                </ol>
+                            {/* Due Date filter */}
+                            <div className="inbox-filter-chip-wrap">
+                                <button
+                                    className={`inbox-filter-chip ${filters.dueDate !== "all" ? "active" : ""}`}
+                                    onClick={() => setActiveFilterDropdown(activeFilterDropdown === "dueDate" ? null : "dueDate")}>
+                                    Due Date
+                                    {filters.dueDate !== "all" && `: ${dueDateOptions.find(o => o.value === filters.dueDate)?.label}`}
+                                    <i className={`fa-solid fa-chevron-${activeFilterDropdown === "dueDate" ? "up" : "down"}`} style={{ fontSize: 9 }}></i>
+                                </button>
+                                {activeFilterDropdown === "dueDate" && (
+                                    <div className="inbox-filter-dropdown">
+                                        {dueDateOptions.map(opt => (
+                                            <div
+                                                key={opt.value}
+                                                className={`inbox-filter-option ${filters.dueDate === opt.value ? "selected" : ""}`}
+                                                onClick={() => { setFilters(f => ({ ...f, dueDate: opt.value })); setActiveFilterDropdown(null); setCurrentPage(1); }}>
+                                                {opt.label}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
+
+                            {hasActiveFilters() && (
+                                <button className="inbox-filter-clear" onClick={clearFilters}>
+                                    Clear All
+                                </button>
+                            )}
                         </div>
+
+                        {/* Task groups */}
+                        <div className="inbox-task-groups-scroll">
+                            {pagedTasks.length === 0 ? (
+                                <div className="task-list-empty" style={{ padding: "30px 14px", textAlign: "center", color: "var(--text-muted)" }}>
+                                    <i className="fa-regular fa-folder-open" style={{ fontSize: 28, display: "block", marginBottom: 8, opacity: 0.5 }}></i>
+                                    {hasActiveFilters() ? "No tasks match the current filters." : "No tasks found."}
+                                </div>
+                            ) : (
+                                <>
+                                    {renderTaskGroup("Due Today", grouped["Due Today"])}
+                                    {renderTaskGroup("Due This Week", grouped["Due This Week"])}
+                                    {renderTaskGroup("Due Later", grouped["Due Later"])}
+                                </>
+                            )}
+                        </div>
+
+                        {/* Pagination */}
+                        {totalFiltered > 0 && (
+                            <div className="inbox-pagination">
+                                <span>
+                                    Showing {Math.min((safePage - 1) * PAGE_SIZE + 1, totalFiltered)}–{Math.min(safePage * PAGE_SIZE, totalFiltered)} of {totalFiltered} task{totalFiltered !== 1 ? "s" : ""}
+                                </span>
+                                <div className="inbox-page-btns">
+                                    <button
+                                        className="inbox-page-btn"
+                                        disabled={safePage === 1}
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        aria-label="Previous page">
+                                        <i className="fa-solid fa-chevron-left" style={{ fontSize: 10 }}></i>
+                                    </button>
+                                    <button className="inbox-page-btn current" aria-current="page">{safePage}</button>
+                                    <button
+                                        className="inbox-page-btn"
+                                        disabled={safePage >= totalPages}
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        aria-label="Next page">
+                                        <i className="fa-solid fa-chevron-right" style={{ fontSize: 10 }}></i>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
                 {/* {JSON.stringify(currentProcessState)} {taskList?.length } */}

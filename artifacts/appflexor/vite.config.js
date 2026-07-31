@@ -16,7 +16,14 @@ export default defineConfig({
         alias: {
             // Stub for optional Module Federation remote — replaced by a real host at runtime
             "app_plugins/AppView": path.resolve("./src/app_plugins/AppView.jsx"),
+            // Force ALL react imports — including pre-bundled deps — to use the
+            // single React 18.2.0 installed locally so no duplicate-React crash occurs.
+            "react":                path.resolve("./node_modules/react"),
+            "react-dom":            path.resolve("./node_modules/react-dom"),
+            "react/jsx-runtime":    path.resolve("./node_modules/react/jsx-runtime"),
+            "react/jsx-dev-runtime":path.resolve("./node_modules/react/jsx-dev-runtime"),
         },
+        dedupe: ["react", "react-dom"],
     },
     server: {
         port,
@@ -25,37 +32,37 @@ export default defineConfig({
         allowedHosts: true,
         proxy: {
             "/app/service": {
-                target: "https://demo.step2agility.com",
+                target: "https://demo.appflexor.com",
                 changeOrigin: true,
                 secure: true,
             },
             "/monitor/app/service": {
-                target: "https://demo.step2agility.com",
+                target: "https://demo.appflexor.com",
                 changeOrigin: true,
                 secure: true,
             },
             "/bpm/service": {
-                target: "https://demo.step2agility.com",
+                target: "https://demo.appflexor.com",
                 changeOrigin: true,
                 secure: true,
             },
             "/file/service": {
-                target: "https://demo.step2agility.com",
+                target: "https://demo.appflexor.com",
                 changeOrigin: true,
                 secure: true,
             },
             "/es/service": {
-                target: "https://demo.step2agility.com",
+                target: "https://demo.appflexor.com",
                 changeOrigin: true,
                 secure: true,
             },
             "/api/service": {
-                target: "https://demo.step2agility.com",
+                target: "https://demo.appflexor.com",
                 changeOrigin: true,
                 secure: true,
             },
             "/im/service": {
-                target: "https://demo.step2agility.com",
+                target: "https://demo.appflexor.com",
                 changeOrigin: true,
                 secure: true,
             },
