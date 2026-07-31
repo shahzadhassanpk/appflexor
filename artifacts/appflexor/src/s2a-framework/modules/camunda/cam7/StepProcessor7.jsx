@@ -1262,46 +1262,42 @@ function StepProcessor({
                             ? <>Created by <strong>{getDisplayName(task.assignee)}</strong> &bull; </>
                             : null}
                         {formatDateTimeForUserView(task.date_created)}
+                        {(() => {
+                            const pRaw = (task.variables?.priority || task.priority || "").toString().toLowerCase();
+                            const level = pRaw === "high" || pRaw === "1" ? "high"
+                                : pRaw === "low" || pRaw === "3" ? "low"
+                                : "medium";
+                            const label = { high: "High Priority", medium: "Medium Priority", low: "Low Priority" }[level];
+                            const flagColor = { high: "#e05252", medium: "#d4820a", low: "#38a169" }[level];
+                            return (
+                                <span className="s2a-task-priority-flag" style={{ color: flagColor }}>
+                                    <i className="fa-solid fa-flag" style={{ fontSize: 11 }}></i>
+                                    {label}
+                                </span>
+                            );
+                        })()}
+                        {task.due_date && (() => {
+                            const due = new Date(task.due_date);
+                            const now = new Date();
+                            const timeStr = due.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                            const dueDay = new Date(due); dueDay.setHours(0,0,0,0);
+                            const today  = new Date(now); today.setHours(0,0,0,0);
+                            const diff   = Math.round((dueDay - today) / 86400000);
+                            const dayLabel = diff === 0 ? "Today"
+                                : diff === 1 ? "Tomorrow"
+                                : diff === -1 ? "Yesterday"
+                                : diff > 1 && diff < 7
+                                    ? due.toLocaleDateString([], { weekday: "short" })
+                                    : due.toLocaleDateString([], { day: "numeric", month: "short" });
+                            const isOverdue = due < now;
+                            return (
+                                <span className={`s2a-task-due-label ${isOverdue ? "overdue" : ""}`}>
+                                    <i className="fa-regular fa-clock" style={{ fontSize: 11 }}></i>
+                                    Due {dayLabel}, {timeStr}
+                                </span>
+                            );
+                        })()}
                     </div>
-                </div>
-
-                {/* Col 2: priority + due date */}
-                <div className="s2a-task-header-right">
-                    {(() => {
-                        const pRaw = (task.variables?.priority || task.priority || "").toString().toLowerCase();
-                        const level = pRaw === "high" || pRaw === "1" ? "high"
-                            : pRaw === "low" || pRaw === "3" ? "low"
-                            : "medium";
-                        const label = { high: "High Priority", medium: "Medium Priority", low: "Low Priority" }[level];
-                        const flagColor = { high: "#e05252", medium: "#d4820a", low: "#38a169" }[level];
-                        return (
-                            <span className="s2a-task-priority-flag" style={{ color: flagColor }}>
-                                <i className="fa-solid fa-flag" style={{ fontSize: 11 }}></i>
-                                {label}
-                            </span>
-                        );
-                    })()}
-                    {task.due_date && (() => {
-                        const due = new Date(task.due_date);
-                        const now = new Date();
-                        const timeStr = due.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-                        const dueDay = new Date(due); dueDay.setHours(0,0,0,0);
-                        const today  = new Date(now); today.setHours(0,0,0,0);
-                        const diff   = Math.round((dueDay - today) / 86400000);
-                        const dayLabel = diff === 0 ? "Today"
-                            : diff === 1 ? "Tomorrow"
-                            : diff === -1 ? "Yesterday"
-                            : diff > 1 && diff < 7
-                                ? due.toLocaleDateString([], { weekday: "short" })
-                                : due.toLocaleDateString([], { day: "numeric", month: "short" });
-                        const isOverdue = due < now;
-                        return (
-                            <span className={`s2a-task-due-label ${isOverdue ? "overdue" : ""}`}>
-                                <i className="fa-regular fa-clock" style={{ fontSize: 11 }}></i>
-                                Due {dayLabel}, {timeStr}
-                            </span>
-                        );
-                    })()}
                 </div>
             </div>
             <div className="s2a-process-form">

@@ -487,28 +487,22 @@
 /* ── Task header (StepProcessor) ────────────────────── */
 
 .s2a-task-header {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     padding: 10px 14px;
     border-bottom: 1px solid var(--border-color);
     background: var(--primary-color);
     flex-shrink: 0;
 }
 
-/* Col 1 — title + process badge + creator */
 .s2a-task-header-centre {
     min-width: 0;
+    width: 100%;
 }
 
-/* Col 2 — collapse btn + priority + due date */
-.s2a-task-header-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-}
+/* hidden — right col no longer used */
+.s2a-task-header-right { display: none; }
 
 .s2a-task-header-back {
     display: flex;
@@ -563,21 +557,18 @@
 }
 
 .s2a-task-header-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
     font-size: 12px;
     color: var(--text-muted);
+    margin-top: 3px;
 }
 
 .s2a-task-header-meta strong {
     color: var(--font-color);
     font-weight: 500;
-}
-
-/* Right side: priority flag + due date */
-.s2a-task-header-right {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex-shrink: 0;
 }
 
 .s2a-task-priority-flag {
