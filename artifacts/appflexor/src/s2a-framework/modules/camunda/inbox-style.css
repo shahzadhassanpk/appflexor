@@ -487,12 +487,26 @@
 /* ── Task header (StepProcessor) ────────────────────── */
 
 .s2a-task-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
     padding: 10px 14px;
     border-bottom: 1px solid var(--border-color);
     background: var(--primary-color);
+    flex-shrink: 0;
+}
+
+/* Col 1 — title + process badge + creator */
+.s2a-task-header-centre {
+    min-width: 0;
+}
+
+/* Col 2 — collapse btn + priority + due date */
+.s2a-task-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     flex-shrink: 0;
 }
 
@@ -514,11 +528,6 @@
 
 .s2a-task-header-back:hover {
     background: var(--border-color);
-}
-
-.s2a-task-header-centre {
-    flex: 1;
-    min-width: 0;
 }
 
 .s2a-task-header-title-row {
