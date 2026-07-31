@@ -291,16 +291,39 @@ function RenderListView({
 
     // ── Render helpers ───────────────────────────────
 
+    function formatDueLabel(dueDateStr) {
+        if (!dueDateStr) return "";
+        const due = new Date(dueDateStr);
+        const now = new Date();
+
+        // Time portion: "06:00 PM"
+        const timeStr = due.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+        // Day label
+        const dueDay = new Date(due); dueDay.setHours(0, 0, 0, 0);
+        const today  = new Date(now); today.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((dueDay - today) / 86400000);
+
+        if (diffDays === 0)  return `Today, ${timeStr}`;
+        if (diffDays === 1)  return `Tomorrow, ${timeStr}`;
+        if (diffDays === -1) return `Yesterday, ${timeStr}`;
+        if (diffDays > 1 && diffDays < 7) {
+            const dayName = due.toLocaleDateString([], { weekday: "short" });
+            return `${dayName}, ${timeStr}`;
+        }
+        // Further out: "Mon 27 Jul, HH:MM"
+        const dateLabel = due.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
+        return `${dateLabel}, ${timeStr}`;
+    }
+
     function renderDueBadge(task) {
         if (!task.due_date) return null;
         const due = new Date(task.due_date);
-        const now = new Date();
-        const isOverdue = due < now;
-        const formatted = formatDateTimeForUserView(task.due_date);
+        const isOverdue = due < new Date();
         return (
             <span className={`inbox-due-badge ${isOverdue ? "overdue" : ""}`}>
                 <i className="fa-regular fa-calendar" style={{ fontSize: 10 }}></i>
-                {isOverdue ? "Overdue · " : ""}{formatted}
+                {formatDueLabel(task.due_date)}
             </span>
         );
     }

@@ -1,1 +1,4 @@
 - [Datalist CSS variables](datalist-css-variables.md) — use --dl-* tokens defined locally in view-style.css; advance theme only exposes --primary-color/--font-color globally.
+- [Appflexor React 18 pinning](appflexor-react18.md) — appflexor must stay on React 18.2.0; pnpm override + Vite alias both required to prevent duplicate-React crashes.
+- [Appflexor default theme](appflexor-default-theme.md) — default theme changed from "dark" to "light" in S2aApp.jsx to prevent black screen on fresh browser with empty localStorage.
+- [Inbox CSS location](inbox-css-location.md) — task inbox styles live in camunda/inbox-style.css; imported by both InboxListView.jsx and CommentBox.jsx.
