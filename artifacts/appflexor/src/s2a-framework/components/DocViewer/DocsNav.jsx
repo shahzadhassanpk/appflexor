@@ -17,6 +17,8 @@ export const DOC_MANIFEST = [
         docs: [
             { title: "Business Areas", slug: "business-areas", excerpt: "Define top-level organisational domains for processes" },
             { title: "Process Categories", slug: "process-categories", excerpt: "Organise processes into structured sub-groups" },
+            { title: "Deploy Process", slug: "deploy-process", excerpt: "Upload and publish BPMN workflows to the process engine" },
+            { title: "Monitor Process", slug: "monitor-process", excerpt: "Track status and performance of running process instances" },
         ],
     },
     {
