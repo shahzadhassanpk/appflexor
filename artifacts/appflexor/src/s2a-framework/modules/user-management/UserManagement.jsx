@@ -81,9 +81,14 @@ function UserManagement() {
                 id="user-management"
                 className="user-management static-module-bg container-fluid">
                 <div className="row">
-                    <div className="col-sm-12">
-                        <div className="module-title">
-                            <span>User Management</span>
+                    <div className="col-sm-12 datalist-viewer">
+                        <div className="s2a-datalist-header">
+                            <div className="s2a-dl-title-wrapper">
+                                <div className="s2a-dl-title">
+                                    <span>Administrate System</span>
+                                </div>
+                                <span>Administrate user accounts, group memberships, and organizational structures</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -97,11 +102,10 @@ function UserManagement() {
                                 return (
                                     <li className="nav-item">
                                         <button
-                                            className={`nav-link ${
-                                                tab.active === "true"
-                                                    ? "active"
-                                                    : ""
-                                            } `}
+                                            className={`nav-link ${tab.active === "true"
+                                                ? "active"
+                                                : ""
+                                                } `}
                                             data-bs-toggle="tab"
                                             data-bs-target={`#${tab.code}`}
                                             type="button"
@@ -157,9 +161,8 @@ function CreateComponent({ component, componentList, activeTab }) {
     if (typeof componentList[component.code] !== "undefined") {
         return (
             <div
-                className={`tab-pane fade ${
-                    component.code === activeTab ? "active show" : ""
-                } `}
+                className={`tab-pane fade ${component.code === activeTab ? "active show" : ""
+                    } `}
                 id={component.code}>
                 {React.createElement(componentList[component.code], {
                     key: component.code,

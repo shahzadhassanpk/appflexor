@@ -2,58 +2,32 @@ import React, { Suspense, useEffect, useState, lazy } from "react";
 import { ErrorBoundary } from "../../utils/ErrorBoundry";
 import Loading from "../../components/Loading/loading";
 const DataList = lazy(() =>
-    import("../data-management/datalist-builder/datalist-designer/DataList"),
+    import("./datalist-builder/datalist-designer/DataList"),
 );
-const JdbcDataSource = lazy(() => import("./JdbcDataSource"));
-const Forms = lazy(() => import("./form-builder/Forms/Forms"));
-const DataApi = lazy(() => import("./rest-console/DataApi"));
 const EmailProfiles = lazy(() => import("./EmailProfiles"));
 const EmailTemplates = lazy(() => import("./EmailTemplates"));
-const SchemaManagement = lazy(() =>
-    import("./schema-management/schema-management"),
-);
 // import Reports from "./ReportTemplates";
 // import ReportsConfig from "./ReportsConfig";
 
-const TABS = [
+const TABS = [    
     {
-        name: "Form Builder",
-        code: "FORM_BUILDER",
-        active: "true",
-    },
-    {
-        name: "Datalist Builder",
-        code: "DATALIST_BUILDER",
+        name: "Email Accounts",
+        code: "EMAIL_PROFILE",
         active: "false",
     },
     {
-        name: "SQL APIs",
-        code: "DATA_APIS",
-        active: "false",
-    },
-    {
-        name: "DB Explorer",
-        code: "SCHEMA_EXPLORER",
-        active: "false",
-    },
-    {
-        name: "Data Sources",
-        code: "JDBC_DATA_SOURCES",
+        name: "Email Templates",
+        code: "EMAIL_TEMPLATES",
         active: "false",
     },
 ];
 
 const componentRegistry = {
-    // JASPER_REPORT: Reports,
-    // REPORTS_CONFIG: ReportsConfig,
-    JDBC_DATA_SOURCES: JdbcDataSource,
-    DATA_APIS: DataApi,
-    FORM_BUILDER: Forms,
-    DATALIST_BUILDER: DataList,
-    SCHEMA_EXPLORER: SchemaManagement,
+    EMAIL_PROFILE: EmailProfiles,
+    EMAIL_TEMPLATES: EmailTemplates,
 };
 
-export default function DataManagement() {
+export default function EmailManagement() {
     const [tabs, setTabs] = useState([]);
     const [activeTab, setActiveTab] = useState("");
 
@@ -94,16 +68,16 @@ export default function DataManagement() {
     return (
         <ErrorBoundary>
             <div
-                id="DataManagement"
-                className="data-management container-fluid static-module-bg">
+                id="EmailManagement"
+                className="email-management container-fluid static-module-bg">
                 <div className="row">
                     <div className="col-sm-12 datalist-viewer">
                         <div className="s2a-datalist-header">
                             <div className="s2a-dl-title-wrapper">
                                 <div className="s2a-dl-title">
-                                    <span>Administrate Data</span>
+                                    <span>Administrate Outbound Emails</span>
                                 </div>
-                                <span>Design forms, manage data lists, and configure SQL-based APIs</span>
+                                <span>Manage email accounts and templates for system‑generated messages.</span>
                             </div>
                         </div>
                     </div>

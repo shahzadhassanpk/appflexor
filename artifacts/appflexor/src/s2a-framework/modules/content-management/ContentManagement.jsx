@@ -123,9 +123,14 @@ export default function ContentManagement() {
                 id="content-management"
                 className="content-management container-fluid static-module-bg">
                 <div className="row">
-                    <div className="col-sm-12">
-                        <div className="module-title">
-                            <span>Content Management</span>
+                    <div className="col-sm-12 datalist-viewer">
+                        <div className="s2a-datalist-header">
+                            <div className="s2a-dl-title-wrapper">
+                                <div className="s2a-dl-title">
+                                    <span>Administrate Web Contents</span>
+                                </div>
+                                <span>Create, edit, and publish web posts and digital contents</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -137,11 +142,10 @@ export default function ContentManagement() {
                                     return (
                                         <li className="nav-item">
                                             <button
-                                                className={`nav-link ${
-                                                    tab.active === "true"
-                                                        ? "active"
-                                                        : ""
-                                                } `}
+                                                className={`nav-link ${tab.active === "true"
+                                                    ? "active"
+                                                    : ""
+                                                    } `}
                                                 data-bs-toggle="tab"
                                                 data-bs-target={`#${tab.code}`}
                                                 type="button"
@@ -209,9 +213,8 @@ function CreateComponent({
     if (typeof componentList[component.code] !== "undefined") {
         return (
             <div
-                className={`tab-pane fade ${
-                    component.code === activeTab ? "active show" : ""
-                } `}
+                className={`tab-pane fade ${component.code === activeTab ? "active show" : ""
+                    } `}
                 id={component.code}>
                 {React.createElement(componentList[component.code], {
                     key: component.code,
