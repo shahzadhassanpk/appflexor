@@ -193,7 +193,7 @@ const PANELS = [
                 description: "Manage accounts and templates for sending system‑generated emails."
             },
             {
-                icon: "fa-solid fa-brain",
+                icon: "fa-solid fa-magnifying-glass-chart",
                 label: "Custom Reports and Analytics",
                 route: "/data-analysis",
                 description: "Deploy custom reports to analyze process and business performance"
