@@ -276,6 +276,139 @@ AUTH_KEY: <AUTH_KEY from Login API>
 
 ---
 
+---
+
+## Process API — Start and Advance Processes via `/bpm/service`
+
+The BPM service lets external systems start process instances, complete user tasks, and update process variables programmatically. All calls go through the single proxy endpoint `/bpm/service?service.key=bpm.data`, which wraps the underlying Camunda REST API. The inner Camunda operation is described by `path`, `method`, and `data` in the request body.
+
+> **Authentication:** Include `AUTH_KEY` header on every call, exactly as with the Data API.
+
+---
+
+### Start a Process Instance
+
+**Request**
+
+```
+POST /bpm/service?service.key=bpm.data
+Content-Type: application/json
+AUTH_KEY: <AUTH_KEY from Login API>
+```
+
+```json
+{
+  "path": "/process-definition/key/leave-request/start",
+  "method": "POST",
+  "data": {
+    "businessKey": "REC-001",
+    "variables": {
+      "requestor":   { "value": "jane.doe",      "type": "String"  },
+      "leaveType":   { "value": "Annual",         "type": "String"  },
+      "startDate":   { "value": "2026-08-10",     "type": "String"  },
+      "days":        { "value": 5,                "type": "Double"  },
+      "approved":    { "value": false,            "type": "Boolean" }
+    }
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `path` | Camunda REST path — replace `leave-request` with your **Process Definition Key** |
+| `method` | Always `"POST"` for starting a process |
+| `data.businessKey` | Your application's record ID that links the process instance back to your data |
+| `data.variables` | Map of process variables — each entry is `{ "value": <val>, "type": <type> }` |
+
+**With a tenant ID** — if your deployment uses multi-tenancy, include the tenant in the path:
+
+```json
+{
+  "path": "/process-definition/key/leave-request/tenant-id/acme-corp/start",
+  "method": "POST",
+  "data": {
+    "businessKey": "REC-001",
+    "variables": {
+      "requestor": { "value": "jane.doe", "type": "String" }
+    }
+  }
+}
+```
+
+**Variable types**
+
+| Form field type | Camunda type to use |
+|---|---|
+| Text, select, date, textarea, radio | `"String"` |
+| Number | `"Double"` |
+| Checkbox | `"Boolean"` |
+
+**Response** — HTTP `200` on success. The process instance is created and moves to its first task.
+
+---
+
+### Complete a User Task
+
+Once a process is running, advance it by completing the active user task.
+
+```
+POST /bpm/service?service.key=bpm.data
+Content-Type: application/json
+AUTH_KEY: <AUTH_KEY from Login API>
+```
+
+```json
+{
+  "path": "/task/8f3a21bc-1234-5678-abcd-ef0123456789/complete",
+  "method": "POST",
+  "data": {
+    "variables": {
+      "approvalDecision": { "value": "Approved", "type": "String" },
+      "approverComment":  { "value": "Looks good", "type": "String" }
+    }
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `path` | `/task/{task_id}/complete` — replace `{task_id}` with the Camunda task ID |
+| `data.variables` | Updated process variables to set on completion (optional) |
+
+**Response** — HTTP `200` on success. The process advances to the next step.
+
+---
+
+### Update a Single Process Variable
+
+Update one variable on a running process instance without completing a task.
+
+```
+POST /bpm/service?service.key=bpm.data
+Content-Type: application/json
+AUTH_KEY: <AUTH_KEY from Login API>
+```
+
+```json
+{
+  "path": "/process-instance/5c9d12ef-abcd-0000-1111-222233334444/variables/approvalDecision",
+  "method": "PUT",
+  "data": {
+    "value": "Escalated",
+    "type": "String"
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `path` | `/process-instance/{instance_id}/variables/{variableName}` |
+| `method` | `"PUT"` for variable updates |
+| `data.value` | New value for the variable |
+| `data.type` | Camunda type string (see type table above) |
+
+---
+
 ## Best Practices
 
 - **Always authenticate first.** Call the Login API and store `AUTH_KEY` before any data API call.
