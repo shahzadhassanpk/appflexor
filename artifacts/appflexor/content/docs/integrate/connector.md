@@ -2,7 +2,33 @@
 
 ## Purpose
 
-The **Appflexor Connector** lets you integrate your existing external systems — ERP, CRM, HRMS, databases, or any custom application — directly into Appflexor business processes as **External Workers**. Instead of replacing your existing systems, the Connector pattern lets Appflexor orchestrate work across them: a process step can invoke an external system, wait for it to complete, then continue with the result. This enables end-to-end automation that spans multiple systems without custom middleware.
+The **Appflexor Connector** is a ready-to-run Node.js worker that integrates your external systems — ERP, CRM, HRMS, databases, or any custom application — directly into Appflexor business processes. Instead of polling Camunda for work, it connects to Appflexor's **WebSocket push channel**: Appflexor pushes tasks to the worker the moment they are ready, eliminating polling delays and excess API calls. The worker authenticates via the Appflexor login API, subscribes to one or more named topics, and calls the Appflexor BPM proxy to complete each task.
+
+---
+
+## How It Works
+
+```
+Appflexor Process
+       │
+       ▼
+  [Service Task]  ──── topic: "demo-worker" ────►  Connector (Node.js)
+  (waits for                                         1. receives task via WebSocket
+   completion)                                       2. runs your custom logic
+       │                                             3. completes task via BPM API
+       │◄──────────────── task complete ────────────┘
+       ▼
+  [Next Step]
+```
+
+**Connection lifecycle:**
+
+1. **Authenticate** — POST to `AUTH_URL` with `LOGIN` / `PASSWORD` credentials. Appflexor returns an `AUTH_KEY` session token.
+2. **Connect** — Open a WebSocket to `WS_URL` with the `AUTH_KEY` in the connection headers.
+3. **Subscribe** — After the socket opens, send a subscribe message listing the topics and group ID.
+4. **Receive tasks** — Appflexor pushes a message for each matching Service Task. The message contains the topic name and a JSON payload with the `taskId` and `workerId`.
+5. **Complete tasks** — POST to the BPM API via `BPM_URL`, passing the task ID and worker ID. Appflexor proxies the call to Camunda and resumes the process.
+6. **Reconnect** — If the WebSocket closes for any reason, the connector waits 5 seconds and restarts the entire flow (re-authenticates and reconnects).
 
 ---
 
@@ -10,109 +36,184 @@ The **Appflexor Connector** lets you integrate your existing external systems �
 
 | Term | Description |
 |---|---|
-| **External Worker** | A service running outside Appflexor that polls for tasks assigned to it, executes work in an external system, and reports completion back to Appflexor. |
-| **Process Engine** | The BPM execution engine registered in Appflexor (Camunda v7, Camunda v8, or Joget) that manages process instances and assigns work to workers. |
-| **Service Task** | A BPMN process step with a topic/service key that is handled by an External Worker rather than a human user. |
-| **Topic** | The named channel an External Worker subscribes to. The worker receives only Service Tasks whose topic matches its subscription. |
-| **Process Definition Key** | The identifier of the BPMN process that contains Service Tasks for external workers. |
-| **Completion Payload** | The data (variables) the External Worker sends back to Appflexor when it completes a task — these become process variables available to subsequent steps. |
-| **BPM API URL** | The endpoint External Workers call to poll for tasks and submit completions. Configured per registered Process Engine. |
+| **Topic** | The named channel a Service Task publishes on. The connector subscribes to one or more topics and only receives tasks that match. |
+| **AUTH_KEY** | The session token returned by the Appflexor login API. Sent as the `AUTH_KEY` header on all subsequent API and WebSocket calls. |
+| **Group ID** | Identifies a pool of worker instances sharing the same subscription. Tasks are distributed across workers in the same group. |
+| **BPM Proxy** | The `BPM_URL` endpoint (`/bpm/service?service.key=bpm.data`) that the connector calls to complete tasks. Appflexor forwards these to the underlying Camunda engine — no direct Camunda access is needed. |
+| **taskId** | The Camunda external task ID pushed by Appflexor. Required in the completion call. |
+| **workerId** | Identifies which worker instance is completing the task. Returned by Appflexor in the push payload. |
 
 ---
 
-## How the Connector Pattern Works
+## Environment Variables
 
-```
-Appflexor Process
-       │
-       ▼
-  [Service Task]  ──── topic: "create-invoice" ────►  External Worker
-  (waits for                                            (calls ERP system,
-   completion)                                          creates invoice)
-       │                                                      │
-       │◄──────────── completes task + returns invoice_id ───┘
-       ▼
-  [Next Step]
-```
+All configuration is supplied through environment variables. Set these as **Replit Secrets** (for credentials) or **shared env vars** (for URLs and non-sensitive config) before starting the worker.
 
-1. The process reaches a **Service Task** and parks — it does not time out.
-2. The External Worker polls Appflexor via the BPM API, requesting tasks matching its **Topic**.
-3. Appflexor returns the task ID, process variables, and any input data.
-4. The External Worker performs the work in the target external system.
-5. The worker calls the BPM API to complete the task, optionally returning output variables.
-6. Appflexor resumes the process from the next step.
+| Variable | Description | Example |
+|---|---|---|
+| `LOGIN` | Appflexor username (**secret**) | `admin` |
+| `PASSWORD` | Appflexor password (**secret**) | `••••••••` |
+| `AUTH_URL` | Login endpoint | `https://demo.step2agility.com/app/service?service.key=login` |
+| `BPM_URL` | BPM proxy endpoint for task completion | `https://demo.step2agility.com/bpm/service?service.key=bpm.data` |
+| `WS_URL` | WebSocket push endpoint | `wss://demo.step2agility.com/worker` |
+| `TOPICS` | JSON array of topic objects to subscribe to | `[{"topic":"demo-worker"}]` |
+| `GROUP_ID` | Worker group identifier | `camunda` |
+
+> **Note:** Replace `demo.step2agility.com` with your own Appflexor instance hostname. The endpoint paths (`/app/service`, `/bpm/service`, `/worker`) remain the same across all instances.
 
 ---
 
 ## Step-by-Step Setup
 
-### 1 — Register a Process Engine
+### 1 — Design the BPMN Process with a Service Task
 
-1. Navigate to **Orchestrate → Configure Processes → Process Engine**.
-2. Click **Add New**.
-3. Fill in:
-   - **Engine Type** — select Camunda v7, Camunda v8, or Joget.
-   - **Service URL** — the BPM engine's base URL (e.g., `https://bpm.your-domain.com/engine-rest`).
-   - **Username / Password** — credentials for the engine's REST API.
-   - **Active** — toggle on to enable this engine.
-4. Click **Save**. The engine is now available for process deployment and worker polling.
+In Camunda Modeler:
 
-### 2 — Design the BPMN Process with Service Tasks
-
-In your BPMN modeller (e.g., Camunda Modeler):
-
-1. Add a **Service Task** to your process diagram.
+1. Add a **Service Task** to your BPMN diagram.
 2. Set the task's **Implementation** to `External`.
-3. Set the **Topic** to a unique name your External Worker will subscribe to (e.g., `create-invoice`).
-4. Map any input variables the worker will need, and declare expected output variables.
-5. Save the `.bpmn` file.
+3. Set the **Topic** to match one of the topics in the connector's `TOPICS` list (e.g. `demo-worker`).
+4. Save and export the `.bpmn` file.
 
-### 3 — Deploy the Process to Appflexor
+### 2 — Deploy the Process
 
-1. Go to **Orchestrate → Deploy Processes**.
-2. Click **Add New** or select an existing process definition.
-3. Upload the `.bpmn` file.
-4. Select the **Process Engine** registered in step 1.
-5. Click **Deploy Process**. Appflexor deploys it to the engine and makes it available to start.
+1. Navigate to **Orchestrate → Configure Processes → Deploy Processes**.
+2. Click **Add New**, upload the `.bpmn` file, and click **Save**.
+3. The process is now live and will park at any Service Task with a matching topic until the connector completes it.
 
-### 4 — Build and Run an External Worker
+### 3 — Configure the Connector
 
-An External Worker is a standalone service (any language) that:
+Set the environment variables listed above. In Replit:
 
-1. **Polls** the BPM API for tasks:
-   ```
-   GET {BPM_API_URL}/external-task/fetchAndLock
-   Body: { workerId: "my-worker", topics: [{ topicName: "create-invoice", lockDuration: 30000 }] }
-   ```
+- Add `LOGIN` and `PASSWORD` via **Tools → Secrets** (🔒).
+- `AUTH_URL`, `BPM_URL`, `WS_URL`, `TOPICS`, and `GROUP_ID` are already set as shared env vars — update them if your instance hostname is different.
 
-2. **Processes** each returned task — calling your ERP, HRMS, or other system.
+To subscribe to multiple topics, provide a JSON array in `TOPICS`:
 
-3. **Completes** the task when done:
-   ```
-   POST {BPM_API_URL}/external-task/{taskId}/complete
-   Body: { workerId: "my-worker", variables: { invoice_id: { value: "INV-001", type: "String" } } }
-   ```
+```
+TOPICS=[{"topic":"demo-worker"},{"topic":"invoice-worker"}]
+```
 
-4. **Reports failure** if the external system errors:
-   ```
-   POST {BPM_API_URL}/external-task/{taskId}/failure
-   Body: { workerId: "my-worker", errorMessage: "ERP timeout", retries: 2, retryTimeout: 60000 }
-   ```
+### 4 — Start the Worker
 
-### 5 — Monitor External Task Execution
+In Replit, start the **appflexor-connector: worker** workflow from the Workflows panel. The console shows connection progress:
 
-1. Go to **Orchestrate → Monitor Processes**.
-2. Use the **Process Monitor** to filter running instances by name or ID.
-3. Open **Camunda Cockpit** (available via the "Open Cockpit" link) to inspect external task queues, incidents, and retry states in detail.
+```
+🔐 Credentials loaded for user: {"username":"admin"}
+✅ Auth token received
+✅ Connected to WebSocket server
+✅ Subscription sent for topics: [{"topic":"demo-worker"}]
+```
+
+The worker is now live and waiting for tasks. When a process reaches a matching Service Task, you will see:
+
+```
+📨 Processing topic: demo-worker
+🔄 Completing task abc123
+✅ Task completed: abc123
+```
+
+### 5 — Add Your Business Logic
+
+By default the connector completes every task immediately without doing any external work — this is a pass-through stub. To integrate a real system, edit `appflexor-worker.js` and add your logic inside `completeTask` before the completion call:
+
+```js
+async function completeTask(authKey, payload) {
+  try {
+    console.log("🔄 Completing task", payload.taskId);
+    const path     = `/external-task/${payload.taskId}/complete`;
+    const workerId = payload.workerId || "default-worker";
+
+    // ── ADD YOUR LOGIC HERE ──────────────────────────────────────────
+    // e.g. call an ERP, update a database, send an email, etc.
+    // const result = await myErpClient.createInvoice(payload);
+    // ────────────────────────────────────────────────────────────────
+
+    await axios.post(BPM_URL, { method: "POST", path, data: { workerId } }, {
+      headers: { AUTH_KEY: authKey },
+    });
+    console.log("✅ Task completed:", payload.taskId);
+  } catch (err) {
+    console.error("❌ Failed to complete task:", err.message);
+  }
+}
+```
+
+The full task `payload` received from Appflexor looks like:
+
+```json
+{
+  "taskId": "abc123",
+  "workerId": "default-worker"
+}
+```
+
+Process variables set on the Service Task by the BPMN designer are available on the payload and can be used in your integration logic.
+
+---
+
+## Authentication Flow (Reference)
+
+The connector calls the standard Appflexor login endpoint:
+
+```
+POST https://{your-instance}/app/service?service.key=login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "••••••••"
+}
+```
+
+Response:
+
+```json
+{
+  "C_DATA": {
+    "AUTH_KEY": "eyJ..."
+  }
+}
+```
+
+The `AUTH_KEY` value is then sent as a header on every subsequent request:
+- **WebSocket connection:** `AUTH_KEY: eyJ...` in the upgrade headers
+- **BPM completion call:** `AUTH_KEY: eyJ...` in the POST headers
+
+---
+
+## Completion API (Reference)
+
+Task completion is proxied through Appflexor rather than calling Camunda directly:
+
+```
+POST https://{your-instance}/bpm/service?service.key=bpm.data
+AUTH_KEY: {auth_key}
+Content-Type: application/json
+
+{
+  "method": "POST",
+  "path": "/external-task/{taskId}/complete",
+  "data": {
+    "workerId": "{workerId}"
+  }
+}
+```
+
+---
+
+## Monitoring
+
+1. Navigate to **Orchestrate → Configure Processes → Monitor Processes**.
+2. The process instance will advance past the Service Task once the connector completes it.
+3. If the connector fails to complete a task, the instance stays parked at the Service Task — visible in Camunda Cockpit as an open external task or incident.
 
 ---
 
 ## Best Practices
 
-- **Keep workers stateless.** Each External Worker invocation should be self-contained — store any state in process variables, not in the worker's memory, so multiple instances can run safely.
-- **Set realistic lock durations.** Choose a `lockDuration` long enough for your external system to respond (plus retry margin), but not so long that a crashed worker holds locks for hours.
-- **Implement retries and failure reporting.** Always call the failure endpoint with a retry count and timeout when an external system errors — this lets Appflexor automatically retry without human intervention.
-- **Use meaningful topic names.** Choose topic names that describe the business operation, not the technical system — `create-invoice` is better than `erp-call-post`.
-- **Secure the BPM API URL.** Restrict access to the BPM engine's REST API to known worker IP ranges. External Workers should communicate over TLS.
-- **Log worker activity.** Log every task fetch, completion, and failure in your External Worker with the task ID and process instance ID — essential for debugging incidents.
-- **Test with the Process Monitor.** After deploying a new integration, run a test process instance and watch the Monitor to confirm external tasks are picked up, completed, and that variables flow correctly into the next step.
+- **Keep workers stateless.** Each task completion should be self-contained. Store outcome data as process variables rather than in the worker's memory.
+- **Handle errors gracefully.** If your external system call fails, log the error and consider calling the failure endpoint manually so Camunda can retry or escalate rather than leaving the task locked.
+- **Use meaningful topic names.** Name topics after the business operation, not the technical system — `create-invoice` is clearer than `erp-post-call`.
+- **Run one worker per topic group.** If you have high task volumes, run multiple instances of the connector with the same `GROUP_ID` — Appflexor distributes tasks across them automatically.
+- **Rotate credentials periodically.** Update `LOGIN` and `PASSWORD` in Replit Secrets and restart the workflow. The connector re-authenticates on each start.
+- **Watch the reconnect log.** A repeated `🔌 WebSocket closed — reconnecting in 5s…` message indicates a persistent auth or network issue. Check that `AUTH_URL` and credentials are correct.
