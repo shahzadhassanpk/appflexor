@@ -54,7 +54,7 @@ All configuration is supplied through environment variables. Set these as **Repl
 | `LOGIN` | Appflexor username (**secret**) | `admin` |
 | `PASSWORD` | Appflexor password (**secret**) | `••••••••` |
 | `AUTH_URL` | Login endpoint | `https://demo.step2agility.com/app/service?service.key=login` |
-| `BPM_URL` | BPM proxy endpoint for task completion | `https://demo.step2agility.com/bpm/service?service.key=bpm.data` |
+| `BPM_URL` | BPM proxy endpoint for task completion | `https://demo.step2agility.com/bpm/service?service.key=complete.task` |
 | `WS_URL` | WebSocket push endpoint | `wss://demo.step2agility.com/worker` |
 | `TOPICS` | JSON array of topic objects to subscribe to | `[{"topic":"demo-worker"}]` |
 | `GROUP_ID` | Worker group identifier | `camunda` |

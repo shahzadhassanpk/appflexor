@@ -79,7 +79,7 @@ channel = "stable-25_05"
 
 [userenv.shared]
 AUTH_URL = "https://demo.step2agility.com/app/service?service.key=login"
-BPM_URL = "https://demo.step2agility.com/bpm/service?service.key=bpm.data"
+BPM_URL = "https://demo.step2agility.com/bpm/service?service.key=complete.task"
 GROUP_ID = "camunda"
 TOPICS = "[{\"topic\":\"demo-worker\"}]"
 WS_URL = "wss://demo.step2agility.com/worker"

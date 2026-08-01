@@ -12,7 +12,7 @@ const cred = {
 console.log("🔐 Credentials loaded for user:", JSON.stringify({ username: cred.username }));
 
 const AUTH_URL = process.env.AUTH_URL;
-const BPM_URL  = process.env.BPM_URL;
+const BPM_URL  = process.env.BPM_URL; // e.g. https://your-instance/bpm/service?service.key=complete.task
 
 if (!AUTH_URL) throw new Error("AUTH_URL is not set");
 if (!BPM_URL)  throw new Error("BPM_URL is not set");
