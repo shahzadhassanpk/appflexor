@@ -118,11 +118,12 @@ function DateRangePicker(props) {
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <div className="date-range-picker d-flex justify-content-between gap-2 mt-2">
+                {/* {JSON.stringify(props)} */}
                 <MuiDatePicker
                     label="Start Date"
                     value={startDate}
                     format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
-                    disabled={props.disabled}
+                    disabled={props.disabled || props.readonly === "YES"}
                     shouldDisableDate={shouldDisableDate}
                     onChange={handleStartDateChange}
                     slotProps={{
@@ -130,23 +131,41 @@ function DateRangePicker(props) {
                             size: "small",
                             fullWidth: true,
                             sx: {
-                                fontSize: "var(--font-size-base) !important", // sets font size for the input
+                                fontSize: "var(--font-size-base) !important",
                                 "& .MuiInputBase-input": {
-                                    fontSize: "var(--font-size-base) !important", // ensures the actual input text is styled
+                                    fontSize: "var(--font-size-base) !important",
+                                    color: props.disabled ? "var(--text-muted) !important" : "inherit",
+                                },
+                                "& .MuiPickersInputBase-root": {
+                                    fontSize: "var(--font-size-base) !important",
+                                    color: props.disabled ? "var(--text-muted) !important" : "inherit",
+                                },
+                                "& .MuiOutlinedInput-root": {
+                                    "& fieldset": {
+                                        borderColor: props.disabled ? "var(--border-muted)" : "inherit",
+                                        color: props.disabled ? "var(--text-muted) !important" : "inherit",
+                                    },
                                 },
                                 "& .MuiInputLabel-root": {
-                                    fontSize: "var(--font-size) !important", // label font size
+                                    fontSize: "var(--font-size) !important",
+                                    color: props.disabled ? "var(--text-muted) !important" : "inherit",
                                 },
                             },
-                        }
+                        },
+                        openPickerIcon: {
+                            sx: {
+                                display: props.disabled ? "none" : "inline-flex",
+                            },
+                        },
                     }}
                 />
+
 
                 <MuiDatePicker
                     label="End Date"
                     value={endDate}
                     format={DATE_FORMAT_FOR_DATE_PICKER_VIEW}
-                    disabled={props.disabled}
+                    disabled={props.disabled || props.readonly === "YES"}
                     shouldDisableDate={shouldDisableDate}
                     minDate={startDate}
                     onChange={handleEndDateChange}
@@ -155,15 +174,30 @@ function DateRangePicker(props) {
                             size: "small",
                             fullWidth: true,
                             sx: {
+                                fontSize: "var(--font-size-base) !important",
                                 "& .MuiInputBase-input": {
-                                    fontSize: "var(--font-size)",   // input text
+                                    fontSize: "var(--font-size-base) !important",
+                                    color: props.disabled ? "var(--text-muted) !important" : "inherit",
+                                },
+                                "& .MuiPickersInputBase-root": {
+                                    fontSize: "var(--font-size-base) !important",
+                                    color: props.disabled ? "var(--text-muted) !important" : "inherit",
+                                },
+                                "& .MuiOutlinedInput-root": {
+                                    "& fieldset": {
+                                        borderColor: props.disabled ? "var(--border-muted) !important" : "inherit",
+                                        color: props.disabled ? "var(--text-muted) !important" : "inherit",
+                                    },
                                 },
                                 "& .MuiInputLabel-root": {
-                                    fontSize: "var(--font-size)",   // label text
+                                    fontSize: "var(--font-size) !important",
+                                    color: props.disabled ? "var(--text-muted) !important" : "inherit",
                                 },
-                                "& .MuiPickersSectionList-sectionContent": {
-                                    fontSize: "var(--font-size)",   // date sections (day, month, year)
-                                },
+                            },
+                        },
+                        openPickerIcon: {
+                            sx: {
+                                display: props.disabled ? "none" : "inline-flex",
                             },
                         },
                     }}

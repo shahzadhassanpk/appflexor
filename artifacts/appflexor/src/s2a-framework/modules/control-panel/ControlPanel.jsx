@@ -32,13 +32,13 @@ const PANELS = [
             {
                 icon: "fa-solid fa-envelope-open-text",
                 label: "Appflexor Forms",
-                route: "/appflexor-forms",
+                route: "https://appflexor.com/blog/appflexor-guidelines/capture-and-process-data-using-forms",
                 description: "Guidelines on using Appflexor forms to capture data and trigger workflows inside the application"
             },
             {
                 icon: "fa-solid fa-plug",
                 label: "Appflexor APIs",
-                route: "/appflexor-apis",
+                route: "https://appflexor.com/blog/appflexor-guidelines/capture-and-process-data-using-apis",
                 description: "Guidelines on leveraging Appflexor Data and Process APIs to capture information from external systems"
             },
             // { 
@@ -134,7 +134,7 @@ const PANELS = [
             {
                 icon: "fa-solid fa-plug",
                 label: "Appflexor Connector",
-                route: "/appflexor-connector",
+                route: "https://appflexor.com/blog/appflexor-guidelines/integrate-external-system-using-appflexor-connector",
                 description: "Guidelines to integrate existing systems with your processes as external workers"
             }
         ],
@@ -193,7 +193,7 @@ const PANELS = [
                 description: "Manage accounts and templates for sending system‑generated emails."
             },
             {
-                icon: "fa-solid fa-brain",
+                icon: "fa-solid fa-magnifying-glass-chart",
                 label: "Custom Reports and Analytics",
                 route: "/data-analysis",
                 description: "Deploy custom reports to analyze process and business performance"
@@ -336,6 +336,11 @@ function PanelCard({ panel }) {
                                 onClick={event => {
                                     if (panel.disableQuickActions || a.disabled) {
                                         event.preventDefault();
+                                        return;
+                                    }
+                                    if (a.route.startsWith("http")) {
+                                        event.preventDefault();
+                                        window.open(a.route, "_blank"); // open external links in new tab
                                     }
                                 }}
                             >
