@@ -111,15 +111,12 @@ AUTH_KEY: <AUTH_KEY from Login API>
 
 ```json
 {
-  "tenant_id": "your-tenant-id",
-  "datasource": "hr_db",
   "dataKeys": [
     {
       "serviceKey": "hr.employee.list",
       "serviceParams": "",
       "dataKey": "employees",
-      "mode": "formData",
-      "datasource": "hr_db"
+      "mode": "formData"
     }
   ]
 }
@@ -127,8 +124,6 @@ AUTH_KEY: <AUTH_KEY from Login API>
 
 | Field | Description |
 |---|---|
-| `tenant_id` | Your tenant identifier |
-| `datasource` | Top-level default data source (can be overridden per key) |
 | `dataKeys[].serviceKey` | The **Service Key** of the SQL API to call |
 | `dataKeys[].serviceParams` | Optional parameter passed into the SQL query (e.g. a record `id`) |
 | `dataKeys[].dataKey` | The key used to access results in the response `C_DATA` object |
