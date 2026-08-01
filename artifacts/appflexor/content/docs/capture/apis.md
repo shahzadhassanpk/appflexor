@@ -337,7 +337,7 @@ AUTH_KEY: <AUTH_KEY from Login API>
 Once a process is running, advance it by completing the active user task.
 
 ```
-POST /bpm/service?service.key=bpm.data
+POST /bpm/service?service.key=complete.task
 Content-Type: application/json
 AUTH_KEY: <AUTH_KEY from Login API>
 ```
