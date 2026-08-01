@@ -1,0 +1,58 @@
+Analyze the following Appflexor source code modules to understand administration and low‑code features:
+
+artifacts\appflexor\src\s2a-framework\modules\user-management
+artifacts\appflexor\src\s2a-framework\modules\site-administrater
+artifacts\appflexor\src\s2a-framework\modules\content-management
+artifacts\appflexor\src\s2a-framework\modules\data-management
+artifacts\appflexor\src\s2a-framework\modules\process-configuration
+artifacts\appflexor\src\s2a-framework\modules\data-analysis
+artifacts\appflexor\src\s2a-framework\modules\subscription
+
+Create a docs folder under artifacts\appflexor and write user guides for the following product areas. Each guide should include:
+Purpose (what the feature does)
+Key concepts (terminology, entities)
+Step‑by‑step usage instructions
+Best practices and notes
+
+📘 Guides to Generate
+
+artifacts/appflexor/content/
+  docs/
+    capture/
+      forms.md
+      apis.md
+    orchestrate/
+      business-areas.md
+      process-categories.md
+    integrate/
+      connector.md
+    administrate/
+      users.md
+      websites.md
+      content.md
+      reports.md
+      subscription.md
+
+Capture:
+Appflexor Forms: Guidelines on using forms to capture data and trigger workflows.
+Appflexor APIs: Guidelines on leveraging Data and Process APIs to capture information from external systems.
+
+Orchestrate:
+Business Areas: Define and manage business domains for processes.
+Process Categories: Organize processes into structured categories.
+Deploy Process: Launch new or updated processes into production.
+Monitor Process: Track performance and status of running processes.
+
+Integrate:
+Appflexor Connector: Guidelines to integrate existing systems with your processes as external workers.
+
+Administrate:
+Users, Groups, Organizations: Manage accounts, memberships, and structures.
+Web Sites: Administrate websites, pages, styles, and authorization.
+Web Content: Create, edit, and publish posts and digital content.
+Forms, Datalist, SQL APIs: Design forms, manage lists, configure SQL APIs.
+Outbound Emails: Manage accounts and templates for system‑generated emails.
+Custom Reports and Analytics: Deploy reports to analyze process and business performance.
+Subscription: Manage billing, subscriptions, and payment processing.
+
+Important: Use conceptual business terms for module/feature names in the user guides. Do not expose raw code module names (e.g., site-administrater, data-management). Instead, map them to business‑friendly terms such as Web Sites, Web Content, Forms & APIs, Users & Organizations, Reports & Analytics, Subscriptions, etc.
