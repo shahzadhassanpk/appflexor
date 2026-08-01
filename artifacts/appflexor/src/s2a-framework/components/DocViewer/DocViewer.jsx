@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import DocsNav, { DOC_MANIFEST } from "./DocsNav";
+import { DOC_MANIFEST } from "./DocsNav";
 import SearchBar from "./SearchBar";
 import RelatedDocs from "./RelatedDocs";
 import "./doc-viewer.css";
@@ -77,9 +77,10 @@ function DocViewer() {
                 </button>
             </div>
 
-            {/* Body: nav + content */}
-            <div className="offcanvas-body">
-                <DocsNav activeDoc={activeDoc} onSelect={handleSelect} />
+            {/* Body: breadcrumb + content */}
+            <div className="offcanvas-body" style={{ flexDirection: "column", overflow: "hidden" }}>
+                {/* Breadcrumb bar */}
+                <DocsBreadcrumb activeDoc={activeDoc} onSelect={handleSelect} />
 
                 <div className="docs-content-panel" id="docContentPanel">
                     {activeDoc
@@ -89,6 +90,38 @@ function DocViewer() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// ── Breadcrumb ───────────────────────────────────────────────
+
+function DocsBreadcrumb({ activeDoc, onSelect }) {
+    const section = activeDoc
+        ? DOC_MANIFEST.find(s => s.slug === activeDoc.section)
+        : null;
+
+    return (
+        <nav className="docs-breadcrumb" aria-label="Documentation breadcrumb">
+            <button className="docs-bc-item docs-bc-home" onClick={() => onSelect(null)}>
+                <i className="fa-solid fa-house-chimney"></i>
+                <span>Docs</span>
+            </button>
+            {section && (
+                <>
+                    <i className="fa-solid fa-chevron-right docs-bc-sep"></i>
+                    <span className="docs-bc-item docs-bc-section">
+                        <i className={section.icon}></i>
+                        {section.section}
+                    </span>
+                </>
+            )}
+            {activeDoc && (
+                <>
+                    <i className="fa-solid fa-chevron-right docs-bc-sep"></i>
+                    <span className="docs-bc-item docs-bc-active">{activeDoc.title}</span>
+                </>
+            )}
+        </nav>
     );
 }
 
