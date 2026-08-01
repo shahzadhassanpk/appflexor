@@ -8,6 +8,7 @@ import RightMenu from "./RightMenu";
 import "./styles.css";
 import NotificationBell from "./NotificationBell";
 import QrShare from "./QrShare";
+import DocViewer from "../../../components/DocViewer/DocViewer";
 
 function TopNavbar({
     isAuthorized,
@@ -307,6 +308,16 @@ function TopNavbar({
                             <div className="top-navbar-actions d-flex justify-content-end align-items-center">
                                 <button
                                     type="button"
+                                    title="Help &amp; Documentation"
+                                    aria-label="Help and Documentation"
+                                    className="top-navbar-icon navbar-action-button"
+                                    data-bs-toggle="offcanvas"
+                                    data-bs-target="#docViewerOffcanvas"
+                                    aria-controls="docViewerOffcanvas">
+                                    <i className="fa-regular fa-circle-question"></i>
+                                </button>
+                                <button
+                                    type="button"
                                     aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
                                     title={`Switch to ${isLight ? "Dark" : "Light"} Mode`}
                                     className="top-navbar-icon navbar-action-button"
@@ -570,6 +581,8 @@ function TopNavbar({
                         />
                     </>
                 )}
+            {/* Doc Viewer offcanvas — mounted once, triggered by help button */}
+            <DocViewer />
         </React.Fragment>
     );
 }
