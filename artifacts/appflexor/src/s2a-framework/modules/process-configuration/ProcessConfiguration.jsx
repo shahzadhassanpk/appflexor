@@ -16,38 +16,44 @@ const ProcessMonitor = lazy(() => import("./process-monitor/ProcessMonitor"));
 const Processes = lazy(() => import("./processes/Processes"));
 
 const TABS = [
-    // {
-    //     name: "Process Engine",
-    //     code: "PROCESS_ENGINE",
-    //     active: "true",
-    // },
-    {
-        name: "Process Categories",
-        code: "PROCESS_CATEGORY",
-        active: "true",
-    },
-    {
-        name: "Business Area",
-        code: "BUSINESS_AREA",
-        active: "false",
-    },
-    {
-        name: "Process Deployments",
-        code: "PROCESSES",
-        active: "false",
-    },
-
-    {
-        name: "Process Configuration",
-        code: "PROCESS_MAP",
-        active: "false",
-    },
-    {
-        name: "Process Monitor",
-        code: "PROCESS_MONITOR",
-        active: "false",
-    },
+  // {
+  //   name: "Process Engine",
+  //   code: "PROCESS_ENGINE",
+  //   active: "true",
+  //   description: "Core engine for executing workflows"
+  // },
+  {
+    name: "Define Process Categories",
+    code: "PROCESS_CATEGORY",
+    active: "true",
+    description: "Organize processes into structured categories for clarity"
+  },
+  {
+    name: "Define Business Areas",
+    code: "BUSINESS_AREA",
+    active: "false",
+    description: "Set up organizational domains to group related processes"
+  },
+  {
+    name: "Deploy Processes",
+    code: "PROCESSES",
+    active: "false",
+    description: "Launch new or updated processes into production"
+  },
+  {
+    name: "Configure Processes",
+    code: "PROCESS_MAP",
+    active: "false",
+    description: "Design and adjust process workflows and mappings"
+  },
+  {
+    name: "Monitor Processes",
+    code: "PROCESS_MONITOR",
+    active: "false",
+    description: "Track performance, status, and analytics of running processes"
+  },
 ];
+
 
 const componentRegistry = {
     PROCESS_ENGINE: ProcessEngine,
@@ -154,7 +160,7 @@ function ProcessConfiguration() {
                 <div className="row">
                     <div className="col-sm-12">
                         <div className="module-title">
-                            <span>Process Automation</span>
+                            <span>Orchestrate Business Processes</span>
                             {/* <span>
                                 {" - Process Engine > "}
                                 {appContext?.tenantSubscription
@@ -186,13 +192,18 @@ function ProcessConfiguration() {
                                         <div className="row">
                                                                                         <div className="col-md-12">
                                                 {true && (() => {
-                                                    const tab = visible.find(t => t.code === "BUSINESS_AREA") || { code: "BUSINESS_AREA", name: "Business Area" };
+                                                    const tab = visible.find(t => t.code === "BUSINESS_AREA") || TABS.find(t => t.code === "BUSINESS_AREA");
                                                     const Component = componentRegistry[tab.code];
                                                     if (!Component) return null;
                                                     return (
                                                         <div className="card mb-3 bg-transparent" key={tab.code}>
                                                             <div className="card-header border-0 d-flex align-items-center justify-content-between gap-2">
-                                                                <strong>{tab.name}</strong>
+                                                                <div className="d-flex flex-column gap-1">
+                                                                    <strong>{tab.name}</strong>
+                                                                    {tab.description && (
+                                                                        <small className="text-muted">{tab.description}</small>
+                                                                    )}
+                                                                </div>
                                                                 {renderRefreshButton(tab.code)}
                                                             </div>
                                                             <div className="card-body p-0 bg-transparent">
@@ -206,12 +217,17 @@ function ProcessConfiguration() {
                                             </div>
                                             <div className="col-md-12">
                                                     {hasCategory && (() => {
-                                                        const tab = visible.find(t => t.code === "PROCESS_CATEGORY") || { code: "PROCESS_CATEGORY", name: "Process Categories" };
+                                                        const tab = visible.find(t => t.code === "PROCESS_CATEGORY") || TABS.find(t => t.code === "PROCESS_CATEGORY");
                                                         const Component = componentRegistry[tab.code];
                                                         return (
                                                             <div className="card mb-3 bg-transparent" key={tab.code}>
                                                                 <div className="card-header border-0 d-flex align-items-center justify-content-between gap-2">
-                                                                    <strong>{tab.name}</strong>
+                                                                    <div className="d-flex flex-column gap-1">
+                                                                        <strong>{tab.name}</strong>
+                                                                        {tab.description && (
+                                                                            <small className="text-muted">{tab.description}</small>
+                                                                        )}
+                                                                    </div>
                                                                     {renderRefreshButton(tab.code)}
                                                                 </div>
                                                                 <div className="card-body p-0 bg-transparent">
@@ -232,7 +248,12 @@ function ProcessConfiguration() {
                                             return (
                                                 <div className="card mb-3 bg-transparent" key={tab.code}>
                                                     <div className="card-header border-0 d-flex align-items-center justify-content-between gap-2">
-                                                        <strong>{tab.name}</strong>
+                                                        <div className="d-flex flex-column gap-1">
+                                                            <strong>{tab.name}</strong>
+                                                            {tab.description && (
+                                                                <small className="text-muted">{tab.description}</small>
+                                                            )}
+                                                        </div>
                                                         {renderRefreshButton(tab.code)}
                                                     </div>
                                                     <div className="card-body p-0 bg-transparent">

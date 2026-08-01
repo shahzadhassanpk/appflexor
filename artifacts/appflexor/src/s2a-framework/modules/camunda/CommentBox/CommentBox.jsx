@@ -378,10 +378,10 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                                 <span className="cb-section-badge">{comments.length}</span>
                             )}
                         </span>
-                        <button className="cb-add-btn" onClick={() => addComment()}>
+                        {/* <button className="cb-add-btn" onClick={() => addComment()}>
                             <i className="fa-solid fa-plus" style={{ fontSize: 11 }}></i>
                             Add Comment
-                        </button>
+                        </button> */}
                     </div>
 
                     {/* Rich editor form */}
@@ -437,10 +437,10 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                                         </div>
                                         <div className="cb-comment-text">
                                             <Interweave content={c.comment} />
-                                        </div>
-                                        <div className="cb-comment-actions-row">
+                                        </div>                                        
+                                        {/* <div className="cb-comment-actions-row">
                                             <button className="cb-reply-link">Reply</button>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </div>
                             ))}

@@ -3,11 +3,10 @@
 .s2a-table.responsiveTable tbody tr {
     display: flex;
 }
-.s2a-table.responsiveTable{
+.s2a-table.responsiveTable {
     overflow-x: auto;
     width: 95%;
 }
-
 
 .inbox-notification {
     position: relative;
@@ -1964,7 +1963,11 @@
 .enable-scroll::-webkit-scrollbar-thumb,
 .enable-scroll::-webkit-scrollbar-track {
     -webkit-box-shadow: var(--font-color);
-    background-color: color-mix(in srgb, var(--header-color) 80%, rgb(67, 67, 67));
+    background-color: color-mix(
+        in srgb,
+        var(--header-color) 80%,
+        rgb(67, 67, 67)
+    );
 }
 
 .enable-scroll::-webkit-scrollbar {
@@ -3426,8 +3429,10 @@
     /* border-left: 4px solid transparent; */
     border-radius: 10px;
     background: var(--primary-color);
-    transition: background-color 0.15s ease, 
-        box-shadow 0.15s ease, transform 0.15s ease;
+    transition:
+        background-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
 }
 
 .processes .task-item:hover {
@@ -6580,7 +6585,7 @@ chart color picker component
 }
 
 .s2a-custom-action .s2a-link {
-    text-decoration:none;
+    text-decoration: none;
     /* text-decoration: underline var(--font-color) solid 1px; */
     color: var(--font-color);
 }
@@ -7008,11 +7013,13 @@ body.__className_017dd3 {
     background-color: transparent !important;
 }
 
+.datalist-viewer .view-controls,
 .form-panel .view-controls {
     position: relative;
     text-align: right;
     color: var(--font-color);
     z-index: 0;
+    margin: auto;
 }
 
 .btn-maximize {
@@ -7020,8 +7027,9 @@ body.__className_017dd3 {
     border: none;
     cursor: pointer;
     color: var(--font-color);
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-sm);
     margin-top: 5px;
+    margin-right: 5px;
 }
 
 .datalist-footer {

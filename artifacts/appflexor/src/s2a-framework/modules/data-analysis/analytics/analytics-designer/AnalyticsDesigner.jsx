@@ -85,13 +85,13 @@ export default function AnalyticsDesigner({ activeTab }) {
         },
     };
     let initialDataSource = [
-        {
-            id: "1",
-            title: "Elastic Search",
-            name: "ELASTIC_SEARCH",
-            selected: false,
-        },
-        { id: "2", title: "Postgres", name: "POSTGRES", selected: false },
+        // {
+        //     id: "1",
+        //     title: "Elastic Search",
+        //     name: "ELASTIC_SEARCH",
+        //     selected: false,
+        // },
+        { id: "2", title: "Default Database", name: "POSTGRES", selected: true },
     ];
 
     const [dataSources, setDataSources] = useState(initialDataSource);
@@ -104,12 +104,12 @@ export default function AnalyticsDesigner({ activeTab }) {
     const [addBtnHide, setAddBtnHide] = useState(true);
     const [selectedDataSource, setSelectedDataSource] = useState("");
     const [importReference, setImportReference] = useState({
-        fun: () => {},
+        fun: () => { },
     });
 
     const [hide, setHide] = useState(false);
     const [multiExport, setMultiExport] = useState({
-        fun: () => {},
+        fun: () => { },
         title: "",
     });
     const indexRef = useRef(null);
@@ -841,7 +841,7 @@ export default function AnalyticsDesigner({ activeTab }) {
                 JsonToCsv(exportedIndexes, title);
                 exportModal.current.close();
                 setMultiExport({
-                    fun: () => {},
+                    fun: () => { },
                     title: "",
                 });
                 setExportIndexIds({});
@@ -880,9 +880,8 @@ export default function AnalyticsDesigner({ activeTab }) {
                 <ModalBox
                     header="Confirm"
                     state={showModalComp}
-                    message={`Are you sure to delete ${
-                        showModalComp.item.name ?? ""
-                    }?`}
+                    message={`Are you sure to delete ${showModalComp.item.name ?? ""
+                        }?`}
                     operation={handleDeleteIndex}
                     setState={setShowModalComp}
                 />
@@ -1049,7 +1048,7 @@ export default function AnalyticsDesigner({ activeTab }) {
                                     config.dimensions.length > 0 &&
                                     config.dimensions
                                 }
-                                handleSelectedItemId={() => {}}
+                                handleSelectedItemId={() => { }}
                                 handleEdit={handleEditDimension}
                                 handleDelete={handleDeleteDimension}
                                 duplicate={duplicate}
@@ -1089,7 +1088,7 @@ export default function AnalyticsDesigner({ activeTab }) {
                                     config.measures.length > 0 &&
                                     config.measures
                                 }
-                                handleSelectedItemId={() => {}}
+                                handleSelectedItemId={() => { }}
                                 handleEdit={handleEditMeasure}
                                 handleDelete={handleDeleteMeasure}
                                 duplicate={duplicate}
@@ -1116,9 +1115,8 @@ export function ExportForm(props) {
             <input
                 id="export-index"
                 type="text"
-                className={`form-control  ${
-                    multiExport.title.length > 0 ? "" : "border border-danger"
-                }`}
+                className={`form-control  ${multiExport.title.length > 0 ? "" : "border border-danger"
+                    }`}
                 onChange={e =>
                     setMultiExport({
                         ...multiExport,

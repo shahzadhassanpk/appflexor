@@ -417,7 +417,7 @@ function RenderListView({
                             <span className="inbox-panel-title">
                                 <i className="fa-solid fa-inbox" style={{ fontSize: 14 }}></i>
                                 Tasks
-                                <span className="inbox-panel-title-count">{taskList?.length || 0}</span>
+                                {/* <span className="inbox-panel-title-count">{taskList?.length || 0}</span> */}
                             </span>
                             <div className="inbox-header-actions">
                                 <button

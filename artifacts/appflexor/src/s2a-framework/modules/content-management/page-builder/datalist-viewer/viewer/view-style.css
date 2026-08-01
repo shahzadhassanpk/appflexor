@@ -55,19 +55,6 @@
     overflow: auto;
     padding: 1rem;
 }
-.view-controls {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 10000;
-}
-.btn-maximize {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 20px;
-    color: var(--font-color, #1e293b);
-}
 
 /* ── DatalistHeader toolbar (title row) ──────────────────────────────────── */
 .s2a-datalist-header {

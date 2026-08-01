@@ -107,6 +107,14 @@ export const staticAdminModuleFeatures = [
     {
         module: `${suid}`,
         type: OPEN_AS.internalLink,
+        name: "Email Management",
+        code: "MOD_DATA_MANAGEMENT",
+        feature_key: "/email-management",
+        icon: "fa-solid fa-server",
+    },
+    {
+        module: `${suid}`,
+        type: OPEN_AS.internalLink,
         name: "Business Intelligence",
         code: "MOD_DATA_ANALYSIS",
         feature_key: "/data-analysis",

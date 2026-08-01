@@ -238,21 +238,21 @@ function TopNavbar({
                 id="top-adv-navbar"
                 ref={topNavbar}
                 className={`adv-navbar-main navbar navbar-border py-0 ${menu_position} ${(menu_position === "inside-header" ||
-                        menu_position === "body-left") &&
-                        screenView === "lg"
-                        ? "sticky-top enable-sticky"
-                        : "disable-sticky"
+                    menu_position === "body-left") &&
+                    screenView === "lg"
+                    ? "sticky-top enable-sticky"
+                    : "disable-sticky"
                     }`}>
                 <div className="w-100">
                     <div
                         className={`${screenView === "lg" && menu_position === "header"
-                                ? "container"
-                                : "container-fluid ps-0"
+                            ? "container"
+                            : "container-fluid ps-0"
                             }`}>
                         <div
                             className={` d-flex ${appContext.isAuthorized
-                                    ? "justify-content-between"
-                                    : "justify-content-start"
+                                ? "justify-content-between"
+                                : "justify-content-start"
                                 } `}>
                             {appContext.isAuthorized && screenView !== "lg" && (
                                 <div className="mob-header-left d-flex justify-content-start align-items-center pointer">
@@ -267,8 +267,8 @@ function TopNavbar({
                                 <>
                                     {!(screenView === "lg" &&
                                         menu_position === "body-left") && (
-                                        <BrandLogo />
-                                    )}
+                                            <BrandLogo />
+                                        )}
                                     {screenView === "lg" &&
                                         menu_position == "inside-header" && (
                                             <div className="navbar-inside-header s2a-scrollable sticky-top">
@@ -348,8 +348,8 @@ function TopNavbar({
                                                     {showOrgMenu && (
                                                         <ul
                                                             className={`org-menu list-group position-fixed mt-2 ${menuAnimation
-                                                                    ? "org-menu-enter org-menu-enter-active"
-                                                                    : ""
+                                                                ? "org-menu-enter org-menu-enter-active"
+                                                                : ""
                                                                 }`}
                                                             style={{
                                                                 zIndex: 9999,
@@ -362,8 +362,8 @@ function TopNavbar({
                                                             {/* Default Option */}
                                                             <li
                                                                 className={`org-name list-group-item list-group-item-action ${!userOrg
-                                                                        ? "active"
-                                                                        : ""
+                                                                    ? "active"
+                                                                    : ""
                                                                     }`}
                                                                 style={{
                                                                     cursor: "pointer",
@@ -392,9 +392,9 @@ function TopNavbar({
                                                                             org.id
                                                                         }
                                                                         className={`list-group-item list-group-item-action ${userOrg?.id ===
-                                                                                org.id
-                                                                                ? "active"
-                                                                                : ""
+                                                                            org.id
+                                                                            ? "active"
+                                                                            : ""
                                                                             }`}
                                                                         style={{
                                                                             cursor: "pointer",
@@ -436,18 +436,32 @@ function TopNavbar({
                                                     }
                                                 />
                                             )}
-                                        {appContext.isAuthorized && (
-                                            <button
-                                                type="button"
-                                                title="Control Panel"
-                                                aria-label="Open control panel"
-                                                aria-current={location.pathname === "/control-panel" ? "page" : undefined}
-                                                className={`top-navbar-icon navbar-action-button${location.pathname === "/control-panel" ? "" : ""}`}
-                                                onClick={() => navigate("/control-panel")}>
-                                                <i className="fa-solid fa-sliders"></i>
-                                            </button>
-                                        )}
-                                        {appContext.userGroups &&
+                                        {appContext.isAuthorized && appContext.userGroups &&
+                                            appContext.userGroups.groupid &&
+                                            appContext.userGroups.groupid.indexOf(
+                                                "ADMIN",
+                                            ) > -1 && (
+                                                <NavLink
+                                                    to="/control-panel"
+                                                    title="Control Panel"
+                                                    aria-label="Open control panel"
+                                                    aria-current={location.pathname === "/control-panel" ? "page" : undefined}
+                                                    className={`top-navbar-icon navbar-action-button`}
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    <i className="fa fa-gear"></i>
+                                                </NavLink>
+                                                // <button
+                                                //     type="button"
+                                                //     title="Control Panel"
+                                                //     aria-label="Open control panel"
+                                                //     aria-current={location.pathname === "/control-panel" ? "page" : undefined}
+                                                //     className={`top-navbar-icon navbar-action-button${location.pathname === "/control-panel" ? "" : ""}`}
+                                                //     onClick={() => navigate("/control-panel")}>
+                                                //     <i className="me-2 fa fa-gear"></i>
+                                                // </button>
+                                            )}
+                                        {/* {appContext.userGroups &&
                                             appContext.userGroups.groupid &&
                                             appContext.userGroups.groupid.indexOf(
                                                 "ADMIN",
@@ -461,7 +475,7 @@ function TopNavbar({
                                                     data-bs-target="#rightMenu">
                                                     <i className="me-2 fa fa-gear"></i>
                                                 </button>
-                                            )}
+                                            )} */}
                                         {appContext.userGroups &&
                                             appContext.userGroups.group_code &&
                                             appContext.userGroups.group_code.indexOf(

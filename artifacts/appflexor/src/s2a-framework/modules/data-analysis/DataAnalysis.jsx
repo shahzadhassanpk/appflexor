@@ -88,11 +88,16 @@ function DataAnalysis() {
                 id="data-analysis"
                 className="data-analysis container-fluid static-module-bg s2a-data-analysis">
                 <div className="row">
-                    <div className="col-sm-12">
-                        <div className="module-title">
-                            <span>Business Intelligence</span>
+                    <div className="col-sm-12 datalist-viewer">
+                        <div className="s2a-datalist-header">
+                            <div className="s2a-dl-title-wrapper">
+                                <div className="s2a-dl-title">
+                                    <span>Administrate Custom Reports</span>
+                                </div>
+                                <span>Administrate custom dynamic reports and analytics</span>
+                            </div>
                         </div>
-                    </div>
+                    </div>                    
                 </div>
                 <div className="row">
                     <div className="container">

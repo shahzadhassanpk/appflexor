@@ -43,6 +43,7 @@ import DatalistUrlViewer from "./modules/content-management/page-builder/datalis
 
 import DataAnalysis from "./modules/data-analysis/DataAnalysis";
 import DataManagement from "./modules/data-management/DataManagement";
+import EmailManagement from "./modules/data-management/EmailManagement";    
 import ProcessFormViewer from "./modules/data-management/form-builder/Forms/FormViewer/ProcessFormViewer";
 
 import { isEmpty } from "./modules/data-management/form-builder/Forms/FormViewer/utils";
@@ -78,6 +79,7 @@ function AppRoutes({
         "/datalist": DatalistUrlViewer,
         "/user-management": UserManagement,
         "/data-management": DataManagement,
+        "/email-management": EmailManagement,
         "/datalist/:id": DatalistUrlViewer,
         "/payment-processor": StripeSubscription,
         "/content-management": ContentManagement,
