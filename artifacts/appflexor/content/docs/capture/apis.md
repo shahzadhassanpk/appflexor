@@ -291,7 +291,7 @@ The BPM service lets external systems start process instances, complete user tas
 **Request**
 
 ```
-POST /bpm/service?service.key=bpm.data
+POST /bpm/service?service.key=start.process
 Content-Type: application/json
 AUTH_KEY: <AUTH_KEY from Login API>
 ```
@@ -319,21 +319,6 @@ AUTH_KEY: <AUTH_KEY from Login API>
 | `method` | Always `"POST"` for starting a process |
 | `data.businessKey` | Your application's record ID that links the process instance back to your data |
 | `data.variables` | Map of process variables — each entry is `{ "value": <val>, "type": <type> }` |
-
-**With a tenant ID** — if your deployment uses multi-tenancy, include the tenant in the path:
-
-```json
-{
-  "path": "/process-definition/key/leave-request/tenant-id/acme-corp/start",
-  "method": "POST",
-  "data": {
-    "businessKey": "REC-001",
-    "variables": {
-      "requestor": { "value": "jane.doe", "type": "String" }
-    }
-  }
-}
-```
 
 **Variable types**
 
