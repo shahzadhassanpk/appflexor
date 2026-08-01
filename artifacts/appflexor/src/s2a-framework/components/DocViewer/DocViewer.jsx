@@ -52,6 +52,22 @@ function DocViewer() {
         if (panel) panel.scrollTop = 0;
     }
 
+    // Listen for openDoc events dispatched from anywhere in the app (e.g. ControlPanel quick actions)
+    useEffect(() => {
+        function onOpenDoc(e) {
+            const { section, slug, title } = e.detail || {};
+            if (!section || !slug) return;
+            // Open the offcanvas
+            const el = document.getElementById("docViewerOffcanvas");
+            if (el && window.bootstrap?.Offcanvas) {
+                window.bootstrap.Offcanvas.getOrCreateInstance(el).show();
+            }
+            handleSelect({ section, slug, title: title || slug });
+        }
+        window.addEventListener("openDoc", onOpenDoc);
+        return () => window.removeEventListener("openDoc", onOpenDoc);
+    }, []);
+
     return (
         <div
             className="offcanvas offcanvas-end"
