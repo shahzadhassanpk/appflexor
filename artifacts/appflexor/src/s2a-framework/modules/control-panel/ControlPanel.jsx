@@ -32,13 +32,13 @@ const PANELS = [
             {
                 icon: "fa-solid fa-envelope-open-text",
                 label: "Appflexor Forms",
-                route: "https://appflexor.com/blog/appflexor-guidelines/capture-and-process-data-using-forms",
+                doc: { section: "capture", slug: "forms", title: "Forms" },
                 description: "Guidelines on using Appflexor forms to capture data and trigger workflows inside the application"
             },
             {
                 icon: "fa-solid fa-plug",
                 label: "Appflexor APIs",
-                route: "https://appflexor.com/blog/appflexor-guidelines/capture-and-process-data-using-apis",
+                doc: { section: "capture", slug: "apis", title: "APIs" },
                 description: "Guidelines on leveraging Appflexor Data and Process APIs to capture information from external systems"
             },
             // { 
@@ -134,7 +134,7 @@ const PANELS = [
             {
                 icon: "fa-solid fa-plug",
                 label: "Appflexor Connector",
-                route: "https://appflexor.com/blog/appflexor-guidelines/integrate-external-system-using-appflexor-connector",
+                doc: { section: "integrate", slug: "connector", title: "Connector" },
                 description: "Guidelines to integrate existing systems with your processes as external workers"
             }
         ],
@@ -318,7 +318,7 @@ function PanelCard({ panel }) {
                         {panel.quickActions.map(a => (
                             <Link
                                 key={a.label}
-                                to={panel.disableQuickActions || a.disabled ? "#" : a.route}
+                                to={panel.disableQuickActions || a.disabled ? "#" : (a.route || "#")}
                                 style={{
                                     ...sx.addBtn,
                                     color: panel.disableQuickActions || a.disabled
@@ -338,9 +338,14 @@ function PanelCard({ panel }) {
                                         event.preventDefault();
                                         return;
                                     }
-                                    if (a.route.startsWith("http")) {
+                                    if (a.doc) {
                                         event.preventDefault();
-                                        window.open(a.route, "_blank"); // open external links in new tab
+                                        window.dispatchEvent(new CustomEvent("openDoc", { detail: a.doc }));
+                                        return;
+                                    }
+                                    if (a.route && a.route.startsWith("http")) {
+                                        event.preventDefault();
+                                        window.open(a.route, "_blank");
                                     }
                                 }}
                             >
