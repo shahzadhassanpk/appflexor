@@ -6,8 +6,8 @@ export const DOC_MANIFEST = [
         slug: "capture",
         icon: "fa-solid fa-table-list",
         docs: [
-            { title: "Forms", slug: "forms", excerpt: "Design data-capture forms for pages and process steps" },
-            { title: "APIs", slug: "apis", excerpt: "Build SQL-backed REST endpoints and connect external systems" },
+            { title: "AppFlexor Forms", slug: "forms", excerpt: "Design data-capture forms for pages and process steps" },
+            { title: "AppFlexor APIs", slug: "apis", excerpt: "Build SQL-backed REST endpoints and connect external systems" },
         ],
     },
     {
