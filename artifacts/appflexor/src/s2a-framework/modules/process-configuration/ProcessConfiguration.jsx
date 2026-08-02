@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useContext, useEffect, useRef, useState } from "react";
+import React, { lazy, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppContext } from "../../../AppContext";
 import { ErrorBoundary } from "../../utils/ErrorBoundry";
@@ -73,8 +73,10 @@ function scrollToSection(code, retries = 8) {
 function ProcessConfiguration() {
     const [tabs, setTabs] = useState([]);
     const [refreshKeys, setRefreshKeys] = useState({});
+    const [activeSection, setActiveSection] = useState("");
     const [searchParams] = useSearchParams();
     const scrolledRef = useRef(false);
+    const observerRef = useRef(null);
 
     const appContext  = useContext(AppContext);
     const { profile, featuresSubscription, tenantSubscription } = appContext;
@@ -96,6 +98,41 @@ function ProcessConfiguration() {
         scrolledRef.current = true;
         scrollToSection(section);
     }, [searchParams, tabs]);
+
+    /* ── IntersectionObserver — track active section on scroll ────────────── */
+    useEffect(() => {
+        if (visible.length === 0) return;
+
+        // Disconnect any previous observer before creating a new one
+        if (observerRef.current) observerRef.current.disconnect();
+
+        // rootMargin: push the top boundary down past the navbar (60px) + jumpnav (~44px)
+        // and shrink the bottom so only the section near the top of the viewport fires
+        observerRef.current = new IntersectionObserver(
+            entries => {
+                // Find the entry that is intersecting and closest to the top
+                const intersecting = entries
+                    .filter(e => e.isIntersecting)
+                    .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+                if (intersecting.length > 0) {
+                    const id = intersecting[0].target.id; // "section-BUSINESS_AREA"
+                    setActiveSection(id.replace("section-", ""));
+                }
+            },
+            {
+                rootMargin: "-108px 0px -70% 0px",
+                threshold: 0,
+            },
+        );
+
+        visible.forEach(tab => {
+            const el = document.getElementById(`section-${tab.code}`);
+            if (el) observerRef.current.observe(el);
+        });
+
+        return () => observerRef.current?.disconnect();
+    }, [visible]);
 
     /* ── helpers ───────────────────────────────────────────────────────────── */
     function refreshTable(code) {
@@ -146,14 +183,14 @@ function ProcessConfiguration() {
                     </div>
                 </div>
 
-                {/* ── Jump nav ────────────────────────────────────────────── */}
+                {/* ── Jump nav (sticky) ───────────────────────────────────── */}
                 {visible.length > 1 && (
-                    <nav className="pc-jumpnav mb-4" aria-label="Jump to section">
+                    <nav className="pc-jumpnav" aria-label="Jump to section">
                         {visible.map(tab => (
                             <a
                                 key={tab.code}
                                 href={`#section-${tab.code}`}
-                                className="pc-jumplink"
+                                className={`pc-jumplink${activeSection === tab.code ? " pc-jumplink--active" : ""}`}
                                 onClick={e => handleJump(e, tab.code)}
                             >
                                 <i className={tab.icon} aria-hidden="true" />

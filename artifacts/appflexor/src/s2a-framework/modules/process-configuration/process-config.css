@@ -22,15 +22,22 @@
   flex-shrink: 0;
 }
 
-/* Jump nav bar */
+/* Jump nav bar — sticky below the top navbar (~60 px) */
 .pc-jumpnav {
+  position: sticky;
+  top: 62px;
+  z-index: 100;
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   padding: 0.5rem 0.75rem;
-  background: var(--header-color, rgba(0,0,0,0.03));
+  margin-bottom: 1.25rem;
+  background: var(--header-color, rgba(248,250,252,0.96));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
   border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 /* Jump link — base state */
@@ -59,6 +66,18 @@
   text-decoration: none;
 }
 
+/* Jump link — active (section in view) */
+.pc-jumplink--active {
+  background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #0d6efd)) 12%, transparent);
+  border-color: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #0d6efd)) 40%, transparent);
+  color: var(--link-active-color, var(--navigation-color, #0d6efd)) !important;
+  font-weight: 600;
+}
+
+.pc-jumplink--active i {
+  opacity: 1;
+}
+
 .pc-jumplink i {
   font-size: 0.75rem;
   opacity: 0.8;
@@ -71,7 +90,8 @@
   border-radius: 0.6rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   overflow: visible;
-  scroll-margin-top: 72px;
+  /* navbar (~60px) + sticky jumpnav (~44px) + gap */
+  scroll-margin-top: 116px;
 }
 
 .pc-section-card .card-header {
