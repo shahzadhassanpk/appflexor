@@ -113,22 +113,27 @@ Click the **Delete** icon on the task row and confirm.
 
 ---
 
-## N8N Webhook Integration
+## AI Agent Integration
 
-At runtime, an N8N workflow sends a webhook request to Appflexor containing:
+At runtime, an N8N workflow (or any HTTP client) calls the AI agent endpoint:
+
+```
+POST /app/service?service.key=ai.agent.task
+```
+
+**Sample request:**
 
 ```json
 {
   "agentKey": "customer-support",
   "taskKey": "summarise-ticket",
-  "variables": {
-    "ticketId": "12345",
-    "userMessage": "My order hasn't arrived"
+  "payload": {
+    "message": "My order hasn't arrived"
   }
 }
 ```
 
-Appflexor resolves the agent and task, executes any SQL query, runs vector search if configured, assembles the full prompt, and calls the LLM via the agent's AI provider. The result is returned to N8N for downstream processing.
+Appflexor resolves the agent and task, executes any SQL query, runs vector search if configured, assembles the full prompt, and calls the LLM via the agent's AI provider. The result is returned to the caller for downstream processing.
 
 ### Resolution Order
 
