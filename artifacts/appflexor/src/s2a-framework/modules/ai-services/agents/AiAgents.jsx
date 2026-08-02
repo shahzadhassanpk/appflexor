@@ -7,6 +7,7 @@ import { filterArrayByTerms } from "../../../utils/utils";
 const EMPTY_VQ = { collection: "", searchText: "", topK: 5 };
 const EMPTY = {
     id: "new",
+    agentName: "",
     agentKey: "",
     systemPrompt: "",
     aiProvider: "",
@@ -49,7 +50,7 @@ function AiAgents({ onOpenTasks }) {
     function handleSearch(e) {
         const term = e.target.value.toLowerCase();
         if (!term) { setFiltered(agents); return; }
-        setFiltered(filterArrayByTerms(agents, term, ["agentKey", "aiProvider"]));
+        setFiltered(filterArrayByTerms(agents, term, ["agentName", "agentKey", "aiProvider"]));
     }
 
     function openAdd() {
@@ -79,6 +80,7 @@ function AiAgents({ onOpenTasks }) {
 
     function validate() {
         const errs = {};
+        if (!form.agentName?.trim())    errs.agentName    = "Agent name is required";
         if (!form.agentKey?.trim())     errs.agentKey     = "Agent key is required";
         if (!form.systemPrompt?.trim()) errs.systemPrompt = "System prompt is required";
         if (!form.aiProvider?.trim())   errs.aiProvider   = "AI provider is required";
@@ -146,10 +148,10 @@ function AiAgents({ onOpenTasks }) {
                 <table className="table s2a-table ai-table table-hover mb-0">
                     <thead className="thead">
                         <tr>
+                            <th>Name</th>
                             <th>Agent Key</th>
                             <th>System Prompt</th>
                             <th>AI Provider</th>
-                            <th>Default Vector Query</th>
                             <th style={{ width: 130 }}>Actions</th>
                         </tr>
                     </thead>
@@ -166,6 +168,7 @@ function AiAgents({ onOpenTasks }) {
                         )}
                         {filtered.map(a => (
                             <tr key={a.id}>
+                                <td><strong>{a.agentName}</strong></td>
                                 <td><code className="ai-code-badge">{a.agentKey}</code></td>
                                 <td>
                                     <span className="ai-truncate" title={a.systemPrompt}>
@@ -174,12 +177,6 @@ function AiAgents({ onOpenTasks }) {
                                 </td>
                                 <td>
                                     <span className="ai-code-badge">{a.aiProvider}</span>
-                                </td>
-                                <td>
-                                    <span className="ai-truncate" style={{ maxWidth: 160 }}
-                                        title={a.defaultVectorQuery}>
-                                        {a.defaultVectorQuery}
-                                    </span>
                                 </td>
                                 <td>
                                     <button
@@ -228,6 +225,24 @@ function AiAgents({ onOpenTasks }) {
                         </div>
 
                         <div className="ai-modal-body">
+                            {/* Agent Name */}
+                            <div className="mb-3">
+                                <label className="ai-label">
+                                    Name <span className="text-danger">*</span>
+                                    <span className="ai-tooltip ms-1" title="Human-readable display name for this agent (e.g. Customer Support, Invoice Classifier).">
+                                        <i className="fa-solid fa-circle-info" />
+                                    </span>
+                                </label>
+                                <input
+                                    className={`form-control ${errors.agentName ? "is-invalid" : ""}`}
+                                    name="agentName"
+                                    value={form.agentName}
+                                    onChange={handleInput}
+                                    placeholder="e.g. Customer Support"
+                                />
+                                {errors.agentName && <div className="invalid-feedback">{errors.agentName}</div>}
+                            </div>
+
                             {/* Agent Key */}
                             <div className="mb-3">
                                 <label className="ai-label">
