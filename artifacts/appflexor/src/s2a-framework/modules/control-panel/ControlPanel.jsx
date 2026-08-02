@@ -224,16 +224,16 @@ const PANELS = [
             //   description: "Integrate AI services for intelligent automation"
             // },
             {
-                icon: "fa-solid fa-credit-card",
-                label: "Subscription",
-                route: "/payment-processor",
-                description: "Manage billing, subscriptions, and payment processing"
-            },
-            {
                 icon: "fa-solid fa-robot",
                 label: "AI Services",
                 route: "/ai-services",
                 description: "Configure AI providers, agents, and task definitions for workflow automation"
+            },
+            {
+                icon: "fa-solid fa-credit-card",
+                label: "Subscription",
+                route: "/payment-processor",
+                description: "Manage billing, subscriptions, and payment processing"
             },
         ],
         recentActivity: [
