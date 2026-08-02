@@ -1,18 +1,19 @@
-import React from "react"
+import React from "react";
+import "./loading.css";
 
-const Loading = (props) => {
-  const { message = "Loading Content..." } = props
-  return (
-    <div className="h-100 w-100 text-center">
-      <div className="position-absolute top-50 start-50 translate-middle">
-        <div className="fs-3">{message}</div>
-        <div className="d-flex justify-content-center align-items-center gap-2">
-          <div className="spinner-border spinner-border-sm" role="status"></div>
-          <div className="fs-5">Please wait...</div>
+const Loading = ({ message = "Loading content" }) => (
+    <div className="s2a-loader" role="status" aria-live="polite">
+        <div className="s2a-loader__ring" aria-hidden="true" />
+        <div className="s2a-loader__text">
+            <p className="s2a-loader__message">{message}</p>
+            <p className="s2a-loader__sub">
+                Please wait
+                <span className="s2a-loader__dots" aria-hidden="true">
+                    <span>.</span><span>.</span><span>.</span>
+                </span>
+            </p>
         </div>
-      </div>
     </div>
-  )
-}
+);
 
-export default Loading
+export default Loading;

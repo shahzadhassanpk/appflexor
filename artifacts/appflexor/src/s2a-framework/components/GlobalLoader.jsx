@@ -1,15 +1,10 @@
 import React from "react";
+import "./Loading/loading.css";
 
 function GlobalLoader() {
     return (
-        <div
-            style={{
-                position: "fixed",
-                inset: "50%",
-            }}>
-            <span
-                className="spinner-border text-light"
-                role="status"></span>
+        <div className="s2a-global-loader" role="status" aria-label="Loading application">
+            <div className="s2a-global-loader__ring" aria-hidden="true" />
         </div>
     );
 }
