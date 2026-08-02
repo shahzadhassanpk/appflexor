@@ -85,7 +85,7 @@ function AppRoutes({
         "/payment-processor": StripeSubscription,
         "/content-management": ContentManagement,
         "/site-administration": SiteAdministration,
-        "/process-configuration": ProcessConfiguration,
+        "/orchestrate-configuration": ProcessConfiguration,
         "/welcome": Welcome,
         "/ai-services": AiServices,
     };

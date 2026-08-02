@@ -40,14 +40,14 @@ const TABS = [
         code: "PROCESS_MAP",
         icon: "fa-solid fa-diagram-project",
         active: "false",
-        description: "Design and adjust process workflows and mappings",
+        description: "Configure process category, business area, start form and access control settings for each process",
     },
     {
         name: "Monitor Processes",
         code: "PROCESS_MONITOR",
         icon: "fa-solid fa-chart-line",
         active: "false",
-        description: "Track performance, status, and analytics of running processes",
+        description: "Track and troubleshoot process execution, monitor status, and analytics of running processes",
     },
 ];
 
