@@ -21,14 +21,12 @@ class ErrorBoundary extends React.Component {
             return (
                 <div>
                     <h2>Something went wrong.</h2>
-                    <link
-                        rel="stylesheet"
-                        href="#"
-                        onClick={() => {
-                            window.location.reload();
-                        }}>
+                    <button
+                        type="button"
+                        style={{ marginTop: "0.5rem", cursor: "pointer" }}
+                        onClick={() => window.location.reload()}>
                         Try refresh
-                    </link>
+                    </button>
                     {/* {this.state.error && this.state.error.toString()} */}
                 </div>
             );
