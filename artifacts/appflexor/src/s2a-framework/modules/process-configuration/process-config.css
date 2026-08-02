@@ -1,75 +1,19 @@
-/* ── Process Configuration — modern tab styles ─────────────────────────────── */
+/* ── Process Configuration module styles ───────────────────────────────────── */
+/* Tab bar styles are now global (index.css). Only module-specific extras here. */
 
-/* ── Tab bar ────────────────────────────────────────────────────────────────── */
-.pc-tab-bar {
-  gap: 0;
-  border-bottom: 2px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
-  padding: 0;
-  margin-bottom: 0;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;          /* Firefox */
-  -ms-overflow-style: none;       /* IE */
-}
-.pc-tab-bar::-webkit-scrollbar { display: none; }
-
-/* ── Override Bootstrap nav-tabs borders entirely ───────────────────────────── */
-.pc-tab-bar.nav-tabs {
-  border-bottom: 2px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
-}
-.pc-tab-bar .nav-item {
-  margin-bottom: -2px;           /* sit the active indicator flush on the bar line */
-}
-
-/* ── Tab button base ────────────────────────────────────────────────────────── */
-.pc-tab-bar .pc-tab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.6rem 1rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: color-mix(in srgb, var(--font-color, #374151) 68%, transparent);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color 0.18s, border-color 0.18s, background 0.18s;
-  outline: none;
-}
-
-/* ── Tab button hover ───────────────────────────────────────────────────────── */
-.pc-tab-bar .pc-tab-btn:hover:not(.active) {
-  color: var(--font-color, #111827);
-  background: color-mix(in srgb, var(--font-color, #000) 5%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.2)) 100%, transparent);
-}
-
-/* ── Tab button active ──────────────────────────────────────────────────────── */
-.pc-tab-bar .pc-tab-btn.active {
-  color: var(--link-active-color, var(--navigation-color, #2563eb));
-  background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #2563eb)) 7%, transparent);
-  border-bottom: 2px solid var(--link-active-color, var(--navigation-color, #2563eb));
-  font-weight: 600;
-}
-
-/* ── Tab icon ───────────────────────────────────────────────────────────────── */
-.pc-tab-icon {
+/* Tab icon opacity — supplements global tab styles */
+.process-config .nav-tabs .nav-link i,
+.process-config .nav-tabs button i {
   font-size: 0.78rem;
   opacity: 0.7;
   transition: opacity 0.18s;
 }
-.pc-tab-btn.active .pc-tab-icon {
+.process-config .nav-tabs .nav-link.active i,
+.process-config .nav-tabs button.active i {
   opacity: 1;
 }
-.pc-tab-btn:hover .pc-tab-icon {
-  opacity: 0.9;
-}
 
-/* ── Content sub-header ─────────────────────────────────────────────────────── */
+/* Sub-header bar between tabs and content */
 .pc-content-header {
   display: flex;
   align-items: center;
@@ -80,7 +24,7 @@
   margin-bottom: 0.75rem;
 }
 
-/* ── Section icon pill ──────────────────────────────────────────────────────── */
+/* Section icon pill */
 .pc-section-icon {
   display: inline-flex;
   align-items: center;
@@ -94,21 +38,20 @@
   flex-shrink: 0;
 }
 
-/* ── Table header ───────────────────────────────────────────────────────────── */
+/* Table header inside sections */
 .process-config .tableHeader th {
   background: var(--header-color) !important;
 }
 
-/* ── Mobile: icon-only tabs below 575 px ────────────────────────────────────── */
+/* Mobile: icon-only tabs */
 @media (max-width: 575px) {
-  .pc-tab-bar .pc-tab-btn span {
+  .process-config .nav-tabs .nav-link span,
+  .process-config .nav-tabs button span {
     display: none;
   }
-  .pc-tab-icon {
+  .process-config .nav-tabs .nav-link i,
+  .process-config .nav-tabs button i {
     font-size: 0.9rem;
     opacity: 1;
-  }
-  .pc-tab-bar .pc-tab-btn {
-    padding: 0.6rem 0.75rem;
   }
 }

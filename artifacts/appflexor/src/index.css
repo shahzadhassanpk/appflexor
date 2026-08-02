@@ -23,6 +23,61 @@
     color: #0f172a;
 }
 
+/* ── Global nav-tabs modernisation ─────────────────────────────────────────── */
+/* Replaces Bootstrap's border-box tab style with a flat underline-indicator   */
+/* design. Uses only theme CSS variables so it adapts to every palette.        */
+
+.nav-tabs {
+  gap: 0;
+  border-bottom: 2px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+
+.nav-tabs .nav-item {
+  margin-bottom: -2px;
+}
+
+.nav-tabs .nav-link,
+.nav-tabs .nav-item > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--font-color, #374151) 68%, transparent);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s, background 0.18s;
+  text-decoration: none;
+}
+
+.nav-tabs .nav-link:hover:not(.active),
+.nav-tabs .nav-item > button:hover:not(.active) {
+  color: var(--font-color, #111827);
+  background: color-mix(in srgb, var(--font-color, #000) 5%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.2)) 100%, transparent);
+}
+
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item > button.active {
+  color: var(--link-active-color, var(--navigation-color, #2563eb));
+  background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #2563eb)) 7%, transparent);
+  border-bottom: 2px solid var(--link-active-color, var(--navigation-color, #2563eb));
+  font-weight: 600;
+}
+
+/* ── End global nav-tabs ────────────────────────────────────────────────────── */
+
 @layer base {
   :root {
     --background: 0 0% 98%;

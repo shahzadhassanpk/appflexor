@@ -138,7 +138,7 @@ function ProcessConfiguration() {
 
                 {/* ── Tab bar ───────────────────────────────────────────────── */}
                 <div className="row">
-                    <ul className="nav nav-tabs pc-tab-bar" role="tablist">
+                    <ul className="nav nav-tabs" role="tablist">
                         {tabs.map(tab => (
                             <li key={tab.code} className="nav-item">
                                 <button
