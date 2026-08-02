@@ -1,126 +1,43 @@
 /* ── Process Configuration module styles ───────────────────────────────────── */
 
-/* Page header */
-.pc-page-header {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  padding: 0.75rem 0 0.25rem;
-}
-
-.pc-page-header-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 0.6rem;
-  /* tint from the navigation/accent colour — adapts to every theme */
-  background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #0d6efd)) 14%, transparent);
-  color: var(--link-active-color, var(--navigation-color, #0d6efd));
-  font-size: 1.15rem;
-  flex-shrink: 0;
-}
-
-/* Jump nav bar — sticky below the top navbar (~60 px) */
-.pc-jumpnav {
-  position: sticky;
-  top: 62px;
-  z-index: 100;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 1.25rem;
-  background: var(--header-color, rgba(248,250,252,0.96));
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-
-/* Jump link — base state */
-.pc-jumplink {
+/* Tab buttons — icon + label */
+.pc-tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 2rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-  /* use font-color at reduced opacity so it reads on both light & dark */
-  color: color-mix(in srgb, var(--font-color, inherit) 72%, transparent);
-  text-decoration: none;
-  background: transparent;
-  border: 1px solid transparent;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-  white-space: nowrap;
 }
 
-/* Jump link — hover state: mirror the sidebar nav-link hover pattern */
-.pc-jumplink:hover {
-  background: color-mix(in srgb, var(--font-color, #000) 8%, transparent);
-  border-color: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
-  color: var(--font-color, inherit);
-  text-decoration: none;
+.pc-tab-icon {
+  font-size: 0.75rem;
+  opacity: 0.75;
 }
 
-/* Jump link — active (section in view) */
-.pc-jumplink--active {
-  background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #0d6efd)) 12%, transparent);
-  border-color: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #0d6efd)) 40%, transparent);
-  color: var(--link-active-color, var(--navigation-color, #0d6efd)) !important;
-  font-weight: 600;
-}
-
-.pc-jumplink--active i {
+.pc-tab-btn.active .pc-tab-icon {
   opacity: 1;
 }
 
-.pc-jumplink i {
-  font-size: 0.75rem;
-  opacity: 0.8;
+/* Sub-header bar between tabs and content */
+.pc-content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.25rem 0.65rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+  margin-bottom: 0.75rem;
 }
 
-/* Section cards */
-.pc-section-card {
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
-  border-radius: 0.6rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-  overflow: visible;
-  /* navbar (~60px) + sticky jumpnav (~44px) + gap */
-  scroll-margin-top: 116px;
-}
-
-.pc-section-card .card-header {
-  background: var(--header-color, rgba(0,0,0,0.03)) !important;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
-  padding: 0.65rem 1rem;
-  border-radius: 0.6rem 0.6rem 0 0;
-}
-
-.pc-section-card .card-header strong {
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.pc-section-card .card-body {
-  padding: 0.5rem 0.75rem;
-}
-
-/* Section icon pill — uses same accent palette as the page-header icon */
+/* Section icon pill (reused in content header) */
 .pc-section-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.4rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 0.35rem;
   background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #0d6efd)) 12%, transparent);
   color: var(--link-active-color, var(--navigation-color, #0d6efd));
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   flex-shrink: 0;
 }
 
@@ -130,25 +47,12 @@
 }
 
 /* Responsive */
-@media (max-width: 767px) {
-  .pc-section-card {
-    margin-bottom: 0.75rem;
-  }
-  .pc-section-card .card-body {
-    padding: 0.5rem;
-  }
-  .pc-jumpnav {
-    gap: 0.3rem;
-  }
-  /* On small screens collapse labels — show icon only */
-  .pc-jumplink span {
+@media (max-width: 575px) {
+  .pc-tab-btn span {
     display: none;
   }
-  .pc-jumplink {
-    padding: 0.35rem 0.55rem;
-  }
-  .pc-jumplink i {
-    font-size: 0.85rem;
+  .pc-tab-icon {
+    font-size: 0.9rem;
     opacity: 1;
   }
 }

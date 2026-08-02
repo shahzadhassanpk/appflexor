@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
+import React, { lazy, Suspense, useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppContext } from "../../../AppContext";
 import { ErrorBoundary } from "../../utils/ErrorBoundry";
@@ -6,12 +6,12 @@ import { getAuthorizedTabs } from "../../utils/utils";
 import Loading from "../../components/Loading/loading";
 import "./process-config.css";
 
-const ProcessEngine  = lazy(() => import("./ProcessEngine"));
-const ProcessCategory     = lazy(() => import("./process-category/ProcessCategory"));
+const ProcessEngine      = lazy(() => import("./ProcessEngine"));
+const ProcessCategory    = lazy(() => import("./process-category/ProcessCategory"));
 const ProcessBusinessArea = lazy(() => import("./process-category/ProcessBusinessArea"));
-const ProcessMap     = lazy(() => import("./process-map/ProcessMap"));
-const ProcessMonitor = lazy(() => import("./process-monitor/ProcessMonitor"));
-const Processes      = lazy(() => import("./processes/Processes"));
+const ProcessMap         = lazy(() => import("./process-map/ProcessMap"));
+const ProcessMonitor     = lazy(() => import("./process-monitor/ProcessMonitor"));
+const Processes          = lazy(() => import("./processes/Processes"));
 
 const TABS = [
     {
@@ -25,7 +25,7 @@ const TABS = [
         name: "Process Categories",
         code: "PROCESS_CATEGORY",
         icon: "fa-solid fa-folder-tree",
-        active: "true",
+        active: "false",
         description: "Organise processes into structured categories for clarity",
     },
     {
@@ -52,58 +52,24 @@ const TABS = [
 ];
 
 const componentRegistry = {
-    PROCESS_ENGINE:  ProcessEngine,
+    PROCESS_ENGINE:   ProcessEngine,
     PROCESS_CATEGORY: ProcessCategory,
-    BUSINESS_AREA:   ProcessBusinessArea,
-    PROCESS_MAP:     ProcessMap,
-    PROCESSES:       Processes,
-    PROCESS_MONITOR: ProcessMonitor,
+    BUSINESS_AREA:    ProcessBusinessArea,
+    PROCESS_MAP:      ProcessMap,
+    PROCESSES:        Processes,
+    PROCESS_MONITOR:  ProcessMonitor,
 };
 
-/* Scroll helper — tries immediately, then retries up to ~1 s while tabs render */
-function scrollToSection(code, retries = 8) {
-    const el = document.getElementById(`section-${code}`);
-    if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else if (retries > 0) {
-        setTimeout(() => scrollToSection(code, retries - 1), 120);
-    }
-}
-
 function ProcessConfiguration() {
-    const [tabs, setTabs] = useState([]);
-    const [refreshKeys, setRefreshKeys] = useState({});
-    const [activeSection, setActiveSection] = useState("");
-    const [searchParams] = useSearchParams();
-    const scrolledRef = useRef(false);
-    const observerRef = useRef(null);
+    const [tabs, setTabs]           = useState([]);
+    const [activeTab, setActiveTab] = useState("");
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [searchParams]            = useSearchParams();
 
-    const appContext  = useContext(AppContext);
+    const appContext = useContext(AppContext);
     const { profile, featuresSubscription, tenantSubscription } = appContext;
 
-    /* ── resolve authorized tabs ───────────────────────────────────────────── */
-    useEffect(() => {
-        const authorizedTabs = getAuthorizedTabs(TABS, featuresSubscription);
-        if (authorizedTabs.length > 0) setTabs(authorizedTabs);
-    }, [featuresSubscription]);
-
-    /* ── deep-link scroll ──────────────────────────────────────────────────── */
-    useEffect(() => {
-        const section = searchParams.get("section");
-        if (!section) {
-            window.scrollTo(0, 0);
-            return;
-        }
-        if (scrolledRef.current) return;
-        scrolledRef.current = true;
-        scrollToSection(section);
-    }, [searchParams, tabs]);
-
-    /* ── helpers ───────────────────────────────────────────────────────────── */
-    function refreshTable(code) {
-        setRefreshKeys(prev => ({ ...prev, [code]: (prev[code] || 0) + 1 }));
-    }
-
+    /* ── build visible tab list ─────────────────────────────────────────────── */
     function showTab(tab) {
         if (tab.name !== "Process Deployments") return true;
         const isSelfManaged = tenantSubscription?.process_deployment === "SELF_MANAGED";
@@ -113,147 +79,123 @@ function ProcessConfiguration() {
         return isSelfManaged || isS2ACloud;
     }
 
-    // BUSINESS_AREA is always shown regardless of the subscription gate
-    // (mirrors the original force-fallback: visible.find(...) || TABS.find(...))
-    const visible = (() => {
-        const authorized = tabs.filter(showTab);
-        const hasBA = authorized.some(t => t.code === "BUSINESS_AREA");
-        if (!hasBA) {
-            const baTab = TABS.find(t => t.code === "BUSINESS_AREA");
-            return baTab ? [baTab, ...authorized] : authorized;
-        }
-        return authorized;
-    })();
-
-    /* ── IntersectionObserver — track active section on scroll ────────────── */
     useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
+    useEffect(() => {
+        const authorized = getAuthorizedTabs(TABS, featuresSubscription).filter(showTab);
+
+        // BUSINESS_AREA is always shown regardless of subscription gate
+        const hasBA = authorized.some(t => t.code === "BUSINESS_AREA");
+        const visible = hasBA
+            ? authorized
+            : [TABS.find(t => t.code === "BUSINESS_AREA"), ...authorized].filter(Boolean);
+
         if (visible.length === 0) return;
 
-        // Disconnect any previous observer before creating a new one
-        if (observerRef.current) observerRef.current.disconnect();
+        // Honour ?section=CODE deep-link, else default to first tab
+        const requestedSection = searchParams.get("section");
+        const initialCode =
+            requestedSection && visible.some(t => t.code === requestedSection)
+                ? requestedSection
+                : visible[0].code;
 
-        // rootMargin: push the top boundary down past the navbar (60px) + jumpnav (~44px)
-        // and shrink the bottom so only the section near the top of the viewport fires
-        observerRef.current = new IntersectionObserver(
-            entries => {
-                // Find the entry that is intersecting and closest to the top
-                const intersecting = entries
-                    .filter(e => e.isIntersecting)
-                    .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        setTabs(visible);
+        setActiveTab(initialCode);
+    }, [featuresSubscription]);
 
-                if (intersecting.length > 0) {
-                    const id = intersecting[0].target.id; // "section-BUSINESS_AREA"
-                    setActiveSection(id.replace("section-", ""));
-                }
-            },
-            {
-                rootMargin: "-108px 0px -70% 0px",
-                threshold: 0,
-            },
-        );
-
-        visible.forEach(tab => {
-            const el = document.getElementById(`section-${tab.code}`);
-            if (el) observerRef.current.observe(el);
-        });
-
-        return () => observerRef.current?.disconnect();
-    }, [visible]);
-
-    /* ── jump-nav click ────────────────────────────────────────────────────── */
-    function handleJump(e, code) {
-        e.preventDefault();
-        scrollToSection(code, 0);
+    /* ── tab switch ─────────────────────────────────────────────────────────── */
+    function handleTabChange(code) {
+        setActiveTab(code);
+        setRefreshKey(0);  // reset refresh counter on tab switch
+        window.scrollTo(0, 0);
     }
+
+    const activeTabMeta = tabs.find(t => t.code === activeTab);
 
     return (
         <ErrorBoundary>
-            <div id="ProcessConfig" className="process-config mb-2 container-fluid static-module-bg">
+            <div
+                id="ProcessConfig"
+                className="process-config container-fluid static-module-bg">
 
-                {/* ── Page header ─────────────────────────────────────────── */}
-                <div className="pc-page-header mb-3">
-                    <div className="pc-page-header-icon">
-                        <i className="fa-solid fa-gears" />
-                    </div>
-                    <div>
-                        <h5 className="mb-0">Orchestrate Business Processes</h5>
-                        <p className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>
-                            Define business areas, deploy, configure, and monitor your processes.
-                        </p>
+                {/* ── Page header ───────────────────────────────────────────── */}
+                <div className="row">
+                    <div className="col-sm-12 datalist-viewer">
+                        <div className="s2a-datalist-header">
+                            <div className="s2a-dl-title-wrapper">
+                                <div className="s2a-dl-title">
+                                    <span>Orchestrate Business Processes</span>
+                                </div>
+                                <span>
+                                    Define business areas, deploy, configure, and monitor your processes.
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* ── Jump nav (sticky) ───────────────────────────────────── */}
-                {visible.length > 1 && (
-                    <nav className="pc-jumpnav" aria-label="Jump to section">
-                        {visible.map(tab => (
-                            <a
-                                key={tab.code}
-                                href={`#section-${tab.code}`}
-                                className={`pc-jumplink${activeSection === tab.code ? " pc-jumplink--active" : ""}`}
-                                onClick={e => handleJump(e, tab.code)}
-                            >
-                                <i className={tab.icon} aria-hidden="true" />
-                                <span>{tab.name}</span>
-                            </a>
+                {/* ── Tab bar ───────────────────────────────────────────────── */}
+                <div className="row">
+                    <ul className="nav nav-tabs" role="tablist">
+                        {tabs.map(tab => (
+                            <li key={tab.code} className="nav-item">
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    className={`nav-link pc-tab-btn${activeTab === tab.code ? " active" : ""}`}
+                                    aria-selected={activeTab === tab.code}
+                                    onClick={() => handleTabChange(tab.code)}
+                                >
+                                    <i className={`${tab.icon} pc-tab-icon`} aria-hidden="true" />
+                                    <span>{tab.name}</span>
+                                </button>
+                            </li>
                         ))}
-                    </nav>
-                )}
+                    </ul>
 
-                {/* ── Sections ────────────────────────────────────────────── */}
-                {visible.length > 0 ? (
-                    <div className="row">
-                        <div className="container">
-                            {visible.map(tab => {
-                                const Component = componentRegistry[tab.code];
-                                if (!Component) return null;
-                                return (
-                                    <div
-                                        id={`section-${tab.code}`}
-                                        className="card mb-4 pc-section-card"
-                                        key={tab.code}
-                                    >
-                                        <div className="card-header border-0 d-flex align-items-center justify-content-between gap-2">
-                                            <div className="d-flex align-items-center gap-2">
-                                                <span className="pc-section-icon">
-                                                    <i className={tab.icon} aria-hidden="true" />
-                                                </span>
-                                                <div className="d-flex flex-column">
-                                                    <strong>{tab.name}</strong>
-                                                    {tab.description && (
-                                                        <small className="text-muted lh-sm">
-                                                            {tab.description}
-                                                        </small>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2 flex-shrink-0"
-                                                onClick={() => refreshTable(tab.code)}
-                                                aria-label={`Refresh ${tab.name}`}
-                                                title="Refresh"
-                                            >
-                                                <i className="fa-solid fa-rotate-right" aria-hidden="true" />
-                                                <span className="d-none d-sm-inline">Refresh</span>
-                                            </button>
+                    {/* ── Tab content ───────────────────────────────────────── */}
+                    <div className="tab-content">
+                        {activeTab ? (
+                            <>
+                                {/* Sub-header: description + refresh */}
+                                {activeTabMeta && (
+                                    <div className="pc-content-header">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <span className="pc-section-icon">
+                                                <i className={activeTabMeta.icon} aria-hidden="true" />
+                                            </span>
+                                            <small className="text-muted">
+                                                {activeTabMeta.description}
+                                            </small>
                                         </div>
-                                        <div className="card-body p-0 bg-transparent">
-                                            <Suspense fallback={<Loading message={`Loading ${tab.name}…`} />}>
-                                                {React.createElement(Component, {
-                                                    key: `${tab.code}-${refreshKeys[tab.code] || 0}`,
-                                                    activeTab: tab.code,
-                                                })}
-                                            </Suspense>
-                                        </div>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2 flex-shrink-0"
+                                            onClick={() => setRefreshKey(k => k + 1)}
+                                            title="Refresh"
+                                        >
+                                            <i className="fa-solid fa-rotate-right" aria-hidden="true" />
+                                            <span className="d-none d-sm-inline">Refresh</span>
+                                        </button>
                                     </div>
-                                );
-                            })}
-                        </div>
+                                )}
+
+                                <div className="tab-pane fade active show">
+                                    <Suspense fallback={<Loading message={`Loading ${activeTabMeta?.name ?? activeTab}…`} />}>
+                                        {React.createElement(
+                                            componentRegistry[activeTab],
+                                            { key: `${activeTab}-${refreshKey}`, activeTab },
+                                        )}
+                                    </Suspense>
+                                </div>
+                            </>
+                        ) : (
+                            <NotAuthorized />
+                        )}
                     </div>
-                ) : (
-                    <NotAuthorized />
-                )}
+                </div>
             </div>
         </ErrorBoundary>
     );
