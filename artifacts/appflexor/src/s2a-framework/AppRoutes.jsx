@@ -179,6 +179,10 @@ function AppRoutes({
                             element={<ControlPanel />}
                         />
                         <Route
+                            path="/ai-services"
+                            element={<AiServices />}
+                        />
+                        <Route
                             path="/user-profile"
                             element={
                                 <UserProfile
