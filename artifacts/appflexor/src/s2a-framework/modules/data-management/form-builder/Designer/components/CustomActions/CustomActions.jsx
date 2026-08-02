@@ -252,7 +252,7 @@ export default function CustomActionForForms(props) {
             name === "allow_create_col" || name === "hide_label"
             // || name === "json_export"
         ) {
-            debugger
+            // debugger
             setAction(prev => ({
                 ...prev,
                 [name]: checked,
