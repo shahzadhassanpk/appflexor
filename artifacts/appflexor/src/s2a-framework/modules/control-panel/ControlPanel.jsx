@@ -92,25 +92,25 @@ const PANELS = [
             {
                 icon: "fa-solid fa-layer-group",
                 label: "Business Areas",
-                route: "/process-configuration?section=BUSINESS_AREA",
+                route: "/orchestrate-configuration?section=BUSINESS_AREA",
                 description: "Define and manage business domains for processes",
             },
             {
                 icon: "fa-solid fa-folder-tree",
                 label: "Process Categories",
-                route: "/process-configuration?section=PROCESS_CATEGORY",
+                route: "/orchestrate-configuration?section=PROCESS_CATEGORY",
                 description: "Organise processes into structured categories for clarity"
             },
             {
                 icon: "fa-solid fa-rocket",
                 label: "Deploy Process",
-                route: "/process-configuration?section=PROCESSES",
+                route: "/orchestrate-configuration?section=PROCESSES",
                 description: "Launch new or updated processes into production"
             },
             {
                 icon: "fa-solid fa-chart-line",
                 label: "Monitor Process",
-                route: "/process-configuration?section=PROCESS_MONITOR",
+                route: "/orchestrate-configuration?section=PROCESS_MONITOR",
                 description: "Track performance and status of running processes"
             },
             {

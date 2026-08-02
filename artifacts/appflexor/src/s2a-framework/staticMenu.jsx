@@ -25,21 +25,21 @@ const OPEN_AS = {
 
 export const staticAdminModules = [
     {
-        name: "Web",
+        name: "Administrate",
         location: ADMINOFFICE,
         id: `${suid}`,
         position: "1001",
         type: MODULE_TYPE.dropdown,
-        path: "Back Office",
+        path: "Control Panel",
         icon: "fa-solid fa-globe",
     },
     {
-        name: "System",
+        name: "Administrate",
         location: ADMINOFFICE,
         id: `${said}`,
         position: "1002",
         type: MODULE_TYPE.dropdown,
-        path: "Back Office",
+        path: "Control Panel",
         icon: "fa-solid fa-user-lock",
         role:"ROLE_ADMIN"
     },
@@ -49,7 +49,7 @@ export const staticAdminModuleFeatures = [
     {
         module: `${said}`,
         type: OPEN_AS.internalLink,
-        name: "User Management",
+        name: "System",
         code: "MOD_USER_MANAGEMENT",
         feature_key: "/user-management",
         icon: "fa-solid fa-user-shield",
@@ -124,7 +124,7 @@ export const staticAdminModuleFeatures = [
     {
         module: `${suid}`,
         type: OPEN_AS.internalLink,
-        name: "Business Intelligence",
+        name: "Custom Reports",
         code: "MOD_DATA_ANALYSIS",
         feature_key: "/data-analysis",
         icon: "fa-solid fa-chart-simple",
@@ -132,9 +132,9 @@ export const staticAdminModuleFeatures = [
     {
         module: `${suid}`,
         type: OPEN_AS.internalLink,
-        name: "Process Automation",
+        name: "Orchestrate",
         code: "MOD_WORKFLOW_MANAGMENT",
-        feature_key: "/process-configuration",
+        feature_key: "/orchestrate-configuration",
         icon: "fa-solid fa-diagram-project",
     },
 ];
