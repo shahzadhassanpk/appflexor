@@ -20,15 +20,15 @@ function parseVQ(raw) {
 }
 
 function AiTasks({ selectedAgent, onChangeAgent }) {
-    const [agents, setAgents]     = useState([]);
-    const [tasks, setTasks]       = useState([]);
+    const [agents, setAgents] = useState([]);
+    const [tasks, setTasks] = useState([]);
     const [filtered, setFiltered] = useState([]);
-    const [form, setForm]         = useState(EMPTY_TASK);
-    const [vq, setVq]             = useState(EMPTY_VQ);
+    const [form, setForm] = useState(EMPTY_TASK);
+    const [vq, setVq] = useState(EMPTY_VQ);
     const [showForm, setShowForm] = useState(false);
     const [showJson, setShowJson] = useState(null);
-    const [errors, setErrors]     = useState({});
-    const [saving, setSaving]     = useState(false);
+    const [errors, setErrors] = useState({});
+    const [saving, setSaving] = useState(false);
     const searchRef = useRef();
 
     // Load agent list on mount
@@ -61,7 +61,7 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
     }
 
     function handleAgentSelect(e) {
-        const key   = e.target.value;
+        const key = e.target.value;
         const agent = agents.find(a => a.agent_key === key) || null;
         if (onChangeAgent) onChangeAgent(agent);
     }
@@ -99,8 +99,8 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
 
     function validate() {
         const errs = {};
-        if (!form.agent_key?.trim())   errs.agent_key   = "Agent key is required";
-        if (!form.task_key?.trim())    errs.task_key    = "Task key is required";
+        if (!form.agent_key?.trim()) errs.agent_key = "Agent key is required";
+        if (!form.task_key?.trim()) errs.task_key = "Task key is required";
         if (!form.user_prompt?.trim()) errs.user_prompt = "User prompt is required";
         setErrors(errs);
         return Object.keys(errs).length === 0;
@@ -138,9 +138,9 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
 
     function exportJson(t) {
         const blob = new Blob([JSON.stringify(t, null, 2)], { type: "application/json" });
-        const url  = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href     = url;
+        link.href = url;
         link.download = `${t.task_key}.json`;
         link.click();
         URL.revokeObjectURL(url);
@@ -159,7 +159,7 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
                     onChange={handleAgentSelect}>
                     <option value="">— Select an agent to view tasks —</option>
                     {agents.map(a => (
-                        <option key={a.id} value={a.agent_key}>{a.agent_key}</option>
+                        <option key={a.id} value={a.agent_key}>{a.agent_name} (key: {a.agent_key})</option>
                     ))}
                 </select>
                 {selectedAgent && (
@@ -199,11 +199,12 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
                         <table className="table s2a-table ai-table table-hover mb-0">
                             <thead className="thead">
                                 <tr>
+                                    <th>Task Name</th>
                                     <th>Task Key</th>
                                     <th>User Prompt</th>
-                                    <th>SQL Query</th>
-                                    <th>Vector Query</th>
-                                    <th style={{ width: 120 }}>Actions</th>
+                                    {/* <th>SQL Query</th>
+                                    <th>Vector Query</th> */}
+                                    <th style={{ width: 250 }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -220,13 +221,14 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
                                 )}
                                 {filtered.map(t => (
                                     <tr key={t.id}>
-                                        <td><code className="ai-code-badge">{t.task_key}</code></td>
+                                        <td><span>{t.task_name}</span></td>
+                                        <td><span>{t.task_key}</span></td>
                                         <td>
                                             <span className="ai-truncate" title={t.user_prompt}>
                                                 {t.user_prompt}
                                             </span>
                                         </td>
-                                        <td>
+                                        {/* <td>
                                             {t.sql_query
                                                 ? <code className="ai-truncate" style={{ maxWidth: 140, fontSize: "0.75rem" }} title={t.sql_query}>{t.sql_query}</code>
                                                 : <span className="text-muted">—</span>}
@@ -235,7 +237,7 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
                                             {t.vector_query && t.vector_query !== "{}"
                                                 ? <span className="ai-truncate" style={{ maxWidth: 140 }} title={t.vector_query}>{t.vector_query}</span>
                                                 : <span className="text-muted">—</span>}
-                                        </td>
+                                        </td> */}
                                         <td>
                                             <button className="btn btn-sm ai-action-btn me-1" title="Preview JSON" onClick={() => setShowJson(t)}>
                                                 <i className="fa-solid fa-code" />
@@ -294,6 +296,24 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
                                     )
                                 }
                                 {errors.agent_key && <div className="invalid-feedback d-block">{errors.agent_key}</div>}
+                            </div>
+
+                            {/* Task Key */}
+                            <div className="mb-3">
+                                <label className="ai-label">
+                                    Task Name <span className="text-danger">*</span>
+                                    <span className="ai-tooltip ms-1" title="Unique identifier for this task within the agent. Used by N8N to select the right prompt/query (e.g. classify-intent, extract-entities).">
+                                        <i className="fa-solid fa-circle-info" />
+                                    </span>
+                                </label>
+                                <input
+                                    className={`form-control ${errors.task_name ? "is-invalid" : ""}`}
+                                    name="task_name"
+                                    value={form.task_name}
+                                    onChange={handleInput}
+                                    placeholder="e.g. Classify Intent"
+                                />
+                                {errors.task_name && <div className="invalid-feedback">{errors.task_name}</div>}
                             </div>
 
                             {/* Task Key */}

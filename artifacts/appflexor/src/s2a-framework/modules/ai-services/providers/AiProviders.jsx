@@ -112,10 +112,10 @@ function AiProviders() {
                 <table className="table s2a-table ai-table table-hover mb-0">
                     <thead className="thead">
                         <tr>
-                            <th>Provider Name</th>
-                            <th>Provider Key</th>
-                            <th>API Key</th>
-                            <th style={{ width: 90 }}>Actions</th>
+                            <th style={{ width: 200 }}>Provider Name</th>
+                            <th style={{ width: 200 }}>Provider Key</th>
+                            {/* <th>API Key</th> */}
+                            <th style={{ width: 200 }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -132,12 +132,12 @@ function AiProviders() {
                         {filtered.map(p => (
                             <tr key={p.id}>
                                 <td><strong>{p.provider_name}</strong></td>
-                                <td><code className="ai-code-badge">{p.provider_key}</code></td>
-                                <td>
+                                <td><span>{p.provider_key}</span></td>
+                                {/* <td>
                                     <span className="ai-masked-key" title="API key stored securely">
                                         {"•".repeat(24)}
                                     </span>
-                                </td>
+                                </td> */}
                                 <td>
                                     <button
                                         className="btn btn-sm ai-action-btn me-1"

@@ -152,7 +152,7 @@ function AiAgents({ onOpenTasks }) {
                             <th>Agent Key</th>
                             <th>System Prompt</th>
                             <th>AI Provider</th>
-                            <th style={{ width: 130 }}>Actions</th>
+                            <th style={{ width: 250 }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -169,14 +169,14 @@ function AiAgents({ onOpenTasks }) {
                         {filtered.map(a => (
                             <tr key={a.id}>
                                 <td><strong>{a.agent_name}</strong></td>
-                                <td><code className="ai-code-badge">{a.agent_key}</code></td>
+                                <td><span>{a.agent_key}</span></td>
                                 <td>
                                     <span className="ai-truncate" title={a.system_prompt}>
                                         {a.system_prompt}
                                     </span>
                                 </td>
                                 <td>
-                                    <span className="ai-code-badge">{a.ai_provider}</span>
+                                    <span>{a.ai_provider}</span>
                                 </td>
                                 <td>
                                     <button
