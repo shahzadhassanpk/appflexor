@@ -2,7 +2,7 @@
 
 ## Purpose
 
-**AI Services** is the configuration hub for all AI-powered automation in Appflexor. It lets administrators define the AI providers, agents, and task definitions that are consumed by N8N webhook workflows at runtime. No code changes are needed to add new AI capabilities — everything is driven by the records stored here.
+**AI Services** is the configuration hub for all AI-powered automation in Appflexor. It lets administrators define the AI providers, agents, and task definitions that drive AI workflow automation at runtime. No code changes are needed to add new AI capabilities — everything is driven by the records stored here.
 
 ---
 
@@ -13,8 +13,8 @@
 | **AI Provider** | A connection to an external LLM service (e.g. OpenAI, Anthropic, Groq). Stores the provider key and API credentials. |
 | **AI Agent** | A named agent that pairs a system prompt with a specific AI provider. Agents define the persona and behaviour of an AI responder. |
 | **AI Task** | A task definition scoped to an agent. Tasks hold the user prompt template, an optional SQL query for data retrieval, and optional vector search parameters. |
-| **Agent Key** | A short identifier (e.g. `customer-support`) used by N8N webhooks to look up the agent at runtime. |
-| **Task Key** | A short identifier (e.g. `summarise-ticket`) used by N8N to select the correct task within an agent. |
+| **Agent Key** | A short identifier (e.g. `customer-support`) used to look up the agent at runtime. |
+| **Task Key** | A short identifier (e.g. `summarise-ticket`) used to select the correct task within an agent. |
 | **System Prompt** | The base instruction sent to the LLM for every request routed to this agent. Defines scope, persona, and constraints. |
 | **Vector Query** | Optional semantic search parameters (collection, search text, top-K) used to inject context from a vector store before the LLM call. |
 
@@ -59,7 +59,7 @@ AI Agents combine a system prompt with an AI provider to create a reusable AI re
 2. Click **Add Agent**.
 3. Fill in:
    - **Name** — human-readable label shown in the UI (e.g. `Customer Support`).
-   - **Agent Key** — unique identifier used in N8N webhooks (e.g. `customer-support`). Use lowercase with hyphens.
+   - **Agent Key** — unique identifier referenced in API calls (e.g. `customer-support`). Use lowercase with hyphens.
    - **AI Provider** — select from the configured providers list.
    - **System Prompt** — the instruction that defines the agent's behaviour for every request.
    - **Default Vector Query** *(optional)* — pre-fill the collection, search text template, and top-K result count to use when no task-level vector query is defined.
@@ -81,13 +81,13 @@ Click the **JSON** (code) icon to preview the full agent definition, or **Downlo
 
 ### Delete an Agent
 
-Click the **Delete** icon and confirm. Deleting an agent removes the agent record. Ensure any N8N workflows referencing its `agentKey` are updated or disabled first.
+Click the **Delete** icon and confirm. Deleting an agent removes the agent record. Ensure any workflows referencing its `agent_key` are updated or disabled first.
 
 ---
 
 ## AI Tasks
 
-AI Tasks define what an agent should do for a specific use case. Each task belongs to one agent and is referenced by its `taskKey` in N8N.
+AI Tasks define what an agent should do for a specific use case. Each task belongs to one agent and is identified by its `task_key`.
 
 ### Add a Task
 
@@ -95,8 +95,8 @@ AI Tasks define what an agent should do for a specific use case. Each task belon
 2. Select an agent from the **Agent** dropdown at the top of the tab.
 3. Click **Add Task**.
 4. Fill in:
-   - **Task Key** — unique identifier within this agent (e.g. `summarise-ticket`). Used by N8N to select this task.
-   - **User Prompt** — the prompt template sent to the LLM. Use `{{variableName}}` placeholders for dynamic values injected by N8N at runtime.
+   - **Task Key** — unique identifier within this agent (e.g. `summarise-ticket`). Used to select this task at runtime.
+   - **User Prompt** — the prompt template sent to the LLM. Use `{{variableName}}` placeholders for dynamic values injected at runtime.
    - **SQL Query** *(optional)* — a SQL statement executed before the LLM call. Results are injected into the prompt context (e.g. to ground the AI answer with live data).
    - **Vector Query** *(optional)* — override the agent-level vector query with task-specific parameters (collection, search text, top-K).
 5. Click **Save**.
@@ -142,13 +142,13 @@ Appflexor resolves the agent and task, executes any SQL query, runs vector searc
 3. Execute SQL (if defined) → inject results into prompt context.
 4. Run vector search (if defined) — task-level overrides agent-level defaults.
 5. Call the LLM with assembled context.
-6. Return response to N8N.
+6. Return response to caller.
 
 ---
 
 ## Tips
 
-- **Keep Agent Keys stable.** N8N workflows are wired to `agentKey` values. Renaming a key requires updating every N8N node that references it.
+- **Keep Agent Keys stable.** Workflows are wired to `agent_key` values. Renaming a key requires updating every workflow that references it.
 - **Use SQL queries for grounding.** Injecting live data (e.g. the current ticket record) before the LLM call dramatically improves answer accuracy.
 - **Use vector search for knowledge bases.** Set up a vector collection with your product docs or FAQs and reference it in tasks to give the AI relevant context without embedding it all in the system prompt.
 - **Test prompts iteratively.** Export an agent's JSON definition, test it against the LLM API directly, then update the system prompt or user prompt template once the output is satisfactory.
