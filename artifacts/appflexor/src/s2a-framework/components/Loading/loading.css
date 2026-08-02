@@ -1,58 +1,11 @@
-/* ── Module loading state ───────────────────────────────────────────────────── */
-
-.s2a-loader {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 18rem;
-  width: 100%;
-}
-
-/* SVG spinner */
-.s2a-loader__svg {
-  width: 2.5rem;
-  height: 2.5rem;
-  animation: s2a-spin 0.9s linear infinite;
-}
-
-.s2a-loader__track {
-  stroke: color-mix(in srgb, var(--link-active-color, #2563eb) 18%, transparent);
-}
-
 .s2a-loader__arc {
   stroke: var(--link-active-color, #2563eb);
-  stroke-dasharray: 80 200;
   stroke-linecap: round;
+  stroke-dasharray: 90 250;   /* one visible arc */
+  stroke-dashoffset: 0;
+  animation: s2a-spin 1.2s linear infinite;
 }
 
 @keyframes s2a-spin {
   to { transform: rotate(360deg); }
-}
-
-/* ── GlobalLoader — full-screen overlay ─────────────────────────────────────── */
-.s2a-global-loader {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--primary-color, rgba(255,255,255,0.88));
-  backdrop-filter: blur(4px);
-  z-index: 9999;
-}
-
-.s2a-global-loader__svg {
-  width: 3rem;
-  height: 3rem;
-  animation: s2a-spin 0.9s linear infinite;
-}
-
-.s2a-global-loader__track {
-  stroke: color-mix(in srgb, var(--link-active-color, #2563eb) 20%, transparent);
-}
-
-.s2a-global-loader__arc {
-  stroke: var(--link-active-color, #2563eb);
-  stroke-dasharray: 80 200;
-  stroke-linecap: round;
 }
