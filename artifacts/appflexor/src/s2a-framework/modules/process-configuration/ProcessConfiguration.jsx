@@ -99,6 +99,32 @@ function ProcessConfiguration() {
         scrollToSection(section);
     }, [searchParams, tabs]);
 
+    /* ── helpers ───────────────────────────────────────────────────────────── */
+    function refreshTable(code) {
+        setRefreshKeys(prev => ({ ...prev, [code]: (prev[code] || 0) + 1 }));
+    }
+
+    function showTab(tab) {
+        if (tab.name !== "Process Deployments") return true;
+        const isSelfManaged = tenantSubscription?.process_deployment === "SELF_MANAGED";
+        const isS2ACloud =
+            tenantSubscription?.process_deployment === "S2A_CLOUD" &&
+            profile?.username === "padmin";
+        return isSelfManaged || isS2ACloud;
+    }
+
+    // BUSINESS_AREA is always shown regardless of the subscription gate
+    // (mirrors the original force-fallback: visible.find(...) || TABS.find(...))
+    const visible = (() => {
+        const authorized = tabs.filter(showTab);
+        const hasBA = authorized.some(t => t.code === "BUSINESS_AREA");
+        if (!hasBA) {
+            const baTab = TABS.find(t => t.code === "BUSINESS_AREA");
+            return baTab ? [baTab, ...authorized] : authorized;
+        }
+        return authorized;
+    })();
+
     /* ── IntersectionObserver — track active section on scroll ────────────── */
     useEffect(() => {
         if (visible.length === 0) return;
@@ -133,32 +159,6 @@ function ProcessConfiguration() {
 
         return () => observerRef.current?.disconnect();
     }, [visible]);
-
-    /* ── helpers ───────────────────────────────────────────────────────────── */
-    function refreshTable(code) {
-        setRefreshKeys(prev => ({ ...prev, [code]: (prev[code] || 0) + 1 }));
-    }
-
-    function showTab(tab) {
-        if (tab.name !== "Process Deployments") return true;
-        const isSelfManaged = tenantSubscription?.process_deployment === "SELF_MANAGED";
-        const isS2ACloud =
-            tenantSubscription?.process_deployment === "S2A_CLOUD" &&
-            profile?.username === "padmin";
-        return isSelfManaged || isS2ACloud;
-    }
-
-    // BUSINESS_AREA is always shown regardless of the subscription gate
-    // (mirrors the original force-fallback: visible.find(...) || TABS.find(...))
-    const visible = (() => {
-        const authorized = tabs.filter(showTab);
-        const hasBA = authorized.some(t => t.code === "BUSINESS_AREA");
-        if (!hasBA) {
-            const baTab = TABS.find(t => t.code === "BUSINESS_AREA");
-            return baTab ? [baTab, ...authorized] : authorized;
-        }
-        return authorized;
-    })();
 
     /* ── jump-nav click ────────────────────────────────────────────────────── */
     function handleJump(e, code) {
