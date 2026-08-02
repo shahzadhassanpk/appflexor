@@ -15,23 +15,25 @@
   width: 2.6rem;
   height: 2.6rem;
   border-radius: 0.6rem;
-  background: color-mix(in srgb, var(--primary-color, #0d6efd) 12%, transparent);
-  color: var(--primary-color, #0d6efd);
+  /* tint from the navigation/accent colour — adapts to every theme */
+  background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #0d6efd)) 14%, transparent);
+  color: var(--link-active-color, var(--navigation-color, #0d6efd));
   font-size: 1.15rem;
   flex-shrink: 0;
 }
 
-/* Jump nav */
+/* Jump nav bar */
 .pc-jumpnav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   padding: 0.5rem 0.75rem;
   background: var(--header-color, rgba(0,0,0,0.03));
-  border: 1px solid var(--border-color, rgba(0,0,0,0.1));
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
   border-radius: 0.5rem;
 }
 
+/* Jump link — base state */
 .pc-jumplink {
   display: inline-flex;
   align-items: center;
@@ -40,7 +42,8 @@
   border-radius: 2rem;
   font-size: 0.8rem;
   font-weight: 500;
-  color: var(--font-color, inherit);
+  /* use font-color at reduced opacity so it reads on both light & dark */
+  color: color-mix(in srgb, var(--font-color, inherit) 72%, transparent);
   text-decoration: none;
   background: transparent;
   border: 1px solid transparent;
@@ -48,22 +51,23 @@
   white-space: nowrap;
 }
 
+/* Jump link — hover state: mirror the sidebar nav-link hover pattern */
 .pc-jumplink:hover {
-  background: color-mix(in srgb, var(--primary-color, #0d6efd) 10%, transparent);
-  border-color: color-mix(in srgb, var(--primary-color, #0d6efd) 30%, transparent);
-  color: var(--primary-color, #0d6efd);
+  background: color-mix(in srgb, var(--font-color, #000) 8%, transparent);
+  border-color: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+  color: var(--font-color, inherit);
   text-decoration: none;
 }
 
 .pc-jumplink i {
   font-size: 0.75rem;
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
 /* Section cards */
 .pc-section-card {
   background: transparent;
-  border: 1px solid var(--border-color, rgba(0,0,0,0.1));
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
   border-radius: 0.6rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   overflow: visible;
@@ -72,7 +76,7 @@
 
 .pc-section-card .card-header {
   background: var(--header-color, rgba(0,0,0,0.03)) !important;
-  border-bottom: 1px solid var(--border-color, rgba(0,0,0,0.08));
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
   padding: 0.65rem 1rem;
   border-radius: 0.6rem 0.6rem 0 0;
 }
@@ -86,7 +90,7 @@
   padding: 0.5rem 0.75rem;
 }
 
-/* Section icon pill */
+/* Section icon pill — uses same accent palette as the page-header icon */
 .pc-section-icon {
   display: inline-flex;
   align-items: center;
@@ -94,8 +98,8 @@
   width: 2rem;
   height: 2rem;
   border-radius: 0.4rem;
-  background: color-mix(in srgb, var(--primary-color, #0d6efd) 10%, transparent);
-  color: var(--primary-color, #0d6efd);
+  background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #0d6efd)) 12%, transparent);
+  color: var(--link-active-color, var(--navigation-color, #0d6efd));
   font-size: 0.8rem;
   flex-shrink: 0;
 }
@@ -116,6 +120,7 @@
   .pc-jumpnav {
     gap: 0.3rem;
   }
+  /* On small screens collapse labels — show icon only */
   .pc-jumplink span {
     display: none;
   }
