@@ -1,0 +1,270 @@
+/* ─── AI Services module styles ─────────────────────────────────────────────── */
+
+/* Tab nav */
+.ai-nav-tabs {
+    border-bottom: 1px solid var(--border-default);
+    margin-bottom: 0;
+}
+.ai-nav-tabs .nav-link {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border: none;
+    padding: 0.6rem 1rem;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    transition: color 0.15s, border-color 0.15s;
+}
+.ai-nav-tabs .nav-link:hover {
+    color: var(--text-primary);
+    background: var(--bg-surface-alt);
+}
+.ai-nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: transparent;
+    font-weight: 600;
+}
+
+/* Agent badge on Tasks tab when an agent is selected */
+.ai-agent-badge {
+    font-size: 0.6rem;
+    font-weight: 600;
+    background: var(--primary-color);
+    color: #fff;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    vertical-align: middle;
+}
+
+/* Tab pane */
+.ai-tab-content { padding: 1.25rem 0 0; }
+.ai-tab-pane { display: block; }
+
+/* Toolbar (search + add button row) */
+.ai-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+.ai-search {
+    max-width: 280px;
+    font-size: 0.8125rem;
+}
+
+/* Table */
+.ai-table thead th {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: var(--bg-surface-alt);
+    border-bottom: 1px solid var(--border-default);
+    padding: 0.625rem 0.75rem;
+    white-space: nowrap;
+}
+.ai-table tbody td {
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+    padding: 0.625rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.ai-table tbody tr:hover { background: var(--bg-surface-alt); }
+
+/* Code badges */
+.ai-code-badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.45rem;
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-default);
+    border-radius: 0.3rem;
+    color: var(--primary-color);
+    font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+/* Masked key */
+.ai-masked-key {
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+/* Truncated text cell */
+.ai-truncate {
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    vertical-align: bottom;
+}
+
+/* Action buttons */
+.ai-action-btn {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-default);
+    border-radius: 0.35rem;
+    line-height: 1;
+    transition: background 0.1s, color 0.1s;
+}
+.ai-action-btn:hover { color: var(--primary-color); background: var(--bg-surface); }
+.ai-action-danger:hover { color: var(--danger, #dc3545) !important; }
+
+/* Agent selector banner (inside Tasks tab) */
+.ai-agent-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+.ai-agent-selector label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0;
+    white-space: nowrap;
+}
+.ai-agent-selector select {
+    font-size: 0.8125rem;
+    flex: 1;
+    min-width: 200px;
+}
+
+/* ─── Modal ──────────────────────────────────────────────────────────────────── */
+.ai-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1060;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 4rem 1rem 1rem;
+    overflow-y: auto;
+}
+.ai-modal {
+    background: var(--bg-surface);
+    border-radius: 0.75rem;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+}
+.ai-modal-lg { max-width: 720px; }
+.ai-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border-default);
+}
+.ai-modal-header h5 {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+}
+.ai-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+}
+.ai-modal-close:hover { color: var(--text-primary); }
+.ai-modal-body { padding: 1.25rem; overflow-y: auto; max-height: 70vh; }
+.ai-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem 1rem;
+    border-top: 1px solid var(--border-default);
+}
+
+/* Form labels */
+.ai-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
+}
+.ai-tooltip { cursor: help; color: var(--text-muted); }
+
+/* Section divider inside modal */
+.ai-section-divider {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 0.35rem;
+    margin: 1.25rem 0 0.75rem;
+}
+
+/* SQL editor textarea */
+.ai-sql-editor {
+    font-family: "SFMono-Regular", Consolas, "Courier New", monospace;
+    font-size: 0.8125rem;
+    min-height: 120px;
+    resize: vertical;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border: 1px solid var(--border-default);
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    line-height: 1.6;
+    tab-size: 2;
+}
+.ai-sql-editor:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+
+/* Vector query fields grid */
+.ai-vector-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 80px;
+    gap: 0.75rem;
+}
+@media (max-width: 480px) { .ai-vector-grid { grid-template-columns: 1fr; } }
+
+/* JSON preview */
+.ai-json-preview {
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 0.8rem;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    overflow: auto;
+    max-height: 400px;
+    white-space: pre;
+    line-height: 1.5;
+}
+
+/* Empty state */
+.ai-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+.ai-empty i { font-size: 2rem; display: block; margin-bottom: 0.75rem; opacity: 0.4; }

@@ -211,6 +211,12 @@ const PANELS = [
                 route: "/payment-processor",
                 description: "Manage billing, subscriptions, and payment processing"
             },
+            {
+                icon: "fa-solid fa-robot",
+                label: "AI Services",
+                route: "/ai-services",
+                description: "Configure AI providers, agents, and task definitions for workflow automation"
+            },
         ],
         recentActivity: [
             { icon: "fa-solid fa-user-shield", label: "New administrator added", time: "30m ago" },

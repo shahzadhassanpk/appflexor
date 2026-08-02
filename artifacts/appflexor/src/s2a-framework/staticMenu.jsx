@@ -64,6 +64,15 @@ export const staticAdminModuleFeatures = [
         icon: "fa-solid fa-address-card",
         role:"ROLE_ADMIN"
     },
+    {
+        module: `${said}`,
+        type: OPEN_AS.internalLink,
+        name: "AI Services",
+        code: "MOD_AI_SERVICES",
+        feature_key: "/ai-services",
+        icon: "fa-solid fa-robot",
+        role:"ROLE_ADMIN"
+    },
     // {
     //     module: `${said}`,
     //     type: OPEN_AS.internalLink,
