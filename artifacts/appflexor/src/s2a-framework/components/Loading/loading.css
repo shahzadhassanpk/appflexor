@@ -2,13 +2,10 @@
 
 .s2a-loader {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
   min-height: 18rem;
   width: 100%;
-  padding: 2rem;
 }
 
 /* Spinner ring */
@@ -19,47 +16,10 @@
   border: 3px solid color-mix(in srgb, var(--link-active-color, #2563eb) 18%, transparent);
   border-top-color: var(--link-active-color, #2563eb);
   animation: s2a-spin 0.7s linear infinite;
-  flex-shrink: 0;
 }
 
 @keyframes s2a-spin {
   to { transform: rotate(360deg); }
-}
-
-/* Text block */
-.s2a-loader__text {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  text-align: center;
-}
-
-.s2a-loader__message {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--font-color, #111827);
-  margin: 0;
-}
-
-.s2a-loader__sub {
-  font-size: 0.78rem;
-  color: color-mix(in srgb, var(--font-color, #6b7280) 58%, transparent);
-  margin: 0;
-}
-
-/* ── Animated dots on the sub-text ─────────────────────────────────────────── */
-.s2a-loader__dots span {
-  display: inline-block;
-  animation: s2a-dot-blink 1.4s infinite both;
-  font-weight: 700;
-}
-.s2a-loader__dots span:nth-child(2) { animation-delay: 0.2s; }
-.s2a-loader__dots span:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes s2a-dot-blink {
-  0%, 80%, 100% { opacity: 0.2; }
-  40%           { opacity: 1;   }
 }
 
 /* ── GlobalLoader — full-screen overlay ─────────────────────────────────────── */
