@@ -26,7 +26,18 @@ function AiServices() {
         Promise.all(
             ["ai_provider", "ai_agent", "ai_task"].map(entity =>
                 axios
-                    .post(API_URL + "?service.key=validate.schema", { formId: entity })
+                    .post(API_URL + "?service.key=validate.schema", {
+                        saveOrUpdate: "Yes",
+                        datasource: "",
+                        data: [{
+                            formId: entity,
+                            entity: entity,
+                            action: "update",
+                            formData: { id: "new" },
+                            mode: "formData",
+                            id: "new",
+                        }],
+                    })
                     .catch(err => console.warn("validate.schema [" + entity + "]:", err))
             )
         ).finally(() => setSchemaReady(true));
