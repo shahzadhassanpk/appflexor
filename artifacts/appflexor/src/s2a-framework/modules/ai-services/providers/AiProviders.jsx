@@ -4,7 +4,7 @@ import { getData, handleSave, handleDelete } from "../../../components/CrudApiCa
 import { toastEmitter } from "../../../components/Toastify/Toastify";
 import { filterArrayByTerms } from "../../../utils/utils";
 
-const EMPTY = { id: "new", providerName: "", providerKey: "", apiKey: "" };
+const EMPTY = { id: "new", provider_name: "", provider_key: "", api_key: "" };
 
 function AiProviders() {
     const [providers, setProviders] = useState([]);
@@ -31,7 +31,7 @@ function AiProviders() {
     function handleSearch(e) {
         const term = e.target.value.toLowerCase();
         if (!term) { setFiltered(providers); return; }
-        setFiltered(filterArrayByTerms(providers, term, ["providerName", "providerKey"]));
+        setFiltered(filterArrayByTerms(providers, term, ["provider_name", "provider_key"]));
     }
 
     function openAdd() {
@@ -56,9 +56,9 @@ function AiProviders() {
 
     function validate() {
         const errs = {};
-        if (!form.providerName?.trim()) errs.providerName = "Provider name is required";
-        if (!form.providerKey?.trim())  errs.providerKey  = "Provider key is required";
-        if (!form.apiKey?.trim())       errs.apiKey       = "API key is required";
+        if (!form.provider_name?.trim()) errs.provider_name = "Provider name is required";
+        if (!form.provider_key?.trim())  errs.provider_key  = "Provider key is required";
+        if (!form.api_key?.trim())       errs.api_key       = "API key is required";
         setErrors(errs);
         return Object.keys(errs).length === 0;
     }
@@ -80,7 +80,7 @@ function AiProviders() {
     }
 
     function remove(p) {
-        if (!window.confirm(`Delete provider "${p.providerName}"? This cannot be undone.`)) return;
+        if (!window.confirm(`Delete provider "${p.provider_name}"? This cannot be undone.`)) return;
         handleDelete({ entity: "ai_provider", url: API_URL + "?service.key=update.formData", arr: [p.id] })
             .then(res => {
                 if (res?.data?.C_STATUS === "SUCCESS") {
@@ -131,8 +131,8 @@ function AiProviders() {
                         )}
                         {filtered.map(p => (
                             <tr key={p.id}>
-                                <td><strong>{p.providerName}</strong></td>
-                                <td><code className="ai-code-badge">{p.providerKey}</code></td>
+                                <td><strong>{p.provider_name}</strong></td>
+                                <td><code className="ai-code-badge">{p.provider_key}</code></td>
                                 <td>
                                     <span className="ai-masked-key" title="API key stored securely">
                                         {"•".repeat(24)}
@@ -182,13 +182,13 @@ function AiProviders() {
                                     </span>
                                 </label>
                                 <input
-                                    className={`form-control ${errors.providerName ? "is-invalid" : ""}`}
-                                    name="providerName"
-                                    value={form.providerName}
+                                    className={`form-control ${errors.provider_name ? "is-invalid" : ""}`}
+                                    name="provider_name"
+                                    value={form.provider_name}
                                     onChange={handleInput}
                                     placeholder="e.g. OpenAI"
                                 />
-                                {errors.providerName && <div className="invalid-feedback">{errors.providerName}</div>}
+                                {errors.provider_name && <div className="invalid-feedback">{errors.provider_name}</div>}
                             </div>
 
                             {/* Provider Key */}
@@ -200,13 +200,13 @@ function AiProviders() {
                                     </span>
                                 </label>
                                 <input
-                                    className={`form-control ${errors.providerKey ? "is-invalid" : ""}`}
-                                    name="providerKey"
-                                    value={form.providerKey}
+                                    className={`form-control ${errors.provider_key ? "is-invalid" : ""}`}
+                                    name="provider_key"
+                                    value={form.provider_key}
                                     onChange={handleInput}
                                     placeholder="e.g. openai"
                                 />
-                                {errors.providerKey && <div className="invalid-feedback">{errors.providerKey}</div>}
+                                {errors.provider_key && <div className="invalid-feedback">{errors.provider_key}</div>}
                             </div>
 
                             {/* API Key */}
@@ -219,10 +219,10 @@ function AiProviders() {
                                 </label>
                                 <div className="input-group">
                                     <input
-                                        className={`form-control ${errors.apiKey ? "is-invalid" : ""}`}
-                                        name="apiKey"
+                                        className={`form-control ${errors.api_key ? "is-invalid" : ""}`}
+                                        name="api_key"
                                         type={showKey ? "text" : "password"}
-                                        value={form.apiKey}
+                                        value={form.api_key}
                                         onChange={handleInput}
                                         placeholder="sk-…"
                                         autoComplete="new-password"
@@ -234,7 +234,7 @@ function AiProviders() {
                                         onClick={() => setShowKey(s => !s)}>
                                         <i className={`fa-solid ${showKey ? "fa-eye-slash" : "fa-eye"}`} />
                                     </button>
-                                    {errors.apiKey && <div className="invalid-feedback">{errors.apiKey}</div>}
+                                    {errors.api_key && <div className="invalid-feedback">{errors.api_key}</div>}
                                 </div>
                             </div>
                         </div>

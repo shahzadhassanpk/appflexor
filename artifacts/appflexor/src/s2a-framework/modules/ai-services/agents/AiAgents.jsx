@@ -4,14 +4,14 @@ import { getData, handleSave, handleDelete } from "../../../components/CrudApiCa
 import { toastEmitter } from "../../../components/Toastify/Toastify";
 import { filterArrayByTerms } from "../../../utils/utils";
 
-const EMPTY_VQ = { collection: "", searchText: "", topK: 5 };
+const EMPTY_VQ = { collection: "", search_text: "", top_k: 5 };
 const EMPTY = {
     id: "new",
-    agentName: "",
-    agentKey: "",
-    systemPrompt: "",
-    aiProvider: "",
-    defaultVectorQuery: JSON.stringify(EMPTY_VQ),
+    agent_name: "",
+    agent_key: "",
+    system_prompt: "",
+    ai_provider: "",
+    default_vector_query: JSON.stringify(EMPTY_VQ),
 };
 
 function parseVQ(raw) {
@@ -23,7 +23,7 @@ function AiAgents({ onOpenTasks }) {
     const [filtered, setFiltered] = useState([]);
     const [providers, setProviders] = useState([]);
     const [form, setForm]         = useState(EMPTY);
-    const [vq, setVq]             = useState(EMPTY_VQ);   // parsed defaultVectorQuery
+    const [vq, setVq]             = useState(EMPTY_VQ);   // parsed default_vector_query
     const [showForm, setShowForm] = useState(false);
     const [showJson, setShowJson] = useState(null);        // agent to preview as JSON
     const [errors, setErrors]     = useState({});
@@ -50,7 +50,7 @@ function AiAgents({ onOpenTasks }) {
     function handleSearch(e) {
         const term = e.target.value.toLowerCase();
         if (!term) { setFiltered(agents); return; }
-        setFiltered(filterArrayByTerms(agents, term, ["agentName", "agentKey", "aiProvider"]));
+        setFiltered(filterArrayByTerms(agents, term, ["agent_name", "agent_key", "ai_provider"]));
     }
 
     function openAdd() {
@@ -62,7 +62,7 @@ function AiAgents({ onOpenTasks }) {
 
     function openEdit(a) {
         setForm({ ...a });
-        setVq(parseVQ(a.defaultVectorQuery));
+        setVq(parseVQ(a.default_vector_query));
         setErrors({});
         setShowForm(true);
     }
@@ -75,15 +75,15 @@ function AiAgents({ onOpenTasks }) {
 
     function handleVqInput(e) {
         const { name, value } = e.target;
-        setVq(prev => ({ ...prev, [name]: name === "topK" ? Number(value) : value }));
+        setVq(prev => ({ ...prev, [name]: name === "top_k" ? Number(value) : value }));
     }
 
     function validate() {
         const errs = {};
-        if (!form.agentName?.trim())    errs.agentName    = "Agent name is required";
-        if (!form.agentKey?.trim())     errs.agentKey     = "Agent key is required";
-        if (!form.systemPrompt?.trim()) errs.systemPrompt = "System prompt is required";
-        if (!form.aiProvider?.trim())   errs.aiProvider   = "AI provider is required";
+        if (!form.agent_name?.trim())    errs.agent_name    = "Agent name is required";
+        if (!form.agent_key?.trim())     errs.agent_key     = "Agent key is required";
+        if (!form.system_prompt?.trim()) errs.system_prompt = "System prompt is required";
+        if (!form.ai_provider?.trim())   errs.ai_provider   = "AI provider is required";
         setErrors(errs);
         return Object.keys(errs).length === 0;
     }
@@ -91,7 +91,7 @@ function AiAgents({ onOpenTasks }) {
     function save() {
         if (!validate()) return;
         setSaving(true);
-        const payload = { ...form, defaultVectorQuery: JSON.stringify(vq) };
+        const payload = { ...form, default_vector_query: JSON.stringify(vq) };
         handleSave({ entity: "ai_agent", formData: payload })
             .then(res => {
                 if (res?.data?.C_STATUS === "SUCCESS") {
@@ -106,7 +106,7 @@ function AiAgents({ onOpenTasks }) {
     }
 
     function remove(a) {
-        if (!window.confirm(`Delete agent "${a.agentKey}"? All associated tasks will also be removed.`)) return;
+        if (!window.confirm(`Delete agent "${a.agent_key}"? All associated tasks will also be removed.`)) return;
         handleDelete({ entity: "ai_agent", url: API_URL + "?service.key=update.formData", arr: [a.id] })
             .then(res => {
                 if (res?.data?.C_STATUS === "SUCCESS") {
@@ -123,7 +123,7 @@ function AiAgents({ onOpenTasks }) {
         const url  = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href     = url;
-        link.download = `${a.agentKey}.json`;
+        link.download = `${a.agent_key}.json`;
         link.click();
         URL.revokeObjectURL(url);
     }
@@ -168,15 +168,15 @@ function AiAgents({ onOpenTasks }) {
                         )}
                         {filtered.map(a => (
                             <tr key={a.id}>
-                                <td><strong>{a.agentName}</strong></td>
-                                <td><code className="ai-code-badge">{a.agentKey}</code></td>
+                                <td><strong>{a.agent_name}</strong></td>
+                                <td><code className="ai-code-badge">{a.agent_key}</code></td>
                                 <td>
-                                    <span className="ai-truncate" title={a.systemPrompt}>
-                                        {a.systemPrompt}
+                                    <span className="ai-truncate" title={a.system_prompt}>
+                                        {a.system_prompt}
                                     </span>
                                 </td>
                                 <td>
-                                    <span className="ai-code-badge">{a.aiProvider}</span>
+                                    <span className="ai-code-badge">{a.ai_provider}</span>
                                 </td>
                                 <td>
                                     <button
@@ -234,13 +234,13 @@ function AiAgents({ onOpenTasks }) {
                                     </span>
                                 </label>
                                 <input
-                                    className={`form-control ${errors.agentName ? "is-invalid" : ""}`}
-                                    name="agentName"
-                                    value={form.agentName}
+                                    className={`form-control ${errors.agent_name ? "is-invalid" : ""}`}
+                                    name="agent_name"
+                                    value={form.agent_name}
                                     onChange={handleInput}
                                     placeholder="e.g. Customer Support"
                                 />
-                                {errors.agentName && <div className="invalid-feedback">{errors.agentName}</div>}
+                                {errors.agent_name && <div className="invalid-feedback">{errors.agent_name}</div>}
                             </div>
 
                             {/* Agent Key */}
@@ -252,13 +252,13 @@ function AiAgents({ onOpenTasks }) {
                                     </span>
                                 </label>
                                 <input
-                                    className={`form-control ${errors.agentKey ? "is-invalid" : ""}`}
-                                    name="agentKey"
-                                    value={form.agentKey}
+                                    className={`form-control ${errors.agent_key ? "is-invalid" : ""}`}
+                                    name="agent_key"
+                                    value={form.agent_key}
                                     onChange={handleInput}
                                     placeholder="e.g. customer-support"
                                 />
-                                {errors.agentKey && <div className="invalid-feedback">{errors.agentKey}</div>}
+                                {errors.agent_key && <div className="invalid-feedback">{errors.agent_key}</div>}
                             </div>
 
                             {/* AI Provider */}
@@ -270,16 +270,16 @@ function AiAgents({ onOpenTasks }) {
                                     </span>
                                 </label>
                                 <select
-                                    className={`form-control form-select ${errors.aiProvider ? "is-invalid" : ""}`}
-                                    name="aiProvider"
-                                    value={form.aiProvider}
+                                    className={`form-control form-select ${errors.ai_provider ? "is-invalid" : ""}`}
+                                    name="ai_provider"
+                                    value={form.ai_provider}
                                     onChange={handleInput}>
                                     <option value="">— Select provider —</option>
                                     {providers.map(p => (
-                                        <option key={p.id} value={p.providerKey}>{p.providerName} ({p.providerKey})</option>
+                                        <option key={p.id} value={p.provider_key}>{p.provider_name} ({p.provider_key})</option>
                                     ))}
                                 </select>
-                                {errors.aiProvider && <div className="invalid-feedback">{errors.aiProvider}</div>}
+                                {errors.ai_provider && <div className="invalid-feedback">{errors.ai_provider}</div>}
                             </div>
 
                             {/* System Prompt */}
@@ -291,14 +291,14 @@ function AiAgents({ onOpenTasks }) {
                                     </span>
                                 </label>
                                 <textarea
-                                    className={`form-control ${errors.systemPrompt ? "is-invalid" : ""}`}
-                                    name="systemPrompt"
-                                    value={form.systemPrompt}
+                                    className={`form-control ${errors.system_prompt ? "is-invalid" : ""}`}
+                                    name="system_prompt"
+                                    value={form.system_prompt}
                                     onChange={handleInput}
                                     rows={5}
                                     placeholder="You are a helpful assistant that…"
                                 />
-                                {errors.systemPrompt && <div className="invalid-feedback">{errors.systemPrompt}</div>}
+                                {errors.system_prompt && <div className="invalid-feedback">{errors.system_prompt}</div>}
                             </div>
 
                             {/* Default Vector Query */}
@@ -331,8 +331,8 @@ function AiAgents({ onOpenTasks }) {
                                     </label>
                                     <input
                                         className="form-control"
-                                        name="searchText"
-                                        value={vq.searchText}
+                                        name="search_text"
+                                        value={vq.search_text}
                                         onChange={handleVqInput}
                                         placeholder="{{userMessage}}"
                                     />
@@ -346,11 +346,11 @@ function AiAgents({ onOpenTasks }) {
                                     </label>
                                     <input
                                         className="form-control"
-                                        name="topK"
+                                        name="top_k"
                                         type="number"
                                         min={1}
                                         max={50}
-                                        value={vq.topK}
+                                        value={vq.top_k}
                                         onChange={handleVqInput}
                                     />
                                 </div>
@@ -358,7 +358,7 @@ function AiAgents({ onOpenTasks }) {
                         </div>
 
                         <div className="ai-modal-footer">
-                            <button className="btn btn-outline-secondary btn-sm" onClick={() => exportJson({ ...form, defaultVectorQuery: JSON.stringify(vq) })}>
+                            <button className="btn btn-outline-secondary btn-sm" onClick={() => exportJson({ ...form, default_vector_query: JSON.stringify(vq) })}>
                                 <i className="fa-solid fa-download me-1" /> Export JSON
                             </button>
                             <button className="btn btn-secondary btn-sm ms-auto" onClick={() => setShowForm(false)}>Cancel</button>
@@ -377,7 +377,7 @@ function AiAgents({ onOpenTasks }) {
                 <div className="ai-modal-overlay" onClick={e => e.target === e.currentTarget && setShowJson(null)}>
                     <div className="ai-modal ai-modal-lg">
                         <div className="ai-modal-header">
-                            <h5><i className="fa-solid fa-code me-2" />Agent Definition — {showJson.agentKey}</h5>
+                            <h5><i className="fa-solid fa-code me-2" />Agent Definition — {showJson.agent_key}</h5>
                             <button className="ai-modal-close" onClick={() => setShowJson(null)}>
                                 <i className="fa-solid fa-xmark" />
                             </button>
