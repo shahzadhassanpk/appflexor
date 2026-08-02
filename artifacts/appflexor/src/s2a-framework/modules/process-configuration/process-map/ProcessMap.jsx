@@ -431,7 +431,7 @@ function ProcessMap({ activeTab }) {
         }
 
         entityForm.formData = selectedItem;
-        debugger
+        // debugger
         request.data.push(entityForm);
         try {
             axios.post(url, request).then(function (response) {

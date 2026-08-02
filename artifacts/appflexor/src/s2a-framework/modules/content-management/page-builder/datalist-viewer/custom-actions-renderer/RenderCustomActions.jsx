@@ -39,7 +39,6 @@ export default function RenderCustomActions({
 
     const [showCustomAction, setShowCustomAction] = useState(initial);
     const appContext = useContext(AppContext);
-    debugger;
     function replaceVariablesInUrl(url, record, appContext) {
         const matches = [...url.matchAll(/\[(.*?)\]/g)];
 
