@@ -1,0 +1,101 @@
+📘 Appflexor AI Agent Services — User Guide
+Purpose
+AI Services is the configuration hub for all AI‑powered automation in Appflexor. Administrators define AI Providers, AI Agents, and AI Tasks here. Workflows then call these agents at runtime using only agentKey, taskKey, and a payload that must include required references. These references (e.g., orderRef, transactionId, customerId) allow the agent to fetch contextual data from SQL queries or vector search before applying LLM reasoning.
+
+🔹 Capture
+Goal: Enrich incoming events and API payloads at the point of intake.
+
+How it works:
+
+Agent configured with a system prompt (e.g., “You are a support intake assistant”).
+
+Task defines a user prompt template (e.g., “Summarise this ticket”).
+
+Required reference (e.g., orderRef) ensures SQL query retrieves live order details.
+
+Sample Request:
+
+json
+{
+  "agentKey": "customer-support",
+  "taskKey": "summarise-ticket",
+  "payload": {
+    "message": "My order hasn't arrived",
+    "orderRef": "ORD-2026-12345"
+  }
+}
+Result: The agent summarises the ticket and enriches it with contextual order data.
+
+🔹 Orchestrate
+Goal: Apply AI reasoning inside workflows to drive smarter decisions.
+
+How it works:
+
+Agent configured with a compliance persona.
+
+Task defines SQL query to fetch transaction details and vector query for compliance rules.
+
+Required reference (e.g., transactionId) ensures correct record retrieval.
+
+Sample Request:
+
+json
+{
+  "agentKey": "finance-agent",
+  "taskKey": "compliance-check",
+  "payload": {
+    "message": "Check compliance for this transaction",
+    "transactionId": "TX-2026-045"
+  }
+}
+Result: The agent applies compliance rules to the transaction context and returns a grounded decision.
+
+🔹 Integrate
+Goal: Strengthen external connectors with contextual AI.
+
+How it works:
+
+Agent configured for integration support.
+
+Task defines vector search against schema docs.
+
+Required references (e.g., sourceField, targetSystem) ensure correct schema context.
+
+Sample Request:
+
+json
+{
+  "agentKey": "integration-agent",
+  "taskKey": "suggest-mapping",
+  "payload": {
+    "message": "Suggest mapping for customer email",
+    "sourceField": "customer_email",
+    "targetSystem": "Salesforce"
+  }
+}
+Result: The agent proposes a contextual mapping for integration.
+
+🔹 Resolution Order
+Look up agent by agentKey → retrieve system prompt + provider.
+
+Look up task by taskKey → retrieve user prompt, SQL query, vector query.
+
+Validate required references in payload.
+
+Execute SQL (if defined) → inject structured data.
+
+Run vector search (if defined) → inject semantic context.
+
+Call LLM with assembled prompt.
+
+Return enriched response to workflow or connector.
+
+✅ Summary:
+
+Capture → Agents enrich intake using references like orderRef.
+
+Orchestrate → Agents apply reasoning with references like transactionId.
+
+Integrate → Agents strengthen connectors with references like sourceField and targetSystem.
+
+All powered by contextual data (SQL), semantic knowledge (vector), and LLM reasoning — with required references ensuring accuracy and reliability.

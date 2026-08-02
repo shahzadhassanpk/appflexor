@@ -41,6 +41,12 @@ const PANELS = [
                 doc: { section: "capture", slug: "apis", title: "APIs" },
                 description: "Guidelines on leveraging Appflexor Data and Process APIs to capture information from external systems"
             },
+            {
+                icon: "fa-solid fa-robot",
+                label: "AI Agent",
+                doc: { section: "capture", slug: "ai-agent", title: "AI Agent — Capture" },
+                description: "Enrich incoming events and API payloads at the point of intake using AI agents"
+            },
             // { 
             //   icon: "fa-brands fa-whatsapp", 
             //   label: "WhatsApp Connectors",
@@ -107,6 +113,12 @@ const PANELS = [
                 route: "/process-configuration",
                 description: "Track performance and status of running processes"
             },
+            {
+                icon: "fa-solid fa-robot",
+                label: "AI Agent",
+                doc: { section: "orchestrate", slug: "ai-agent", title: "AI Agent — Orchestrate" },
+                description: "Apply AI reasoning inside workflows to drive smarter, context-aware decisions"
+            },
         ],
         recentActivity: [
             { icon: "fa-solid fa-circle-play", label: "Customer Complaint workflow deployed", time: "15m ago" },
@@ -136,7 +148,13 @@ const PANELS = [
                 label: "Appflexor Connector",
                 doc: { section: "integrate", slug: "connector", title: "Connector" },
                 description: "Guidelines to integrate existing systems with your processes as external workers"
-            }
+            },
+            {
+                icon: "fa-solid fa-robot",
+                label: "AI Agent",
+                doc: { section: "integrate", slug: "ai-agent", title: "AI Agent — Integrate" },
+                description: "Strengthen external connectors with contextual AI intelligence"
+            },
         ],
 
         recentActivity: [

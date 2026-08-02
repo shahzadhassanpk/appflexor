@@ -8,6 +8,7 @@ export const DOC_MANIFEST = [
         docs: [
             { title: "AppFlexor Forms", slug: "forms", excerpt: "Design data-capture forms for pages and process steps" },
             { title: "AppFlexor APIs", slug: "apis", excerpt: "Build SQL-backed REST endpoints and connect external systems" },
+            { title: "AI Agent", slug: "ai-agent", excerpt: "Enrich incoming events and API payloads at the point of intake using AI" },
         ],
     },
     {
@@ -19,6 +20,7 @@ export const DOC_MANIFEST = [
             { title: "Process Categories", slug: "process-categories", excerpt: "Organise processes into structured sub-groups" },
             { title: "Deploy Process", slug: "deploy-process", excerpt: "Upload and publish BPMN workflows to the process engine" },
             { title: "Monitor Process", slug: "monitor-process", excerpt: "Track status and performance of running process instances" },
+            { title: "AI Agent", slug: "ai-agent", excerpt: "Apply AI reasoning inside workflows to drive smarter decisions" },
         ],
     },
     {
@@ -27,6 +29,7 @@ export const DOC_MANIFEST = [
         icon: "fa-solid fa-plug",
         docs: [
             { title: "Connector", slug: "connector", excerpt: "Integrate external systems as External Workers in process flows" },
+            { title: "AI Agent", slug: "ai-agent", excerpt: "Strengthen external connectors with contextual AI intelligence" },
         ],
     },
     {
@@ -39,7 +42,7 @@ export const DOC_MANIFEST = [
             { title: "Web Content & Data", slug: "content", excerpt: "Create content, forms, data lists, and SQL APIs" },
             { title: "Reports & Analytics", slug: "reports", excerpt: "Deploy reports, design analytic cubes, and run queries" },
             { title: "Subscription", slug: "subscription", excerpt: "Manage billing, packages, and user limits" },
-            { title: "AI Services", slug: "ai-services", excerpt: "Configure AI providers, agents, and task definitions for N8N integrations" },
+            { title: "AI Services", slug: "ai-services", excerpt: "Configure AI providers, agents, and task definitions for AI workflow automation" },
         ],
     },
 ];
