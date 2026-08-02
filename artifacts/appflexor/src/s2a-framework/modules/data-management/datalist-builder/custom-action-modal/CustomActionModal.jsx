@@ -1615,7 +1615,7 @@ function HyperTargetField(props) {
                 as={Col}
                 sm={action.hyper_target === "dialog" ? "3" : "6"}
                 controlId="HyperTarget">
-                <Form.Label>Form View</Form.Label>
+                <Form.Label>Hyper Target</Form.Label>
                 <Form.Select
                     aria-label="Hyper Target"
                     name="hyper_target"
@@ -1629,8 +1629,7 @@ function HyperTargetField(props) {
                     </option>
                     {filteredOptions.map(item => (
                         <>
-                            {action.link_type == "URL" &&
-                            item.code !== "dialog" ? (
+                            {action.link_type == "URL" ? (
                                 <option
                                     key={item.code}
                                     value={item.code}>

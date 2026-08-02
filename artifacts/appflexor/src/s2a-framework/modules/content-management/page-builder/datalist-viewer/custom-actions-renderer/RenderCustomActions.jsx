@@ -19,7 +19,7 @@ export default function RenderCustomActions({
     item = {},
     params = "",
     record = {},
-    handleActions = () => {},
+    handleActions = () => { },
     i = 0,
     getData,
     selectedItem,
@@ -36,10 +36,10 @@ export default function RenderCustomActions({
         },
         message: "",
     };
-    
+
     const [showCustomAction, setShowCustomAction] = useState(initial);
     const appContext = useContext(AppContext);
-
+    debugger;
     function replaceVariablesInUrl(url, record, appContext) {
         const matches = [...url.matchAll(/\[(.*?)\]/g)];
 
@@ -210,9 +210,8 @@ export default function RenderCustomActions({
         obj = {
             datasource: datasource,
             tenant_id: tenant_id,
-            query: `select * from ${_table} ${
-                name ? `where ${name}='${value}'` : ""
-            }`,
+            query: `select * from ${_table} ${name ? `where ${name}='${value}'` : ""
+                }`,
         };
         url = API_URL + "?service.key=bi.data&mode=formData";
 
@@ -288,11 +287,10 @@ export default function RenderCustomActions({
                         method === "delete"
                             ? toastEmitter("Record Deleted Successfully", true)
                             : toastEmitter(
-                                  `Record ${
-                                      method === "update" ? "Updated" : "Save"
-                                  } Successfully`,
-                                  true,
-                              );
+                                `Record ${method === "update" ? "Updated" : "Save"
+                                } Successfully`,
+                                true,
+                            );
                         if (item.allow_refresh) {
                             getData(selectedItem.form_id, selectedItem.id);
                         }
@@ -328,7 +326,7 @@ export default function RenderCustomActions({
                 axios[method](post_url, post_json)
                     .then(response => {
                         if (response) {
-                            if(response_message_path){
+                            if (response_message_path) {
                                 const message = getValueByPath(
                                     response.data,
                                     response_message_path,
@@ -423,8 +421,7 @@ export default function RenderCustomActions({
             let fkColumn = Object.keys(obj)[0];
             let fkValue = Object.values(obj)[0];
             ecodeData = encodeURIComponent(
-                `${
-                    (fkColumn && `fkColumn=${fkColumn}`,
+                `${(fkColumn && `fkColumn=${fkColumn}`,
                     fkColumn && `,fkValue=${fkValue}`)
                 }`,
             );
@@ -432,9 +429,8 @@ export default function RenderCustomActions({
         const hyper_link = item.hyper_link ? item.hyper_link : "";
         navigationcustom(
             hyper_link +
-                `/app/datalist/:id=${item.datalist_id}${
-                    ecodeData ? `?${ecodeData}` : ""
-                }`,
+            `/app/datalist/:id=${item.datalist_id}${ecodeData ? `?${ecodeData}` : ""
+            }`,
             openIn,
             undefined,
             undefined,
@@ -460,7 +456,7 @@ export default function RenderCustomActions({
         <div className="s2a-custom-action">
             {/* link_type: {JSON.stringify(item.link_type)} /{" "}
             hyper_target: {JSON.stringify(item.hyper_target)} */}
-            {/* {JSON.stringify(formVars)} */}
+            {/* {JSON.stringify(item.link_type)} / {JSON.stringify(item.hyper_target)} */}
             {processModal && (
                 <ProcessFormModal
                     show={processModal}
@@ -484,7 +480,7 @@ export default function RenderCustomActions({
                     message={
                         item.confirmation_message
                             ? item.confirmation_message
-                            : "custom action"
+                            : "Custom Action"
                     }
                     operation={navigationcustom}
                     header="Confirm"
@@ -507,6 +503,7 @@ export default function RenderCustomActions({
             {item.link_type === "POST" && (
                 <div onClick={() => sendPostRequest(item, record)}>
                     <ShowAs show_as={item.show_as}>
+                        {"Hello"}
                         <Interweave content={item.title}></Interweave>
                     </ShowAs>
                 </div>
@@ -562,8 +559,8 @@ export default function RenderCustomActions({
                                     _url
                                         ? _url + params
                                         : "" +
-                                              `/app/page-form-viewer?formKey=${item.form}&external=true` +
-                                              params.replaceAll("?", "&"),
+                                        `/app/page-form-viewer?formKey=${item.form}&external=true` +
+                                        params.replaceAll("?", "&"),
                                     "_self",
                                     undefined,
                                     undefined,
@@ -598,6 +595,7 @@ export default function RenderCustomActions({
                 </>
             )}
             {item.hyper_target === "new_window" && (
+
                 <>
                     {item.link_type === "URL" && (
                         <div
@@ -625,8 +623,10 @@ export default function RenderCustomActions({
                                 );
                                 return false;
                             }}>
+                            {/* {JSON.stringify(item)} {"Hello"} */}
                             <ShowAs show_as={item.show_as}>
-                                <Interweave content={item.title}></Interweave>
+
+                                <Interweave content={`${item.title}`}></Interweave>
                             </ShowAs>
                         </div>
                     )}
@@ -644,8 +644,8 @@ export default function RenderCustomActions({
                                     _url
                                         ? _url + params
                                         : "" +
-                                              `/app/page-form-viewer?formKey=${item.form}&external=true` +
-                                              params.replaceAll("?", "&"),
+                                        `/app/page-form-viewer?formKey=${item.form}&external=true` +
+                                        params.replaceAll("?", "&"),
                                     "_blank",
                                     false,
                                     false,

@@ -1019,7 +1019,8 @@ export default function DataListTableById(props) {
                                             const content = (
                                                 <div
                                                     className="datalist-actions-cell datalist-custom-font dropdown-item"
-                                                    title={item.list_title}>
+                                                    title={item?.title??item?.label}>
+                                                        {}
                                                     <RenderCustomActions
                                                         item={item}
                                                         params={params}
