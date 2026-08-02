@@ -3,6 +3,47 @@ import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "../../../AppContext";
 import { API_URL } from "../../Config";
 import { formatDateForUserView } from "../../components/DatePicker/DatePicker";
+import "./payment.css";
+
+/* ── Status banner — defined outside component so type is stable ────────────── */
+function StatusBanner({ subscription, defaultPackage }) {
+    if (subscription?.status === "CANCELLED") return (
+        <div className="sub-status-banner is-cancelled">
+            <i className="fa-solid fa-circle-xmark" />
+            Your subscription has been <strong>cancelled</strong>.
+        </div>
+    );
+    if (subscription?.status === "TRIAL") return (
+        <div className="sub-status-banner is-trial">
+            <i className="fa-solid fa-hourglass-half" />
+            You are on a <strong>{defaultPackage}</strong> trial — ends on{" "}
+            <strong>{formatDateForUserView(subscription.lockout_date)}</strong>.
+        </div>
+    );
+    if (subscription?.price_id) return (
+        <div className="sub-status-banner is-active">
+            <i className="fa-solid fa-circle-check" />
+            <span>
+                Active plan: <strong>{subscription.product_name}</strong> — renews{" "}
+                <strong>{formatDateForUserView(subscription.lockout_date)}</strong>
+                {subscription.last_four && <>, card ending <strong>····{subscription.last_four}</strong></>}.
+            </span>
+        </div>
+    );
+    return null;
+}
+
+const USER_SEAT_OPTIONS = [
+    { value: 2,  label: "Up to 2 Users" },
+    { value: 3,  label: "Up to 3 Users" },
+    { value: 4,  label: "Up to 4 Users" },
+    { value: 5,  label: "Up to 5 Users" },
+    { value: 6,  label: "Up to 6 Users" },
+    { value: 7,  label: "Up to 7 Users" },
+    { value: 8,  label: "Up to 8 Users" },
+    { value: 9,  label: "Up to 9 Users" },
+    { value: 10, label: "Up to 10 Users" },
+];
 
 function StripeSubscription() {
     const [AUTH_KEY, setAUTH_KEY] = useState("");
@@ -11,20 +52,19 @@ function StripeSubscription() {
     const email = appContext.profile.email;
     const client_reference_id = appContext.channel.subscription;
     const subscription_id = appContext.tenantSubscription.subscription_id;
+
     const [packageItems, setPackageItems] = useState([]);
     const [featureItems, setFeatureItems] = useState([]);
     const [serviceItems, setServiceItems] = useState([]);
-    const [activeUsers, setActiveUsers] = useState([]);
+    const [activeUsers, setActiveUsers] = useState({});
     const [subscription, setSubscription] = useState({});
     const [selectedUserLimits, setSelectedUserLimits] = useState({});
     const [showUpdateButton, setShowUpdateButton] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [defaultPackage, setDefaultPackage] = useState("");
 
-    // Fetch AUTH_KEY from localStorage
     function getAuthKey() {
-        const storedAuthKey = localStorage.getItem("AUTH_KEY");
-        setAUTH_KEY(storedAuthKey || "");
+        setAUTH_KEY(localStorage.getItem("AUTH_KEY") || "");
     }
 
     useEffect(() => {
@@ -36,32 +76,14 @@ function StripeSubscription() {
 
     useEffect(() => {
         if (subscription?.package_id && packageItems?.length > 0) {
-            const matchedPackage = packageItems.find(
-                item => item.id === subscription.package_id,
-            );
-            if (matchedPackage) {
-                setDefaultPackage(matchedPackage.name);
-            }
+            const matched = packageItems.find(i => i.id === subscription.package_id);
+            if (matched) setDefaultPackage(matched.name);
         }
-    }, [subscription, packageItems, setDefaultPackage]);
+    }, [subscription, packageItems]);
 
-    const users = [
-        { value: 2, label: "Up to 2 Users" },
-        { value: 3, label: "Up to 3 Users" },
-        { value: 4, label: "Up to 4 Users" },
-        { value: 5, label: "Up to 5 Users" },
-        { value: 6, label: "Up to 6 Users" },
-        { value: 7, label: "Up to 7 Users" },
-        { value: 8, label: "Up to 8 Users" },
-        { value: 9, label: "Up to 9 Users" },
-        { value: 10, label: "Up to 10 Users" },
-    ];
     useEffect(() => {
         const initialLimits = packageItems.reduce(
-            (acc, pkg) => ({
-                ...acc,
-                [pkg.price_id]: pkg.base_users,
-            }),
+            (acc, pkg) => ({ ...acc, [pkg.price_id]: pkg.base_users }),
             {},
         );
         if (subscription.user_limit) {
@@ -69,530 +91,257 @@ function StripeSubscription() {
                 initialLimits[pkg.price_id] = subscription.user_limit;
             });
         }
-        // else if (!subscription?.price_id) {
-        //     packageItems.forEach(pkg => {
-        //         initialLimits[pkg.price_id] = activeUsers.active_users;
-        //     });
-        // }else if (subscription?.price_id) {
-        //     packageItems.forEach(pkg => {
-        //         initialLimits[pkg.price_id] = subscription.user_limit;
-        //     });
-        // }
-
         setSelectedUserLimits(initialLimits);
     }, [subscription, packageItems]);
 
-    // Handle select change for a specific package
     const handleSelectChange = (priceId, event) => {
         const value = parseInt(event.target.value, 10);
-        setSelectedUserLimits(prevState => ({
-            ...prevState,
-            [priceId]: value,
-        }));
-
-        // Update showUpdateButton state based on the selected user limit
-        if (
+        setSelectedUserLimits(prev => ({ ...prev, [priceId]: value }));
+        setShowUpdateButton(
             subscription?.user_limit !== value.toString() &&
-            priceId == subscription.price_id
-        ) {
-            setShowUpdateButton(true);
-        } else {
-            setShowUpdateButton(false);
-        }
+            priceId == subscription.price_id,
+        );
     };
 
-    // Function to calculate the price based on user selection
     function calculatePrice(basePrice, margin, baseUsers, selectedUsers) {
-        // Ensure basePrice and margin are numbers
-        const basePriceNum = parseFloat(basePrice) || 0;
-        const marginNum = parseFloat(margin) || 0;
-        const baseUsersNum = parseInt(baseUsers) || 0;
-        const selectedUsersNum = parseInt(selectedUsers) || 0;
-
-        const additionalUsers = selectedUsersNum - baseUsersNum;
-
-        const totalPrice =
-            basePriceNum +
-            (additionalUsers > 0 ? additionalUsers * marginNum : 0);
-
-        return totalPrice.toFixed(2);
+        const base  = parseFloat(basePrice) || 0;
+        const mar   = parseFloat(margin)    || 0;
+        const extra = Math.max(0, (parseInt(selectedUsers) || 0) - (parseInt(baseUsers) || 0));
+        return (base + extra * mar).toFixed(2);
     }
 
-    // Fetch subscription details
     function getSubscription() {
-        const dataRequest = {
-            dataKeys: [
-                {
+        axios
+            .post(`${API_URL}?service.key=master.data`, {
+                dataKeys: [{
                     serviceParams: client_reference_id,
                     dataKey: "subscriptionList",
                     serviceKey: "tenant.subscription",
                     mode: "formData",
-                },
-            ],
-        };
-
-        axios
-            .post(`${API_URL}?service.key=master.data`, dataRequest)
-            .then(response => {
-                if (response.status === 200) {
-                    const { C_STATUS, C_DATA } = response.data;
-                    if (C_STATUS === "UNAUTHORIZED") {
-                        console.log("UNAUTHORIZED, please login.");
-                    } else if (
-                        C_STATUS === "SUCCESS" &&
-                        C_DATA.subscriptionList
-                    ) {
-                        setSubscription(C_DATA.subscriptionList[0]);
-                    } else {
-                        console.log(
-                            "Either instance does not exist or SQL query returns no result.",
-                        );
-                    }
-                }
+                }],
             })
-            .catch(error => {
-                console.error(error);
-            });
+            .then(res => {
+                if (res.data.C_STATUS === "SUCCESS" && res.data.C_DATA.subscriptionList)
+                    setSubscription(res.data.C_DATA.subscriptionList[0]);
+            })
+            .catch(console.error);
     }
 
     function getActiveUsers() {
-        var dataRequest = {
-            dataKeys: [
-                {
+        axios
+            .post(`${API_URL}?service.key=masterKey.tenantData`, {
+                dataKeys: [{
                     serviceParams: "",
                     dataKey: "activeUserList",
                     serviceKey: "sys.active.users",
                     mode: "formData",
-                },
-            ],
-        };
-
-        axios
-            .post(API_URL + "?service.key=masterKey.tenantData", dataRequest)
-            .then(response => {
-                if (response.status === 200) {
-                    if (response.data.C_STATUS === "UNAUTHORIZED") {
-                        console.log(`UNAUTHORIZED, please login.`);
-                    } else if (response.data.C_STATUS === "SUCCESS") {
-                        if (response.data.C_DATA.activeUserList) {
-                            setActiveUsers(
-                                response.data.C_DATA.activeUserList[0],
-                            );
-                        }
-                    } else {
-                        console.log(
-                            `Either instance does not exists or SQL query returns no result.`,
-                        );
-                    }
-                }
+                }],
             })
-            .catch(error => {
-                console.error(error);
-            });
+            .then(res => {
+                if (res.data.C_STATUS === "SUCCESS" && res.data.C_DATA.activeUserList)
+                    setActiveUsers(res.data.C_DATA.activeUserList[0]);
+            })
+            .catch(console.error);
     }
 
     function getData() {
-        var dataRequest = {
-            dataKeys: [
-                {
-                    serviceParams: "",
-                    dataKey: "packageList",
-                    serviceKey: "subscription.packages",
-                    mode: "formData",
-                },
-                {
-                    serviceParams: "",
-                    dataKey: "featureList",
-                    serviceKey: "subscription.package.features",
-                    mode: "formData",
-                },
-                {
-                    serviceParams: "",
-                    dataKey: "serviceList",
-                    serviceKey: "subscription.package.services",
-                    mode: "formData",
-                },
-            ],
-        };
-
         axios
-            .post(API_URL + "?service.key=master.data", dataRequest)
-            .then(response => {
-                if (response.status === 200) {
-                    if (response.data.C_STATUS === "UNAUTHORIZED") {
-                        console.log(`UNAUTHORIZED, please login.`);
-                    } else if (response.data.C_STATUS === "SUCCESS") {
-                        if (response.data.C_DATA.packageList) {
-                            setPackageItems(response.data.C_DATA.packageList);
-                        }
-                        if (response.data.C_DATA.featureList) {
-                            setFeatureItems(response.data.C_DATA.featureList);
-                        }
-                        if (response.data.C_DATA.serviceList) {
-                            setServiceItems(response.data.C_DATA.serviceList);
-                        }
-                    } else {
-                        console.log(
-                            `Either instance does not exists or SQL query returns no result.`,
-                        );
-                    }
+            .post(`${API_URL}?service.key=master.data`, {
+                dataKeys: [
+                    { serviceParams: "", dataKey: "packageList", serviceKey: "subscription.packages",         mode: "formData" },
+                    { serviceParams: "", dataKey: "featureList", serviceKey: "subscription.package.features", mode: "formData" },
+                    { serviceParams: "", dataKey: "serviceList", serviceKey: "subscription.package.services", mode: "formData" },
+                ],
+            })
+            .then(res => {
+                if (res.data.C_STATUS === "SUCCESS") {
+                    if (res.data.C_DATA.packageList) setPackageItems(res.data.C_DATA.packageList);
+                    if (res.data.C_DATA.featureList) setFeatureItems(res.data.C_DATA.featureList);
+                    if (res.data.C_DATA.serviceList) setServiceItems(res.data.C_DATA.serviceList);
                 }
             })
-            .catch(error => {
-                console.error(error);
-            });
+            .catch(console.error);
     }
 
-    // Handle subscription switch
     const handleSwitchSubscription = async (users, item, endpoint) => {
         try {
-            setIsLoading(true); // Show loader when the process starts
-
-            const data = {
-                hostName: hostName,
-                priceId: item.price_id,
+            setIsLoading(true);
+            const res = await axios.post(endpoint, {
+                hostName, priceId: item.price_id,
                 users: users.toString(),
                 subId: subscription.subscription_id,
-                AUTH_KEY: AUTH_KEY,
-                client_reference_id: client_reference_id,
-            };
-
-            const response = await axios.post(endpoint, data);
-
-            if (response.status === 200) {
-                setTimeout(() => {
-                    window.location.reload();
-                    setIsLoading(false);
-                }, 3000);
-            }
-        } catch (error) {
-            console.error("changeSubscription error:", error);
-            setIsLoading(false); // Hide loader if there is an error
-        }
-    };
-
-    // Handle subscription cancellation
-    const handleCancelSubscription = async endpoint => {
-        try {
-            setIsLoading(true);
-            const data = {
-                hostName: hostName,
-                subId: subscription.subscription_id,
-                AUTH_KEY: AUTH_KEY,
-                client_reference_id: client_reference_id,
-            };
-            const response = await axios.post(endpoint, data);
-            if (response.status === 200) {
-                setTimeout(() => {
-                    window.location.reload();
-                    setIsLoading(false);
-                }, 3000);
-            }
-        } catch (error) {
-            console.error("CancelSubscription error:", error);
+                AUTH_KEY, client_reference_id,
+            });
+            if (res.status === 200) setTimeout(() => { window.location.reload(); setIsLoading(false); }, 3000);
+        } catch (e) {
+            console.error("changeSubscription error:", e);
             setIsLoading(false);
         }
     };
 
-    const myStyles = {
-        textAlign: "center",
-        marginTop: "10px",
+    const handleCancelSubscription = async endpoint => {
+        try {
+            setIsLoading(true);
+            const res = await axios.post(endpoint, {
+                hostName, subId: subscription.subscription_id,
+                AUTH_KEY, client_reference_id,
+            });
+            if (res.status === 200) setTimeout(() => { window.location.reload(); setIsLoading(false); }, 3000);
+        } catch (e) {
+            console.error("CancelSubscription error:", e);
+            setIsLoading(false);
+        }
     };
 
-    function LoadingSpinner() {
-        return (
-            <div
-                className="d-flex justify-content-center align-items-center"
-                style={{ height: "80vh" }}>
-                <div
-                    className="spinner-border text-primary"
-                    role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </div>
+    if (isLoading) return (
+        <div className="d-flex justify-content-center align-items-center" style={{ height: "60vh" }}>
+            <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading…</span>
             </div>
-        );
-    }
+        </div>
+    );
 
     return (
         <div id="subscription">
-            <div className="row">
-                <div className="col-sm-12">
-                    {subscription?.status === "CANCELLED" && (
-                        <div className="subscription-info">
-                            Your Current Subscription is{" "}
-                            <span className="bolder-info">Cancelled</span>
-                        </div>
-                    )}
-                    {subscription?.status === "TRIAL" && (
-                        <div className="subscription-info">
-                            Your Current Subscription is{" "}
-                            <span className="bolder-info">
-                                {defaultPackage}, and the trial ends on{" "}
-                                {formatDateForUserView(
-                                    subscription.lockout_date,
-                                )}
-                            </span>
-                        </div>
-                    )}
-                    {subscription?.price_id && (
-                        <div className="subscription-info">
-                            Your Current Subscription is{" "}
-                            <span className="bolder-info">
-                                {subscription.product_name}
-                            </span>{" "}
-                            which renews on{" "}
-                            <span className="bolder-info">
-                                {formatDateForUserView(
-                                    subscription.lockout_date,
-                                )}
-                            </span>{" "}
-                            using MOP ending ....{subscription.last_four}
-                        </div>
-                    )}
-                </div>
-            </div>
-            {isLoading && <LoadingSpinner />}
-            {!isLoading && (
-                <div className="row packages">
-                    {packageItems.map(item => {
-                        const selectedUserLimit =
-                            selectedUserLimits[item.price_id] ||
-                            item.base_users;
-                        const calculatedPrice = calculatePrice(
-                            item.price,
-                            item.margin,
-                            item.base_users,
-                            selectedUserLimit,
-                        );
-                        return (
-                            <div
-                                key={item.price_id}
-                                className={`col packagelist ${
-                                    subscription?.price_id &&
-                                    item.price_id === subscription.price_id
-                                        ? "active"
-                                        : ""
-                                }`}>
-                                <div className="package-heading">
-                                    <div>
-                                        <p className="package-name">
-                                            {item.name}
-                                        </p>
-                                        <p>Starting at</p>
-                                        <p>
-                                            <span className="package-pricing">
-                                                ${calculatedPrice}
-                                            </span>{" "}
-                                            per month
-                                        </p>
-                                        {/* <p className="mb-2">
-                                            For {subscription.user_limit} Users
-                                            ({activeUsers.active_users} Active)
-                                        </p>                                        */}
-                                    </div>
-                                    <div className="form-group mt-2">
-                                        <select
-                                            className="form-select"
-                                            id={`userLimit-${item.price_id}`}
-                                            name={`userLimit-${item.price_id}`}
-                                            value={selectedUserLimit}
-                                            onChange={e =>
-                                                handleSelectChange(
-                                                    item.price_id,
-                                                    e,
-                                                )
-                                            }>
-                                            {users
-                                                .filter(
-                                                    option =>
-                                                        option.value >=
-                                                        activeUsers.active_users,
-                                                )
-                                                .map(option => (
-                                                    <option
-                                                        key={option.value}
-                                                        value={option.value}>
-                                                        {option.label}
-                                                    </option>
-                                                ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        {activeUsers.active_users && (
-                                            <p className="mt-2">
-                                                <span>
-                                                    You have{" "}
-                                                    {activeUsers.active_users}{" "}
-                                                    active users. The user count
-                                                    cannot be less than the
-                                                    current active user count.
-                                                </span>
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div
-                                        key={item.price_id}
-                                        className="package-form">
-                                        <form
-                                            action="/stripe/create-checkout-session"
-                                            method="POST">
-                                            <input
-                                                type="hidden"
-                                                id="priceId"
-                                                name="priceId"
-                                                value={item.price_id}
-                                            />
-                                            <input
-                                                type="hidden"
-                                                id="hostName"
-                                                name="hostName"
-                                                value={hostName}
-                                            />
-                                            <input
-                                                type="hidden"
-                                                id="AUTH_KEY"
-                                                name="AUTH_KEY"
-                                                value={AUTH_KEY}
-                                            />
-                                            <input
-                                                type="hidden"
-                                                id="email"
-                                                name="email"
-                                                value={email}
-                                            />
-                                            <input
-                                                type="hidden"
-                                                id="client_reference_id"
-                                                name="client_reference_id"
-                                                value={client_reference_id}
-                                            />
-                                            <input
-                                                type="hidden"
-                                                id="users"
-                                                name="users"
-                                                value={selectedUserLimit}
-                                            />
 
-                                            {!subscription?.price_id && (
-                                                <button className="switch-to">
-                                                    Subscribe
-                                                </button>
-                                            )}
-                                            <div className="btn-holder">
-                                                {subscription?.price_id &&
-                                                    item.price_id !==
-                                                        subscription.price_id && (
-                                                        <button
-                                                            className="switch-to"
-                                                            onClick={() =>
-                                                                handleSwitchSubscription(
-                                                                    selectedUserLimit,
-                                                                    item,
-                                                                    "/stripe/update-subscription",
-                                                                )
-                                                            }>
-                                                            Switch To
-                                                        </button>
-                                                    )}
-                                                {subscription?.price_id &&
-                                                    item.price_id ===
-                                                        subscription.price_id &&
-                                                    !showUpdateButton && (
-                                                        <button
-                                                            className="subscribe-disable"
-                                                            disabled={true}>
-                                                            Subscribed
-                                                        </button>
-                                                    )}
-                                                {showUpdateButton &&
-                                                    subscription.price_id ==
-                                                        item.price_id && (
-                                                        <button
-                                                            className="switch-to"
-                                                            onClick={() =>
-                                                                handleSwitchSubscription(
-                                                                    selectedUserLimit,
-                                                                    item,
-                                                                    "/stripe/update-subscription",
-                                                                )
-                                                            }>
-                                                            Update Subscription
-                                                        </button>
-                                                    )}
-                                            </div>
-                                            <div className="mt-4 features-list">
-                                                <p>Package Includes : </p>
-                                                <ul className="package-features">
-                                                    {featureItems.map(
-                                                        (feature, index) => (
-                                                            <>
-                                                                {feature.package_id ==
-                                                                    item.id && (
-                                                                    <li
-                                                                        key={
-                                                                            index
-                                                                        }>
-                                                                        {
-                                                                            feature.name
-                                                                        }
-                                                                    </li>
-                                                                )}
-                                                            </>
-                                                        ),
-                                                    )}
-                                                </ul>
-                                            </div>
-                                        </form>
-                                    </div>
+            {/* ── Status banner ───────────────────────────────────────────── */}
+            <StatusBanner subscription={subscription} defaultPackage={defaultPackage} />
+
+            {/* ── Package cards ───────────────────────────────────────────── */}
+            <div className="sub-packages-grid">
+                {packageItems.map(item => {
+                    const isCurrent = Boolean(subscription?.price_id && item.price_id === subscription.price_id);
+                    const selectedUserLimit = selectedUserLimits[item.price_id] || item.base_users;
+                    const calculatedPrice = calculatePrice(
+                        item.price, item.margin, item.base_users, selectedUserLimit,
+                    );
+                    const pkgFeatures = featureItems.filter(f => f.package_id == item.id);
+
+                    return (
+                        <div key={item.price_id} className={`sub-pkg-card${isCurrent ? " is-current" : ""}`}>
+
+                            {/* Header */}
+                            <div className="sub-pkg-header">
+                                {isCurrent && (
+                                    <span className="sub-pkg-badge">
+                                        <i className="fa-solid fa-check" />
+                                        Current Plan
+                                    </span>
+                                )}
+                                <p className="sub-pkg-name">{item.name}</p>
+                                <p className="sub-pkg-starting">Starting at</p>
+                                <div className="sub-pkg-price">
+                                    <span className="sub-pkg-amount">${calculatedPrice}</span>
+                                    <span className="sub-pkg-period">/ month</span>
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
-            )}
-            {!isLoading && subscription?.price_id && (
-                <div style={myStyles}>
-                    <form
-                        action="/stripe/payment-method"
-                        method="POST">
-                        <input
-                            type="hidden"
-                            id="subId"
-                            name="subId"
-                            value={subscription.subscription_id}
-                        />
-                        <input
-                            type="hidden"
-                            id="hostName"
-                            name="hostName"
-                            value={hostName}
-                        />
-                        <input
-                            type="hidden"
-                            id="AUTH_KEY"
-                            name="AUTH_KEY"
-                            value={AUTH_KEY}
-                        />
-                        <input
-                            type="hidden"
-                            id="client_reference_id"
-                            name="client_reference_id"
-                            value={client_reference_id}
-                        />
-                        <button
-                            className="change-mop"
-                            type="submit">
+
+                            {/* Body */}
+                            <div className="sub-pkg-body">
+
+                                {/* User limit picker */}
+                                <div className="sub-user-picker">
+                                    <label htmlFor={`userLimit-${item.price_id}`}>User seats</label>
+                                    <select
+                                        className="form-select form-select-sm"
+                                        id={`userLimit-${item.price_id}`}
+                                        value={selectedUserLimit}
+                                        onChange={e => handleSelectChange(item.price_id, e)}>
+                                        {USER_SEAT_OPTIONS
+                                            .filter(o => o.value >= (activeUsers.active_users || 0))
+                                            .map(o => (
+                                                <option key={o.value} value={o.value}>{o.label}</option>
+                                            ))}
+                                    </select>
+                                    {activeUsers.active_users && (
+                                        <p className="sub-user-hint mt-1">
+                                            <i className="fa-solid fa-circle-info" />
+                                            {activeUsers.active_users} currently active — minimum seat count
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* CTA */}
+                                <form action="/stripe/create-checkout-session" method="POST">
+                                    <input type="hidden" name="priceId"             value={item.price_id} />
+                                    <input type="hidden" name="hostName"            value={hostName} />
+                                    <input type="hidden" name="AUTH_KEY"            value={AUTH_KEY} />
+                                    <input type="hidden" name="email"               value={email} />
+                                    <input type="hidden" name="client_reference_id" value={client_reference_id} />
+                                    <input type="hidden" name="users"               value={selectedUserLimit} />
+
+                                    {!subscription?.price_id && (
+                                        <button type="submit" className="sub-pkg-cta is-primary">
+                                            Subscribe
+                                        </button>
+                                    )}
+                                    {subscription?.price_id && !isCurrent && (
+                                        <button
+                                            type="button"
+                                            className="sub-pkg-cta is-secondary"
+                                            onClick={() => handleSwitchSubscription(
+                                                selectedUserLimit, item, "/stripe/update-subscription",
+                                            )}>
+                                            Switch to this plan
+                                        </button>
+                                    )}
+                                    {isCurrent && !showUpdateButton && (
+                                        <button type="button" className="sub-pkg-cta is-current" disabled>
+                                            <i className="fa-solid fa-check me-1" />
+                                            Subscribed
+                                        </button>
+                                    )}
+                                    {isCurrent && showUpdateButton && (
+                                        <button
+                                            type="button"
+                                            className="sub-pkg-cta is-primary"
+                                            onClick={() => handleSwitchSubscription(
+                                                selectedUserLimit, item, "/stripe/update-subscription",
+                                            )}>
+                                            Update seats
+                                        </button>
+                                    )}
+                                </form>
+
+                                {/* Feature list */}
+                                {pkgFeatures.length > 0 && (
+                                    <div>
+                                        <p className="sub-features-label">What's included</p>
+                                        <ul className="sub-features-list">
+                                            {pkgFeatures.map((f, i) => (
+                                                <li key={`${item.price_id}-feat-${i}`}>
+                                                    <i className="fa-solid fa-check-circle" />
+                                                    {f.name}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* ── Billing actions ──────────────────────────────────────────── */}
+            {subscription?.price_id && (
+                <div className="sub-billing-footer">
+                    <form action="/stripe/payment-method" method="POST">
+                        <input type="hidden" name="subId"               value={subscription.subscription_id} />
+                        <input type="hidden" name="hostName"            value={hostName} />
+                        <input type="hidden" name="AUTH_KEY"            value={AUTH_KEY} />
+                        <input type="hidden" name="client_reference_id" value={client_reference_id} />
+                        <button type="submit" className="sub-change-mop">
+                            <i className="fa-solid fa-credit-card" />
                             Change Payment Method
                         </button>
                     </form>
                     <button
-                        className="subscription-cancel"
-                        onClick={() =>
-                            handleCancelSubscription(
-                                "/stripe/cancel-subscription",
-                            )
-                        }>
-                        Cancel
+                        type="button"
+                        className="sub-cancel-btn"
+                        onClick={() => handleCancelSubscription("/stripe/cancel-subscription")}>
+                        <i className="fa-solid fa-circle-xmark" />
+                        Cancel subscription
                     </button>
                 </div>
             )}
