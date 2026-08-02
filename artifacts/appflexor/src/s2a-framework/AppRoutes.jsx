@@ -183,10 +183,6 @@ function AppRoutes({
                             element={<AiServices />}
                         />
                         <Route
-                            path="/process-configuration"
-                            element={<ProcessConfiguration />}
-                        />
-                        <Route
                             path="/user-profile"
                             element={
                                 <UserProfile
