@@ -18,15 +18,18 @@ const TABS = [
 function AiServices() {
     const [activeTab, setActiveTab]         = useState("AI_PROVIDERS");
     const [selectedAgent, setSelectedAgent] = useState(null);
+    const [schemaReady, setSchemaReady]     = useState(false);
 
-    // Initialise DB tables for all three entities on first load
+    // Initialise DB tables for all three entities before loading any tab data
     useEffect(() => {
         window.scrollTo(0, 0);
-        ["ai_provider", "ai_agent", "ai_task"].forEach(entity => {
-            axios
-                .post(API_URL + "?service.key=validate.schema", { formId: entity })
-                .catch(err => console.log("validate.schema [" + entity + "]:", err));
-        });
+        Promise.all(
+            ["ai_provider", "ai_agent", "ai_task"].map(entity =>
+                axios
+                    .post(API_URL + "?service.key=validate.schema", { formId: entity })
+                    .catch(err => console.warn("validate.schema [" + entity + "]:", err))
+            )
+        ).finally(() => setSchemaReady(true));
     }, []);
 
     function handleTabChange(code) {
@@ -91,7 +94,7 @@ function AiServices() {
                                     {tab.name}
                                     {tab.code === "AI_TASKS" && selectedAgent && (
                                         <span className="ai-agent-badge ms-2">
-                                            {selectedAgent.agentKey}
+                                            {selectedAgent.agent_key}
                                         </span>
                                     )}
                                 </button>
@@ -99,9 +102,14 @@ function AiServices() {
                         ))}
                     </ul>
                     <div className="tab-content ai-tab-content">
-                        <Suspense fallback={<Loading message={`Loading ${activeTab}…`} />}>
-                            {renderActive()}
-                        </Suspense>
+                        {!schemaReady
+                            ? <Loading message="Initialising AI Services…" />
+                            : (
+                                <Suspense fallback={<Loading message={`Loading ${activeTab}…`} />}>
+                                    {renderActive()}
+                                </Suspense>
+                            )
+                        }
                     </div>
                 </div>
             </div>
