@@ -126,7 +126,7 @@ function ProcessConfiguration() {
                         <div className="s2a-datalist-header">
                             <div className="s2a-dl-title-wrapper">
                                 <div className="s2a-dl-title">
-                                    <span>Orchestrate Business Processes</span>
+                                    <span>Orchestrate</span>
                                 </div>
                                 <span>
                                     Define business areas, deploy, configure, and monitor your processes.
