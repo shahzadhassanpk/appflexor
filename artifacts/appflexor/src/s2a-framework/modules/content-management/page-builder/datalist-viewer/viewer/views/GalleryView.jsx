@@ -29,7 +29,7 @@ const GalleryView = props => {
     }, [columns]);
 
     useEffect(() => {
-        debugger;
+        // debugger;
         const newcartTotal = cartItems.reduce(
             (sum, item) => sum + item.quantity * item.price,
             0,
@@ -38,7 +38,7 @@ const GalleryView = props => {
     }, [cartItems]);
 
     const handleAddToCart = item => {
-        debugger
+        // debugger
         const price = Number(item.row.original[priceField]) || 0;
         const newItem = { id: item.row.id, data: item.row.original, quantity: 1, price };
 
