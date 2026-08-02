@@ -115,7 +115,7 @@ Click the **Delete** icon on the task row and confirm.
 
 ## AI Agent Integration
 
-At runtime, an N8N workflow (or any HTTP client) calls the AI agent endpoint:
+At runtime, any HTTP client calls the AI agent endpoint:
 
 ```
 POST /app/service?service.key=ai.agent.task
