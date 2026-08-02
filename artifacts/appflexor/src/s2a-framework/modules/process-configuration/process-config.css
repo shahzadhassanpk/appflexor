@@ -33,7 +33,6 @@
   height: 1.8rem;
   border-radius: 0.35rem;
   background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #2563eb)) 12%, transparent);
-  color: var(--link-active-color, var(--navigation-color, #2563eb));
   font-size: 0.75rem;
   flex-shrink: 0;
 }
