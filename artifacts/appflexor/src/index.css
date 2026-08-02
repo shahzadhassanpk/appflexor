@@ -70,9 +70,11 @@
 
 .nav-tabs .nav-link.active,
 .nav-tabs .nav-item > button.active {
-  color: var(--link-active-color, var(--navigation-color, #2563eb));
-  background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #2563eb)) 7%, transparent);
-  border-bottom: 2px solid var(--link-active-color, var(--navigation-color, #2563eb));
+  /* --font-color always contrasts with the page background regardless of theme;
+     --navigation-color is a sidebar bg colour and must NOT be used here */
+  color: var(--font-color, #111827);
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
+  border-bottom: 2px solid var(--link-active-color, #2563eb);
   font-weight: 600;
 }
 
