@@ -56,6 +56,7 @@ import StripeSubscription from "./modules/subscription/payment";
 import { ErrorBoundary } from "./utils/ErrorBoundry";
 import Welcome from "./theme/advance/Pages/Welcome";
 import ControlPanel from "./modules/control-panel/ControlPanel";
+import AiServices from "./modules/ai-services/AiServices";
 
 function AppRoutes({
     errorMessage,
@@ -86,6 +87,7 @@ function AppRoutes({
         "/site-administration": SiteAdministration,
         "/process-configuration": ProcessConfiguration,
         "/welcome": Welcome,
+        "/ai-services": AiServices,
     };
 
     return (
@@ -175,6 +177,10 @@ function AppRoutes({
                         <Route
                             path="/control-panel"
                             element={<ControlPanel />}
+                        />
+                        <Route
+                            path="/ai-services"
+                            element={<AiServices />}
                         />
                         <Route
                             path="/user-profile"
