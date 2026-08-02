@@ -39,6 +39,7 @@ export const DOC_MANIFEST = [
             { title: "Web Content & Data", slug: "content", excerpt: "Create content, forms, data lists, and SQL APIs" },
             { title: "Reports & Analytics", slug: "reports", excerpt: "Deploy reports, design analytic cubes, and run queries" },
             { title: "Subscription", slug: "subscription", excerpt: "Manage billing, packages, and user limits" },
+            { title: "AI Services", slug: "ai-services", excerpt: "Configure AI providers, agents, and task definitions for N8N integrations" },
         ],
     },
 ];

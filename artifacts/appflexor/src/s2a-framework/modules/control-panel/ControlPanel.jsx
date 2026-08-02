@@ -214,7 +214,7 @@ const PANELS = [
             {
                 icon: "fa-solid fa-robot",
                 label: "AI Services",
-                route: "/ai-services",
+                doc: { section: "administrate", slug: "ai-services", title: "AI Services" },
                 description: "Configure AI providers, agents, and task definitions for workflow automation"
             },
         ],
