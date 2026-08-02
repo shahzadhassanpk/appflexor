@@ -111,7 +111,17 @@ function ProcessConfiguration() {
         return isSelfManaged || isS2ACloud;
     }
 
-    const visible = tabs.filter(showTab);
+    // BUSINESS_AREA is always shown regardless of the subscription gate
+    // (mirrors the original force-fallback: visible.find(...) || TABS.find(...))
+    const visible = (() => {
+        const authorized = tabs.filter(showTab);
+        const hasBA = authorized.some(t => t.code === "BUSINESS_AREA");
+        if (!hasBA) {
+            const baTab = TABS.find(t => t.code === "BUSINESS_AREA");
+            return baTab ? [baTab, ...authorized] : authorized;
+        }
+        return authorized;
+    })();
 
     /* ── jump-nav click ────────────────────────────────────────────────────── */
     function handleJump(e, code) {
