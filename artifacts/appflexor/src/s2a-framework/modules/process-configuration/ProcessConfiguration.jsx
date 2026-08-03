@@ -8,16 +8,16 @@ import ModuleFormViewer from "../../components/ModuleFormViewer/ModuleFormViewer
 import { toastEmitter } from "../../components/Toastify/Toastify";
 import { updateDeleteConfig } from "../../utils/utils";
 import Loading from "../../components/Loading/loading";
-import ProcessMap     from "./process-map/ProcessMap";
+import ProcessMap from "./process-map/ProcessMap";
 import ProcessMonitor from "./process-monitor/ProcessMonitor";
-import Processes      from "./processes/Processes";
+import Processes from "./processes/Processes";
 import "./process-config.css";
 
 /* ── colour palette (deterministic by index) ────────────────────────────── */
 const PALETTE = [
-    "#4f46e5","#16a34a","#9333ea","#ea580c",
-    "#0891b2","#d97706","#dc2626","#7c3aed",
-    "#0f766e","#be185d",
+    "#4f46e5", "#16a34a", "#9333ea", "#ea580c",
+    "#0891b2", "#d97706", "#dc2626", "#7c3aed",
+    "#0f766e", "#be185d",
 ];
 const getColor = i => PALETTE[i % PALETTE.length];
 
@@ -25,29 +25,44 @@ const getColor = i => PALETTE[i % PALETTE.length];
 function matchArea(proc, ba) {
     const v = (proc.business_area || "").toLowerCase().trim();
     return v && (
-        v === (ba.key   || "").toLowerCase().trim() ||
-        v === (ba.id    || "").toLowerCase().trim() ||
+        v === (ba.key || "").toLowerCase().trim() ||
+        v === (ba.id || "").toLowerCase().trim() ||
         v === (ba.title || "").toLowerCase().trim()
     );
 }
 function matchGB(proc, gb) {
-    const v = (proc.category || "").toLowerCase().trim();
+    debugger;
+    const v = (proc.process_gov || "").toLowerCase().trim();
     return v && (
-        v === (gb.key   || "").toLowerCase().trim() ||
-        v === (gb.id    || "").toLowerCase().trim() ||
+        v === (gb.key || "").toLowerCase().trim() ||
+        v === (gb.id || "").toLowerCase().trim() ||
         v === (gb.title || "").toLowerCase().trim()
     );
 }
+
+function matchPC(proc, pc) {
+    const v = (proc.category || "").toLowerCase().trim();
+    return v && (
+        v === (pc.key || "").toLowerCase().trim() ||
+        v === (pc.id || "").toLowerCase().trim() ||
+        v === (pc.title || "").toLowerCase().trim()
+    );
+}
+
 function getGBForProcess(proc, governingBodies) {
     return governingBodies.find(gb => matchGB(proc, gb));
 }
-
+function getPCForProcess(proc, processCategories) {
+    return processCategories.find(pc => matchPC(proc, pc));
+}
 /* ── initial form states ────────────────────────────────────────────────── */
-const BA_INIT   = { id: "", title: "", key: "" };
-const GB_INIT   = { id: "", title: "", key: "" };
+const BA_INIT = { id: "", title: "", key: "" };
+const GB_INIT = { id: "", title: "", key: "" };
+const PC_INIT = { id: "", title: "", key: "" };
 const PROC_INIT = {
     id: "", title: "", process_key: "",
     category: "", business_area: "",
+    process_gov: "",
     is_active: "YES", allow_draft: "YES",
 };
 
@@ -76,40 +91,73 @@ function FullScreenDialog({ title, icon, onClose, children }) {
     );
 }
 
+function MediumDialog({ title, icon, onClose, children }) {
+    return (
+        <div className="orch-dialog-overlay">
+            <div className="orch-dialog-box">
+                <div className="orch-dialog-header d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center gap-2">
+                        <i className={`fa-solid ${icon}`} aria-hidden="true" />
+                        <span className="orch-dialog-title">{title}</span>
+                    </div>
+                    <button
+                        type="button"
+                        className="orch-dialog-close"
+                        onClick={onClose}
+                        aria-label="Close"
+                    >
+                        <i className="fa-solid fa-xmark" aria-hidden="true" />
+                    </button>
+                </div>
+                <div className="orch-dialog-body">
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
 /* ════════════════════════════════════════════════════════════════════════ */
 function ProcessConfiguration() {
     const appContext = useContext(AppContext);
 
     /* ── data ───────────────────────────────────────────────────────────── */
-    const [businessAreas,   setBusinessAreas]   = useState([]);
+    const [businessAreas, setBusinessAreas] = useState([]);
     const [governingBodies, setGoverningBodies] = useState([]);
-    const [processes,       setProcesses]       = useState([]);
-    const [isLoading,       setIsLoading]       = useState(true);
+    const [processCategories, setProcessCategories] = useState([]);
+    const [processes, setProcesses] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     /* ── left-panel UI ──────────────────────────────────────────────────── */
-    const [searchTerm,    setSearchTerm]    = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
     const [expandedAreas, setExpandedAreas] = useState(new Set());
 
     /* ── full-screen dialog visibility ─────────────────────────────────── */
     const [showProcessMap, setShowProcessMap] = useState(false);
-    const [showMonitor,    setShowMonitor]    = useState(false);
-    const [showDeploy,     setShowDeploy]     = useState(false);
+    const [showMonitor, setShowMonitor] = useState(false);
+    const [showDeploy, setShowDeploy] = useState(false);
 
     /* ── Business Area modal ────────────────────────────────────────────── */
-    const [baModal,     setBAModal]     = useState(false);
-    const [selectedBA,  setSelectedBA]  = useState(BA_INIT);
+    const [baModal, setBAModal] = useState(false);
+    const [selectedBA, setSelectedBA] = useState(BA_INIT);
     const [baDeleteCfg, setBADeleteCfg] = useState({ show: false, item: {} });
 
     /* ── Governing Body modal ───────────────────────────────────────────── */
-    const [gbModal,     setGBModal]     = useState(false);
-    const [selectedGB,  setSelectedGB]  = useState(GB_INIT);
+    const [gbModal, setGBModal] = useState(false);
+    const [selectedGB, setSelectedGB] = useState(GB_INIT);
     const [gbDeleteCfg, setGBDeleteCfg] = useState({ show: false, item: {} });
 
+    /* ── Process Category modal ───────────────────────────────────────────── */
+    const [pcModal, setPCModal] = useState(false);
+    const [selectedPC, setSelectedPC] = useState(PC_INIT);
+    const [pcDeleteCfg, setPCDeleteCfg] = useState({ show: false, item: {} });
+
     /* ── Process (quick-edit) modal ─────────────────────────────────────── */
-    const [procModal,     setProcModal]     = useState(false);
-    const [selectedProc,  setSelectedProc]  = useState(PROC_INIT);
+    const [procModal, setProcModal] = useState(false);
+    const [selectedProc, setSelectedProc] = useState(PROC_INIT);
     const [procDeleteCfg, setProcDeleteCfg] = useState({ show: false, item: {} });
-    const [tenantProcs,   setTenantProcs]   = useState([]);
+    const [tenantProcs, setTenantProcs] = useState([]);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -122,10 +170,11 @@ function ProcessConfiguration() {
         axios
             .post(`${API_URL}?service.key=masterKey.tenantData`, {
                 dataKeys: [
-                    { serviceParams: "", dataKey: "processMap",         serviceKey: "process.map",           mode: "formData" },
+                    { serviceParams: "", dataKey: "processMap", serviceKey: "process.map", mode: "formData" },
                     { serviceParams: "", dataKey: "processBusinessArea", serviceKey: "process.business.area", mode: "formData" },
-                    { serviceParams: "", dataKey: "processCategory",     serviceKey: "process.category",      mode: "formData" },
-                    { serviceParams: "", dataKey: "tenantProcess",       serviceKey: "sys.tenant.process",    mode: "formData" },
+                    { serviceParams: "", dataKey: "processCategory", serviceKey: "process.category", mode: "formData" },
+                    { serviceParams: "", dataKey: "processGov", serviceKey: "process.gov", mode: "formData" },
+                    { serviceParams: "", dataKey: "tenantProcess", serviceKey: "sys.tenant.process", mode: "formData" },
                 ],
             })
             .then(res => {
@@ -133,9 +182,10 @@ function ProcessConfiguration() {
                     const d = res.data.C_DATA;
                     const areas = d.processBusinessArea || [];
                     setBusinessAreas(areas);
-                    setGoverningBodies(d.processCategory || []);
-                    setProcesses(d.processMap            || []);
-                    setTenantProcs(d.tenantProcess       || []);
+                    setGoverningBodies(d.processGov || []);
+                    setProcesses(d.processMap || []);
+                    setProcessCategories(d.processCategory || []);
+                    setTenantProcs(d.tenantProcess || []);
                     setExpandedAreas(new Set(areas.map(ba => ba.id)));
                 }
             })
@@ -165,10 +215,11 @@ function ProcessConfiguration() {
 
     const baCount = ba => processes.filter(p => matchArea(p, ba)).length;
     const gbCount = gb => processes.filter(p => matchGB(p, gb)).length;
+    const pcCount = pc => processes.filter(p => matchPC(p, pc)).length;
 
     /* ── Business Area CRUD ─────────────────────────────────────────────── */
-    function openAddBA()    { setSelectedBA(BA_INIT); setBAModal(true); }
-    function openEditBA(ba) { setSelectedBA(ba);      setBAModal(true); }
+    function openAddBA() { setSelectedBA(BA_INIT); setBAModal(true); }
+    function openEditBA(ba) { setSelectedBA(ba); setBAModal(true); }
 
     function deleteBA(item, isDelete) {
         if (isDelete) {
@@ -189,8 +240,10 @@ function ProcessConfiguration() {
     function saveBA() {
         const isNew = !selectedBA.id || selectedBA.id === "new";
         axios.post(`${API_URL}?service.key=update.formData`, {
-            data: [{ formId: "business_area", entity: "business_area", action: "update",
-                id: isNew ? "new" : selectedBA.id, formData: selectedBA }],
+            data: [{
+                formId: "business_area", entity: "business_area", action: "update",
+                id: isNew ? "new" : selectedBA.id, formData: selectedBA
+            }],
         }).then(res => {
             if (res.data.C_STATUS === "SUCCESS") {
                 const saved = res.data.C_DATA[0].formData;
@@ -207,13 +260,13 @@ function ProcessConfiguration() {
     }
 
     /* ── Governing Body CRUD ────────────────────────────────────────────── */
-    function openAddGB()    { setSelectedGB(GB_INIT); setGBModal(true); }
-    function openEditGB(gb) { setSelectedGB(gb);      setGBModal(true); }
+    function openAddGB() { setSelectedGB(GB_INIT); setGBModal(true); }
+    function openEditGB(gb) { setSelectedGB(gb); setGBModal(true); }
 
     function deleteGB(item, isDelete) {
         if (isDelete) {
             axios.post(`${API_URL}?service.key=update.formData`, {
-                data: [{ formId: "process_category", entity: "process_category", action: "delete", id: item.id }],
+                data: [{ formId: "process_gov", entity: "process_gov", action: "delete", id: item.id }],
             }).then(res => {
                 if (res.data.C_STATUS === "SUCCESS") {
                     setGoverningBodies(prev => prev.filter(g => g.id !== res.data.C_DATA[0].id));
@@ -229,8 +282,10 @@ function ProcessConfiguration() {
     function saveGB() {
         const isNew = !selectedGB.id || selectedGB.id === "new";
         axios.post(`${API_URL}?service.key=update.formData`, {
-            data: [{ formId: "process_category", entity: "process_category", action: "update",
-                id: isNew ? "new" : selectedGB.id, formData: selectedGB }],
+            data: [{
+                formId: "process_gov", entity: "process_gov", action: "update",
+                id: isNew ? "new" : selectedGB.id, formData: selectedGB
+            }],
         }).then(res => {
             if (res.data.C_STATUS === "SUCCESS") {
                 const saved = res.data.C_DATA[0].formData;
@@ -245,7 +300,47 @@ function ProcessConfiguration() {
             }
         }).catch(console.error);
     }
+    /* ── Category CRUD ────────────────────────────────────────────── */
+    function openAddPC() { setSelectedPC(PC_INIT); setPCModal(true); }
+    function openEditPC(category) { setSelectedPC(category); setPCModal(true); }
 
+    function deletePC(item, isDelete) {
+        if (isDelete) {
+            axios.post(`${API_URL}?service.key=update.formData`, {
+                data: [{ formId: "process_category", entity: "process_category", action: "delete", id: item.id }],
+            }).then(res => {
+                if (res.data.C_STATUS === "SUCCESS") {
+                    setProcessCategories(prev => prev.filter(c => c.id !== res.data.C_DATA[0].id));
+                    updateDeleteConfig(false, {}, setPCDeleteCfg);
+                    toastEmitter("Category deleted", true);
+                }
+            }).catch(console.error);
+        } else {
+            updateDeleteConfig(true, item, setPCDeleteCfg);
+        }
+    }
+
+    function savePC() {
+        const isNew = !selectedPC.id || selectedPC.id === "new";
+        axios.post(`${API_URL}?service.key=update.formData`, {
+            data: [{
+                formId: "process_category", entity: "process_category", action: "update",
+                id: isNew ? "new" : selectedPC.id, formData: selectedPC
+            }],
+        }).then(res => {
+            if (res.data.C_STATUS === "SUCCESS") {
+                const saved = res.data.C_DATA[0].formData;
+                if (isNew) {
+                    setProcessCategories(prev => [...prev, { ...selectedPC, id: saved.id }]);
+                    toastEmitter("Category added", true);
+                } else {
+                    setProcessCategories(prev => prev.map(c => c.id === selectedPC.id ? { ...selectedPC } : c));
+                    toastEmitter("Category updated", true);
+                }
+                setPCModal(false);
+            }
+        }).catch(console.error);
+    }   
     /* ── Process quick-edit CRUD ────────────────────────────────────────── */
     function openEditProc(proc) {
         setSelectedProc({ ...proc });
@@ -271,8 +366,10 @@ function ProcessConfiguration() {
     function saveProc() {
         const isNew = !selectedProc.id || selectedProc.id === "new";
         axios.post(`${API_URL}?service.key=update.formData`, {
-            data: [{ formId: "process_map", entity: "process_map", action: "update",
-                id: isNew ? "new" : selectedProc.id, formData: selectedProc }],
+            data: [{
+                formId: "process_map", entity: "process_map", action: "update",
+                id: isNew ? "new" : selectedProc.id, formData: selectedProc
+            }],
         }).then(res => {
             if (res.data.C_STATUS === "SUCCESS") {
                 const saved = res.data.C_DATA[0].formData;
@@ -297,9 +394,10 @@ function ProcessConfiguration() {
     return (
         <ErrorBoundary>
             {/* ── delete confirmations ─────────────────────────────────── */}
-            <ModalBox state={baDeleteCfg}   message="Delete this Business Area?"  operation={deleteBA}   header="Delete Business Area"   setState={setBADeleteCfg}   modalType="deleteModal" />
-            <ModalBox state={gbDeleteCfg}   message="Delete this Governing Body?" operation={deleteGB}   header="Delete Governing Body"   setState={setGBDeleteCfg}   modalType="deleteModal" />
-            <ModalBox state={procDeleteCfg} message="Remove this process?"        operation={deleteProc} header="Remove Process"          setState={setProcDeleteCfg} modalType="deleteModal" />
+            <ModalBox state={baDeleteCfg} message="Delete this Business Area?" operation={deleteBA} header="Delete Business Area" setState={setBADeleteCfg} modalType="deleteModal" />
+            <ModalBox state={gbDeleteCfg} message="Delete this Governing Body?" operation={deleteGB} header="Delete Governing Body" setState={setGBDeleteCfg} modalType="deleteModal" />
+            <ModalBox state={pcDeleteCfg} message="Delete this Process Category?" operation={deletePC} header="Delete Process Category" setState={setPCDeleteCfg} modalType="deleteModal" />
+            <ModalBox state={procDeleteCfg} message="Remove this process?" operation={deleteProc} header="Remove Process" setState={setProcDeleteCfg} modalType="deleteModal" />
 
             {/* ══════════ FULL-SCREEN DIALOGS (conditionally mounted) ════ */}
 
@@ -338,23 +436,30 @@ function ProcessConfiguration() {
                     <div className="col-12 datalist-viewer">
                         <div className="s2a-datalist-header">
                             <div className="s2a-dl-title-wrapper">
-                                <div className="s2a-dl-title"><span>Orchestrate</span></div>
-                                <span>Define business areas, governing bodies, and the processes that power your organisation.</span>
+                                <div className="s2a-dl-title"><span>Orchestrate Business Processes</span></div>
+                                <span>Deploy, configure and monitor business processes that power your organisation.</span>
                             </div>
                             <div className="d-flex align-items-center gap-2 flex-shrink-0">
-                                <button
-                                    type="button"
-                                    className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
-                                    onClick={() => setShowMonitor(true)}>
-                                    <i className="fa-solid fa-chart-line" aria-hidden="true" />
-                                    Monitor
-                                </button>
                                 <button
                                     type="button"
                                     className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
                                     onClick={() => setShowDeploy(true)}>
                                     <i className="fa-solid fa-rocket" aria-hidden="true" />
                                     Deploy
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
+                                    onClick={() => setShowProcessMap(true)}>
+                                    <i className="fa-solid fa-gears" aria-hidden="true" />
+                                    Configure
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
+                                    onClick={() => setShowMonitor(true)}>
+                                    <i className="fa-solid fa-chart-line" aria-hidden="true" />
+                                    Monitor
                                 </button>
                             </div>
                         </div>
@@ -379,16 +484,12 @@ function ProcessConfiguration() {
                                         <div className="orch-panel-desc">Tree view, grouped by Business Area and tagged with Governing Body</div>
                                     </div>
                                 </div>
-                                {/* Add Process — opens ProcessMap full-screen */}
-                                <button
-                                    type="button"
-                                    className="orch-add-btn"
-                                    onClick={() => setShowProcessMap(true)}>
-                                    <i className="fa-solid fa-plus" aria-hidden="true" />
-                                    Add Process
-                                </button>
-                                <div className="orch-search">
-                                    <i className="fa-solid fa-magnifying-glass orch-search-icon" aria-hidden="true" />
+                            </div>
+
+                            {/* tree body */}
+                            <div className="orch-tree">
+                                <div className="orch-search p-2">
+                                    <i className="fa-solid ms-2 fa-magnifying-glass orch-search-icon" aria-hidden="true" />
                                     <input
                                         type="text"
                                         className="orch-search-input"
@@ -403,14 +504,10 @@ function ProcessConfiguration() {
                                         </button>
                                     )}
                                 </div>
-                            </div>
-
-                            {/* tree body */}
-                            <div className="orch-tree">
                                 {processGroups.length === 0 && (
                                     <div className="orch-empty-state">
                                         <i className="fa-solid fa-layer-group" />
-                                        <p>No business areas defined yet</p>
+                                        <p>No process areas defined yet</p>
                                         <button type="button" className="orch-add-btn" onClick={openAddBA}>
                                             <i className="fa-solid fa-plus" /> Add Business Area
                                         </button>
@@ -449,13 +546,15 @@ function ProcessConfiguration() {
                                                     <div className="orch-tree-empty">No processes in this area</div>
                                                 )}
                                                 {procs.map(proc => {
-                                                    const gb      = getGBForProcess(proc, governingBodies);
-                                                    const gbIdx   = gb ? governingBodies.indexOf(gb) : -1;
+                                                    const gb = getGBForProcess(proc, governingBodies);
+                                                    const pc = getPCForProcess(proc, processCategories);
+                                                    const gbIdx = gb ? governingBodies.indexOf(gb) : -1;
                                                     const gbColor = gbIdx >= 0 ? getColor(gbIdx + 2) : "#6b7280";
+                                                    const pcColor = pc ? getColor(processCategories.indexOf(pc) + 2) : "#6b7280";
                                                     return (
                                                         <div key={proc.id} className="orch-tree-proc-row">
                                                             <span className="orch-proc-indent" aria-hidden="true" />
-                                                            <i className="fa-regular fa-file-lines orch-proc-icon" aria-hidden="true" />
+                                                            <i className="fa-solid fa-diagram-project orch-proc-icon" aria-hidden="true" />
                                                             <span className="orch-proc-title" title={proc.title}>{proc.title}</span>
                                                             {gb && (
                                                                 <span
@@ -464,14 +563,21 @@ function ProcessConfiguration() {
                                                                     {gb.title}
                                                                 </span>
                                                             )}
-                                                            <div className="orch-proc-actions">
+                                                            {pc && (
+                                                                <span
+                                                                    className="orch-gb-badge"
+                                                                    style={{ background: `${pcColor}18`, color: pcColor, border: `1px solid ${pcColor}35` }}>
+                                                                    {pc.title}
+                                                                </span>
+                                                            )}
+                                                            {/* <div className="orch-proc-actions">
                                                                 <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditProc(proc)}>
                                                                     <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
                                                                 </button>
                                                                 <button type="button" className="orch-icon-btn danger" title="Remove" onClick={() => deleteProc(proc)}>
                                                                     <i className="fa-regular fa-trash-can" aria-hidden="true" />
                                                                 </button>
-                                                            </div>
+                                                            </div> */}
                                                         </div>
                                                     );
                                                 })}
@@ -495,12 +601,12 @@ function ProcessConfiguration() {
                                     </span>
                                     <div>
                                         <div className="orch-panel-title">Business Areas</div>
-                                        <div className="orch-panel-desc">Organisational domains that group related processes</div>
+                                        <div className="orch-panel-desc">Business domains that group related processes</div>
                                     </div>
                                 </div>
                                 <button type="button" className="orch-add-btn" onClick={openAddBA}>
                                     <i className="fa-solid fa-plus" aria-hidden="true" />
-                                    Add New Business Area
+                                    Add New
                                 </button>
                             </div>
                             <div className="orch-list">
@@ -528,7 +634,7 @@ function ProcessConfiguration() {
                         </div>
 
                         {/* ── Governing Bodies ───────────────────────── */}
-                        <div className="orch-panel">
+                        <div className="orch-panel mb-3">
                             <div className="orch-panel-header">
                                 <div className="d-flex align-items-start gap-2 flex-1">
                                     <span className="orch-panel-icon">
@@ -541,7 +647,7 @@ function ProcessConfiguration() {
                                 </div>
                                 <button type="button" className="orch-add-btn" onClick={openAddGB}>
                                     <i className="fa-solid fa-plus" aria-hidden="true" />
-                                    Add New Governing Body
+                                    Add New
                                 </button>
                             </div>
                             <div className="orch-list">
@@ -567,7 +673,46 @@ function ProcessConfiguration() {
                                 ))}
                             </div>
                         </div>
-
+                        {/* ── Process Categories ───────────────────────── */}
+                        <div className="orch-panel">
+                            <div className="orch-panel-header">
+                                <div className="d-flex align-items-start gap-2 flex-1">
+                                    <span className="orch-panel-icon">
+                                        <i className="fa-solid fa-tag" aria-hidden="true" />
+                                    </span>
+                                    <div>
+                                        <div className="orch-panel-title">Process Categories</div>
+                                        <div className="orch-panel-desc">Categories for classifying business processes</div>
+                                    </div>
+                                </div>
+                                <button type="button" className="orch-add-btn" onClick={openAddPC}>
+                                    <i className="fa-solid fa-plus" aria-hidden="true" />
+                                    Add New
+                                </button>
+                            </div>
+                            <div className="orch-list">
+                                {processCategories.length === 0 && (
+                                    <div className="orch-list-empty">No categories yet</div>
+                                )}
+                                {processCategories.map((gb, idx) => (
+                                    <div key={gb.id} className="orch-list-item">
+                                        <span className="orch-gb-icon" style={{ color: getColor(idx + 2) }}>
+                                            <i className="fa-solid fa-tag" aria-hidden="true" />
+                                        </span>
+                                        <span className="orch-list-name">{gb.title}</span>
+                                        <span className="orch-count-badge">{pcCount(gb)}</span>
+                                        <div className="orch-list-actions">
+                                            <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditPC(gb)}>
+                                                <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
+                                            </button>
+                                            <button type="button" className="orch-icon-btn danger" title="Delete" onClick={() => deletePC(gb)}>
+                                                <i className="fa-regular fa-trash-can" aria-hidden="true" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>{/* end orch-right */}
                 </div>{/* end orch-layout */}
 
@@ -633,6 +778,35 @@ function ProcessConfiguration() {
                     </div>
                 </ModuleFormViewer>
 
+                {/* Process Category */}
+                <ModuleFormViewer
+                    handleClose={() => setPCModal(false)}
+                    showModal={pcModal}
+                    modalTitle={selectedPC.id ? "Edit Process Category" : "Add Process Category"}
+                    size="lg">
+                    <div className="col-12 form-background pt-2 pb-3 px-3">
+                        <div className="mb-3">
+                            <label className="fw-semibold mt-1">Title <span className="text-danger">*</span></label>
+                            <input type="text" className="form-control mt-1" value={selectedPC.title}
+                                onChange={e => setSelectedPC(p => ({ ...p, title: e.target.value }))} />
+                        </div>
+                        <div className="mb-1">
+                            <label className="fw-semibold mt-1">Key <span className="text-danger">*</span></label>
+                            <input type="text" className="form-control mt-1" value={selectedPC.key}
+                                onChange={e => setSelectedPC(p => ({ ...p, key: e.target.value }))} />
+                        </div>
+                    </div>
+                    <div className="modal-footer pe-0">
+                        <button className="btn button-theme btn-sm me-2" onClick={savePC}
+                            disabled={!selectedPC.title || !selectedPC.key}>
+                            <i className="fa-solid fa-floppy-disk pe-1" />
+                            {selectedPC.id ? "Update" : "Save"}
+                        </button>
+                        <button className="btn button-theme btn-sm" onClick={() => setPCModal(false)}>
+                            <i className="fa-solid fa-xmark pe-1" />Close
+                        </button>
+                    </div>
+                </ModuleFormViewer>
                 {/* Process quick-edit */}
                 <ModuleFormViewer
                     handleClose={() => setProcModal(false)}
@@ -658,8 +832,8 @@ function ProcessConfiguration() {
                             </div>
                             <div className="col-sm-6 mb-3">
                                 <label className="fw-semibold mt-1">Governing Body <span className="text-danger">*</span></label>
-                                <select className="form-select mt-1" value={selectedProc.category}
-                                    onChange={e => setSelectedProc(p => ({ ...p, category: e.target.value }))}>
+                                <select className="form-select mt-1" value={selectedProc.process_gov}
+                                    onChange={e => setSelectedProc(p => ({ ...p, process_gov: e.target.value }))}>
                                     <option value="">Select governing body…</option>
                                     {governingBodies.map(gb => (
                                         <option key={gb.id} value={gb.key || gb.id}>{gb.title}</option>

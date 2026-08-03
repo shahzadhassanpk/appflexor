@@ -97,9 +97,9 @@ const PANELS = [
             },
             {
                 icon: "fa-solid fa-folder-tree",
-                label: "Process Categories",
-                route: "/orchestrate-configuration?section=PROCESS_CATEGORY",
-                description: "Organise processes into structured categories for clarity"
+                label: "Governing Bodies",
+                route: "/orchestrate-configuration?section=GOVERNING_BODY",
+                description: "Bodies responsible for defining and optimising business processes"
             },
             {
                 icon: "fa-solid fa-rocket",
@@ -357,6 +357,8 @@ function PanelCard({ panel }) {
                                 aria-disabled={panel.disableQuickActions || a.disabled}
                                 tabIndex={panel.disableQuickActions || a.disabled ? -1 : 0}
                                 title={panel.disableQuickActions || a.disabled ? "Coming soon" : undefined}
+                                target={a.route?.startsWith("http") ? "_blank" : undefined}
+                                rel={a.route?.startsWith("http") ? "noopener noreferrer" : undefined}
                                 onClick={event => {
                                     if (panel.disableQuickActions || a.disabled) {
                                         event.preventDefault();
@@ -366,10 +368,6 @@ function PanelCard({ panel }) {
                                         event.preventDefault();
                                         window.dispatchEvent(new CustomEvent("openDoc", { detail: a.doc }));
                                         return;
-                                    }
-                                    if (a.route && a.route.startsWith("http")) {
-                                        event.preventDefault();
-                                        window.open(a.route, "_blank");
                                     }
                                 }}
                             >

@@ -33,6 +33,7 @@ function ProcessMap({ activeTab }) {
     const [processList, setProcessList] = useState([]);
     const [formList, setFormList] = useState([]);
     const [categoryList, setCategoryList] = useState([]);
+    const [governingBodyList, setGoverningBodyList] = useState([]);
     const [businessAreaList, setBusinessAreaList] = useState([]);
     const [error, setError] = useState([]);
     const [current, setCurrent] = useState(1);
@@ -345,6 +346,12 @@ function ProcessMap({ activeTab }) {
                 },
                 {
                     serviceParams: "",
+                    dataKey: "processGov",
+                    serviceKey: "process.gov",
+                    mode: "formData",
+                },
+                {
+                    serviceParams: "",
                     dataKey: "processBusinessArea",
                     serviceKey: "process.business.area",
                     mode: "formData",
@@ -374,6 +381,7 @@ function ProcessMap({ activeTab }) {
                     setItems(response.data.C_DATA.processMap);
                     setProcessList(response.data.C_DATA.tenantProcess);
                     setCategoryList(response.data.C_DATA.processCategory);
+                    setGoverningBodyList(response.data.C_DATA.processGov);
                     setBusinessAreaList(response.data.C_DATA.processBusinessArea);
                     if (response.data.C_DATA.groups) {
                         let mainArr = response.data.C_DATA.groups;
@@ -533,6 +541,26 @@ function ProcessMap({ activeTab }) {
         return title ? title : "";
     }
 
+    function getBusinessAreaById(id) {
+        let title = "";
+        businessAreaList.forEach(item => {
+            if (item.id === id) {
+                title = item.title;
+            }
+        });
+        return title ? title : "";
+    }
+
+    function getGoverningBodyById(id) {
+        let title = "";
+        governingBodyList.forEach(item => {
+            if (item.id === id) {
+                title = item.title;
+            }
+        });
+        return title ? title : "";
+    }
+
     function getBusinessAreaByKey(key) {
         let title = "";
         businessAreaList.forEach(item => {
@@ -540,6 +568,7 @@ function ProcessMap({ activeTab }) {
                 title = item.title;
             }
         });
+        debugger;
         return title ? title : "";
     }
 
@@ -598,6 +627,9 @@ function ProcessMap({ activeTab }) {
                                     Business Area
                                 </Th>
                                 <Th className="col-sm-2 table-row text-left">
+                                    Governing Body
+                                </Th>
+                                <Th className="col-sm-2 table-row text-left">
                                     Form
                                 </Th>
                                 <Th className="col-sm-2 table-row text-left"></Th>
@@ -608,11 +640,10 @@ function ProcessMap({ activeTab }) {
                                 return (
                                     <Tr
                                         key={item.id}
-                                        className={` ${
-                                            item.id === selectedItem.id
+                                        className={` ${item.id === selectedItem.id
                                                 ? "selected-cell"
                                                 : " "
-                                        }`}>
+                                            }`}>
                                         <Td className="col-sm-1 table-row text-left">
                                             <input
                                                 className="form-check-input"
@@ -624,14 +655,17 @@ function ProcessMap({ activeTab }) {
                                                 }
                                             />
                                         </Td>
-                                        <Td className="col-sm-3 table-row text-left">
+                                        <Td className="col-sm-2 table-row text-left">
                                             {item.title}
                                         </Td>
                                         <Td className="col-sm-2 table-row text-left">
                                             {getCategoryByKey(item.category)}
                                         </Td>
                                         <Td className="col-sm-2 table-row text-left">
-                                            {getBusinessAreaByKey(item.business_area)}
+                                            {getBusinessAreaById(item?.business_area)}
+                                        </Td>
+                                        <Td className="col-sm-2 table-row text-left">
+                                            {getGoverningBodyById(item?.process_gov)}
                                         </Td>
                                         <Td className="col-sm-2 table-row text-left">
                                             {getNameById(item.form_id)}
@@ -794,8 +828,44 @@ function ProcessMap({ activeTab }) {
                                                     return (
                                                         <option
                                                             key={barea.id}
-                                                            value={barea.key}>
+                                                            value={barea.id}>
                                                             {barea.title}
+                                                        </option>
+                                                    );
+                                                })}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="col-sm-6 mb-2">
+                                    <div className="form-group">
+                                        <label className="mt-1 fw-bold">
+                                            Governing Body&nbsp;
+                                            <span className="text-danger">
+                                                *
+                                            </span>
+                                        </label>
+                                        <select
+                                            placeholder="Select Governing Body"
+                                            className="form-select"
+                                            name="process_gov"
+                                            value={
+                                                selectedItem &&
+                                                selectedItem.process_gov
+                                            }
+                                            onChange={handleInputField}>
+                                            <option
+                                                key={0}
+                                                defaultValue="">
+                                                Select Governing Body
+                                            </option>
+                                            {governingBodyList &&
+                                                governingBodyList !== undefined &&
+                                                governingBodyList.map(gb => {
+                                                    return (
+                                                        <option
+                                                            key={gb.id}
+                                                            value={gb.id}>
+                                                            {gb.title}
                                                         </option>
                                                     );
                                                 })}
@@ -901,7 +971,7 @@ function ProcessMap({ activeTab }) {
                                                     name="is_active"
                                                     checked={
                                                         selectedItem.is_active ===
-                                                        "YES"
+                                                            "YES"
                                                             ? true
                                                             : false
                                                     }
@@ -922,7 +992,7 @@ function ProcessMap({ activeTab }) {
                                                     name="hide_inbox_start"
                                                     checked={
                                                         selectedItem.hide_inbox_start ===
-                                                        "YES"
+                                                            "YES"
                                                             ? true
                                                             : false
                                                     }

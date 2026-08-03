@@ -5,7 +5,7 @@
 /* ── Two-column split layout ────────────────────────────────────────────── */
 .orch-layout {
   display: grid;
-  grid-template-columns: 1fr 400px;
+  grid-template-columns: 1fr 500px;
   gap: 1.25rem;
   align-items: start;
 }

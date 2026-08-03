@@ -166,6 +166,7 @@ const NotificationBell = ({ userId }) => {
     }, []);
 
     function getNotifications() {
+        return;
         var dataRequest = {
             dataKeys: [
                 {
