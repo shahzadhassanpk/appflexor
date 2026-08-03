@@ -1,7 +1,8 @@
 import axios from "axios";
 import React, { useContext, useEffect, useState } from "react";
+import ReactBpmn from "react-bpmn";
 import { AppContext } from "../../../AppContext";
-import { API_URL } from "../../Config";
+import { API_URL, FILE_URL } from "../../Config";
 import { ErrorBoundary } from "../../utils/ErrorBoundry";
 import ModalBox from "../../components/Modal/Modal";
 import ModuleFormViewer from "../../components/ModuleFormViewer/ModuleFormViewer";
@@ -31,12 +32,18 @@ function matchArea(proc, ba) {
     );
 }
 function matchGB(proc, gb) {
-    debugger;
     const v = (proc.process_gov || "").toLowerCase().trim();
     return v && (
         v === (gb.key || "").toLowerCase().trim() ||
         v === (gb.id || "").toLowerCase().trim() ||
         v === (gb.title || "").toLowerCase().trim()
+    );
+}
+
+function matchTP(proc, tp) {
+    const v = (proc.process_key || "").toLowerCase().trim();
+    return v && (
+        v === (tp.process_def_key || "").toLowerCase().trim()
     );
 }
 
@@ -54,6 +61,10 @@ function getGBForProcess(proc, governingBodies) {
 }
 function getPCForProcess(proc, processCategories) {
     return processCategories.find(pc => matchPC(proc, pc));
+}
+
+function getTPForProcess(proc, tenantProcs) {
+    return tenantProcs.find(tp => matchTP(proc, tp));
 }
 /* ── initial form states ────────────────────────────────────────────────── */
 const BA_INIT = { id: "", title: "", key: "" };
@@ -137,6 +148,8 @@ function ProcessConfiguration() {
     const [showProcessMap, setShowProcessMap] = useState(false);
     const [showMonitor, setShowMonitor] = useState(false);
     const [showDeploy, setShowDeploy] = useState(false);
+    const [showBPMN, setShowBPMN] = useState(false);
+    const [urlBPMN, setUrlBPMN] = useState("");
 
     /* ── Business Area modal ────────────────────────────────────────────── */
     const [baModal, setBAModal] = useState(false);
@@ -158,6 +171,7 @@ function ProcessConfiguration() {
     const [selectedProc, setSelectedProc] = useState(PROC_INIT);
     const [procDeleteCfg, setProcDeleteCfg] = useState({ show: false, item: {} });
     const [tenantProcs, setTenantProcs] = useState([]);
+    const [bpmnTitle, setBpmnTitle] = useState("");
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -340,7 +354,7 @@ function ProcessConfiguration() {
                 setPCModal(false);
             }
         }).catch(console.error);
-    }   
+    }
     /* ── Process quick-edit CRUD ────────────────────────────────────────── */
     function openEditProc(proc) {
         setSelectedProc({ ...proc });
@@ -418,6 +432,22 @@ function ProcessConfiguration() {
                     <ProcessMonitor activeTab="PROCESS_MONITOR" />
                 </FullScreenDialog>
             )}
+
+            {showBPMN && (
+                <FullScreenDialog
+                    title={`BPMN Diagram: ${bpmnTitle}`}
+                    icon="fa-diagram-project"
+                    onClose={() => { setShowBPMN(false); setUrlBPMN(""); }}
+                >
+                    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                        <ReactBpmn
+                            url={urlBPMN + "?a=" + new Date().getMilliseconds()}
+                        // style={{ flex: 1, width: "100%" }}
+                        />
+                    </div>
+                </FullScreenDialog>
+            )}
+
 
             {showDeploy && (
                 <FullScreenDialog
@@ -548,6 +578,11 @@ function ProcessConfiguration() {
                                                 {procs.map(proc => {
                                                     const gb = getGBForProcess(proc, governingBodies);
                                                     const pc = getPCForProcess(proc, processCategories);
+                                                    const tp = getTPForProcess(proc, tenantProcs);
+                                                    const url = "/file/service/process/"
+                                                        + encodeURIComponent(tp.id)
+                                                        + "/"
+                                                        + encodeURIComponent(tp.process_file);
                                                     const gbIdx = gb ? governingBodies.indexOf(gb) : -1;
                                                     const gbColor = gbIdx >= 0 ? getColor(gbIdx + 2) : "#6b7280";
                                                     const pcColor = pc ? getColor(processCategories.indexOf(pc) + 2) : "#6b7280";
@@ -555,7 +590,9 @@ function ProcessConfiguration() {
                                                         <div key={proc.id} className="orch-tree-proc-row">
                                                             <span className="orch-proc-indent" aria-hidden="true" />
                                                             <i className="fa-solid fa-diagram-project orch-proc-icon" aria-hidden="true" />
-                                                            <span className="orch-proc-title" title={proc.title}>{proc.title}</span>
+                                                            <a href="#" className="orch-proc-title" title={proc.title} onClick={() => { setUrlBPMN(url); setShowBPMN(true); setBpmnTitle(proc.title) }}>{proc.title} {proc.def_key}</a>
+                                                            
+
                                                             {gb && (
                                                                 <span
                                                                     className="orch-gb-badge"
@@ -674,7 +711,7 @@ function ProcessConfiguration() {
                             </div>
                         </div>
                         {/* ── Process Categories ───────────────────────── */}
-                        <div className="orch-panel">
+                        <div className="orch-panel mb-3">
                             <div className="orch-panel-header">
                                 <div className="d-flex align-items-start gap-2 flex-1">
                                     <span className="orch-panel-icon">

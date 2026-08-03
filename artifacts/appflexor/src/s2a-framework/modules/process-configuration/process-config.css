@@ -2,6 +2,11 @@
    Process Configuration — Orchestrate single-page layout
    ═══════════════════════════════════════════════════════════════════════════ */
 
+.react-bpmn-diagram-container{
+  width: 100%;
+  height: 100%;
+}
+
 /* ── Two-column split layout ────────────────────────────────────────────── */
 .orch-layout {
   display: grid;

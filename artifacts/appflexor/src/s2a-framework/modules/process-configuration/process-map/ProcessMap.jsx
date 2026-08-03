@@ -568,7 +568,6 @@ function ProcessMap({ activeTab }) {
                 title = item.title;
             }
         });
-        debugger;
         return title ? title : "";
     }
 
