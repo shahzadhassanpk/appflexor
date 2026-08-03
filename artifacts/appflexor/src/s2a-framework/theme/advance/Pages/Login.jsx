@@ -19,6 +19,7 @@ import {
 } from "../../../utils/utils";
 import DynamicCheckBoxs from "../../../components/dynamic-checkbox/Checkbox";
 import "./login.css";
+import { Interweave } from "interweave";
 
 const LOGIN_FALLBACK_LOGO = `${import.meta.env.BASE_URL}theme/images/appflexor-logo.png`;
 
@@ -253,7 +254,6 @@ function Login({
         ? `${IMAGE_BASE}/app_site/${brand.id}/${brand.brand_logo}`
         : null;
     const brandTitle = brand.brand_title || "appflexor";
-
     /* ── Feature cards data ─────────────────────────────────────── */
     const featureCards = [
         {
@@ -320,152 +320,156 @@ function Login({
                     className="s2a-modern-login min-h-screen flex flex-col"
                 >
                     {/* ── Main content row ──────────────────────────────── */}
-                    <div className="s2a-login-main flex flex-1 items-center lg:items-stretch">
-
+                    <div className="s2a-login-main flex flex-1 items-center lg:items-stretch">                        
+                        
                         {/* ══ LEFT PANEL ══════════════════════════════════ */}
-                        <section className="s2a-login-presentation hidden lg:flex w-[58%] flex-col px-14 py-12 relative overflow-hidden">
+                        {brand?.customize_login === "YES" ?
+                            <section className="s2a-login-presentation hidden lg:flex w-[58%] flex-col px-14 py-12 relative overflow-hidden">                                
+                                <Interweave content={brand?.login_html || ""} />
+                            </section>
+                            : <section className="s2a-login-presentation hidden lg:flex w-[58%] flex-col px-14 py-12 relative overflow-hidden">
 
-                            {/* Subtle dot grid decoration */}
-                            <div className="s2a-login-dot-grid absolute top-10 right-10 opacity-20 pointer-events-none select-none">
-                                {[...Array(6)].map((_, r) => (
-                                    <div key={r} className="flex gap-4 mb-4">
-                                        {[...Array(8)].map((_, c) => (
-                                            <div key={c} className="w-1 h-1 rounded-full bg-indigo-400" />
+                                {/* Subtle dot grid decoration */}
+                                <div className="s2a-login-dot-grid absolute top-10 right-10 opacity-20 pointer-events-none select-none">
+                                    {[...Array(6)].map((_, r) => (
+                                        <div key={r} className="flex gap-4 mb-4">
+                                            {[...Array(8)].map((_, c) => (
+                                                <div key={c} className="w-1 h-1 rounded-full bg-indigo-400" />
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Brand logo */}
+                                <div className="s2a-login-brand flex items-center gap-2.5 mb-10">
+                                    {logoUrl
+                                        ? <img
+                                            src={logoUrl}
+                                            alt={brandTitle}
+                                            className="h-8 object-contain"
+                                            onError={event => {
+                                                event.currentTarget.onerror = null;
+                                                event.currentTarget.src = LOGIN_FALLBACK_LOGO;
+                                            }}
+                                        />
+                                        : <AppflexorMark size={30} />}
+                                    <span className="text-lg font-bold text-slate-800 tracking-tight">{brandTitle}</span>
+                                </div>
+
+                                {/* Headline */}
+                                <h1 className="s2a-login-headline text-5xl font-extrabold text-slate-900 leading-[1.15] mb-4 tracking-tight">
+                                    Automate Business<br />
+                                    Services with{" "}
+                                    <span className="text-indigo-600">AI</span>
+                                </h1>
+
+                                {/* Subtitle */}
+                                <p className="s2a-login-intro text-sm text-slate-600 mb-8 leading-6">
+                                    Capture business events.<br />
+                                    Orchestrate business services.<br />
+                                    Integrate enterprise systems.
+                                </p>
+
+                                {/* Flow diagram */}
+                                <div className="s2a-login-flow flex items-center mb-8">
+                                    {flowSteps.map((step, i) => (
+                                        <React.Fragment key={step.label}>
+                                            <div className="flex flex-col items-center">
+                                                <div className={`w-14 h-14 ${step.bg} rounded-full flex items-center justify-center shadow-md mb-2`}>
+                                                    {typeof step.icon === "string"
+                                                        ? <i className={`fa-solid ${step.icon} text-white text-xl`}></i>
+                                                        : <step.icon style={{ color: "#fff", fontSize: "1.25rem" }} />
+                                                    }
+                                                </div>
+                                                <span className="text-xs font-semibold text-slate-700">{step.label}</span>
+                                            </div>
+                                            {i < flowSteps.length - 1 && <DottedArrow />}
+                                        </React.Fragment>
+                                    ))}
+                                </div>
+
+                                {/* Feature cards */}
+                                <div className="s2a-login-feature-grid grid grid-cols-3 gap-3 mb-8">
+                                    {featureCards.map(f => (
+                                        <div key={f.title} className="s2a-login-feature-card bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                                            <div className="flex items-start gap-3">
+                                                <div className={`w-9 h-9 ${f.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                                                    {typeof f.icon === "string"
+                                                        ? <i className={`fa-solid ${f.icon} ${f.iconColor} text-sm`}></i>
+                                                        : <f.icon className={f.iconColor} style={{ fontSize: "1rem" }} />
+                                                    }
+                                                </div>
+                                                <div>
+                                                    <p className={`text-sm font-semibold ${f.titleColor} mb-1`}>{f.title}</p>
+                                                    <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Supported channels */}
+                                <div className="s2a-login-supported mb-4">
+                                    <p className="text-sm font-semibold text-slate-500 mb-2.5">
+                                        Supported Channels
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {channels.map(ch => (
+                                            <span
+                                                key={ch.label}
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm"
+                                            >
+                                                {ch.fab ? (
+                                                    <i className={`fa-brands ${ch.icon} text-base`}></i>
+                                                ) : ch.icon ? (
+                                                    <i
+                                                        className={
+                                                            ch.icon.includes("s2a-channel-logo")
+                                                                ? ch.icon
+                                                                : `fa-solid ${ch.icon} text-base`
+                                                        }
+                                                        aria-hidden="true"
+                                                    ></i>
+                                                ) : null}
+                                                {ch.label}
+                                            </span>
                                         ))}
                                     </div>
-                                ))}
-                            </div>
+                                </div>
 
-                            {/* Brand logo */}
-                            <div className="s2a-login-brand flex items-center gap-2.5 mb-10">
-                                {logoUrl
-                                    ? <img
-                                        src={logoUrl}
-                                        alt={brandTitle}
-                                        className="h-8 object-contain"
-                                        onError={event => {
-                                            event.currentTarget.onerror = null;
-                                            event.currentTarget.src = LOGIN_FALLBACK_LOGO;
-                                        }}
-                                    />
-                                    : <AppflexorMark size={30} />}
-                                <span className="text-lg font-bold text-slate-800 tracking-tight">{brandTitle}</span>
-                            </div>
 
-                            {/* Headline */}
-                            <h1 className="s2a-login-headline text-5xl font-extrabold text-slate-900 leading-[1.15] mb-4 tracking-tight">
-                                Automate Business<br />
-                                Services with{" "}
-                                <span className="text-indigo-600">AI</span>
-                            </h1>
-
-                            {/* Subtitle */}
-                            <p className="s2a-login-intro text-sm text-slate-600 mb-8 leading-6">
-                                Capture business events.<br />
-                                Orchestrate business services.<br />
-                                Integrate enterprise systems.
-                            </p>
-
-                            {/* Flow diagram */}
-                            <div className="s2a-login-flow flex items-center mb-8">
-                                {flowSteps.map((step, i) => (
-                                    <React.Fragment key={step.label}>
-                                        <div className="flex flex-col items-center">
-                                            <div className={`w-14 h-14 ${step.bg} rounded-full flex items-center justify-center shadow-md mb-2`}>
-                                                {typeof step.icon === "string"
-                                                    ? <i className={`fa-solid ${step.icon} text-white text-xl`}></i>
-                                                    : <step.icon style={{ color: "#fff", fontSize: "1.25rem" }} />
-                                                }
-                                            </div>
-                                            <span className="text-xs font-semibold text-slate-700">{step.label}</span>
-                                        </div>
-                                        {i < flowSteps.length - 1 && <DottedArrow />}
-                                    </React.Fragment>
-                                ))}
-                            </div>
-
-                            {/* Feature cards */}
-                            <div className="s2a-login-feature-grid grid grid-cols-3 gap-3 mb-8">
-                                {featureCards.map(f => (
-                                    <div key={f.title} className="s2a-login-feature-card bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                                        <div className="flex items-start gap-3">
-                                            <div className={`w-9 h-9 ${f.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                                                {typeof f.icon === "string"
-                                                    ? <i className={`fa-solid ${f.icon} ${f.iconColor} text-sm`}></i>
-                                                    : <f.icon className={f.iconColor} style={{ fontSize: "1rem" }} />
-                                                }
-                                            </div>
-                                            <div>
-                                                <p className={`text-sm font-semibold ${f.titleColor} mb-1`}>{f.title}</p>
-                                                <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Supported channels */}
-                            <div className="s2a-login-supported mb-4">
-                                <p className="text-sm font-semibold text-slate-500 mb-2.5">
-                                    Supported Channels
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    {channels.map(ch => (
-                                        <span
-                                            key={ch.label}
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm"
-                                        >
-                                            {ch.fab ? (
-                                                <i className={`fa-brands ${ch.icon} text-base`}></i>
-                                            ) : ch.icon ? (
+                                {/* Business services */}
+                                <div className="s2a-login-services mb-6">
+                                    <p className="text-sm font-semibold text-slate-500 mb-2.5">
+                                        Business Services
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {services.map(svc => (
+                                            <span
+                                                key={svc.label}
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm"
+                                            >
                                                 <i
-                                                    className={
-                                                        ch.icon.includes("s2a-channel-logo")
-                                                            ? ch.icon
-                                                            : `fa-solid ${ch.icon} text-base`
-                                                    }
+                                                    className={`fa-solid ${svc.icon} text-indigo-500 text-base`}
                                                     aria-hidden="true"
                                                 ></i>
-                                            ) : null}
-                                            {ch.label}
-                                        </span>
-                                    ))}
+                                                {svc.label}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
 
 
-                            {/* Business services */}
-                            <div className="s2a-login-services mb-6">
-                                <p className="text-sm font-semibold text-slate-500 mb-2.5">
-                                    Business Services
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    {services.map(svc => (
-                                        <span
-                                            key={svc.label}
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm"
-                                        >
-                                            <i
-                                                className={`fa-solid ${svc.icon} text-indigo-500 text-base`}
-                                                aria-hidden="true"
-                                            ></i>
-                                            {svc.label}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-
-
-                            {/* Trust badge */}
-                            {/* <div className="flex items-start gap-3 bg-white/60 border border-slate-200 rounded-xl px-4 py-3 max-w-lg">
+                                {/* Trust badge */}
+                                {/* <div className="flex items-start gap-3 bg-white/60 border border-slate-200 rounded-xl px-4 py-3 max-w-lg">
                                 <i className="fa-solid fa-shield-halved text-indigo-500 mt-0.5 flex-shrink-0"></i>
                                 <p className="text-xs text-slate-600 leading-relaxed">
                                     Trusted for Customer Service, Employee Services, Finance,<br />
                                     Procurement and Compliance Automation.
                                 </p>
                             </div> */}
-                        </section>
-
+                            </section>
+                        }
                         {/* ══ RIGHT PANEL — floating card ════════════════ */}
                         <section className="s2a-login-auth-panel w-full lg:w-[42%] flex items-center justify-center px-4 py-8 sm:px-8 sm:py-12">
                             <div className="s2a-login-card w-full max-w-[380px] bg-white rounded-2xl shadow-xl border border-slate-100 px-5 py-7 sm:px-8 sm:py-9">

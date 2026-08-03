@@ -302,7 +302,7 @@ function SiteDetails({
                                                 checked={
                                                     !selectedItem?.keep_me_login ||
                                                     selectedItem?.keep_me_login ===
-                                                        "NO"
+                                                    "NO"
                                                 }
                                                 onChange={event =>
                                                     handleInputField(event)
@@ -352,7 +352,7 @@ function SiteDetails({
                                                 checked={
                                                     !selectedItem?.show_org_context ||
                                                     selectedItem?.show_org_context ===
-                                                        "NO"
+                                                    "NO"
                                                 }
                                                 onChange={event =>
                                                     handleInputField(event)
@@ -519,9 +519,9 @@ function SiteDetails({
                                                                 Array.isArray(
                                                                     selectedItem?.sso_login,
                                                                 ) &&
-                                                                selectedItem?.sso_login?.indexOf(
-                                                                    "google",
-                                                                ) !== -1
+                                                                    selectedItem?.sso_login?.indexOf(
+                                                                        "google",
+                                                                    ) !== -1
                                                                     ? true
                                                                     : false
                                                             }
@@ -544,9 +544,9 @@ function SiteDetails({
                                                             name="facebook"
                                                             checked={
                                                                 selectedItem.sso_login &&
-                                                                selectedItem.sso_login.indexOf(
-                                                                    "facebook",
-                                                                ) !== -1
+                                                                    selectedItem.sso_login.indexOf(
+                                                                        "facebook",
+                                                                    ) !== -1
                                                                     ? true
                                                                     : false
                                                             }
@@ -571,9 +571,9 @@ function SiteDetails({
                                                                 Array.isArray(
                                                                     selectedItem?.sso_login,
                                                                 ) &&
-                                                                selectedItem?.sso_login?.indexOf(
-                                                                    "github",
-                                                                ) !== -1
+                                                                    selectedItem?.sso_login?.indexOf(
+                                                                        "github",
+                                                                    ) !== -1
                                                                     ? true
                                                                     : false
                                                             }
@@ -598,9 +598,9 @@ function SiteDetails({
                                                                 Array.isArray(
                                                                     selectedItem?.sso_login,
                                                                 ) &&
-                                                                selectedItem?.sso_login?.indexOf(
-                                                                    "twitter",
-                                                                ) !== -1
+                                                                    selectedItem?.sso_login?.indexOf(
+                                                                        "twitter",
+                                                                    ) !== -1
                                                                     ? true
                                                                     : false
                                                             }
@@ -621,6 +621,59 @@ function SiteDetails({
                                 )}
                             </>
                         )}
+                        <fieldset className="row mt-2">
+                            <legend className="col-form-label col-sm-5 pt-0 fw-bold">
+                                Customize Login/Signup
+                            </legend>
+                            <div className="col-sm-6">
+                                <div className="row">
+                                    <div className="col-sm-6">
+                                        <div className="form-check">
+                                            <input
+                                                className="form-check-input"
+                                                type="radio"
+                                                name="customize_login"
+                                                value="YES"
+                                                checked={
+                                                    selectedItem.customize_login ===
+                                                    "YES"
+                                                }
+                                                onChange={event =>
+                                                    handleInputField(
+                                                        event,
+                                                    )
+                                                }
+                                            />
+                                            <label className="form-check-label">
+                                                Yes
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div className="col-sm-6">
+                                        <div className="form-check">
+                                            <input
+                                                className="form-check-input"
+                                                type="radio"
+                                                name="customize_login"
+                                                value="NO"
+                                                checked={
+                                                    selectedItem?.customize_login !==
+                                                    "YES"
+                                                }
+                                                onChange={event =>
+                                                    handleInputField(
+                                                        event,
+                                                    )
+                                                }
+                                            />
+                                            <label className="form-check-label">
+                                                No
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
                         {/* <div className="gorm-group mb-2">
                             <DynamicCheckBoxs
                                 items={[
@@ -661,7 +714,7 @@ function SiteDetails({
                                 name="landing_page"
                                 value={selectedItem.landing_page}
                                 onChange={handleInputField}
-                            />                            
+                            />
                         </div>
                         <div className="col-sm-12">
                             <label className="mt-1 fw-bold">
@@ -673,7 +726,7 @@ function SiteDetails({
                                 name="signup_page"
                                 value={selectedItem.signup_page}
                                 onChange={handleInputField}
-                            />                            
+                            />
                         </div>
                         <div className="col-sm-12">
                             <label className="mt-1 fw-bold">
@@ -933,20 +986,52 @@ function SiteDetails({
                     </div> */}
                 </div>
             </div>
-            <div className="row">
-                <div className="form-group mt-2">
-                    <label className="fw-bold pe-2">
-                        Login Html
-                        <span className="text-danger"></span>
-                    </label>
-                    <TextEditor
-                        id="login_html"
-                        value={selectedItem.login_html}
-                        onChange={handleEditor}
-                        height="220px"
-                    />
-                </div>
-            </div>
+            {selectedItem?.customize_login === "YES" && (
+                <>
+                    <div className="row">
+                        <div className="form-group mt-2">
+                            <label className="fw-bold pe-2">
+                                Login Html
+                                <span className="text-danger"></span>
+                            </label>
+                            <TextEditor
+                                id="login_html"
+                                value={selectedItem.login_html}
+                                onChange={handleEditor}
+                                height="220px"
+                            />
+                        </div>
+                    </div>
+                    <div className="row">
+                        <div className="form-group">
+                            <label className="my-1 fw-bold">
+                                Custom Login / Sign Up CSS&nbsp;
+                                <span className="text-danger"></span>
+                            </label>
+                            <div className="mb-2">
+                                <CodeMirror
+                                    className="code-mirror enable-scroll"
+                                    value={selectedItem.css_styles}
+                                    height="100%"
+                                    theme={"dark"}
+                                    extensions={[css()]}
+                                    onChange={(value, viewUpdate) => {
+                                        let e = {
+                                            target: {
+                                                value,
+                                                id: "css_styles",
+                                            },
+                                        };
+                                        handleEditor(e);
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+
             <div className="row">
                 <div className="form-group mt-2">
                     <label className="fw-bold pe-2">
@@ -961,32 +1046,7 @@ function SiteDetails({
                     />
                 </div>
             </div>
-            <div className="row">
-                <div className="form-group">
-                    <label className="my-1 fw-bold">
-                        Custom Login / Sign Up CSS&nbsp;
-                        <span className="text-danger"></span>
-                    </label>
-                    <div className="mb-2">
-                        <CodeMirror
-                            className="code-mirror enable-scroll"
-                            value={selectedItem.css_styles}
-                            height="100%"
-                            theme={"dark"}
-                            extensions={[css()]}
-                            onChange={(value, viewUpdate) => {
-                                let e = {
-                                    target: {
-                                        value,
-                                        id: "css_styles",
-                                    },
-                                };
-                                handleEditor(e);
-                            }}
-                        />
-                    </div>
-                </div>
-            </div>
+
             <div className="d-flex text-align-center justify-content-end py-3">
                 <button
                     className="btn button-theme btn-sm me-2 pull-left"
@@ -997,9 +1057,8 @@ function SiteDetails({
                     Close
                 </button>
                 <button
-                    className={` ${
-                        saveIsDisabled ? "pointer" : "not-allowed"
-                    } btn button-theme btn-sm pull-left  ms-0`}
+                    className={` ${saveIsDisabled ? "pointer" : "not-allowed"
+                        } btn button-theme btn-sm pull-left  ms-0`}
                     onClick={() => handleSaveData(true)}
                     disabled={saveIsDisabled}
                     data-bs-dismiss="modal">
@@ -1192,9 +1251,8 @@ function SubDomainField({
                     <button
                         disabled={subdomain === ""}
                         onClick={() => checkIfDomainExixts()}
-                        className={`input-group-text  d-flex justify-content-center align-items-center    ${
-                            subDomainIsValid ? "pointer" : "not-allowed"
-                        } `}>
+                        className={`input-group-text  d-flex justify-content-center align-items-center    ${subDomainIsValid ? "pointer" : "not-allowed"
+                            } `}>
                         <span className="mx-1 fa-solid fa-spell-check"></span>{" "}
                         <span>Check Availabilty</span>
                     </button>
@@ -1238,11 +1296,10 @@ function ColorPalette({ color, disable, handleColorPalette, selectedItem }) {
                 onClick={() => {
                     handleColors(color);
                 }}
-                className={`container-fluid px-0 palette ${
-                    color.id === selectedItem?.site_preference?.color_palette
-                        ? " selected-palette "
-                        : ""
-                } ${disable ? " disable " : ""}`}>
+                className={`container-fluid px-0 palette ${color.id === selectedItem?.site_preference?.color_palette
+                    ? " selected-palette "
+                    : ""
+                    } ${disable ? " disable " : ""}`}>
                 <div
                     className="place c3"
                     style={{
@@ -1274,12 +1331,11 @@ function ColorPalette({ color, disable, handleColorPalette, selectedItem }) {
             </div>
             <center>
                 <span
-                    className={`${
-                        color.id ===
+                    className={`${color.id ===
                         selectedItem?.site_preference?.color_palette
-                            ? "selected-palette"
-                            : ""
-                    } palette-text`}>
+                        ? "selected-palette"
+                        : ""
+                        } palette-text`}>
                     {color.label && color.label}
                 </span>
             </center>
