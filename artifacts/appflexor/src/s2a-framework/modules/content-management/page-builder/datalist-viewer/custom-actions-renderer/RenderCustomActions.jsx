@@ -502,7 +502,6 @@ export default function RenderCustomActions({
             {item.link_type === "POST" && (
                 <div onClick={() => sendPostRequest(item, record)}>
                     <ShowAs show_as={item.show_as}>
-                        {"Hello"}
                         <Interweave content={item.title}></Interweave>
                     </ShowAs>
                 </div>
