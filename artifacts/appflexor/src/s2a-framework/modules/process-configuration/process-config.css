@@ -1,56 +1,431 @@
-/* ── Process Configuration module styles ───────────────────────────────────── */
-/* Tab bar styles are now global (index.css). Only module-specific extras here. */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Process Configuration — Orchestrate single-page layout
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Tab icon opacity — supplements global tab styles */
-.process-config .nav-tabs .nav-link i,
-.process-config .nav-tabs button i {
-  font-size: 0.78rem;
-  opacity: 0.7;
-  transition: opacity 0.18s;
-}
-.process-config .nav-tabs .nav-link.active i,
-.process-config .nav-tabs button.active i {
-  opacity: 1;
+/* ── Two-column split layout ────────────────────────────────────────────── */
+.orch-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 1.25rem;
+  align-items: start;
 }
 
-/* Sub-header bar between tabs and content */
-.pc-content-header {
+.orch-left  { min-width: 0; }
+.orch-right { min-width: 0; }
+
+@media (max-width: 1100px) {
+  .orch-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Panel card ─────────────────────────────────────────────────────────── */
+.orch-panel {
+  background: var(--secondary-color, #fff);
+  border: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+/* ── Panel header ───────────────────────────────────────────────────────── */
+.orch-panel-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.6rem 0.25rem 0.65rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
-  margin-bottom: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
+  flex-wrap: wrap;
 }
 
-/* Section icon pill */
-.pc-section-icon {
+.orch-panel-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 12%, transparent);
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.orch-panel-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--font-color, #111827);
+  line-height: 1.25;
+}
+
+.orch-panel-desc {
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 60%, transparent);
+  margin-top: 0.1rem;
+  line-height: 1.4;
+}
+
+/* ── "Add New …" ghost button ───────────────────────────────────────────── */
+.orch-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--link-active-color, #2563eb);
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 28%, transparent);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.14s;
+}
+.orch-add-btn:hover {
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 15%, transparent);
+}
+
+/* ── Search bar ─────────────────────────────────────────────────────────── */
+.orch-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 180px;
+  max-width: 260px;
+  flex: 1;
+}
+.orch-search-icon {
+  position: absolute;
+  left: 0.6rem;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent);
+  pointer-events: none;
+}
+.orch-search-input {
+  width: 100%;
+  padding: 0.35rem 1.8rem 0.35rem 1.85rem;
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+  border-radius: 0.4rem;
+  font-size: 0.78rem;
+  background: color-mix(in srgb, var(--font-color, #000) 3%, transparent);
+  color: var(--font-color, #374151);
+  outline: none;
+  transition: border-color 0.14s, box-shadow 0.14s;
+}
+.orch-search-input:focus {
+  border-color: var(--link-active-color, #2563eb);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--link-active-color, #2563eb) 15%, transparent);
+}
+.orch-search-clear {
+  position: absolute;
+  right: 0.4rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 55%, transparent);
+  padding: 0.1rem 0.2rem;
+}
+
+/* ── Area icon circle ───────────────────────────────────────────────────── */
+.orch-area-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+.orch-area-icon.sm {
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 0.7rem;
+}
+
+/* ── Count badge ────────────────────────────────────────────────────────── */
+.orch-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--font-color, #000) 8%, transparent);
+  color: color-mix(in srgb, var(--font-color, #374151) 80%, transparent);
+  flex-shrink: 0;
+}
+
+/* ── Icon button ────────────────────────────────────────────────────────── */
+.orch-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.3rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: color-mix(in srgb, var(--font-color, #374151) 60%, transparent);
+  font-size: 0.78rem;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.orch-icon-btn:hover {
+  background: color-mix(in srgb, var(--font-color, #000) 8%, transparent);
+  color: var(--font-color, #111827);
+}
+.orch-icon-btn.danger:hover {
+  background: color-mix(in srgb, #dc2626 10%, transparent);
+  color: #dc2626;
+}
+
+/* ═══════════ LEFT panel — tree view ════════════════════════════════════ */
+
+.orch-tree {
+  padding: 0.35rem 0;
+}
+
+.orch-tree-group {
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.06)) 100%, transparent);
+}
+.orch-tree-group:last-child { border-bottom: none; }
+
+/* Group header row */
+.orch-tree-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  transition: background 0.11s;
+  cursor: default;
+}
+.orch-tree-group-header:hover {
+  background: color-mix(in srgb, var(--font-color, #000) 3%, transparent);
+}
+
+.orch-tree-chevron {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent);
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.orch-tree-area-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--font-color, #111827);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Children / process rows */
+.orch-tree-children {
+  border-left: 1.5px dashed color-mix(in srgb, var(--border-color, rgba(0,0,0,0.18)) 100%, transparent);
+  margin-left: 2.85rem;
+}
+
+.orch-tree-proc-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.75rem 0.32rem 0.5rem;
+  transition: background 0.1s;
+}
+.orch-tree-proc-row:hover {
+  background: color-mix(in srgb, var(--font-color, #000) 2%, transparent);
+}
+
+.orch-proc-indent { width: 0.5rem; flex-shrink: 0; }
+
+.orch-proc-icon {
+  color: color-mix(in srgb, var(--font-color, #6b7280) 40%, transparent);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.orch-proc-title {
+  font-size: 0.82rem;
+  color: var(--font-color, #374151);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Governing body pill on process row */
+.orch-gb-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.67rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.orch-proc-actions {
+  display: flex;
+  gap: 0.1rem;
+  opacity: 0;
+  transition: opacity 0.13s;
+  flex-shrink: 0;
+}
+.orch-tree-proc-row:hover .orch-proc-actions { opacity: 1; }
+
+.orch-tree-empty {
+  padding: 0.4rem 0.75rem 0.4rem 0.5rem;
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 40%, transparent);
+  font-style: italic;
+}
+
+/* Empty state (no areas at all) */
+.orch-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 3rem 1rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 45%, transparent);
+  font-size: 0.85rem;
+}
+.orch-empty-state i { font-size: 1.75rem; }
+.orch-empty-state p { margin: 0; }
+
+/* ═══════════ RIGHT panel — list rows ═══════════════════════════════════ */
+
+.orch-list { padding: 0.2rem 0; }
+
+.orch-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.05)) 100%, transparent);
+  transition: background 0.1s;
+}
+.orch-list-item:last-child { border-bottom: none; }
+.orch-list-item:hover {
+  background: color-mix(in srgb, var(--font-color, #000) 2%, transparent);
+}
+
+.orch-list-name {
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--font-color, #374151);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.orch-list-actions {
+  display: flex;
+  gap: 0.1rem;
+  opacity: 0;
+  transition: opacity 0.13s;
+}
+.orch-list-item:hover .orch-list-actions { opacity: 1; }
+
+.orch-gb-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 1.8rem;
   height: 1.8rem;
-  border-radius: 0.35rem;
-  background: color-mix(in srgb, var(--link-active-color, var(--navigation-color, #2563eb)) 12%, transparent);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   flex-shrink: 0;
 }
 
-/* Table header inside sections */
-.process-config .tableHeader th {
-  background: var(--header-color) !important;
+.orch-list-empty {
+  padding: 1rem;
+  font-size: 0.78rem;
+  text-align: center;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 45%, transparent);
+  font-style: italic;
 }
 
-/* Mobile: icon-only tabs */
-@media (max-width: 575px) {
-  .process-config .nav-tabs .nav-link span,
-  .process-config .nav-tabs button span {
-    display: none;
-  }
-  .process-config .nav-tabs .nav-link i,
-  .process-config .nav-tabs button i {
-    font-size: 0.9rem;
-    opacity: 1;
-  }
+/* ── Misc helpers ───────────────────────────────────────────────────────── */
+.flex-1 { flex: 1; }
+.min-w-0 { min-width: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Full-screen dialog overlay (Monitor / Deploy / Configure Processes)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.orch-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1055; /* above Bootstrap modals (1050) */
+  display: flex;
+  flex-direction: column;
+  background: var(--body-bg, #f3f4f6);
+  overflow: hidden;
+}
+
+/* top bar */
+.orch-fullscreen-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1.25rem;
+  background: var(--secondary-color, #fff);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+  flex-shrink: 0;
+  gap: 1rem;
+}
+
+.orch-fullscreen-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--font-color, #111827);
+}
+
+.orch-fullscreen-bar .fa-solid {
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.9rem;
+}
+
+/* close button */
+.orch-fullscreen-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.18)) 100%, transparent);
+  background: color-mix(in srgb, var(--font-color, #000) 5%, transparent);
+  color: var(--font-color, #374151);
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.orch-fullscreen-close:hover {
+  background: color-mix(in srgb, var(--font-color, #000) 10%, transparent);
+}
+
+/* scrollable body */
+.orch-fullscreen-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
 }

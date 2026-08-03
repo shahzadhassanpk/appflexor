@@ -1,225 +1,704 @@
-import React, { lazy, Suspense, useContext, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import axios from "axios";
+import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "../../../AppContext";
+import { API_URL } from "../../Config";
 import { ErrorBoundary } from "../../utils/ErrorBoundry";
-import { getAuthorizedTabs } from "../../utils/utils";
+import ModalBox from "../../components/Modal/Modal";
+import ModuleFormViewer from "../../components/ModuleFormViewer/ModuleFormViewer";
+import { toastEmitter } from "../../components/Toastify/Toastify";
+import { updateDeleteConfig } from "../../utils/utils";
 import Loading from "../../components/Loading/loading";
+import ProcessMap     from "./process-map/ProcessMap";
+import ProcessMonitor from "./process-monitor/ProcessMonitor";
+import Processes      from "./processes/Processes";
 import "./process-config.css";
 
-const ProcessEngine      = lazy(() => import("./ProcessEngine"));
-const ProcessCategory    = lazy(() => import("./process-category/ProcessCategory"));
-const ProcessBusinessArea = lazy(() => import("./process-category/ProcessBusinessArea"));
-const ProcessMap         = lazy(() => import("./process-map/ProcessMap"));
-const ProcessMonitor     = lazy(() => import("./process-monitor/ProcessMonitor"));
-const Processes          = lazy(() => import("./processes/Processes"));
-
-const TABS = [
-    {
-        name: "Business Areas",
-        code: "BUSINESS_AREA",
-        icon: "fa-solid fa-layer-group",
-        active: "true",
-        description: "Set up organisational domains to group related processes",
-    },
-    {
-        name: "Process Categories",
-        code: "PROCESS_CATEGORY",
-        icon: "fa-solid fa-folder-tree",
-        active: "false",
-        description: "Organise processes into structured categories for clarity",
-    },
-    {
-        name: "Deploy Processes",
-        code: "PROCESSES",
-        icon: "fa-solid fa-rocket",
-        active: "false",
-        description: "Launch new or updated processes into production",
-    },
-    {
-        name: "Configure Processes",
-        code: "PROCESS_MAP",
-        icon: "fa-solid fa-diagram-project",
-        active: "false",
-        description: "Configure process category, business area, start form and access control settings for each process",
-    },
-    {
-        name: "Monitor Processes",
-        code: "PROCESS_MONITOR",
-        icon: "fa-solid fa-chart-line",
-        active: "false",
-        description: "Track and troubleshoot process execution, monitor status, and analytics of running processes",
-    },
+/* ── colour palette (deterministic by index) ────────────────────────────── */
+const PALETTE = [
+    "#4f46e5","#16a34a","#9333ea","#ea580c",
+    "#0891b2","#d97706","#dc2626","#7c3aed",
+    "#0f766e","#be185d",
 ];
+const getColor = i => PALETTE[i % PALETTE.length];
 
-const componentRegistry = {
-    PROCESS_ENGINE:   ProcessEngine,
-    PROCESS_CATEGORY: ProcessCategory,
-    BUSINESS_AREA:    ProcessBusinessArea,
-    PROCESS_MAP:      ProcessMap,
-    PROCESSES:        Processes,
-    PROCESS_MONITOR:  ProcessMonitor,
+/* ── match helpers ──────────────────────────────────────────────────────── */
+function matchArea(proc, ba) {
+    const v = (proc.business_area || "").toLowerCase().trim();
+    return v && (
+        v === (ba.key   || "").toLowerCase().trim() ||
+        v === (ba.id    || "").toLowerCase().trim() ||
+        v === (ba.title || "").toLowerCase().trim()
+    );
+}
+function matchGB(proc, gb) {
+    const v = (proc.category || "").toLowerCase().trim();
+    return v && (
+        v === (gb.key   || "").toLowerCase().trim() ||
+        v === (gb.id    || "").toLowerCase().trim() ||
+        v === (gb.title || "").toLowerCase().trim()
+    );
+}
+function getGBForProcess(proc, governingBodies) {
+    return governingBodies.find(gb => matchGB(proc, gb));
+}
+
+/* ── initial form states ────────────────────────────────────────────────── */
+const BA_INIT   = { id: "", title: "", key: "" };
+const GB_INIT   = { id: "", title: "", key: "" };
+const PROC_INIT = {
+    id: "", title: "", process_key: "",
+    category: "", business_area: "",
+    is_active: "YES", allow_draft: "YES",
 };
 
+/* ── full-screen overlay for ProcessMap / Monitor / Deploy ──────────────── */
+function FullScreenDialog({ title, icon, onClose, children }) {
+    return (
+        <div className="orch-fullscreen-overlay">
+            <div className="orch-fullscreen-bar">
+                <div className="d-flex align-items-center gap-2">
+                    <i className={`fa-solid ${icon}`} aria-hidden="true" />
+                    <span className="orch-fullscreen-title">{title}</span>
+                </div>
+                <button
+                    type="button"
+                    className="orch-fullscreen-close"
+                    onClick={onClose}
+                    aria-label="Close">
+                    <i className="fa-solid fa-xmark" aria-hidden="true" />
+                    Close
+                </button>
+            </div>
+            <div className="orch-fullscreen-body">
+                {children}
+            </div>
+        </div>
+    );
+}
+
+/* ════════════════════════════════════════════════════════════════════════ */
 function ProcessConfiguration() {
-    const [tabs, setTabs]           = useState([]);
-    const [activeTab, setActiveTab] = useState("");
-    const [refreshKey, setRefreshKey] = useState(0);
-    const [searchParams]            = useSearchParams();
-
     const appContext = useContext(AppContext);
-    const { profile, featuresSubscription, tenantSubscription } = appContext;
 
-    /* ── build visible tab list ─────────────────────────────────────────────── */
-    function showTab(tab) {
-        if (tab.name !== "Process Deployments") return true;
-        const isSelfManaged = tenantSubscription?.process_deployment === "SELF_MANAGED";
-        const isS2ACloud =
-            tenantSubscription?.process_deployment === "S2A_CLOUD" &&
-            profile?.username === "padmin";
-        return isSelfManaged || isS2ACloud;
-    }
+    /* ── data ───────────────────────────────────────────────────────────── */
+    const [businessAreas,   setBusinessAreas]   = useState([]);
+    const [governingBodies, setGoverningBodies] = useState([]);
+    const [processes,       setProcesses]       = useState([]);
+    const [isLoading,       setIsLoading]       = useState(true);
+
+    /* ── left-panel UI ──────────────────────────────────────────────────── */
+    const [searchTerm,    setSearchTerm]    = useState("");
+    const [expandedAreas, setExpandedAreas] = useState(new Set());
+
+    /* ── full-screen dialog visibility ─────────────────────────────────── */
+    const [showProcessMap, setShowProcessMap] = useState(false);
+    const [showMonitor,    setShowMonitor]    = useState(false);
+    const [showDeploy,     setShowDeploy]     = useState(false);
+
+    /* ── Business Area modal ────────────────────────────────────────────── */
+    const [baModal,     setBAModal]     = useState(false);
+    const [selectedBA,  setSelectedBA]  = useState(BA_INIT);
+    const [baDeleteCfg, setBADeleteCfg] = useState({ show: false, item: {} });
+
+    /* ── Governing Body modal ───────────────────────────────────────────── */
+    const [gbModal,     setGBModal]     = useState(false);
+    const [selectedGB,  setSelectedGB]  = useState(GB_INIT);
+    const [gbDeleteCfg, setGBDeleteCfg] = useState({ show: false, item: {} });
+
+    /* ── Process (quick-edit) modal ─────────────────────────────────────── */
+    const [procModal,     setProcModal]     = useState(false);
+    const [selectedProc,  setSelectedProc]  = useState(PROC_INIT);
+    const [procDeleteCfg, setProcDeleteCfg] = useState({ show: false, item: {} });
+    const [tenantProcs,   setTenantProcs]   = useState([]);
 
     useEffect(() => {
         window.scrollTo(0, 0);
+        getData();
     }, []);
 
-    useEffect(() => {
-        const authorized = getAuthorizedTabs(TABS, featuresSubscription).filter(showTab);
-
-        // BUSINESS_AREA is always shown regardless of subscription gate
-        const hasBA = authorized.some(t => t.code === "BUSINESS_AREA");
-        const visible = hasBA
-            ? authorized
-            : [TABS.find(t => t.code === "BUSINESS_AREA"), ...authorized].filter(Boolean);
-
-        if (visible.length === 0) return;
-
-        // Honour ?section=CODE deep-link, else default to first tab
-        const requestedSection = searchParams.get("section");
-        const initialCode =
-            requestedSection && visible.some(t => t.code === requestedSection)
-                ? requestedSection
-                : visible[0].code;
-
-        setTabs(visible);
-        setActiveTab(initialCode);
-    }, [featuresSubscription]);
-
-    /* ── tab switch ─────────────────────────────────────────────────────────── */
-    function handleTabChange(code) {
-        setActiveTab(code);
-        setRefreshKey(0);  // reset refresh counter on tab switch
-        window.scrollTo(0, 0);
+    /* ── fetch everything in one batch ──────────────────────────────────── */
+    function getData() {
+        setIsLoading(true);
+        axios
+            .post(`${API_URL}?service.key=masterKey.tenantData`, {
+                dataKeys: [
+                    { serviceParams: "", dataKey: "processMap",         serviceKey: "process.map",           mode: "formData" },
+                    { serviceParams: "", dataKey: "processBusinessArea", serviceKey: "process.business.area", mode: "formData" },
+                    { serviceParams: "", dataKey: "processCategory",     serviceKey: "process.category",      mode: "formData" },
+                    { serviceParams: "", dataKey: "tenantProcess",       serviceKey: "sys.tenant.process",    mode: "formData" },
+                ],
+            })
+            .then(res => {
+                if (res.data.C_STATUS === "SUCCESS") {
+                    const d = res.data.C_DATA;
+                    const areas = d.processBusinessArea || [];
+                    setBusinessAreas(areas);
+                    setGoverningBodies(d.processCategory || []);
+                    setProcesses(d.processMap            || []);
+                    setTenantProcs(d.tenantProcess       || []);
+                    setExpandedAreas(new Set(areas.map(ba => ba.id)));
+                }
+            })
+            .catch(console.error)
+            .finally(() => setIsLoading(false));
     }
 
-    const activeTabMeta = tabs.find(t => t.code === activeTab);
+    /* ── collapse / expand ──────────────────────────────────────────────── */
+    function toggleArea(baId) {
+        setExpandedAreas(prev => {
+            const n = new Set(prev);
+            n.has(baId) ? n.delete(baId) : n.add(baId);
+            return n;
+        });
+    }
+
+    /* ── derived data ───────────────────────────────────────────────────── */
+    const q = searchTerm.toLowerCase().trim();
+    const visibleProcs = q
+        ? processes.filter(p => p.title?.toLowerCase().includes(q))
+        : processes;
+
+    const processGroups = businessAreas.map((ba, idx) => ({
+        ba, color: getColor(idx), idx,
+        procs: visibleProcs.filter(p => matchArea(p, ba)),
+    }));
+
+    const baCount = ba => processes.filter(p => matchArea(p, ba)).length;
+    const gbCount = gb => processes.filter(p => matchGB(p, gb)).length;
+
+    /* ── Business Area CRUD ─────────────────────────────────────────────── */
+    function openAddBA()    { setSelectedBA(BA_INIT); setBAModal(true); }
+    function openEditBA(ba) { setSelectedBA(ba);      setBAModal(true); }
+
+    function deleteBA(item, isDelete) {
+        if (isDelete) {
+            axios.post(`${API_URL}?service.key=update.formData`, {
+                data: [{ formId: "business_area", entity: "business_area", action: "delete", id: item.id }],
+            }).then(res => {
+                if (res.data.C_STATUS === "SUCCESS") {
+                    setBusinessAreas(prev => prev.filter(a => a.id !== res.data.C_DATA[0].id));
+                    updateDeleteConfig(false, {}, setBADeleteCfg);
+                    toastEmitter("Business Area deleted", true);
+                }
+            }).catch(console.error);
+        } else {
+            updateDeleteConfig(true, item, setBADeleteCfg);
+        }
+    }
+
+    function saveBA() {
+        const isNew = !selectedBA.id || selectedBA.id === "new";
+        axios.post(`${API_URL}?service.key=update.formData`, {
+            data: [{ formId: "business_area", entity: "business_area", action: "update",
+                id: isNew ? "new" : selectedBA.id, formData: selectedBA }],
+        }).then(res => {
+            if (res.data.C_STATUS === "SUCCESS") {
+                const saved = res.data.C_DATA[0].formData;
+                if (isNew) {
+                    setBusinessAreas(prev => [...prev, { ...selectedBA, id: saved.id }]);
+                    toastEmitter("Business Area added", true);
+                } else {
+                    setBusinessAreas(prev => prev.map(a => a.id === selectedBA.id ? { ...selectedBA } : a));
+                    toastEmitter("Business Area updated", true);
+                }
+                setBAModal(false);
+            }
+        }).catch(console.error);
+    }
+
+    /* ── Governing Body CRUD ────────────────────────────────────────────── */
+    function openAddGB()    { setSelectedGB(GB_INIT); setGBModal(true); }
+    function openEditGB(gb) { setSelectedGB(gb);      setGBModal(true); }
+
+    function deleteGB(item, isDelete) {
+        if (isDelete) {
+            axios.post(`${API_URL}?service.key=update.formData`, {
+                data: [{ formId: "process_category", entity: "process_category", action: "delete", id: item.id }],
+            }).then(res => {
+                if (res.data.C_STATUS === "SUCCESS") {
+                    setGoverningBodies(prev => prev.filter(g => g.id !== res.data.C_DATA[0].id));
+                    updateDeleteConfig(false, {}, setGBDeleteCfg);
+                    toastEmitter("Governing Body deleted", true);
+                }
+            }).catch(console.error);
+        } else {
+            updateDeleteConfig(true, item, setGBDeleteCfg);
+        }
+    }
+
+    function saveGB() {
+        const isNew = !selectedGB.id || selectedGB.id === "new";
+        axios.post(`${API_URL}?service.key=update.formData`, {
+            data: [{ formId: "process_category", entity: "process_category", action: "update",
+                id: isNew ? "new" : selectedGB.id, formData: selectedGB }],
+        }).then(res => {
+            if (res.data.C_STATUS === "SUCCESS") {
+                const saved = res.data.C_DATA[0].formData;
+                if (isNew) {
+                    setGoverningBodies(prev => [...prev, { ...selectedGB, id: saved.id }]);
+                    toastEmitter("Governing Body added", true);
+                } else {
+                    setGoverningBodies(prev => prev.map(g => g.id === selectedGB.id ? { ...selectedGB } : g));
+                    toastEmitter("Governing Body updated", true);
+                }
+                setGBModal(false);
+            }
+        }).catch(console.error);
+    }
+
+    /* ── Process quick-edit CRUD ────────────────────────────────────────── */
+    function openEditProc(proc) {
+        setSelectedProc({ ...proc });
+        setProcModal(true);
+    }
+
+    function deleteProc(item, isDelete) {
+        if (isDelete) {
+            axios.post(`${API_URL}?service.key=update.formData`, {
+                data: [{ formId: "process_map", entity: "process_map", action: "delete", id: item.id }],
+            }).then(res => {
+                if (res.data.C_STATUS === "SUCCESS") {
+                    setProcesses(prev => prev.filter(p => p.id !== res.data.C_DATA[0].id));
+                    updateDeleteConfig(false, {}, setProcDeleteCfg);
+                    toastEmitter("Process removed", true);
+                }
+            }).catch(console.error);
+        } else {
+            updateDeleteConfig(true, item, setProcDeleteCfg);
+        }
+    }
+
+    function saveProc() {
+        const isNew = !selectedProc.id || selectedProc.id === "new";
+        axios.post(`${API_URL}?service.key=update.formData`, {
+            data: [{ formId: "process_map", entity: "process_map", action: "update",
+                id: isNew ? "new" : selectedProc.id, formData: selectedProc }],
+        }).then(res => {
+            if (res.data.C_STATUS === "SUCCESS") {
+                const saved = res.data.C_DATA[0].formData;
+                if (isNew) {
+                    setProcesses(prev => [...prev, { ...selectedProc, id: saved.id }]);
+                    toastEmitter("Process added", true);
+                } else {
+                    setProcesses(prev => prev.map(p => p.id === selectedProc.id ? { ...selectedProc } : p));
+                    toastEmitter("Process updated", true);
+                }
+                setProcModal(false);
+            }
+        }).catch(console.error);
+    }
+
+    if (isLoading) return (
+        <div id="ProcessConfig" className="process-config container-fluid static-module-bg">
+            <Loading />
+        </div>
+    );
 
     return (
         <ErrorBoundary>
-            <div
-                id="ProcessConfig"
-                className="process-config container-fluid static-module-bg">
+            {/* ── delete confirmations ─────────────────────────────────── */}
+            <ModalBox state={baDeleteCfg}   message="Delete this Business Area?"  operation={deleteBA}   header="Delete Business Area"   setState={setBADeleteCfg}   modalType="deleteModal" />
+            <ModalBox state={gbDeleteCfg}   message="Delete this Governing Body?" operation={deleteGB}   header="Delete Governing Body"   setState={setGBDeleteCfg}   modalType="deleteModal" />
+            <ModalBox state={procDeleteCfg} message="Remove this process?"        operation={deleteProc} header="Remove Process"          setState={setProcDeleteCfg} modalType="deleteModal" />
 
-                {/* ── Page header ───────────────────────────────────────────── */}
-                <div className="row">
-                    <div className="col-sm-12 datalist-viewer">
+            {/* ══════════ FULL-SCREEN DIALOGS (conditionally mounted) ════ */}
+
+            {showProcessMap && (
+                <FullScreenDialog
+                    title="Configure Processes"
+                    icon="fa-diagram-project"
+                    onClose={() => { setShowProcessMap(false); getData(); }}>
+                    <ProcessMap activeTab="PROCESS_MAP" />
+                </FullScreenDialog>
+            )}
+
+            {showMonitor && (
+                <FullScreenDialog
+                    title="Process Monitor"
+                    icon="fa-chart-line"
+                    onClose={() => setShowMonitor(false)}>
+                    <ProcessMonitor activeTab="PROCESS_MONITOR" />
+                </FullScreenDialog>
+            )}
+
+            {showDeploy && (
+                <FullScreenDialog
+                    title="Deploy Processes"
+                    icon="fa-rocket"
+                    onClose={() => setShowDeploy(false)}>
+                    <Processes activeTab="PROCESSES" />
+                </FullScreenDialog>
+            )}
+
+            {/* ══════════ MAIN PAGE ═══════════════════════════════════════ */}
+            <div id="ProcessConfig" className="process-config container-fluid static-module-bg">
+
+                {/* ── page header ──────────────────────────────────────── */}
+                <div className="row mb-3">
+                    <div className="col-12 datalist-viewer">
                         <div className="s2a-datalist-header">
                             <div className="s2a-dl-title-wrapper">
-                                <div className="s2a-dl-title">
-                                    <span>Orchestrate</span>
-                                </div>
-                                <span>
-                                    Define business areas, deploy, configure, and monitor your processes.
-                                </span>
+                                <div className="s2a-dl-title"><span>Orchestrate</span></div>
+                                <span>Define business areas, governing bodies, and the processes that power your organisation.</span>
+                            </div>
+                            <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                                <button
+                                    type="button"
+                                    className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
+                                    onClick={() => setShowMonitor(true)}>
+                                    <i className="fa-solid fa-chart-line" aria-hidden="true" />
+                                    Monitor
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
+                                    onClick={() => setShowDeploy(true)}>
+                                    <i className="fa-solid fa-rocket" aria-hidden="true" />
+                                    Deploy
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* ── Tab bar ───────────────────────────────────────────────── */}
-                <div className="row">
-                    <ul className="nav nav-tabs" role="tablist">
-                        {tabs.map(tab => (
-                            <li key={tab.code} className="nav-item">
+                {/* ── split layout ─────────────────────────────────────── */}
+                <div className="orch-layout">
+
+                    {/* ════════════ LEFT: process tree ════════════════════ */}
+                    <div className="orch-left">
+                        <div className="orch-panel">
+
+                            {/* panel header */}
+                            <div className="orch-panel-header">
+                                <div className="d-flex align-items-start gap-2 flex-1 min-w-0">
+                                    <span className="orch-panel-icon">
+                                        <i className="fa-solid fa-sitemap" aria-hidden="true" />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <div className="orch-panel-title">Business Processes</div>
+                                        <div className="orch-panel-desc">Tree view, grouped by Business Area and tagged with Governing Body</div>
+                                    </div>
+                                </div>
+                                {/* Add Process — opens ProcessMap full-screen */}
                                 <button
                                     type="button"
-                                    role="tab"
-                                    className={`nav-link pc-tab-btn${activeTab === tab.code ? " active" : ""}`}
-                                    aria-selected={activeTab === tab.code}
-                                    onClick={() => handleTabChange(tab.code)}
-                                >
-                                    <i className={`${tab.icon} pc-tab-icon`} aria-hidden="true" />
-                                    <span>{tab.name}</span>
+                                    className="orch-add-btn"
+                                    onClick={() => setShowProcessMap(true)}>
+                                    <i className="fa-solid fa-plus" aria-hidden="true" />
+                                    Add Process
                                 </button>
-                            </li>
-                        ))}
-                    </ul>
+                                <div className="orch-search">
+                                    <i className="fa-solid fa-magnifying-glass orch-search-icon" aria-hidden="true" />
+                                    <input
+                                        type="text"
+                                        className="orch-search-input"
+                                        placeholder="Search processes…"
+                                        value={searchTerm}
+                                        onChange={e => setSearchTerm(e.target.value)}
+                                        aria-label="Search processes"
+                                    />
+                                    {searchTerm && (
+                                        <button type="button" className="orch-search-clear" onClick={() => setSearchTerm("")} aria-label="Clear search">
+                                            <i className="fa-solid fa-xmark" aria-hidden="true" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
 
-                    {/* ── Tab content ───────────────────────────────────────── */}
-                    <div className="tab-content">
-                        {activeTab ? (
-                            <>
-                                {/* Sub-header: description + refresh */}
-                                {activeTabMeta && (
-                                    <div className="pc-content-header">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <span className="pc-section-icon">
-                                                <i className={activeTabMeta.icon} aria-hidden="true" />
-                                            </span>
-                                            <small className="text-muted">
-                                                {activeTabMeta.description}
-                                            </small>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2 flex-shrink-0"
-                                            onClick={() => setRefreshKey(k => k + 1)}
-                                            title="Refresh"
-                                        >
-                                            <i className="fa-solid fa-rotate-right" aria-hidden="true" />
-                                            <span className="d-none d-sm-inline">Refresh</span>
+                            {/* tree body */}
+                            <div className="orch-tree">
+                                {processGroups.length === 0 && (
+                                    <div className="orch-empty-state">
+                                        <i className="fa-solid fa-layer-group" />
+                                        <p>No business areas defined yet</p>
+                                        <button type="button" className="orch-add-btn" onClick={openAddBA}>
+                                            <i className="fa-solid fa-plus" /> Add Business Area
                                         </button>
                                     </div>
                                 )}
 
-                                <div className="tab-pane fade active show">
-                                    <Suspense fallback={<Loading message={`Loading ${activeTabMeta?.name ?? activeTab}…`} />}>
-                                        {React.createElement(
-                                            componentRegistry[activeTab],
-                                            { key: `${activeTab}-${refreshKey}`, activeTab },
+                                {processGroups.map(({ ba, color, procs }) => (
+                                    <div key={ba.id} className="orch-tree-group">
+                                        {/* group header */}
+                                        <div className="orch-tree-group-header">
+                                            <button
+                                                type="button"
+                                                className="orch-tree-chevron"
+                                                onClick={() => toggleArea(ba.id)}
+                                                aria-label={expandedAreas.has(ba.id) ? "Collapse" : "Expand"}>
+                                                <i className={`fa-solid ${expandedAreas.has(ba.id) ? "fa-chevron-down" : "fa-chevron-right"}`} aria-hidden="true" />
+                                            </button>
+                                            <span className="orch-area-icon" style={{ background: `${color}22`, color }}>
+                                                <i className="fa-solid fa-layer-group" aria-hidden="true" />
+                                            </span>
+                                            <span className="orch-tree-area-name">{ba.title}</span>
+                                            <span className="orch-count-badge" style={{ background: `${color}18`, color }}>{procs.length}</span>
+                                            <button
+                                                type="button"
+                                                className="orch-icon-btn ms-1"
+                                                title="Configure processes in this area"
+                                                onClick={() => setShowProcessMap(true)}>
+                                                <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true" />
+                                            </button>
+                                        </div>
+
+                                        {/* process rows */}
+                                        {expandedAreas.has(ba.id) && (
+                                            <div className="orch-tree-children">
+                                                {procs.length === 0 && (
+                                                    <div className="orch-tree-empty">No processes in this area</div>
+                                                )}
+                                                {procs.map(proc => {
+                                                    const gb      = getGBForProcess(proc, governingBodies);
+                                                    const gbIdx   = gb ? governingBodies.indexOf(gb) : -1;
+                                                    const gbColor = gbIdx >= 0 ? getColor(gbIdx + 2) : "#6b7280";
+                                                    return (
+                                                        <div key={proc.id} className="orch-tree-proc-row">
+                                                            <span className="orch-proc-indent" aria-hidden="true" />
+                                                            <i className="fa-regular fa-file-lines orch-proc-icon" aria-hidden="true" />
+                                                            <span className="orch-proc-title" title={proc.title}>{proc.title}</span>
+                                                            {gb && (
+                                                                <span
+                                                                    className="orch-gb-badge"
+                                                                    style={{ background: `${gbColor}18`, color: gbColor, border: `1px solid ${gbColor}35` }}>
+                                                                    {gb.title}
+                                                                </span>
+                                                            )}
+                                                            <div className="orch-proc-actions">
+                                                                <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditProc(proc)}>
+                                                                    <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
+                                                                </button>
+                                                                <button type="button" className="orch-icon-btn danger" title="Remove" onClick={() => deleteProc(proc)}>
+                                                                    <i className="fa-regular fa-trash-can" aria-hidden="true" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         )}
-                                    </Suspense>
-                                </div>
-                            </>
-                        ) : (
-                            <NotAuthorized />
-                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                </div>
+
+                    {/* ════════════ RIGHT: side panels ════════════════════ */}
+                    <div className="orch-right">
+
+                        {/* ── Business Areas ─────────────────────────── */}
+                        <div className="orch-panel mb-3">
+                            <div className="orch-panel-header">
+                                <div className="d-flex align-items-start gap-2 flex-1">
+                                    <span className="orch-panel-icon">
+                                        <i className="fa-solid fa-building" aria-hidden="true" />
+                                    </span>
+                                    <div>
+                                        <div className="orch-panel-title">Business Areas</div>
+                                        <div className="orch-panel-desc">Organisational domains that group related processes</div>
+                                    </div>
+                                </div>
+                                <button type="button" className="orch-add-btn" onClick={openAddBA}>
+                                    <i className="fa-solid fa-plus" aria-hidden="true" />
+                                    Add New Business Area
+                                </button>
+                            </div>
+                            <div className="orch-list">
+                                {businessAreas.length === 0 && (
+                                    <div className="orch-list-empty">No business areas yet</div>
+                                )}
+                                {businessAreas.map((ba, idx) => (
+                                    <div key={ba.id} className="orch-list-item">
+                                        <span className="orch-area-icon sm" style={{ background: `${getColor(idx)}22`, color: getColor(idx) }}>
+                                            <i className="fa-solid fa-layer-group" aria-hidden="true" />
+                                        </span>
+                                        <span className="orch-list-name">{ba.title}</span>
+                                        <span className="orch-count-badge" style={{ background: `${getColor(idx)}18`, color: getColor(idx) }}>{baCount(ba)}</span>
+                                        <div className="orch-list-actions">
+                                            <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditBA(ba)}>
+                                                <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
+                                            </button>
+                                            <button type="button" className="orch-icon-btn danger" title="Delete" onClick={() => deleteBA(ba)}>
+                                                <i className="fa-regular fa-trash-can" aria-hidden="true" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* ── Governing Bodies ───────────────────────── */}
+                        <div className="orch-panel">
+                            <div className="orch-panel-header">
+                                <div className="d-flex align-items-start gap-2 flex-1">
+                                    <span className="orch-panel-icon">
+                                        <i className="fa-solid fa-tag" aria-hidden="true" />
+                                    </span>
+                                    <div>
+                                        <div className="orch-panel-title">Governing Bodies</div>
+                                        <div className="orch-panel-desc">Bodies responsible for defining and optimising business processes</div>
+                                    </div>
+                                </div>
+                                <button type="button" className="orch-add-btn" onClick={openAddGB}>
+                                    <i className="fa-solid fa-plus" aria-hidden="true" />
+                                    Add New Governing Body
+                                </button>
+                            </div>
+                            <div className="orch-list">
+                                {governingBodies.length === 0 && (
+                                    <div className="orch-list-empty">No governing bodies yet</div>
+                                )}
+                                {governingBodies.map((gb, idx) => (
+                                    <div key={gb.id} className="orch-list-item">
+                                        <span className="orch-gb-icon" style={{ color: getColor(idx + 2) }}>
+                                            <i className="fa-solid fa-tag" aria-hidden="true" />
+                                        </span>
+                                        <span className="orch-list-name">{gb.title}</span>
+                                        <span className="orch-count-badge">{gbCount(gb)}</span>
+                                        <div className="orch-list-actions">
+                                            <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditGB(gb)}>
+                                                <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
+                                            </button>
+                                            <button type="button" className="orch-icon-btn danger" title="Delete" onClick={() => deleteGB(gb)}>
+                                                <i className="fa-regular fa-trash-can" aria-hidden="true" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                    </div>{/* end orch-right */}
+                </div>{/* end orch-layout */}
+
+                {/* ════════════ CRUD MODALS ═════════════════════════════════ */}
+
+                {/* Business Area */}
+                <ModuleFormViewer
+                    handleClose={() => setBAModal(false)}
+                    showModal={baModal}
+                    modalTitle={selectedBA.id ? "Edit Business Area" : "Add Business Area"}
+                    size="lg">
+                    <div className="col-12 form-background pt-2 pb-3 px-3">
+                        <div className="mb-3">
+                            <label className="fw-semibold mt-1">Title <span className="text-danger">*</span></label>
+                            <input type="text" className="form-control mt-1" value={selectedBA.title}
+                                onChange={e => setSelectedBA(p => ({ ...p, title: e.target.value }))} />
+                        </div>
+                        <div className="mb-1">
+                            <label className="fw-semibold mt-1">Key <span className="text-danger">*</span></label>
+                            <input type="text" className="form-control mt-1" value={selectedBA.key}
+                                onChange={e => setSelectedBA(p => ({ ...p, key: e.target.value }))} />
+                        </div>
+                    </div>
+                    <div className="modal-footer pe-0">
+                        <button className="btn button-theme btn-sm me-2" onClick={saveBA}
+                            disabled={!selectedBA.title || !selectedBA.key}>
+                            <i className="fa-solid fa-floppy-disk pe-1" />
+                            {selectedBA.id ? "Update" : "Save"}
+                        </button>
+                        <button className="btn button-theme btn-sm" onClick={() => setBAModal(false)}>
+                            <i className="fa-solid fa-xmark pe-1" />Close
+                        </button>
+                    </div>
+                </ModuleFormViewer>
+
+                {/* Governing Body */}
+                <ModuleFormViewer
+                    handleClose={() => setGBModal(false)}
+                    showModal={gbModal}
+                    modalTitle={selectedGB.id ? "Edit Governing Body" : "Add Governing Body"}
+                    size="lg">
+                    <div className="col-12 form-background pt-2 pb-3 px-3">
+                        <div className="mb-3">
+                            <label className="fw-semibold mt-1">Title <span className="text-danger">*</span></label>
+                            <input type="text" className="form-control mt-1" value={selectedGB.title}
+                                onChange={e => setSelectedGB(p => ({ ...p, title: e.target.value }))} />
+                        </div>
+                        <div className="mb-1">
+                            <label className="fw-semibold mt-1">Key <span className="text-danger">*</span></label>
+                            <input type="text" className="form-control mt-1" value={selectedGB.key}
+                                onChange={e => setSelectedGB(p => ({ ...p, key: e.target.value }))} />
+                        </div>
+                    </div>
+                    <div className="modal-footer pe-0">
+                        <button className="btn button-theme btn-sm me-2" onClick={saveGB}
+                            disabled={!selectedGB.title || !selectedGB.key}>
+                            <i className="fa-solid fa-floppy-disk pe-1" />
+                            {selectedGB.id ? "Update" : "Save"}
+                        </button>
+                        <button className="btn button-theme btn-sm" onClick={() => setGBModal(false)}>
+                            <i className="fa-solid fa-xmark pe-1" />Close
+                        </button>
+                    </div>
+                </ModuleFormViewer>
+
+                {/* Process quick-edit */}
+                <ModuleFormViewer
+                    handleClose={() => setProcModal(false)}
+                    showModal={procModal}
+                    modalTitle="Edit Process"
+                    size="lg">
+                    <div className="col-12 form-background pt-2 pb-3 px-3">
+                        <div className="row">
+                            <div className="col-sm-12 mb-3">
+                                <label className="fw-semibold mt-1">Title <span className="text-danger">*</span></label>
+                                <input type="text" className="form-control mt-1" value={selectedProc.title}
+                                    onChange={e => setSelectedProc(p => ({ ...p, title: e.target.value }))} />
+                            </div>
+                            <div className="col-sm-6 mb-3">
+                                <label className="fw-semibold mt-1">Business Area <span className="text-danger">*</span></label>
+                                <select className="form-select mt-1" value={selectedProc.business_area}
+                                    onChange={e => setSelectedProc(p => ({ ...p, business_area: e.target.value }))}>
+                                    <option value="">Select business area…</option>
+                                    {businessAreas.map(ba => (
+                                        <option key={ba.id} value={ba.key || ba.id}>{ba.title}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="col-sm-6 mb-3">
+                                <label className="fw-semibold mt-1">Governing Body <span className="text-danger">*</span></label>
+                                <select className="form-select mt-1" value={selectedProc.category}
+                                    onChange={e => setSelectedProc(p => ({ ...p, category: e.target.value }))}>
+                                    <option value="">Select governing body…</option>
+                                    {governingBodies.map(gb => (
+                                        <option key={gb.id} value={gb.key || gb.id}>{gb.title}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="col-sm-12 d-flex gap-4">
+                                <div className="form-check form-switch">
+                                    <input type="checkbox" className="form-check-input" role="switch"
+                                        id="procIsActive"
+                                        checked={selectedProc.is_active === "YES"}
+                                        onChange={e => setSelectedProc(p => ({ ...p, is_active: e.target.checked ? "YES" : "NO" }))} />
+                                    <label className="form-check-label" htmlFor="procIsActive">Active</label>
+                                </div>
+                                <div className="form-check form-switch">
+                                    <input type="checkbox" className="form-check-input" role="switch"
+                                        id="procAllowDraft"
+                                        checked={selectedProc.allow_draft === "YES"}
+                                        onChange={e => setSelectedProc(p => ({ ...p, allow_draft: e.target.checked ? "YES" : "NO" }))} />
+                                    <label className="form-check-label" htmlFor="procAllowDraft">Allow Draft</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-footer pe-0">
+                        <button className="btn button-theme btn-sm me-2" onClick={saveProc}
+                            disabled={!selectedProc.title || !selectedProc.business_area || !selectedProc.category}>
+                            <i className="fa-solid fa-floppy-disk pe-1" />
+                            Update
+                        </button>
+                        <button className="btn button-theme btn-sm" onClick={() => setProcModal(false)}>
+                            <i className="fa-solid fa-xmark pe-1" />Close
+                        </button>
+                    </div>
+                </ModuleFormViewer>
+
             </div>
         </ErrorBoundary>
     );
-}
-
-/* ── Not-authorised placeholder ─────────────────────────────────────────────── */
-function NotAuthorized({ waitBeforeShow = 500 }) {
-    const [isShown, setIsShown] = useState(false);
-    useEffect(() => {
-        const t = setTimeout(() => setIsShown(true), waitBeforeShow);
-        return () => clearTimeout(t);
-    }, [waitBeforeShow]);
-    return isShown ? (
-        <div
-            style={{ minHeight: "50vh" }}
-            className="d-flex align-items-center justify-content-center">
-            <div className="text-center">
-                <p>
-                    You are not <span className="text-danger">authorized</span> to access
-                    this feature.
-                </p>
-            </div>
-        </div>
-    ) : null;
 }
 
 export default ProcessConfiguration;
