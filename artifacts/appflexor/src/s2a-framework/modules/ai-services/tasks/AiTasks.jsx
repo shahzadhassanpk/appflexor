@@ -5,10 +5,10 @@ import { toastEmitter } from "../../../components/Toastify/Toastify";
 import { filterArrayByTerms } from "../../../utils/utils";
 
 const EMPTY_VQ = { collection: "", search_text: "", top_k: 5 };
-
 const EMPTY_TASK = {
     id: "new",
     agent_key: "",
+    task_name: "",
     task_key: "",
     user_prompt: "",
     sql_query: "",
@@ -19,40 +19,31 @@ function parseVQ(raw) {
     try { return JSON.parse(raw) || EMPTY_VQ; } catch { return { ...EMPTY_VQ }; }
 }
 
-function AiTasks({ selectedAgent, onChangeAgent }) {
-    const [agents, setAgents] = useState([]);
-    const [tasks, setTasks] = useState([]);
+/* ════════════════════════════════════════════════════════════════════════
+   Compact embedded tasks panel — mounted inside AiAgents accordion row.
+   Props:
+     agentKey  – string (required)
+     agentName – string (optional, for display)
+   ════════════════════════════════════════════════════════════════════════ */
+function AiTasks({ agentKey, agentName }) {
+    const [tasks,    setTasks]    = useState([]);
     const [filtered, setFiltered] = useState([]);
-    const [form, setForm] = useState(EMPTY_TASK);
-    const [vq, setVq] = useState(EMPTY_VQ);
+    const [form,     setForm]     = useState(EMPTY_TASK);
+    const [vq,       setVq]       = useState(EMPTY_VQ);
     const [showForm, setShowForm] = useState(false);
     const [showJson, setShowJson] = useState(null);
-    const [errors, setErrors] = useState({});
-    const [saving, setSaving] = useState(false);
+    const [errors,   setErrors]   = useState({});
+    const [saving,   setSaving]   = useState(false);
     const searchRef = useRef();
 
-    // Load agent list on mount
+    /* load tasks when agent key is available (component mounts fresh each open) */
     useEffect(() => {
-        getData({
-            keys: [{ params: "", dataKey: "agents", serviceKey: "ai.agent.list", mode: "formData" }],
-        }).then(res => {
-            setAgents(res?.data?.C_DATA?.agents || []);
-        }).catch(console.error);
-    }, []);
+        if (agentKey) loadTasks(agentKey);
+    }, [agentKey]);
 
-    // Load tasks when selected agent changes
-    useEffect(() => {
-        if (selectedAgent?.agent_key) {
-            loadTasks(selectedAgent.agent_key);
-        } else {
-            setTasks([]);
-            setFiltered([]);
-        }
-    }, [selectedAgent]);
-
-    function loadTasks(agent_key) {
+    function loadTasks(key) {
         getData({
-            keys: [{ params: agent_key, dataKey: "tasks", serviceKey: "ai.task.by.agent", mode: "formData" }],
+            keys: [{ params: key, dataKey: "tasks", serviceKey: "ai.task.by.agent", mode: "formData" }],
         }).then(res => {
             const data = res?.data?.C_DATA?.tasks || [];
             setTasks(data);
@@ -60,20 +51,14 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
         }).catch(console.error);
     }
 
-    function handleAgentSelect(e) {
-        const key = e.target.value;
-        const agent = agents.find(a => a.agent_key === key) || null;
-        if (onChangeAgent) onChangeAgent(agent);
-    }
-
     function handleSearch(e) {
         const term = e.target.value.toLowerCase();
         if (!term) { setFiltered(tasks); return; }
-        setFiltered(filterArrayByTerms(tasks, term, ["task_key", "user_prompt"]));
+        setFiltered(filterArrayByTerms(tasks, term, ["task_name", "task_key", "user_prompt"]));
     }
 
     function openAdd() {
-        setForm({ ...EMPTY_TASK, agent_key: selectedAgent?.agent_key || "" });
+        setForm({ ...EMPTY_TASK, agent_key: agentKey });
         setVq({ ...EMPTY_VQ });
         setErrors({});
         setShowForm(true);
@@ -99,8 +84,8 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
 
     function validate() {
         const errs = {};
-        if (!form.agent_key?.trim()) errs.agent_key = "Agent key is required";
-        if (!form.task_key?.trim()) errs.task_key = "Task key is required";
+        if (!form.task_name?.trim())   errs.task_name   = "Task name is required";
+        if (!form.task_key?.trim())    errs.task_key    = "Task key is required";
         if (!form.user_prompt?.trim()) errs.user_prompt = "User prompt is required";
         setErrors(errs);
         return Object.keys(errs).length === 0;
@@ -109,13 +94,12 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
     function save() {
         if (!validate()) return;
         setSaving(true);
-        const payload = { ...form, vector_query: JSON.stringify(vq) };
-        handleSave({ entity: "ai_task", formData: payload })
+        handleSave({ entity: "ai_task", formData: { ...form, agent_key: agentKey, vector_query: JSON.stringify(vq) } })
             .then(res => {
                 if (res?.data?.C_STATUS === "SUCCESS") {
                     toastEmitter(form.id === "new" ? "Task created" : "Task updated", true);
                     setShowForm(false);
-                    if (selectedAgent?.agent_key) loadTasks(selectedAgent.agent_key);
+                    loadTasks(agentKey);
                 } else {
                     toastEmitter(res?.data?.C_MESSAGE || "Save failed", true, "warning");
                 }
@@ -129,7 +113,7 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
             .then(res => {
                 if (res?.data?.C_STATUS === "SUCCESS") {
                     toastEmitter("Task deleted", true);
-                    if (selectedAgent?.agent_key) loadTasks(selectedAgent.agent_key);
+                    loadTasks(agentKey);
                 } else {
                     toastEmitter(res?.data?.C_MESSAGE || "Delete failed", true, "warning");
                 }
@@ -138,126 +122,68 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
 
     function exportJson(t) {
         const blob = new Blob([JSON.stringify(t, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
+        const url  = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = url;
+        link.href     = url;
         link.download = `${t.task_key}.json`;
         link.click();
         URL.revokeObjectURL(url);
     }
 
     return (
-        <div className="ai-tab-pane">
-            {/* Agent selector */}
-            <div className="ai-agent-selector">
-                <label>
-                    <i className="fa-solid fa-robot me-1" /> Agent
-                </label>
-                <select
-                    className="form-control form-select"
-                    value={selectedAgent?.agent_key || ""}
-                    onChange={handleAgentSelect}>
-                    <option value="">— Select an agent to view tasks —</option>
-                    {agents.map(a => (
-                        <option key={a.id} value={a.agent_key}>{a.agent_name} (key: {a.agent_key})</option>
-                    ))}
-                </select>
-                {selectedAgent && (
-                    <span className="text-muted" style={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                        <i className="fa-solid fa-plug-circle-bolt me-1" />
-                        {selectedAgent.ai_provider}
-                    </span>
-                )}
+        <>
+            {/* toolbar */}
+            <div className="ais-tasks-toolbar">
+                <span className="ais-tasks-label">
+                    <i className="fa-solid fa-list-check" aria-hidden="true" />
+                    Tasks
+                    <span className="ais-tasks-count">{tasks.length}</span>
+                </span>
+                <div className="ais-tasks-search-wrap">
+                    <input
+                        ref={searchRef}
+                        className="ais-tasks-search"
+                        placeholder="Search tasks…"
+                        onChange={handleSearch}
+                        aria-label="Search tasks"
+                    />
+                </div>
+                <button type="button" className="ais-add-btn" onClick={openAdd}>
+                    <i className="fa-solid fa-plus" aria-hidden="true" /> Add Task
+                </button>
             </div>
 
-            {/* No agent selected */}
-            {!selectedAgent && (
-                <div className="ai-empty">
-                    <i className="fa-solid fa-list-check" />
-                    Select an agent above to view and manage its tasks,
-                    or open tasks from the <strong>AI Agents</strong> tab.
+            {/* task rows */}
+            {filtered.length === 0 ? (
+                <div className="ais-tasks-empty">
+                    <i className="fa-solid fa-list-check" aria-hidden="true" />
+                    No tasks for <strong>{agentName || agentKey}</strong>. Add one to define a workflow step.
+                </div>
+            ) : (
+                <div className="ais-tasks-list">
+                    {filtered.map(t => (
+                        <div key={t.id} className="ais-task-row">
+                            <i className="fa-solid fa-list-check ais-task-icon" aria-hidden="true" />
+                            <span className="ais-task-name">{t.task_name || t.task_key}</span>
+                            <code className="ais-key-badge">{t.task_key}</code>
+                            <span className="ais-task-prompt" title={t.user_prompt}>{t.user_prompt}</span>
+                            <div className="ais-task-actions">
+                                <button type="button" className="ais-icon-btn" title="Preview JSON" onClick={() => setShowJson(t)}>
+                                    <i className="fa-solid fa-code" aria-hidden="true" />
+                                </button>
+                                <button type="button" className="ais-icon-btn" title="Edit task" onClick={() => openEdit(t)}>
+                                    <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
+                                </button>
+                                <button type="button" className="ais-icon-btn danger" title="Delete task" onClick={() => remove(t)}>
+                                    <i className="fa-regular fa-trash-can" aria-hidden="true" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
-            {/* Toolbar — only shown when agent is selected */}
-            {selectedAgent && (
-                <>
-                    <div className="ai-toolbar">
-                        <input
-                            ref={searchRef}
-                            className="form-control ai-search"
-                            placeholder="Search tasks…"
-                            onChange={handleSearch}
-                        />
-                        <button className="btn btn-primary btn-sm" onClick={openAdd}>
-                            <i className="fa-solid fa-plus me-1" /> Add Task
-                        </button>
-                    </div>
-
-                    {/* Table */}
-                    <div className="table-responsive">
-                        <table className="table s2a-table ai-table table-hover mb-0">
-                            <thead className="thead">
-                                <tr>
-                                    <th>Task Name</th>
-                                    <th>Task Key</th>
-                                    <th>User Prompt</th>
-                                    {/* <th>SQL Query</th>
-                                    <th>Vector Query</th> */}
-                                    <th style={{ width: 250 }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filtered.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5}>
-                                            <div className="ai-empty">
-                                                <i className="fa-solid fa-list-check" />
-                                                No tasks for <strong>{selectedAgent.agent_key}</strong>.
-                                                Add one to define a workflow step.
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                                {filtered.map(t => (
-                                    <tr key={t.id}>
-                                        <td><span>{t.task_name}</span></td>
-                                        <td><span>{t.task_key}</span></td>
-                                        <td>
-                                            <span className="ai-truncate" title={t.user_prompt}>
-                                                {t.user_prompt}
-                                            </span>
-                                        </td>
-                                        {/* <td>
-                                            {t.sql_query
-                                                ? <code className="ai-truncate" style={{ maxWidth: 140, fontSize: "0.75rem" }} title={t.sql_query}>{t.sql_query}</code>
-                                                : <span className="text-muted">—</span>}
-                                        </td>
-                                        <td>
-                                            {t.vector_query && t.vector_query !== "{}"
-                                                ? <span className="ai-truncate" style={{ maxWidth: 140 }} title={t.vector_query}>{t.vector_query}</span>
-                                                : <span className="text-muted">—</span>}
-                                        </td> */}
-                                        <td>
-                                            <button className="btn btn-sm ai-action-btn me-1" title="Preview JSON" onClick={() => setShowJson(t)}>
-                                                <i className="fa-solid fa-code" />
-                                            </button>
-                                            <button className="btn btn-sm ai-action-btn me-1" title="Edit task" onClick={() => openEdit(t)}>
-                                                <i className="fa-solid fa-pen" />
-                                            </button>
-                                            <button className="btn btn-sm ai-action-btn ai-action-danger" title="Delete task" onClick={() => remove(t)}>
-                                                <i className="fa-solid fa-trash" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
-            )}
-
-            {/* Add / Edit Modal */}
+            {/* ── Add / Edit Task modal ─────────────────────────────── */}
             {showForm && (
                 <div className="ai-modal-overlay" onClick={e => e.target === e.currentTarget && setShowForm(false)}>
                     <div className="ai-modal ai-modal-lg">
@@ -270,106 +196,71 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
                                 <i className="fa-solid fa-xmark" />
                             </button>
                         </div>
-
                         <div className="ai-modal-body">
-                            {/* Agent Key (read-only if coming from agent context) */}
+                            {/* Agent (read-only context) */}
                             <div className="mb-3">
-                                <label className="ai-label">
-                                    Agent Key <span className="text-danger">*</span>
-                                    <span className="ai-tooltip ms-1" title="The agent this task belongs to. Matches the agent_key consumed by N8N webhooks.">
-                                        <i className="fa-solid fa-circle-info" />
-                                    </span>
-                                </label>
-                                {selectedAgent
-                                    ? <input className="form-control" value={selectedAgent.agent_key} disabled />
-                                    : (
-                                        <select
-                                            className={`form-control form-select ${errors.agent_key ? "is-invalid" : ""}`}
-                                            name="agent_key"
-                                            value={form.agent_key}
-                                            onChange={handleInput}>
-                                            <option value="">— Select agent —</option>
-                                            {agents.map(a => (
-                                                <option key={a.id} value={a.agent_key}>{a.agent_key}</option>
-                                            ))}
-                                        </select>
-                                    )
-                                }
-                                {errors.agent_key && <div className="invalid-feedback d-block">{errors.agent_key}</div>}
+                                <label className="ai-label">Agent</label>
+                                <input
+                                    className="form-control"
+                                    value={agentName ? `${agentName} (${agentKey})` : agentKey}
+                                    disabled
+                                />
                             </div>
-
-                            {/* Task Key */}
+                            {/* Task Name */}
                             <div className="mb-3">
                                 <label className="ai-label">
                                     Task Name <span className="text-danger">*</span>
-                                    <span className="ai-tooltip ms-1" title="Unique identifier for this task within the agent. Used by N8N to select the right prompt/query (e.g. classify-intent, extract-entities).">
+                                    <span className="ai-tooltip ms-1" title="Human-readable name for this task.">
                                         <i className="fa-solid fa-circle-info" />
                                     </span>
                                 </label>
                                 <input
                                     className={`form-control ${errors.task_name ? "is-invalid" : ""}`}
-                                    name="task_name"
-                                    value={form.task_name}
-                                    onChange={handleInput}
+                                    name="task_name" value={form.task_name} onChange={handleInput}
                                     placeholder="e.g. Classify Intent"
                                 />
                                 {errors.task_name && <div className="invalid-feedback">{errors.task_name}</div>}
                             </div>
-
                             {/* Task Key */}
                             <div className="mb-3">
                                 <label className="ai-label">
                                     Task Key <span className="text-danger">*</span>
-                                    <span className="ai-tooltip ms-1" title="Unique identifier for this task within the agent. Used by N8N to select the right prompt/query (e.g. classify-intent, extract-entities).">
+                                    <span className="ai-tooltip ms-1" title="Unique identifier used by webhook integrations to select this task (e.g. classify-intent).">
                                         <i className="fa-solid fa-circle-info" />
                                     </span>
                                 </label>
                                 <input
                                     className={`form-control ${errors.task_key ? "is-invalid" : ""}`}
-                                    name="task_key"
-                                    value={form.task_key}
-                                    onChange={handleInput}
+                                    name="task_key" value={form.task_key} onChange={handleInput}
                                     placeholder="e.g. classify-intent"
                                 />
                                 {errors.task_key && <div className="invalid-feedback">{errors.task_key}</div>}
                             </div>
-
                             {/* User Prompt */}
                             <div className="mb-3">
                                 <label className="ai-label">
                                     User Prompt <span className="text-danger">*</span>
-                                    <span className="ai-tooltip ms-1" title="The prompt template appended after the system prompt. Use {{variables}} for N8N-injected values.">
+                                    <span className="ai-tooltip ms-1" title="Prompt template appended after the system prompt. Use {{variables}} for webhook-injected values.">
                                         <i className="fa-solid fa-circle-info" />
                                     </span>
                                 </label>
                                 <textarea
                                     className={`form-control ${errors.user_prompt ? "is-invalid" : ""}`}
-                                    name="user_prompt"
-                                    value={form.user_prompt}
-                                    onChange={handleInput}
+                                    name="user_prompt" value={form.user_prompt} onChange={handleInput}
                                     rows={4}
                                     placeholder="Classify the intent of: {{userMessage}}"
                                 />
                                 {errors.user_prompt && <div className="invalid-feedback">{errors.user_prompt}</div>}
                             </div>
-
                             {/* SQL Query */}
                             <div className="ai-section-divider">
                                 SQL Query
                                 <span className="ms-2 text-muted" style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>optional</span>
                             </div>
                             <div className="mb-3">
-                                <label className="ai-label">
-                                    SQL Query
-                                    <span className="ai-tooltip ms-1" title="SQL executed before the prompt to inject structured data as context. Results are serialised and appended to the prompt.">
-                                        <i className="fa-solid fa-circle-info" />
-                                    </span>
-                                </label>
                                 <textarea
                                     className="ai-sql-editor w-100"
-                                    name="sql_query"
-                                    value={form.sql_query}
-                                    onChange={handleInput}
+                                    name="sql_query" value={form.sql_query} onChange={handleInput}
                                     rows={6}
                                     placeholder={"SELECT id, name, description\nFROM products\nWHERE active = true\nLIMIT 20"}
                                     spellCheck={false}
@@ -379,7 +270,6 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
                                     Results are serialised as JSON and injected into the prompt context.
                                 </small>
                             </div>
-
                             {/* Vector Query */}
                             <div className="ai-section-divider">
                                 Vector Query
@@ -387,57 +277,22 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
                             </div>
                             <div className="ai-vector-grid mb-3">
                                 <div>
-                                    <label className="ai-label">
-                                        Collection
-                                        <span className="ai-tooltip ms-1" title="Vector store collection or index to search">
-                                            <i className="fa-solid fa-circle-info" />
-                                        </span>
-                                    </label>
-                                    <input
-                                        className="form-control"
-                                        name="collection"
-                                        value={vq.collection}
-                                        onChange={handleVqInput}
-                                        placeholder="e.g. product_docs"
-                                    />
+                                    <label className="ai-label">Collection<span className="ai-tooltip ms-1" title="Vector store collection"><i className="fa-solid fa-circle-info" /></span></label>
+                                    <input className="form-control" name="collection" value={vq.collection} onChange={handleVqInput} placeholder="e.g. product_docs" />
                                 </div>
                                 <div>
-                                    <label className="ai-label">
-                                        Search Text
-                                        <span className="ai-tooltip ms-1" title="Search text or template variable injected at runtime (e.g. {{userMessage}})">
-                                            <i className="fa-solid fa-circle-info" />
-                                        </span>
-                                    </label>
-                                    <input
-                                        className="form-control"
-                                        name="search_text"
-                                        value={vq.search_text}
-                                        onChange={handleVqInput}
-                                        placeholder="{{userMessage}}"
-                                    />
+                                    <label className="ai-label">Search Text<span className="ai-tooltip ms-1" title="Search text or template variable"><i className="fa-solid fa-circle-info" /></span></label>
+                                    <input className="form-control" name="search_text" value={vq.search_text} onChange={handleVqInput} placeholder="{{userMessage}}" />
                                 </div>
                                 <div>
-                                    <label className="ai-label">
-                                        Top K
-                                        <span className="ai-tooltip ms-1" title="Number of top results to retrieve from the vector store">
-                                            <i className="fa-solid fa-circle-info" />
-                                        </span>
-                                    </label>
-                                    <input
-                                        className="form-control"
-                                        name="top_k"
-                                        type="number"
-                                        min={1}
-                                        max={50}
-                                        value={vq.top_k}
-                                        onChange={handleVqInput}
-                                    />
+                                    <label className="ai-label">Top K<span className="ai-tooltip ms-1" title="Number of results to retrieve"><i className="fa-solid fa-circle-info" /></span></label>
+                                    <input className="form-control" name="top_k" type="number" min={1} max={50} value={vq.top_k} onChange={handleVqInput} />
                                 </div>
                             </div>
                         </div>
-
                         <div className="ai-modal-footer">
-                            <button className="btn btn-outline-secondary btn-sm" onClick={() => exportJson({ ...form, vector_query: JSON.stringify(vq) })}>
+                            <button className="btn btn-outline-secondary btn-sm"
+                                onClick={() => exportJson({ ...form, vector_query: JSON.stringify(vq) })}>
                                 <i className="fa-solid fa-download me-1" /> Export JSON
                             </button>
                             <button className="btn btn-secondary btn-sm ms-auto" onClick={() => setShowForm(false)}>Cancel</button>
@@ -451,7 +306,7 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
                 </div>
             )}
 
-            {/* JSON Preview Modal */}
+            {/* ── JSON Preview modal ────────────────────────────────── */}
             {showJson && (
                 <div className="ai-modal-overlay" onClick={e => e.target === e.currentTarget && setShowJson(null)}>
                     <div className="ai-modal ai-modal-lg">
@@ -473,7 +328,7 @@ function AiTasks({ selectedAgent, onChangeAgent }) {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }
 

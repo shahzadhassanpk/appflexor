@@ -195,7 +195,7 @@ function AiProviders() {
                             <div className="mb-3">
                                 <label className="ai-label">
                                     Provider Key <span className="text-danger">*</span>
-                                    <span className="ai-tooltip ms-1" title="Short lowercase identifier used in agent configs and N8N workflows (e.g. openai, anthropic, groq)">
+                                    <span className="ai-tooltip ms-1" title="Short lowercase identifier used in agent configs and workflows (e.g. openai, anthropic, groq)">
                                         <i className="fa-solid fa-circle-info" />
                                     </span>
                                 </label>

@@ -1,148 +1,463 @@
-/* ─── AI Services module styles ─────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   AI Services — single-page split-panel layout
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Tab nav */
-.ai-nav-tabs {
-    border-bottom: 1px solid var(--border-default);
-    margin-bottom: 0;
+/* ── Two-column layout ──────────────────────────────────────────────────── */
+.ais-layout {
+    display: grid;
+    grid-template-columns: 1fr 390px;
+    gap: 1.25rem;
+    align-items: start;
 }
-.ai-nav-tabs .nav-link {
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--text-secondary);
+.ais-left  { min-width: 0; }
+.ais-right { min-width: 0; }
+
+@media (max-width: 1100px) {
+    .ais-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Panel card ─────────────────────────────────────────────────────────── */
+.ais-panel {
+    background: var(--secondary-color, #fff);
+    border: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.ais-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
+    flex-wrap: wrap;
+}
+
+.ais-panel-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.4rem;
+    background: color-mix(in srgb, var(--link-active-color, #2563eb) 12%, transparent);
+    color: var(--link-active-color, #2563eb);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.ais-panel-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--font-color, #111827);
+    line-height: 1.25;
+}
+
+.ais-panel-desc {
+    font-size: 0.72rem;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 60%, transparent);
+    margin-top: 0.1rem;
+    line-height: 1.4;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.ais-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--link-active-color, #2563eb);
+    background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 28%, transparent);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.14s;
+}
+.ais-add-btn:hover {
+    background: color-mix(in srgb, var(--link-active-color, #2563eb) 15%, transparent);
+}
+
+.ais-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.3rem;
     border: none;
-    padding: 0.6rem 1rem;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    transition: color 0.15s, border-color 0.15s;
-}
-.ai-nav-tabs .nav-link:hover {
-    color: var(--text-primary);
-    background: var(--bg-surface-alt);
-}
-.ai-nav-tabs .nav-link.active {
-    color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
     background: transparent;
-    font-weight: 600;
+    cursor: pointer;
+    color: color-mix(in srgb, var(--font-color, #374151) 60%, transparent);
+    font-size: 0.78rem;
+    transition: background 0.12s, color 0.12s;
+    flex-shrink: 0;
+}
+.ais-icon-btn:hover {
+    background: color-mix(in srgb, var(--font-color, #000) 8%, transparent);
+    color: var(--font-color, #111827);
+}
+.ais-icon-btn.danger:hover {
+    background: color-mix(in srgb, #dc2626 10%, transparent);
+    color: #dc2626;
 }
 
-/* Agent badge on Tasks tab when an agent is selected */
-.ai-agent-badge {
-    font-size: 0.6rem;
-    font-weight: 600;
-    background: var(--primary-color);
-    color: #fff;
+/* ── Badges & tags ──────────────────────────────────────────────────────── */
+.ais-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: color-mix(in srgb, var(--font-color, #000) 8%, transparent);
+    color: color-mix(in srgb, var(--font-color, #374151) 80%, transparent);
+    flex-shrink: 0;
+}
+
+.ais-key-badge {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    background: color-mix(in srgb, var(--font-color, #000) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+    border-radius: 0.3rem;
+    color: var(--link-active-color, #4f46e5);
+    font-family: "SFMono-Regular", Consolas, monospace;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ais-tag {
+    display: inline-flex;
+    align-items: center;
     padding: 0.1rem 0.45rem;
     border-radius: 999px;
-    vertical-align: middle;
+    font-size: 0.67rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-/* Tab pane */
-.ai-tab-content { padding: 1.25rem 0 0; }
-.ai-tab-pane { display: block; }
+/* ── Entity icons (providers/categories right panel) ────────────────────── */
+.ais-entity-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
 
-/* Toolbar (search + add button row) */
-.ai-toolbar {
+.ais-cat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+}
+
+/* ── Right-panel list rows ──────────────────────────────────────────────── */
+.ais-list { padding: 0.2rem 0; }
+
+.ais-list-item {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.05)) 100%, transparent);
+    transition: background 0.1s;
 }
-.ai-search {
-    max-width: 280px;
-    font-size: 0.8125rem;
-}
+.ais-list-item:last-child { border-bottom: none; }
+.ais-list-item:hover { background: color-mix(in srgb, var(--font-color, #000) 2%, transparent); }
 
-/* Table */
-.ai-table thead th {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    background: var(--bg-surface-alt);
-    border-bottom: 1px solid var(--border-default);
-    padding: 0.625rem 0.75rem;
-    white-space: nowrap;
-}
-.ai-table tbody td {
-    font-size: 0.8125rem;
-    color: var(--text-primary);
-    padding: 0.625rem 0.75rem;
-    vertical-align: middle;
-    border-bottom: 1px solid var(--border-subtle);
-}
-.ai-table tbody tr:hover { background: var(--bg-surface-alt); }
-
-/* Code badges */
-.ai-code-badge {
-    font-size: 0.75rem;
-    padding: 0.15rem 0.45rem;
-    background: var(--bg-surface-alt);
-    border: 1px solid var(--border-default);
-    border-radius: 0.3rem;
-    color: var(--primary-color);
-    font-family: "SFMono-Regular", Consolas, monospace;
-}
-
-/* Masked key */
-.ai-masked-key {
-    font-size: 0.8125rem;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-}
-
-/* Truncated text cell */
-.ai-truncate {
-    max-width: 220px;
-    white-space: nowrap;
+.ais-list-name {
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: var(--font-color, #374151);
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: inline-block;
-    vertical-align: bottom;
-}
-
-/* Action buttons */
-.ai-action-btn {
-    padding: 0.2rem 0.45rem;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    background: var(--bg-surface-alt);
-    border: 1px solid var(--border-default);
-    border-radius: 0.35rem;
-    line-height: 1;
-    transition: background 0.1s, color 0.1s;
-}
-.ai-action-btn:hover { color: var(--primary-color); background: var(--bg-surface); }
-.ai-action-danger:hover { color: var(--danger, #dc3545) !important; }
-
-/* Agent selector banner (inside Tasks tab) */
-.ai-agent-selector {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    background: var(--bg-surface-alt);
-    border: 1px solid var(--border-default);
-    border-radius: 0.5rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-}
-.ai-agent-selector label {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin: 0;
     white-space: nowrap;
 }
-.ai-agent-selector select {
-    font-size: 0.8125rem;
-    flex: 1;
-    min-width: 200px;
+
+.ais-list-actions {
+    display: flex;
+    gap: 0.1rem;
+    opacity: 0;
+    transition: opacity 0.13s;
+}
+.ais-list-item:hover .ais-list-actions { opacity: 1; }
+
+.ais-list-empty {
+    padding: 1rem;
+    font-size: 0.78rem;
+    text-align: center;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 45%, transparent);
+    font-style: italic;
 }
 
-/* ─── Modal ──────────────────────────────────────────────────────────────────── */
+/* ── Search bar (panel header) ──────────────────────────────────────────── */
+.ais-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 150px;
+    max-width: 220px;
+    flex: 1;
+}
+.ais-search-icon {
+    position: absolute;
+    left: 0.6rem;
+    font-size: 0.72rem;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent);
+    pointer-events: none;
+}
+.ais-search-input {
+    width: 100%;
+    padding: 0.35rem 1.7rem 0.35rem 1.85rem;
+    border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+    border-radius: 0.4rem;
+    font-size: 0.78rem;
+    background: color-mix(in srgb, var(--font-color, #000) 3%, transparent);
+    color: var(--font-color, #374151);
+    outline: none;
+    transition: border-color 0.14s, box-shadow 0.14s;
+}
+.ais-search-input:focus {
+    border-color: var(--link-active-color, #2563eb);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--link-active-color, #2563eb) 15%, transparent);
+}
+.ais-search-clear {
+    position: absolute;
+    right: 0.4rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.72rem;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 55%, transparent);
+    padding: 0.1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Agents accordion (left panel)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ais-accordion { padding: 0.25rem 0; }
+
+.ais-agent-group {
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.06)) 100%, transparent);
+}
+.ais-agent-group:last-child { border-bottom: none; }
+
+.ais-agent-header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.75rem;
+    transition: background 0.11s;
+}
+.ais-agent-header:hover {
+    background: color-mix(in srgb, var(--font-color, #000) 3%, transparent);
+}
+
+.ais-chevron {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    width: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent);
+    font-size: 0.65rem;
+    flex-shrink: 0;
+}
+
+.ais-agent-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.ais-agent-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--font-color, #111827);
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.ais-agent-actions {
+    display: flex;
+    gap: 0.1rem;
+    opacity: 0;
+    transition: opacity 0.13s;
+    flex-shrink: 0;
+}
+.ais-agent-header:hover .ais-agent-actions { opacity: 1; }
+
+/* ── Tasks panel (inside accordion row) ─────────────────────────────────── */
+.ais-tasks-panel {
+    padding: 0.75rem 1rem 0.85rem 2.5rem;
+    background: color-mix(in srgb, var(--font-color, #000) 2%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.06)) 100%, transparent);
+}
+
+.ais-tasks-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.ais-tasks-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+}
+
+.ais-tasks-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: color-mix(in srgb, var(--font-color, #000) 10%, transparent);
+    color: color-mix(in srgb, var(--font-color, #374151) 80%, transparent);
+}
+
+.ais-tasks-search-wrap { flex: 1; min-width: 0; }
+.ais-tasks-search {
+    width: 100%;
+    max-width: 200px;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+    border-radius: 0.35rem;
+    font-size: 0.75rem;
+    background: var(--secondary-color, #fff);
+    color: var(--font-color, #374151);
+    outline: none;
+}
+.ais-tasks-search:focus {
+    border-color: var(--link-active-color, #2563eb);
+}
+
+.ais-tasks-empty {
+    font-size: 0.78rem;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 55%, transparent);
+    padding: 0.4rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.ais-tasks-empty i { opacity: 0.4; }
+
+.ais-tasks-list { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.ais-task-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: 0.4rem;
+    background: var(--secondary-color, #fff);
+    border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
+    transition: background 0.1s;
+}
+.ais-task-row:hover {
+    background: color-mix(in srgb, var(--link-active-color, #4f46e5) 4%, var(--secondary-color, #fff));
+}
+
+.ais-task-icon {
+    color: color-mix(in srgb, var(--link-active-color, #4f46e5) 55%, transparent);
+    font-size: 0.72rem;
+    flex-shrink: 0;
+}
+
+.ais-task-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--font-color, #374151);
+    flex-shrink: 0;
+}
+
+.ais-task-prompt {
+    font-size: 0.75rem;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 60%, transparent);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.ais-task-actions {
+    display: flex;
+    gap: 0.1rem;
+    opacity: 0;
+    transition: opacity 0.13s;
+    flex-shrink: 0;
+}
+.ais-task-row:hover .ais-task-actions { opacity: 1; }
+
+/* ── Empty states ───────────────────────────────────────────────────────── */
+.ais-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 3rem 1rem;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 45%, transparent);
+    font-size: 0.85rem;
+}
+.ais-empty-state i { font-size: 1.75rem; }
+.ais-empty-state p { margin: 0; }
+
+.ais-tree-empty {
+    padding: 0.75rem 1rem;
+    font-size: 0.78rem;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 45%, transparent);
+    text-align: center;
+    font-style: italic;
+}
+
+/* ── Helpers ────────────────────────────────────────────────────────────── */
+.flex-1   { flex: 1; }
+.min-w-0  { min-width: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Modals — shared across AiServices, AiAgents, AiTasks
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .ai-modal-overlay {
     position: fixed;
     inset: 0;
@@ -155,7 +470,7 @@
     overflow-y: auto;
 }
 .ai-modal {
-    background: var(--bg-surface);
+    background: var(--bg-surface, var(--secondary-color, #fff));
     border-radius: 0.75rem;
     width: 100%;
     max-width: 560px;
@@ -164,61 +479,65 @@
     flex-direction: column;
 }
 .ai-modal-lg { max-width: 720px; }
+
 .ai-modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.25rem 0.75rem;
-    border-bottom: 1px solid var(--border-default);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
 }
 .ai-modal-header h5 {
     font-size: 0.9375rem;
     font-weight: 700;
     margin: 0;
-    color: var(--text-primary);
+    color: var(--font-color, #111827);
 }
 .ai-modal-close {
     background: none;
     border: none;
-    color: var(--text-muted);
+    color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
     font-size: 1rem;
     cursor: pointer;
     padding: 0.25rem;
     line-height: 1;
 }
-.ai-modal-close:hover { color: var(--text-primary); }
-.ai-modal-body { padding: 1.25rem; overflow-y: auto; max-height: 70vh; }
+.ai-modal-close:hover { color: var(--font-color, #111827); }
+
+.ai-modal-body {
+    padding: 1.25rem;
+    overflow-y: auto;
+    max-height: 70vh;
+}
 .ai-modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
     padding: 0.75rem 1.25rem 1rem;
-    border-top: 1px solid var(--border-default);
+    border-top: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
 }
 
-/* Form labels */
+/* ── Form elements ──────────────────────────────────────────────────────── */
 .ai-label {
     display: block;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: color-mix(in srgb, var(--font-color, #374151) 80%, transparent);
     margin-bottom: 0.35rem;
 }
-.ai-tooltip { cursor: help; color: var(--text-muted); }
+.ai-tooltip { cursor: help; color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent); }
 
-/* Section divider inside modal */
 .ai-section-divider {
     font-size: 0.6875rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border-subtle);
+    color: color-mix(in srgb, var(--font-color, #374151) 50%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
     padding-bottom: 0.35rem;
     margin: 1.25rem 0 0.75rem;
 }
 
-/* SQL editor textarea */
 .ai-sql-editor {
     font-family: "SFMono-Regular", Consolas, "Courier New", monospace;
     font-size: 0.8125rem;
@@ -226,7 +545,7 @@
     resize: vertical;
     background: #1e1e2e;
     color: #cdd6f4;
-    border: 1px solid var(--border-default);
+    border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
     border-radius: 0.375rem;
     padding: 0.75rem;
     line-height: 1.6;
@@ -234,11 +553,10 @@
 }
 .ai-sql-editor:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+    border-color: var(--link-active-color, #4f46e5);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--link-active-color, #4f46e5) 15%, transparent);
 }
 
-/* Vector query fields grid */
 .ai-vector-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 80px;
@@ -246,7 +564,6 @@
 }
 @media (max-width: 480px) { .ai-vector-grid { grid-template-columns: 1fr; } }
 
-/* JSON preview */
 .ai-json-preview {
     font-family: "SFMono-Regular", Consolas, monospace;
     font-size: 0.8rem;
@@ -259,12 +576,3 @@
     white-space: pre;
     line-height: 1.5;
 }
-
-/* Empty state */
-.ai-empty {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--text-muted);
-    font-size: 0.875rem;
-}
-.ai-empty i { font-size: 2rem; display: block; margin-bottom: 0.75rem; opacity: 0.4; }

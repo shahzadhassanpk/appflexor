@@ -1,0 +1,63 @@
+🔎 Redesign Goals
+Replace tabs (AI Providers, AI Agents, AI Tasks) with sections on a single page.
+
+Use an accordion hierarchy (like Business Areas → Business Processes) to show Agent → Task relationships.
+
+Add a new AI Categories section to tag Agents, backed by ai_agent_category entity and ai.agent.categories service key.
+
+🔎 Proposed Layout Structure
+AI Providers
+
+Section at the top listing configured providers (OpenAI, Anthropic, Azure, etc.).
+
+Each provider shows count of Agents linked.
+
+“+ Add Provider” button remains here.
+
+AI Categories
+
+New section for grouping Agents by category (Marketing, Customer Support, Finance, etc.).
+
+Uses ai_agent_category entity and ai.agent.categories service key.
+
+“+ Add Category” button for admins to create new logical groups.
+
+AI Agents
+
+Accordion list: each Agent expands inline to show its Tasks.
+
+Agent row shows: Name, Key, Provider, Tags (Category, Internal/External).
+
+Actions: edit, delete, view code.
+
+Expanding reveals AI Tasks table (Task name, prompt, actions).
+
+AI Tasks
+
+Nested inside Agent accordion.
+
+Each Task row shows: Task name, system prompt, linked provider.
+
+Actions: edit, delete, run preview.
+
+“+ Add Task” button inside Agent accordion.
+
+🔎 Benefits of This Approach
+Single page clarity: No tab switching, everything visible in one flow.
+
+Accordion hierarchy: Mirrors your ProcessConfiguration UX, so users already familiar with Business Areas → Processes will adapt easily.
+
+Scalability: Providers and Categories organize Agents; Agents expand to show Tasks without clutter.
+
+Consistency: Aligns with existing framework patterns (ProcessConfiguration.jsx).
+
+🔎 Implementation Notes
+File to update: artifacts\appflexor\src\s2a-framework\modules\ai-services\AiServices.jsx
+
+Reference structure: artifacts\appflexor\src\s2a-framework\modules\process-configuration\ProcessConfiguration.jsx
+
+Add new service key: ai.agent.categories for listing categories.
+
+Entity: ai_agent_category for CRUD operations.
+
+Accordion component can reuse the same pattern from ProcessConfiguration (expand/collapse rows with nested lists).
