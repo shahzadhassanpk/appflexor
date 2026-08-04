@@ -580,9 +580,9 @@ function ProcessConfiguration() {
                                                     const pc = getPCForProcess(proc, processCategories);
                                                     const tp = getTPForProcess(proc, tenantProcs);
                                                     const url = "/file/service/process/"
-                                                        + encodeURIComponent(tp.id)
+                                                        + encodeURIComponent(tp?.id)
                                                         + "/"
-                                                        + encodeURIComponent(tp.process_file);
+                                                        + encodeURIComponent(tp?.process_file);
                                                     const gbIdx = gb ? governingBodies.indexOf(gb) : -1;
                                                     const gbColor = gbIdx >= 0 ? getColor(gbIdx + 2) : "#6b7280";
                                                     const pcColor = pc ? getColor(processCategories.indexOf(pc) + 2) : "#6b7280";

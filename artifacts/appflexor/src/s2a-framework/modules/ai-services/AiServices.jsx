@@ -217,7 +217,7 @@ function AiServices() {
                             <div className="ais-panel-header">
                                 <div className="d-flex align-items-start gap-2 flex-1">
                                     <span className="ais-panel-icon">
-                                        <i className="fa-solid fa-plug-circle-bolt" aria-hidden="true" />
+                                        <i className="fa-solid fa-brain" aria-hidden="true" />
                                     </span>
                                     <div>
                                         <div className="ais-panel-title">AI Providers</div>
@@ -260,7 +260,7 @@ function AiServices() {
                             <div className="ais-panel-header">
                                 <div className="d-flex align-items-start gap-2 flex-1">
                                     <span className="ais-panel-icon">
-                                        <i className="fa-solid fa-brain" aria-hidden="true" />
+                                        <i className="fa-solid fa-tag" aria-hidden="true" />
                                     </span>
                                     <div>
                                         <div className="ais-panel-title">AI Categories</div>
@@ -278,7 +278,7 @@ function AiServices() {
                                 {categories.map((c, idx) => (
                                     <div key={c.id} className="ais-list-item">
                                         <span className="ais-cat-icon" style={{ color: getColor(idx + 2) }}>
-                                            <i className="fa-solid fa-brain" aria-hidden="true" />
+                                            <i className="fa-solid fa-tag" aria-hidden="true" />
                                         </span>
                                         <span className="ais-list-name">{c.title}</span>
                                         <span className="ais-count-badge">{agentCountForCategory(c)}</span>
@@ -306,7 +306,7 @@ function AiServices() {
                         <div className="ai-modal">
                             <div className="ai-modal-header">
                                 <h5>
-                                    <i className="fa-solid fa-plug-circle-bolt me-2" />
+                                    <i className="fa-solid fa-brain me-2" />
                                     {selectedProv.id === "new" ? "Add AI Provider" : "Edit AI Provider"}
                                 </h5>
                                 <button className="ai-modal-close" onClick={() => setProvModal(false)}>
