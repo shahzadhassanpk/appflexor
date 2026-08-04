@@ -454,6 +454,39 @@
 .flex-1   { flex: 1; }
 .min-w-0  { min-width: 0; }
 
+/* ── Provider form — API URL hint ───────────────────────────────────────── */
+.ais-url-hint {
+    margin-top: 0.35rem;
+    font-size: 0.7rem;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent);
+    font-family: "SFMono-Regular", Consolas, monospace;
+    word-break: break-all;
+}
+
+/* ── Provider form — Model row (input + fetch button) ───────────────────── */
+.ais-model-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+.ais-model-row .flex-1 { flex: 1; min-width: 0; }
+
+.ais-fetch-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+}
+
+.ais-model-hint {
+    font-size: 0.72rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+    line-height: 1.4;
+}
+.ais-model-hint--warn { color: #d97706; }
+.ais-model-hint--ok   { color: #16a34a; }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Modals — shared across AiServices, AiAgents, AiTasks
    ═══════════════════════════════════════════════════════════════════════════ */

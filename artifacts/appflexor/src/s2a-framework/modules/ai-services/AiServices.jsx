@@ -16,23 +16,40 @@ const PALETTE = [
 ];
 const getColor = i => PALETTE[i % PALETTE.length];
 
+/* ── pre-defined providers ──────────────────────────────────────────────── */
+const PROVIDERS = [
+    { name: "OpenAI",                   key: "openai",      api_url: "https://api.openai.com/v1/chat/completions" },
+    { name: "Anthropic",                key: "anthropic",   api_url: "https://api.anthropic.com/v1/messages" },
+    { name: "Google AI Studio (Gemini)",key: "googleai",    api_url: "https://generativelanguage.googleapis.com/v1beta/models" },
+    { name: "Groq",                     key: "groq",        api_url: "https://api.groq.com/openai/v1/chat/completions" },
+    { name: "OpenRouter",               key: "openrouter",  api_url: "https://openrouter.ai/api/v1/chat/completions" },
+    { name: "Mistral",                  key: "mistral",     api_url: "https://api.mistral.ai/v1/chat/completions" },
+    { name: "Cerebras",                 key: "cerebras",    api_url: "https://inference.cerebras.ai/v1/chat/completions" },
+    { name: "Together AI",              key: "togetherai",  api_url: "https://api.together.xyz/v1/chat/completions" },
+    { name: "Fireworks AI",             key: "fireworksai", api_url: "https://api.fireworks.ai/inference/v1/chat/completions" },
+    { name: "Hugging Face",             key: "huggingface", api_url: "https://api-inference.huggingface.co/models" },
+    { name: "Ollama",                   key: "ollama",      api_url: "http://localhost:11434/api/chat" },
+];
+
 /* ── provider → icon mapping ────────────────────────────────────────────── */
 const PROVIDER_ICONS = {
-    openai:    "fa-brain",
-    anthropic: "fa-robot",
-    azure:     "fa-cloud",
-    groq:      "fa-bolt",
-    mistral:   "fa-wind",
-    gemini:    "fa-circle-nodes",
-    google:    "fa-circle-nodes",
-    cohere:    "fa-network-wired",
-    ollama:    "fa-server",
+    openai:      "fa-brain",
+    anthropic:   "fa-robot",
+    googleai:    "fa-circle-nodes",
+    groq:        "fa-bolt",
+    openrouter:  "fa-route",
+    mistral:     "fa-wind",
+    cerebras:    "fa-microchip",
+    togetherai:  "fa-layer-group",
+    fireworksai: "fa-fire",
+    huggingface: "fa-cube",
+    ollama:      "fa-server",
 };
 const providerIcon = (key = "") =>
     PROVIDER_ICONS[(key || "").toLowerCase()] || "fa-plug-circle-bolt";
 
 /* ── initial form states ────────────────────────────────────────────────── */
-const PROV_INIT = { id: "new", provider_name: "", provider_key: "", api_key: "" };
+const PROV_INIT = { id: "new", provider_name: "", provider_key: "", api_key: "", api_url: "", model: "" };
 const CAT_INIT  = { id: "new", title: "", key: "" };
 
 /* ════════════════════════════════════════════════════════════════════════ */
@@ -44,11 +61,14 @@ function AiServices() {
     const [schemaReady, setSchemaReady] = useState(false);
 
     /* ── Provider CRUD state ──────────────────────────────────────────── */
-    const [provModal,    setProvModal]    = useState(false);
-    const [selectedProv, setSelectedProv] = useState(PROV_INIT);
-    const [provErrors,   setProvErrors]   = useState({});
-    const [provSaving,   setProvSaving]   = useState(false);
-    const [showApiKey,   setShowApiKey]   = useState(false);
+    const [provModal,     setProvModal]     = useState(false);
+    const [selectedProv,  setSelectedProv]  = useState(PROV_INIT);
+    const [provErrors,    setProvErrors]    = useState({});
+    const [provSaving,    setProvSaving]    = useState(false);
+    const [showApiKey,    setShowApiKey]    = useState(false);
+    const [modelOptions,  setModelOptions]  = useState([]);
+    const [modelFetching, setModelFetching] = useState(false);
+    const [modelError,    setModelError]    = useState("");
 
     /* ── Category CRUD state ──────────────────────────────────────────── */
     const [catModal,    setCatModal]    = useState(false);
@@ -96,14 +116,143 @@ function AiServices() {
     const agentCountForCategory = c => agents.filter(a => a.category    === c.id).length;
 
     /* ── Provider CRUD ──────────────────────────────────────────────────── */
-    function openAddProv()    { setSelectedProv({ ...PROV_INIT }); setProvErrors({}); setShowApiKey(false); setProvModal(true); }
-    function openEditProv(p)  { setSelectedProv({ ...p });         setProvErrors({}); setShowApiKey(false); setProvModal(true); }
+    function resetModelState() { setModelOptions([]); setModelError(""); setModelFetching(false); }
+
+    function openAddProv() {
+        setSelectedProv({ ...PROV_INIT });
+        setProvErrors({});
+        setShowApiKey(false);
+        resetModelState();
+        setProvModal(true);
+    }
+    function openEditProv(p) {
+        const provDef = PROVIDERS.find(pd => pd.key === p.provider_key);
+        setSelectedProv({ ...p, api_url: p.api_url || provDef?.api_url || "" });
+        setProvErrors({});
+        setShowApiKey(false);
+        resetModelState();
+        setProvModal(true);
+    }
+
+    function handleProviderSelect(e) {
+        const provDef = PROVIDERS.find(pd => pd.key === e.target.value);
+        setSelectedProv(prev => ({
+            ...prev,
+            provider_name: provDef?.name    || "",
+            provider_key:  provDef?.key     || "",
+            api_url:       provDef?.api_url || "",
+            model:         "",
+        }));
+        resetModelState();
+        if (provErrors.provider_key) setProvErrors(prev => ({ ...prev, provider_key: "" }));
+    }
+
+    async function fetchModels(providerKey, apiKey) {
+        if (!providerKey || !apiKey) return;
+        setModelFetching(true);
+        setModelError("");
+        setModelOptions([]);
+        let models = [];
+        let fallbackMsg = "";
+        try {
+            const bearer = { Authorization: `Bearer ${apiKey}` };
+            switch (providerKey) {
+                case "openai": {
+                    const r = await fetch("https://api.openai.com/v1/models", { headers: bearer });
+                    const d = await r.json();
+                    models = (d.data || []).map(m => m.id)
+                        .filter(id => /^(gpt|o1|o3|o4)/.test(id))
+                        .sort();
+                    break;
+                }
+                case "groq": {
+                    const r = await fetch("https://api.groq.com/openai/v1/models", { headers: bearer });
+                    const d = await r.json();
+                    models = (d.data || []).map(m => m.id).sort();
+                    break;
+                }
+                case "openrouter": {
+                    const r = await fetch("https://openrouter.ai/api/v1/models", { headers: bearer });
+                    const d = await r.json();
+                    models = (d.data || []).map(m => m.id).sort();
+                    break;
+                }
+                case "mistral": {
+                    const r = await fetch("https://api.mistral.ai/v1/models", { headers: bearer });
+                    const d = await r.json();
+                    models = (d.data || []).map(m => m.id).sort();
+                    break;
+                }
+                case "cerebras": {
+                    const r = await fetch("https://inference.cerebras.ai/v1/models", { headers: bearer });
+                    const d = await r.json();
+                    models = (d.data || []).map(m => m.id).sort();
+                    break;
+                }
+                case "togetherai": {
+                    const r = await fetch("https://api.together.xyz/v1/models", { headers: bearer });
+                    const d = await r.json();
+                    models = (Array.isArray(d) ? d : (d.data || []))
+                        .map(m => m.id || m.name).sort();
+                    break;
+                }
+                case "fireworksai": {
+                    const r = await fetch("https://api.fireworks.ai/inference/v1/models", { headers: bearer });
+                    const d = await r.json();
+                    models = (d.data || []).map(m => m.id).sort();
+                    break;
+                }
+                case "googleai": {
+                    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                    const d = await r.json();
+                    models = (d.models || [])
+                        .map(m => m.name.replace("models/", ""))
+                        .filter(n => n.toLowerCase().includes("gemini"))
+                        .sort();
+                    break;
+                }
+                case "anthropic": {
+                    models = [
+                        "claude-opus-4-5",
+                        "claude-sonnet-4-5",
+                        "claude-3-5-sonnet-20241022",
+                        "claude-3-5-haiku-20241022",
+                        "claude-3-opus-20240229",
+                        "claude-3-sonnet-20240229",
+                        "claude-3-haiku-20240307",
+                    ];
+                    break;
+                }
+                case "ollama": {
+                    const r = await fetch("http://localhost:11434/api/tags");
+                    const d = await r.json();
+                    models = (d.models || []).map(m => m.name).sort();
+                    break;
+                }
+                case "huggingface": {
+                    fallbackMsg = "Enter the model ID manually (e.g. mistralai/Mistral-7B-v0.1).";
+                    break;
+                }
+                default:
+                    fallbackMsg = "Model list not available for this provider. Enter the model name manually.";
+            }
+            if (models.length > 0) {
+                setModelOptions(models);
+            } else if (!fallbackMsg) {
+                fallbackMsg = "No models returned. Check your API key or enter the model name manually.";
+            }
+        } catch {
+            fallbackMsg = "Could not fetch models — check your API key and try again, or enter the model name manually.";
+        } finally {
+            if (fallbackMsg) setModelError(fallbackMsg);
+            setModelFetching(false);
+        }
+    }
 
     function validateProv() {
         const errs = {};
-        if (!selectedProv.provider_name?.trim()) errs.provider_name = "Provider name is required";
-        if (!selectedProv.provider_key?.trim())  errs.provider_key  = "Provider key is required";
-        if (!selectedProv.api_key?.trim())       errs.api_key       = "API key is required";
+        if (!selectedProv.provider_key?.trim()) errs.provider_key = "Please select a provider";
+        if (!selectedProv.api_key?.trim())      errs.api_key      = "API key is required";
         setProvErrors(errs);
         return Object.keys(errs).length === 0;
     }
@@ -314,39 +463,30 @@ function AiServices() {
                                 </button>
                             </div>
                             <div className="ai-modal-body">
+                                {/* Provider select */}
                                 <div className="mb-3">
                                     <label className="ai-label">
-                                        Provider Name <span className="text-danger">*</span>
-                                        <span className="ai-tooltip ms-1" title="Human-readable name (e.g. OpenAI, Anthropic, Groq)">
-                                            <i className="fa-solid fa-circle-info" />
-                                        </span>
+                                        Provider <span className="text-danger">*</span>
                                     </label>
-                                    <input
-                                        className={`form-control ${provErrors.provider_name ? "is-invalid" : ""}`}
-                                        name="provider_name"
-                                        value={selectedProv.provider_name}
-                                        onChange={e => setSelectedProv(p => ({ ...p, provider_name: e.target.value }))}
-                                        placeholder="e.g. OpenAI"
-                                    />
-                                    {provErrors.provider_name && <div className="invalid-feedback">{provErrors.provider_name}</div>}
-                                </div>
-                                <div className="mb-3">
-                                    <label className="ai-label">
-                                        Provider Key <span className="text-danger">*</span>
-                                        <span className="ai-tooltip ms-1" title="Lowercase identifier used in agent configs and workflows (e.g. openai, anthropic)">
-                                            <i className="fa-solid fa-circle-info" />
-                                        </span>
-                                    </label>
-                                    <input
-                                        className={`form-control ${provErrors.provider_key ? "is-invalid" : ""}`}
-                                        name="provider_key"
+                                    <select
+                                        className={`form-control form-select ${provErrors.provider_key ? "is-invalid" : ""}`}
                                         value={selectedProv.provider_key}
-                                        onChange={e => setSelectedProv(p => ({ ...p, provider_key: e.target.value }))}
-                                        placeholder="e.g. openai"
-                                    />
+                                        onChange={handleProviderSelect}>
+                                        <option value="">— Select a provider —</option>
+                                        {PROVIDERS.map(p => (
+                                            <option key={p.key} value={p.key}>{p.name}</option>
+                                        ))}
+                                    </select>
                                     {provErrors.provider_key && <div className="invalid-feedback">{provErrors.provider_key}</div>}
+                                    {selectedProv.api_url && (
+                                        <div className="ais-url-hint">
+                                            <i className="fa-solid fa-link me-1" aria-hidden="true" />
+                                            {selectedProv.api_url}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="mb-1">
+                                {/* API Key */}
+                                <div className="mb-3">
                                     <label className="ai-label">
                                         API Key <span className="text-danger">*</span>
                                         <span className="ai-tooltip ms-1" title="Stored server-side, never re-displayed in full.">
@@ -362,16 +502,62 @@ function AiServices() {
                                             onChange={e => setSelectedProv(p => ({ ...p, api_key: e.target.value }))}
                                             placeholder="sk-…"
                                             autoComplete="new-password"
+                                            disabled={!selectedProv.provider_key}
                                         />
                                         <button
                                             className="btn btn-outline-secondary"
                                             type="button"
                                             title={showApiKey ? "Hide" : "Show"}
-                                            onClick={() => setShowApiKey(s => !s)}>
+                                            onClick={() => setShowApiKey(s => !s)}
+                                            disabled={!selectedProv.provider_key}>
                                             <i className={`fa-solid ${showApiKey ? "fa-eye-slash" : "fa-eye"}`} />
                                         </button>
                                         {provErrors.api_key && <div className="invalid-feedback">{provErrors.api_key}</div>}
                                     </div>
+                                </div>
+                                {/* AI Model */}
+                                <div className="mb-1">
+                                    <label className="ai-label">
+                                        AI Model
+                                        <span className="ai-tooltip ms-1" title="The model used by this provider. Fetch available models from the API or enter a name manually.">
+                                            <i className="fa-solid fa-circle-info" />
+                                        </span>
+                                    </label>
+                                    <div className="ais-model-row">
+                                        <div className="flex-1">
+                                            <input
+                                                list="ais-model-datalist"
+                                                className="form-control"
+                                                name="model"
+                                                value={selectedProv.model || ""}
+                                                onChange={e => setSelectedProv(p => ({ ...p, model: e.target.value }))}
+                                                placeholder={selectedProv.provider_key ? "Select or type a model name…" : "Select a provider first"}
+                                                disabled={!selectedProv.provider_key}
+                                            />
+                                            <datalist id="ais-model-datalist">
+                                                {modelOptions.map(m => <option key={m} value={m} />)}
+                                            </datalist>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-secondary btn-sm ais-fetch-btn"
+                                            onClick={() => fetchModels(selectedProv.provider_key, selectedProv.api_key)}
+                                            disabled={modelFetching || !selectedProv.provider_key || !selectedProv.api_key}>
+                                            {modelFetching
+                                                ? <><i className="fa-solid fa-spinner fa-spin me-1" />Fetching…</>
+                                                : <><i className="fa-solid fa-rotate me-1" />Fetch Models</>}
+                                        </button>
+                                    </div>
+                                    {modelError && (
+                                        <div className="ais-model-hint ais-model-hint--warn mt-1">
+                                            <i className="fa-solid fa-triangle-exclamation me-1" />{modelError}
+                                        </div>
+                                    )}
+                                    {modelOptions.length > 0 && !modelError && (
+                                        <div className="ais-model-hint ais-model-hint--ok mt-1">
+                                            <i className="fa-solid fa-circle-check me-1" />{modelOptions.length} models loaded
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="ai-modal-footer">
