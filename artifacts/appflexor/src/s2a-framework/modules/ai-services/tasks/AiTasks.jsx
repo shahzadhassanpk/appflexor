@@ -25,7 +25,7 @@ function parseVQ(raw) {
      agentKey  – string (required)
      agentName – string (optional, for display)
    ════════════════════════════════════════════════════════════════════════ */
-function AiTasks({ agentKey, agentName }) {
+function AiTasks({ agentKey, agentName, onTaskCountChanged }) {
     const [tasks,    setTasks]    = useState([]);
     const [filtered, setFiltered] = useState([]);
     const [form,     setForm]     = useState(EMPTY_TASK);
@@ -48,6 +48,7 @@ function AiTasks({ agentKey, agentName }) {
             const data = res?.data?.C_DATA?.tasks || [];
             setTasks(data);
             setFiltered(data);
+            if (onTaskCountChanged) onTaskCountChanged(data.length);
         }).catch(console.error);
     }
 
@@ -185,7 +186,7 @@ function AiTasks({ agentKey, agentName }) {
 
             {/* ── Add / Edit Task modal ─────────────────────────────── */}
             {showForm && (
-                <div className="ai-modal-overlay" onClick={e => e.target === e.currentTarget && setShowForm(false)}>
+                <div className="ai-modal-overlay">
                     <div className="ai-modal ai-modal-lg">
                         <div className="ai-modal-header">
                             <h5>

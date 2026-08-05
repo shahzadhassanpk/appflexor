@@ -47,7 +47,7 @@ const PROVIDER_ICONS = {
     ollama: "fa-server",
 };
 const providerIcon = (key = "") =>
-    PROVIDER_ICONS[(key || "").toLowerCase()] || "fa-plug-circle-bolt";
+    PROVIDER_ICONS[(key || "").toLowerCase()] || "fa-brain";
 
 /* ── initial form states ────────────────────────────────────────────────── */
 const PROV_INIT = { id: "new", provider_name: "", provider_key: "", api_key: "", api_url: "", model: "" };
@@ -117,7 +117,7 @@ function AiServices() {
     /* ── counts (client-side) ───────────────────────────────────────────── */
     const agentCountForProvider = p => agents.filter(a => a.ai_provider === p.provider_key).length;
     const agentCountForCategory = c => agents.filter(a => a.category === c.id).length;
-
+    
     /* ── Provider CRUD ──────────────────────────────────────────────────── */
     function resetModelState() { setModelOptions([]); setModelError(""); setModelFetching(false); }
 

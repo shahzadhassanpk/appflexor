@@ -1,14 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { API_URL } from "../../../Config";
-import { handleSave, handleDelete } from "../../../components/CrudApiCall";
+import { getData, handleSave, handleDelete } from "../../../components/CrudApiCall";
 import { toastEmitter } from "../../../components/Toastify/Toastify";
 import AiTasks from "../tasks/AiTasks";
 
 /* ── colour palette ─────────────────────────────────────────────────────── */
 const PALETTE = [
-    "#4f46e5","#16a34a","#9333ea","#ea580c",
-    "#0891b2","#d97706","#dc2626","#7c3aed",
-    "#0f766e","#be185d",
+    "#4f46e5", "#16a34a", "#9333ea", "#ea580c",
+    "#0891b2", "#d97706", "#dc2626", "#7c3aed",
+    "#0f766e", "#be185d",
 ];
 const getColor = i => PALETTE[i % PALETTE.length];
 
@@ -38,14 +38,15 @@ function parseVQ(raw) {
  */
 function AiAgents({ agents = [], providers = [], categories = [], onAgentsChanged }) {
     const [expandedAgents, setExpandedAgents] = useState(new Set());
-    const [searchTerm,     setSearchTerm]     = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [taskCounts, setTaskCounts] = useState({});
 
     /* form */
     const [showForm, setShowForm] = useState(false);
-    const [form,     setForm]     = useState(EMPTY);
-    const [vq,       setVq]       = useState(EMPTY_VQ);
-    const [errors,   setErrors]   = useState({});
-    const [saving,   setSaving]   = useState(false);
+    const [form, setForm] = useState(EMPTY);
+    const [vq, setVq] = useState(EMPTY_VQ);
+    const [errors, setErrors] = useState({});
+    const [saving, setSaving] = useState(false);
     const [showJson, setShowJson] = useState(null);
 
     /* ── filtered agents ────────────────────────────────────────────────── */
@@ -53,9 +54,32 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
     const filtered = q
         ? agents.filter(a =>
             a.agent_name?.toLowerCase().includes(q) ||
-            a.agent_key?.toLowerCase().includes(q)  ||
+            a.agent_key?.toLowerCase().includes(q) ||
             a.ai_provider?.toLowerCase().includes(q))
         : agents;
+
+    useEffect(() => {
+        if (agents.length === 0) {
+            setTaskCounts({});
+            return;
+        }
+
+        const keys = agents.map((agent, index) => ({
+            params: agent.agent_key,
+            dataKey: `agentTasks${index}`,
+            serviceKey: "ai.task.by.agent",
+            mode: "formData",
+        }));
+
+        getData({ keys })
+            .then(res => {
+                const data = res?.data?.C_DATA || {};
+                setTaskCounts(Object.fromEntries(
+                    agents.map((agent, index) => [agent.id, (data[`agentTasks${index}`] || []).length])
+                ));
+            })
+            .catch(console.error);
+    }, [agents]);
 
     /* ── collapse / expand ──────────────────────────────────────────────── */
     function toggleExpand(agentId) {
@@ -102,10 +126,10 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
     /* ── validate + save ────────────────────────────────────────────────── */
     function validate() {
         const errs = {};
-        if (!form.agent_name?.trim())    errs.agent_name    = "Agent name is required";
-        if (!form.agent_key?.trim())     errs.agent_key     = "Agent key is required";
+        if (!form.agent_name?.trim()) errs.agent_name = "Agent name is required";
+        if (!form.agent_key?.trim()) errs.agent_key = "Agent key is required";
         if (!form.system_prompt?.trim()) errs.system_prompt = "System prompt is required";
-        if (!form.ai_provider?.trim())   errs.ai_provider   = "AI provider is required";
+        if (!form.ai_provider?.trim()) errs.ai_provider = "AI provider is required";
         setErrors(errs);
         return Object.keys(errs).length === 0;
     }
@@ -141,9 +165,9 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
 
     function exportJson(a) {
         const blob = new Blob([JSON.stringify(a, null, 2)], { type: "application/json" });
-        const url  = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href     = url;
+        link.href = url;
         link.download = `${a.agent_key}.json`;
         link.click();
         URL.revokeObjectURL(url);
@@ -199,14 +223,14 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
                 )}
 
                 {filtered.map((a, idx) => {
-                    const cat       = getCategoryForAgent(a);
-                    const prov      = getProviderForAgent(a);
-                    const color     = getColor(idx);
-                    const catIdx    = cat  ? categories.indexOf(cat)  : -1;
-                    const provIdx   = prov ? providers.indexOf(prov)  : -1;
-                    const catColor  = catIdx  >= 0 ? getColor(catIdx  + 2) : "#6b7280";
-                    const provColor = provIdx >= 0 ? getColor(provIdx)     : "#6b7280";
-                    const expanded  = expandedAgents.has(a.id);
+                    const cat = getCategoryForAgent(a);
+                    const prov = getProviderForAgent(a);
+                    const color = getColor(idx);
+                    const catIdx = cat ? categories.indexOf(cat) : -1;
+                    const provIdx = prov ? providers.indexOf(prov) : -1;
+                    const catColor = catIdx >= 0 ? getColor(catIdx + 2) : "#6b7280";
+                    const provColor = provIdx >= 0 ? getColor(provIdx) : "#6b7280";
+                    const expanded = expandedAgents.has(a.id);
 
                     return (
                         <div key={a.id} className="ais-agent-group">
@@ -224,7 +248,9 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
                                     <i className="fa-solid fa-robot" aria-hidden="true" />
                                 </span>
                                 <span className="ais-agent-name">{a.agent_name}</span>
+                                
                                 <code className="ais-key-badge">{a.agent_key}</code>
+
                                 {prov && (
                                     <span className="ais-tag" style={{ background: `${provColor}18`, color: provColor, border: `1px solid ${provColor}30` }}>
                                         <i className="fa-solid fa-brain me-1" style={{ fontSize: "0.6rem" }} aria-hidden="true" />
@@ -248,12 +274,21 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
                                         <i className="fa-regular fa-trash-can" aria-hidden="true" />
                                     </button>
                                 </div>
+                                <span className="ais-count-badge" title={`${taskCounts[a.id] ?? 0} tasks` } style={{ background: `${color}22`, color }}>
+                                    <i className="fa-solid fa-list-check me-1" aria-hidden="true" />
+                                    Tasks  {taskCounts[a.id] ?? 0}
+                                    <span className="visually-hidden"> tasks</span>
+                                </span>
                             </div>
 
                             {/* tasks panel — conditionally mounted so it fetches fresh on each open */}
                             {expanded && (
                                 <div className="ais-tasks-panel">
-                                    <AiTasks agentKey={a.agent_key} agentName={a.agent_name} />
+                                    <AiTasks
+                                        agentKey={a.agent_key}
+                                        agentName={a.agent_name}
+                                        onTaskCountChanged={count => setTaskCounts(prev => ({ ...prev, [a.id]: count }))}
+                                    />
                                 </div>
                             )}
                         </div>
