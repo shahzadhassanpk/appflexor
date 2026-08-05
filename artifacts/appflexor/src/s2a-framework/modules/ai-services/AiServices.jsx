@@ -18,12 +18,13 @@ const getColor = i => PALETTE[i % PALETTE.length];
 
 /* ── pre-defined providers ──────────────────────────────────────────────── */
 const PROVIDERS = [
-    { name: "OpenAI", key: "openai", api_url: "https://api.openai.com/v1/chat/completions" },
-    { name: "Ollama", key: "ollama", api_url: "" },
-    // { name: "Anthropic",                key: "anthropic",   api_url: "https://api.anthropic.com/v1/messages" },
-    // { name: "Google AI Studio (Gemini)",key: "googleai",    api_url: "https://generativelanguage.googleapis.com/v1beta/models" },
+    { name: "AppFlexor AI", key: "appflexor", api_url: "" },
+    { name: "Open AI", key: "openai", api_url: "https://api.openai.com/v1/chat/completions" },
+    // { name: "Ollama", key: "ollama", api_url: "" },
+    { name: "Anthropic",                key: "anthropic",   api_url: "https://api.anthropic.com/v1/messages" },
+    { name: "Google AI Studio (Gemini)",key: "googleai",    api_url: "https://generativelanguage.googleapis.com/v1beta/models" },
     // { name: "Groq",                     key: "groq",        api_url: "https://api.groq.com/openai/v1/chat/completions" },
-    // { name: "OpenRouter",               key: "openrouter",  api_url: "https://openrouter.ai/api/v1/chat/completions" },
+    { name: "OpenRouter",               key: "openrouter",  api_url: "https://openrouter.ai/api/v1/chat/completions" },
     // { name: "Mistral",                  key: "mistral",     api_url: "https://api.mistral.ai/v1/chat/completions" },
     // { name: "Cerebras",                 key: "cerebras",    api_url: "https://inference.cerebras.ai/v1/chat/completions" },
     // { name: "Together AI",              key: "togetherai",  api_url: "https://api.together.xyz/v1/chat/completions" },
@@ -153,6 +154,18 @@ function AiServices() {
         if (!providerKey) return;
         setModelFetching(true);
         setModelError("");
+        if (providerKey === "appflexor") {
+            setModelOptions([
+                { name: "Content Creator", id: "content-creator" },
+                { name: "Business Analyst", id: "business-analyst" },
+                { name: "Decision Assistant", id: "decision-assistant" },
+                { name: "Document Intelligence", id: "document-intelligence" },
+                { name: "Knowledge Assistant", id: "knowledge-assistant" },
+                { name: "General Assistant", id: "general-assistant" }
+            ]);
+            setModelFetching(false);
+            return;
+        }
         setModelOptions([]);
         let models = [];
         let fallbackMsg = "";
@@ -254,12 +267,13 @@ function AiServices() {
     function validateProv() {
         const errs = {};
         if (!selectedProv.provider_key?.trim()) errs.provider_key = "Please select a provider";
-        if (selectedProv.provider_key !== 'ollama' && !selectedProv.api_key?.trim()) errs.api_key = "API key is required";
+        if (selectedProv.provider_key !== 'appflexor' && !selectedProv.api_key?.trim()) errs.api_key = "API key is required";
         setProvErrors(errs);
         return Object.keys(errs).length === 0;
     }
 
     function saveProv() {
+        debugger;
         if (!validateProv()) return;
         setProvSaving(true);
         handleSave({ entity: "ai_provider", formData: selectedProv })
@@ -507,35 +521,37 @@ function AiServices() {
                                     )}
                                 </div>
                                 {/* API Key */}
-                                <div className="mb-3">
-                                    <label className="ai-label">
-                                        API Key <span className="text-danger">*</span>
-                                        <span className="ai-tooltip ms-1" title="Stored server-side, never re-displayed in full.">
-                                            <i className="fa-solid fa-circle-info" />
-                                        </span>
-                                    </label>
-                                    <div className="input-group">
-                                        <input
-                                            className={`form-control ${provErrors.api_key ? "is-invalid" : ""}`}
-                                            name="api_key"
-                                            type={showApiKey ? "text" : "password"}
-                                            value={selectedProv.api_key}
-                                            onChange={e => setSelectedProv(p => ({ ...p, api_key: e.target.value }))}
-                                            placeholder="sk-…"
-                                            autoComplete="new-password"
-                                            disabled={!selectedProv.provider_key}
-                                        />
-                                        <button
-                                            className="btn btn-outline-secondary"
-                                            type="button"
-                                            title={showApiKey ? "Hide" : "Show"}
-                                            onClick={() => setShowApiKey(s => !s)}
-                                            disabled={!selectedProv.provider_key}>
-                                            <i className={`fa-solid ${showApiKey ? "fa-eye-slash" : "fa-eye"}`} />
-                                        </button>
-                                        {provErrors.api_key && <div className="invalid-feedback">{provErrors.api_key}</div>}
+                                {selectedProv.provider_key !== "appflexor" &&
+                                    <div className="mb-3">
+                                        <label className="ai-label">
+                                            API Key <span className="text-danger">*</span>
+                                            <span className="ai-tooltip ms-1" title="Stored server-side, never re-displayed in full.">
+                                                <i className="fa-solid fa-circle-info" />
+                                            </span>
+                                        </label>
+                                        <div className="input-group">
+                                            <input
+                                                className={`form-control ${provErrors.api_key ? "is-invalid" : ""}`}
+                                                name="api_key"
+                                                type={showApiKey ? "text" : "password"}
+                                                value={selectedProv.api_key}
+                                                onChange={e => setSelectedProv(p => ({ ...p, api_key: e.target.value }))}
+                                                placeholder="sk-…"
+                                                autoComplete="new-password"
+                                                disabled={!selectedProv.provider_key}
+                                            />
+                                            <button
+                                                className="btn btn-outline-secondary"
+                                                type="button"
+                                                title={showApiKey ? "Hide" : "Show"}
+                                                onClick={() => setShowApiKey(s => !s)}
+                                                disabled={!selectedProv.provider_key}>
+                                                <i className={`fa-solid ${showApiKey ? "fa-eye-slash" : "fa-eye"}`} />
+                                            </button>
+                                            {provErrors.api_key && <div className="invalid-feedback">{provErrors.api_key}</div>}
+                                        </div>
                                     </div>
-                                </div>
+                                }
                                 {/* AI Model */}
                                 <div className="mb-1">
                                     <label className="ai-label">
@@ -556,7 +572,7 @@ function AiServices() {
                                                 disabled={!selectedProv.provider_key}
                                             />
                                             <datalist id="ais-model-datalist">
-                                                {modelOptions.map(m => <option key={m} value={m} />)}
+                                                {modelOptions.map(m => <option key={m.id} value={m.id} />)}
                                             </datalist>
                                         </div>
                                         <button
