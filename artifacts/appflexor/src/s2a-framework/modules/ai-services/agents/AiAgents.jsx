@@ -227,13 +227,13 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
                                 <code className="ais-key-badge">{a.agent_key}</code>
                                 {prov && (
                                     <span className="ais-tag" style={{ background: `${provColor}18`, color: provColor, border: `1px solid ${provColor}30` }}>
-                                        <i className="fa-solid fa-plug-circle-bolt me-1" style={{ fontSize: "0.6rem" }} aria-hidden="true" />
+                                        <i className="fa-solid fa-brain me-1" style={{ fontSize: "0.6rem" }} aria-hidden="true" />
                                         {prov.provider_name}
                                     </span>
                                 )}
                                 {cat && (
                                     <span className="ais-tag" style={{ background: `${catColor}18`, color: catColor, border: `1px solid ${catColor}30` }}>
-                                        <i className="fa-solid fa-brain me-1" style={{ fontSize: "0.6rem" }} aria-hidden="true" />
+                                        <i className="fa-solid fa-tag me-1" style={{ fontSize: "0.6rem" }} aria-hidden="true" />
                                         {cat.title}
                                     </span>
                                 )}
