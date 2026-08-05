@@ -267,7 +267,7 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
 
             {/* ── Add / Edit Agent modal ──────────────────────────────── */}
             {showForm && (
-                <div className="ai-modal-overlay" onClick={e => e.target === e.currentTarget && setShowForm(false)}>
+                <div className="ai-modal-overlay">
                     <div className="ai-modal ai-modal-lg">
                         <div className="ai-modal-header">
                             <h5>

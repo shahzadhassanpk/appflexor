@@ -453,7 +453,7 @@ function AiServices() {
 
                 {/* Provider modal */}
                 {provModal && (
-                    <div className="ai-modal-overlay" onClick={e => e.target === e.currentTarget && setProvModal(false)}>
+                    <div className="ai-modal-overlay">
                         <div className="ai-modal">
                             <div className="ai-modal-header">
                                 <h5>
@@ -595,7 +595,7 @@ function AiServices() {
 
                 {/* Category modal */}
                 {catModal && (
-                    <div className="ai-modal-overlay" onClick={e => e.target === e.currentTarget && setCatModal(false)}>
+                    <div className="ai-modal-overlay">
                         <div className="ai-modal">
                             <div className="ai-modal-header">
                                 <h5>
