@@ -1,0 +1,49 @@
+{
+  "nodes": [
+    {
+      "id": "Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "ai-agent",
+        "httpMethod": "POST"
+      }
+    },
+    {
+      "id": "AI Agent",
+      "name": "AI Agent",
+      "type": "n8n-nodes-base.aiAgent",
+      "parameters": {
+        "provider": "={{$json.provider}}",
+        "model": "={{$json.model}}",
+        "prompt": "={{$json.prompt}}",
+        "tools": "={{$json.tools}}",
+        "vectorDb": "={{$json.vector_db}}"
+      }
+    },
+    {
+      "id": "Webhook Response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.webhookResponse",
+      "parameters": {
+        "responseBody": {
+          "provider": "={{$json.provider}}",
+          "model": "={{$json.model}}",
+          "output": "={{$json.output}}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [{ "node": "AI Agent", "type": "main", "index": 0 }]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [{ "node": "Webhook Response", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

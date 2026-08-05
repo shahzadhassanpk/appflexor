@@ -10,71 +10,71 @@ import "./ai-services.css";
 
 /* ── colour palette ─────────────────────────────────────────────────────── */
 const PALETTE = [
-    "#4f46e5","#16a34a","#9333ea","#ea580c",
-    "#0891b2","#d97706","#dc2626","#7c3aed",
-    "#0f766e","#be185d",
+    "#4f46e5", "#16a34a", "#9333ea", "#ea580c",
+    "#0891b2", "#d97706", "#dc2626", "#7c3aed",
+    "#0f766e", "#be185d",
 ];
 const getColor = i => PALETTE[i % PALETTE.length];
 
 /* ── pre-defined providers ──────────────────────────────────────────────── */
 const PROVIDERS = [
-    { name: "OpenAI",                   key: "openai",      api_url: "https://api.openai.com/v1/chat/completions" },
-    { name: "Anthropic",                key: "anthropic",   api_url: "https://api.anthropic.com/v1/messages" },
-    { name: "Google AI Studio (Gemini)",key: "googleai",    api_url: "https://generativelanguage.googleapis.com/v1beta/models" },
-    { name: "Groq",                     key: "groq",        api_url: "https://api.groq.com/openai/v1/chat/completions" },
-    { name: "OpenRouter",               key: "openrouter",  api_url: "https://openrouter.ai/api/v1/chat/completions" },
-    { name: "Mistral",                  key: "mistral",     api_url: "https://api.mistral.ai/v1/chat/completions" },
-    { name: "Cerebras",                 key: "cerebras",    api_url: "https://inference.cerebras.ai/v1/chat/completions" },
-    { name: "Together AI",              key: "togetherai",  api_url: "https://api.together.xyz/v1/chat/completions" },
-    { name: "Fireworks AI",             key: "fireworksai", api_url: "https://api.fireworks.ai/inference/v1/chat/completions" },
-    { name: "Hugging Face",             key: "huggingface", api_url: "https://api-inference.huggingface.co/models" },
-    { name: "Ollama",                   key: "ollama",      api_url: "http://localhost:11434/api/chat" },
+    { name: "OpenAI (Cloud)", key: "openai", api_url: "https://api.openai.com/v1/chat/completions" },
+    { name: "Ollama (Self Hosted)", key: "ollama", api_url: "" },
+    // { name: "Anthropic",                key: "anthropic",   api_url: "https://api.anthropic.com/v1/messages" },
+    // { name: "Google AI Studio (Gemini)",key: "googleai",    api_url: "https://generativelanguage.googleapis.com/v1beta/models" },
+    // { name: "Groq",                     key: "groq",        api_url: "https://api.groq.com/openai/v1/chat/completions" },
+    // { name: "OpenRouter",               key: "openrouter",  api_url: "https://openrouter.ai/api/v1/chat/completions" },
+    // { name: "Mistral",                  key: "mistral",     api_url: "https://api.mistral.ai/v1/chat/completions" },
+    // { name: "Cerebras",                 key: "cerebras",    api_url: "https://inference.cerebras.ai/v1/chat/completions" },
+    // { name: "Together AI",              key: "togetherai",  api_url: "https://api.together.xyz/v1/chat/completions" },
+    // { name: "Fireworks AI",             key: "fireworksai", api_url: "https://api.fireworks.ai/inference/v1/chat/completions" },
+    // { name: "Hugging Face",             key: "huggingface", api_url: "https://api-inference.huggingface.co/models" },
 ];
 
 /* ── provider → icon mapping ────────────────────────────────────────────── */
 const PROVIDER_ICONS = {
-    openai:      "fa-brain",
-    anthropic:   "fa-robot",
-    googleai:    "fa-circle-nodes",
-    groq:        "fa-bolt",
-    openrouter:  "fa-route",
-    mistral:     "fa-wind",
-    cerebras:    "fa-microchip",
-    togetherai:  "fa-layer-group",
+    openai: "fa-brain",
+    anthropic: "fa-robot",
+    googleai: "fa-circle-nodes",
+    groq: "fa-bolt",
+    openrouter: "fa-route",
+    mistral: "fa-wind",
+    cerebras: "fa-microchip",
+    togetherai: "fa-layer-group",
     fireworksai: "fa-fire",
     huggingface: "fa-cube",
-    ollama:      "fa-server",
+    ollama: "fa-server",
 };
 const providerIcon = (key = "") =>
     PROVIDER_ICONS[(key || "").toLowerCase()] || "fa-plug-circle-bolt";
 
 /* ── initial form states ────────────────────────────────────────────────── */
 const PROV_INIT = { id: "new", provider_name: "", provider_key: "", api_key: "", api_url: "", model: "" };
-const CAT_INIT  = { id: "new", title: "", key: "" };
+const CAT_INIT = { id: "new", title: "", key: "" };
 
 /* ════════════════════════════════════════════════════════════════════════ */
 function AiServices() {
-    const [providers,   setProviders]   = useState([]);
-    const [agents,      setAgents]      = useState([]);
-    const [categories,  setCategories]  = useState([]);
-    const [isLoading,   setIsLoading]   = useState(true);
+    const [providers, setProviders] = useState([]);
+    const [agents, setAgents] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [schemaReady, setSchemaReady] = useState(false);
 
     /* ── Provider CRUD state ──────────────────────────────────────────── */
-    const [provModal,     setProvModal]     = useState(false);
-    const [selectedProv,  setSelectedProv]  = useState(PROV_INIT);
-    const [provErrors,    setProvErrors]    = useState({});
-    const [provSaving,    setProvSaving]    = useState(false);
-    const [showApiKey,    setShowApiKey]    = useState(false);
-    const [modelOptions,  setModelOptions]  = useState([]);
+    const [provModal, setProvModal] = useState(false);
+    const [selectedProv, setSelectedProv] = useState(PROV_INIT);
+    const [provErrors, setProvErrors] = useState({});
+    const [provSaving, setProvSaving] = useState(false);
+    const [showApiKey, setShowApiKey] = useState(false);
+    const [modelOptions, setModelOptions] = useState([]);
     const [modelFetching, setModelFetching] = useState(false);
-    const [modelError,    setModelError]    = useState("");
+    const [modelError, setModelError] = useState("");
 
     /* ── Category CRUD state ──────────────────────────────────────────── */
-    const [catModal,    setCatModal]    = useState(false);
+    const [catModal, setCatModal] = useState(false);
     const [selectedCat, setSelectedCat] = useState(CAT_INIT);
-    const [catErrors,   setCatErrors]   = useState({});
-    const [catSaving,   setCatSaving]   = useState(false);
+    const [catErrors, setCatErrors] = useState({});
+    const [catSaving, setCatSaving] = useState(false);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -84,8 +84,10 @@ function AiServices() {
                 axios.post(API_URL + "?service.key=validate.schema", {
                     saveOrUpdate: "Yes",
                     datasource: "",
-                    data: [{ formId: entity, entity, action: "update",
-                             formData: { id: "new" }, mode: "formData", id: "new" }],
+                    data: [{
+                        formId: entity, entity, action: "update",
+                        formData: { id: "new" }, mode: "formData", id: "new"
+                    }],
                 }).catch(err => console.warn("validate.schema [" + entity + "]:", err))
             )
         ).finally(() => { setSchemaReady(true); loadAll(); });
@@ -96,24 +98,24 @@ function AiServices() {
         setIsLoading(true);
         getData({
             keys: [
-                { params: "", dataKey: "providers",  serviceKey: "ai.provider.list",   mode: "formData" },
-                { params: "", dataKey: "agents",     serviceKey: "ai.agent.list",       mode: "formData" },
+                { params: "", dataKey: "providers", serviceKey: "ai.provider.list", mode: "formData" },
+                { params: "", dataKey: "agents", serviceKey: "ai.agent.list", mode: "formData" },
                 { params: "", dataKey: "categories", serviceKey: "ai.agent.categories", mode: "formData" },
             ],
         })
-        .then(res => {
-            const d = res?.data?.C_DATA || {};
-            setProviders(d.providers   || []);
-            setAgents(d.agents         || []);
-            setCategories(d.categories || []);
-        })
-        .catch(console.error)
-        .finally(() => setIsLoading(false));
+            .then(res => {
+                const d = res?.data?.C_DATA || {};
+                setProviders(d.providers || []);
+                setAgents(d.agents || []);
+                setCategories(d.categories || []);
+            })
+            .catch(console.error)
+            .finally(() => setIsLoading(false));
     }
 
     /* ── counts (client-side) ───────────────────────────────────────────── */
     const agentCountForProvider = p => agents.filter(a => a.ai_provider === p.provider_key).length;
-    const agentCountForCategory = c => agents.filter(a => a.category    === c.id).length;
+    const agentCountForCategory = c => agents.filter(a => a.category === c.id).length;
 
     /* ── Provider CRUD ──────────────────────────────────────────────────── */
     function resetModelState() { setModelOptions([]); setModelError(""); setModelFetching(false); }
@@ -138,10 +140,10 @@ function AiServices() {
         const provDef = PROVIDERS.find(pd => pd.key === e.target.value);
         setSelectedProv(prev => ({
             ...prev,
-            provider_name: provDef?.name    || "",
-            provider_key:  provDef?.key     || "",
-            api_url:       provDef?.api_url || "",
-            model:         "",
+            provider_name: provDef?.name || "",
+            provider_key: provDef?.key || "",
+            api_url: provDef?.api_url || "",
+            model: "",
         }));
         resetModelState();
         if (provErrors.provider_key) setProvErrors(prev => ({ ...prev, provider_key: "" }));
@@ -252,7 +254,7 @@ function AiServices() {
     function validateProv() {
         const errs = {};
         if (!selectedProv.provider_key?.trim()) errs.provider_key = "Please select a provider";
-        if (!selectedProv.api_key?.trim())      errs.api_key      = "API key is required";
+        if (!selectedProv.api_key?.trim()) errs.api_key = "API key is required";
         setProvErrors(errs);
         return Object.keys(errs).length === 0;
     }
@@ -283,13 +285,13 @@ function AiServices() {
     }
 
     /* ── Category CRUD ──────────────────────────────────────────────────── */
-    function openAddCat()    { setSelectedCat({ ...CAT_INIT }); setCatErrors({}); setCatModal(true); }
-    function openEditCat(c)  { setSelectedCat({ ...c });        setCatErrors({}); setCatModal(true); }
+    function openAddCat() { setSelectedCat({ ...CAT_INIT }); setCatErrors({}); setCatModal(true); }
+    function openEditCat(c) { setSelectedCat({ ...c }); setCatErrors({}); setCatModal(true); }
 
     function validateCat() {
         const errs = {};
         if (!selectedCat.title?.trim()) errs.title = "Title is required";
-        if (!selectedCat.key?.trim())   errs.key   = "Key is required";
+        if (!selectedCat.key?.trim()) errs.key = "Key is required";
         setCatErrors(errs);
         return Object.keys(errs).length === 0;
     }
@@ -478,10 +480,29 @@ function AiServices() {
                                         ))}
                                     </select>
                                     {provErrors.provider_key && <div className="invalid-feedback">{provErrors.provider_key}</div>}
-                                    {selectedProv.api_url && (
+                                    {selectedProv.provider_key === "openai" && (
                                         <div className="ais-url-hint">
                                             <i className="fa-solid fa-link me-1" aria-hidden="true" />
                                             {selectedProv.api_url}
+                                        </div>
+                                    )}
+                                    {selectedProv.provider_key === "ollama" && (
+                                        <div className="ais-url-hint">
+                                            <label className="ai-label">
+                                                <i className="fa-solid fa-link me-1" aria-hidden="true" /> Ollama Public API URL<span className="text-danger">*</span>
+                                                <span className="ai-tooltip ms-1" title="Must be a valid Public Ollama API URL.">
+                                                    <i className="fa-solid fa-circle-info" />
+                                                </span>
+                                            </label>
+                                            <input
+                                                list="ais-model-datalist"
+                                                className="form-control"
+                                                name="api_url"
+                                                value={selectedProv.api_url || ""}
+                                                onChange={e => setSelectedProv(p => ({ ...p, api_url: e.target.value }))}
+                                                placeholder={selectedProv.provider_key ? "Ollama Public API URL…" : "Select a provider first"}
+                                                disabled={!selectedProv.provider_key}
+                                            />
                                         </div>
                                     )}
                                 </div>
