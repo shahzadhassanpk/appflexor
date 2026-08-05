@@ -7,7 +7,7 @@ import { filterArrayByTerms } from "../../../utils/utils";
 const EMPTY_VQ = { collection: "", search_text: "", top_k: 5 };
 const EMPTY_TASK = {
     id: "new",
-    agent_key: "",
+    agent: "",
     task_name: "",
     task_key: "",
     user_prompt: "",
@@ -25,7 +25,7 @@ function parseVQ(raw) {
      agentKey  – string (required)
      agentName – string (optional, for display)
    ════════════════════════════════════════════════════════════════════════ */
-function AiTasks({ agentKey, agentName, onTaskCountChanged }) {
+function AiTasks({ agentId, agentKey, agentName, onTaskCountChanged }) {
     const [tasks,    setTasks]    = useState([]);
     const [filtered, setFiltered] = useState([]);
     const [form,     setForm]     = useState(EMPTY_TASK);
@@ -38,8 +38,8 @@ function AiTasks({ agentKey, agentName, onTaskCountChanged }) {
 
     /* load tasks when agent key is available (component mounts fresh each open) */
     useEffect(() => {
-        if (agentKey) loadTasks(agentKey);
-    }, [agentKey]);
+        if (agentId) loadTasks(agentId);
+    }, [agentId]);
 
     function loadTasks(key) {
         getData({
@@ -59,7 +59,7 @@ function AiTasks({ agentKey, agentName, onTaskCountChanged }) {
     }
 
     function openAdd() {
-        setForm({ ...EMPTY_TASK, agent_key: agentKey });
+        setForm({ ...EMPTY_TASK, agent: agentId });
         setVq({ ...EMPTY_VQ });
         setErrors({});
         setShowForm(true);
@@ -95,12 +95,14 @@ function AiTasks({ agentKey, agentName, onTaskCountChanged }) {
     function save() {
         if (!validate()) return;
         setSaving(true);
-        handleSave({ entity: "ai_task", formData: { ...form, agent_key: agentKey, vector_query: JSON.stringify(vq) } })
+        const taskForm = { ...form };
+        delete taskForm.agent_key;
+        handleSave({ entity: "ai_agent_task", formData: { ...taskForm, agent: agentId, vector_query: JSON.stringify(vq) } })
             .then(res => {
                 if (res?.data?.C_STATUS === "SUCCESS") {
                     toastEmitter(form.id === "new" ? "Task created" : "Task updated", true);
                     setShowForm(false);
-                    loadTasks(agentKey);
+                    loadTasks(agentId);
                 } else {
                     toastEmitter(res?.data?.C_MESSAGE || "Save failed", true, "warning");
                 }
@@ -110,11 +112,11 @@ function AiTasks({ agentKey, agentName, onTaskCountChanged }) {
 
     function remove(t) {
         if (!window.confirm(`Delete task "${t.task_key}"?`)) return;
-        handleDelete({ entity: "ai_task", url: API_URL + "?service.key=update.formData", arr: [t.id] })
+        handleDelete({ entity: "ai_agent_task", url: API_URL + "?service.key=update.formData", arr: [t.id] })
             .then(res => {
                 if (res?.data?.C_STATUS === "SUCCESS") {
                     toastEmitter("Task deleted", true);
-                    loadTasks(agentKey);
+                    loadTasks(agentId);
                 } else {
                     toastEmitter(res?.data?.C_MESSAGE || "Delete failed", true, "warning");
                 }

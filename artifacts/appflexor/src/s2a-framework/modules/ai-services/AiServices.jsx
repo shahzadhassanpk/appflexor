@@ -81,7 +81,7 @@ function AiServices() {
         window.scrollTo(0, 0);
         // Initialise DB tables for all four entities before loading any data
         Promise.all(
-            ["ai_provider", "ai_agent", "ai_task", "ai_agent_category"].map(entity =>
+            ["ai_provider", "ai_agent", "ai_agent_task", "ai_agent_category"].map(entity =>
                 axios.post(API_URL + "?service.key=validate.schema", {
                     saveOrUpdate: "Yes",
                     datasource: "",
@@ -115,7 +115,7 @@ function AiServices() {
     }
 
     /* ── counts (client-side) ───────────────────────────────────────────── */
-    const agentCountForProvider = p => agents.filter(a => a.ai_provider === p.provider_key).length;
+    const agentCountForProvider = p => agents.filter(a => a.provider === p.id).length;
     const agentCountForCategory = c => agents.filter(a => a.category === c.id).length;
     
     /* ── Provider CRUD ──────────────────────────────────────────────────── */

@@ -30,12 +30,9 @@ import Time from "./components/Time";
 import BpmnViewerComponent from "./components/bpm-diagram-viewer/viewer";
 import VideoComponent from "./components/video/Video";
 import Audio from "./components/audio/Audio";
-const CustomActionsPropEditer = lazy(() =>
-    import("./components/CustomActions/CustomActionsPropEditer"),
-);
+import CustomActionsPropEditer from "./components/CustomActions/CustomActionsPropEditer";
 import AppView from "./components/AppView";
 import HTMLTemplate from "./components/HTMLTemplate";
-// import CustomActionsPropEditer from "./components/CustomActions/CustomActionsPropEditer";
 import AutoIncrement from "./components/Auto Increment/AutoIncrement";
 import { makeid } from "../../../../utils/utils";
 export const SIDEBAR_ITEM = "sidebaritem"; // draggable

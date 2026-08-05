@@ -72,6 +72,10 @@ export default defineConfig({
     build: {
         outDir: "build",
         sourcemap: true,
+        // The legacy application shell currently includes the shared builders and
+        // viewers. Keep a finite budget so regressions still surface while large
+        // feature libraries such as Plotly remain isolated behind lazy imports.
+        chunkSizeWarningLimit: 4500,
     },
     publicDir: "public",
     define: {

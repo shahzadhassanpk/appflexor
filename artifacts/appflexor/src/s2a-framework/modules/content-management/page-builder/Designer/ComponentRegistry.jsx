@@ -26,10 +26,7 @@ const DropBox = lazy(() => import("../Designer/components/DropBox/DropBox"));
 import CustomActionsPropEditer from "../../../data-management/form-builder/Designer/components/CustomActions/CustomActionsPropEditer";
 import ProcessStartForm from "../../../process-configuration/process-viewer/ProcessStartForm";
 import ProcessViewer from "../../../process-configuration/process-viewer/ProcessViewer";
-const DataListViewer = lazy(
-    () => import("../datalist-viewer/viewer/DataListViewer"),
-);
-// import DataListViewer from "../datalist-viewer/viewer/DataListViewer";
+import DataListViewer from "../datalist-viewer/viewer/DataListViewer";
 const ChartForm = lazy(() => import("./components/Chart/ChartForm"));
 // import ChartForm from "./components/Chart/ChartForm";
 import Form from "./components/Form";

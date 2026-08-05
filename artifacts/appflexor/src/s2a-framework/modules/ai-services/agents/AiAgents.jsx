@@ -19,7 +19,7 @@ const EMPTY = {
     agent_name: "",
     agent_key: "",
     system_prompt: "",
-    ai_provider: "",
+    provider: "",
     category: "",
     default_vector_query: JSON.stringify(EMPTY_VQ),
 };
@@ -55,7 +55,7 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
         ? agents.filter(a =>
             a.agent_name?.toLowerCase().includes(q) ||
             a.agent_key?.toLowerCase().includes(q) ||
-            a.ai_provider?.toLowerCase().includes(q))
+            providers.find(p => p.id === a.provider)?.provider_name?.toLowerCase().includes(q))
         : agents;
 
     useEffect(() => {
@@ -65,7 +65,7 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
         }
 
         const keys = agents.map((agent, index) => ({
-            params: agent.agent_key,
+            params: agent.id,
             dataKey: `agentTasks${index}`,
             serviceKey: "ai.task.by.agent",
             mode: "formData",
@@ -95,7 +95,7 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
         return categories.find(c => c.id === a.category) || null;
     }
     function getProviderForAgent(a) {
-        return providers.find(p => p.provider_key === a.ai_provider) || null;
+        return providers.find(p => p.id === a.provider) || null;
     }
 
     /* ── form open ──────────────────────────────────────────────────────── */
@@ -106,7 +106,7 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
         setShowForm(true);
     }
     function openEdit(a) {
-        setForm({ ...a, category: a.category || "" });
+        setForm({ ...a, provider: a.provider || "", category: a.category || "" });
         setVq(parseVQ(a.default_vector_query));
         setErrors({});
         setShowForm(true);
@@ -129,7 +129,7 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
         if (!form.agent_name?.trim()) errs.agent_name = "Agent name is required";
         if (!form.agent_key?.trim()) errs.agent_key = "Agent key is required";
         if (!form.system_prompt?.trim()) errs.system_prompt = "System prompt is required";
-        if (!form.ai_provider?.trim()) errs.ai_provider = "AI provider is required";
+        if (!form.provider?.trim()) errs.provider = "AI provider is required";
         setErrors(errs);
         return Object.keys(errs).length === 0;
     }
@@ -137,7 +137,9 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
     function save() {
         if (!validate()) return;
         setSaving(true);
-        handleSave({ entity: "ai_agent", formData: { ...form, default_vector_query: JSON.stringify(vq) } })
+        const agentForm = { ...form };
+        delete agentForm.ai_provider;
+        handleSave({ entity: "ai_agent", formData: { ...agentForm, default_vector_query: JSON.stringify(vq) } })
             .then(res => {
                 if (res?.data?.C_STATUS === "SUCCESS") {
                     toastEmitter(form.id === "new" ? "Agent created" : "Agent updated", true);
@@ -285,6 +287,7 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
                             {expanded && (
                                 <div className="ais-tasks-panel">
                                     <AiTasks
+                                        agentId={a.id}
                                         agentKey={a.agent_key}
                                         agentName={a.agent_name}
                                         onTaskCountChanged={count => setTaskCounts(prev => ({ ...prev, [a.id]: count }))}
@@ -354,16 +357,16 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
                                         </span>
                                     </label>
                                     <select
-                                        className={`form-control form-select ${errors.ai_provider ? "is-invalid" : ""}`}
-                                        name="ai_provider" value={form.ai_provider} onChange={handleInput}>
+                                        className={`form-control form-select ${errors.provider ? "is-invalid" : ""}`}
+                                        name="provider" value={form.provider} onChange={handleInput}>
                                         <option value="">— Select provider —</option>
                                         {providers.map(p => (
-                                            <option key={p.id} value={p.provider_key}>
+                                            <option key={p.id} value={p.id}>
                                                 {p.provider_name} ({p.provider_key})
                                             </option>
                                         ))}
                                     </select>
-                                    {errors.ai_provider && <div className="invalid-feedback">{errors.ai_provider}</div>}
+                                    {errors.provider && <div className="invalid-feedback">{errors.provider}</div>}
                                 </div>
                                 <div className="col-sm-6 mb-3">
                                     <label className="ai-label">

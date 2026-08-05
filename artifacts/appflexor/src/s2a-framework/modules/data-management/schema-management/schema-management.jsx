@@ -27,7 +27,6 @@ import {
 } from "../../../utils/utils";
 import { tryToParse } from "../form-builder/Forms/FormViewer/utils";
 import { Label } from "recharts";
-import { name } from "plotly.js/dist/plotly-cartesian";
 
 const initialInstance = {
     label: "",

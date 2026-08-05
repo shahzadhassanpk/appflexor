@@ -16,7 +16,6 @@ import ProcessesContext from "../../camunda/ProcessesContext";
 import { toastEmitter } from "../../../components/Toastify/Toastify";
 import { modeType } from "../../data-management/datalist-builder/datalist-form/form/DataListForm";
 import PEDataListViewer from "../../content-management/page-builder/datalist-viewer/viewer/PEDataListViewer";
-import { background } from "plotly.js/dist/plotly-cartesian";
 
 function ProcessMonitor({ activeTab }) {
     let initialState = {
