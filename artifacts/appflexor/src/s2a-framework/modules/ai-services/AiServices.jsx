@@ -18,8 +18,8 @@ const getColor = i => PALETTE[i % PALETTE.length];
 
 /* ── pre-defined providers ──────────────────────────────────────────────── */
 const PROVIDERS = [
-    { name: "OpenAI (Cloud)", key: "openai", api_url: "https://api.openai.com/v1/chat/completions" },
-    { name: "Ollama (Self Hosted)", key: "ollama", api_url: "" },
+    { name: "OpenAI", key: "openai", api_url: "https://api.openai.com/v1/chat/completions" },
+    { name: "Ollama", key: "ollama", api_url: "" },
     // { name: "Anthropic",                key: "anthropic",   api_url: "https://api.anthropic.com/v1/messages" },
     // { name: "Google AI Studio (Gemini)",key: "googleai",    api_url: "https://generativelanguage.googleapis.com/v1beta/models" },
     // { name: "Groq",                     key: "groq",        api_url: "https://api.groq.com/openai/v1/chat/completions" },
@@ -150,7 +150,7 @@ function AiServices() {
     }
 
     async function fetchModels(providerKey, apiKey) {
-        if (!providerKey || !apiKey) return;
+        if (!providerKey) return;
         setModelFetching(true);
         setModelError("");
         setModelOptions([]);
@@ -226,7 +226,7 @@ function AiServices() {
                     break;
                 }
                 case "ollama": {
-                    const r = await fetch("http://localhost:11434/api/tags");
+                    const r = await fetch(selectedProv.api_url + "/tags", { headers: bearer });
                     const d = await r.json();
                     models = (d.models || []).map(m => m.name).sort();
                     break;
@@ -254,7 +254,7 @@ function AiServices() {
     function validateProv() {
         const errs = {};
         if (!selectedProv.provider_key?.trim()) errs.provider_key = "Please select a provider";
-        if (!selectedProv.api_key?.trim()) errs.api_key = "API key is required";
+        if (selectedProv.provider_key !== 'ollama' && !selectedProv.api_key?.trim()) errs.api_key = "API key is required";
         setProvErrors(errs);
         return Object.keys(errs).length === 0;
     }
@@ -563,7 +563,7 @@ function AiServices() {
                                             type="button"
                                             className="btn btn-outline-secondary btn-sm ais-fetch-btn"
                                             onClick={() => fetchModels(selectedProv.provider_key, selectedProv.api_key)}
-                                            disabled={modelFetching || !selectedProv.provider_key || !selectedProv.api_key}>
+                                            disabled={modelFetching || !selectedProv.provider_key}>
                                             {modelFetching
                                                 ? <><i className="fa-solid fa-spinner fa-spin me-1" />Fetching…</>
                                                 : <><i className="fa-solid fa-rotate me-1" />Fetch Models</>}
