@@ -257,7 +257,7 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
                                     {prov && (
                                         <span className="ais-tag" style={{ background: `${provColor}18`, color: provColor, border: `1px solid ${provColor}30` }}>
                                             <i className="fa-solid fa-brain me-1" style={{ fontSize: "0.6rem" }} aria-hidden="true" />
-                                            {prov.provider_name}
+                                            {prov.provider_name} ({prov.model})
                                         </span>
                                     )}
                                     {cat && (

@@ -117,7 +117,7 @@ function AiServices() {
     /* ── counts (client-side) ───────────────────────────────────────────── */
     const agentCountForProvider = p => agents.filter(a => a.provider === p.id).length;
     const agentCountForCategory = c => agents.filter(a => a.category === c.id).length;
-    
+
     /* ── Provider CRUD ──────────────────────────────────────────────────── */
     function resetModelState() { setModelOptions([]); setModelError(""); setModelFetching(false); }
 
@@ -156,12 +156,9 @@ function AiServices() {
         setModelError("");
         if (providerKey === "appflexor") {
             setModelOptions([
-                { name: "Content Creator", id: "content-creator" },
-                { name: "Business Analyst", id: "business-analyst" },
-                { name: "Decision Assistant", id: "decision-assistant" },
-                { name: "Document Intelligence", id: "document-intelligence" },
-                { name: "Knowledge Assistant", id: "knowledge-assistant" },
-                { name: "General Assistant", id: "general-assistant" }
+                { name: "Lite", id: "lite" },
+                { name: "Economy", id: "economy" },
+                { name: "Power", id: "power" },
             ]);
             setModelFetching(false);
             return;
@@ -403,7 +400,7 @@ function AiServices() {
                                             <i className={`fa-solid ${providerIcon(p.provider_key)}`} aria-hidden="true" />
                                         </span>
                                         <span className="ais-list-name">{p.provider_name}</span>
-                                        <code className="ais-key-badge">{p.provider_key}</code>
+                                        <code className="ais-key-badge">{p.model}</code>
                                         <span className="ais-count-badge" style={{ background: `${getColor(idx)}18`, color: getColor(idx) }}>
                                             {agentCountForProvider(p)}
                                         </span>
@@ -562,18 +559,26 @@ function AiServices() {
                                     </label>
                                     <div className="ais-model-row">
                                         <div className="flex-1">
-                                            <input
-                                                list="ais-model-datalist"
+                                            <select
                                                 className="form-control"
                                                 name="model"
                                                 value={selectedProv.model || ""}
-                                                onChange={e => setSelectedProv(p => ({ ...p, model: e.target.value }))}
-                                                placeholder={selectedProv.provider_key ? "Select or type a model name…" : "Select a provider first"}
+                                                onChange={e =>
+                                                    setSelectedProv(p => ({ ...p, model: e.target.value }))
+                                                }
                                                 disabled={!selectedProv.provider_key}
-                                            />
-                                            <datalist id="ais-model-datalist">
-                                                {modelOptions.map(m => <option key={m.id} value={m.id} />)}
-                                            </datalist>
+                                            >
+                                                <option value="" disabled>
+                                                    {selectedProv.provider_key
+                                                        ? "Select a model…"
+                                                        : "Select a provider first"}
+                                                </option>
+                                                {modelOptions.map(m => (
+                                                    <option key={m.id} value={m.id}>
+                                                        {m.name}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <button
                                             type="button"
