@@ -19,6 +19,33 @@ function parseVQ(raw) {
     try { return JSON.parse(raw) || EMPTY_VQ; } catch { return { ...EMPTY_VQ }; }
 }
 
+function formatTaskRequest(task, agentKey) {
+    return {
+        agentKey,
+        taskKey: task.task_key,
+        payload: {
+            business_key: "<Your business key to retrieve data context>",
+            message: "<Your message to the AI>",
+        },
+    };
+}
+
+function copyTextFallback(text) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+
+    try {
+        textarea.select();
+        return document.execCommand("copy");
+    } finally {
+        document.body.removeChild(textarea);
+    }
+}
+
 /* ════════════════════════════════════════════════════════════════════════
    Compact embedded tasks panel — mounted inside AiAgents accordion row.
    Props:
@@ -124,13 +151,34 @@ function AiTasks({ agentId, agentKey, agentName, onTaskCountChanged }) {
     }
 
     function exportJson(t) {
-        const blob = new Blob([JSON.stringify(t, null, 2)], { type: "application/json" });
+        const request = formatTaskRequest(t, agentKey);
+        const blob = new Blob([JSON.stringify(request, null, 2)], { type: "application/json" });
         const url  = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href     = url;
         link.download = `${t.task_key}.json`;
         link.click();
         URL.revokeObjectURL(url);
+    }
+
+    async function copyJson(t) {
+        const json = JSON.stringify(formatTaskRequest(t, agentKey), null, 2);
+
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(json);
+            } else if (!copyTextFallback(json)) {
+                throw new Error("Copy command was rejected");
+            }
+            toastEmitter("API request JSON copied", true);
+        } catch {
+            try {
+                if (!copyTextFallback(json)) throw new Error("Copy command was rejected");
+                toastEmitter("API request JSON copied", true);
+            } catch {
+                toastEmitter("Could not copy JSON. Select the JSON and copy it manually.", true, "warning");
+            }
+        }
     }
 
     return (
@@ -314,15 +362,18 @@ function AiTasks({ agentId, agentKey, agentName, onTaskCountChanged }) {
                 <div className="ai-modal-overlay" onClick={e => e.target === e.currentTarget && setShowJson(null)}>
                     <div className="ai-modal ai-modal-lg">
                         <div className="ai-modal-header">
-                            <h5><i className="fa-solid fa-code me-2" />Task Definition — {showJson.task_key}</h5>
+                            <h5><i className="fa-solid fa-code me-2" />Task API Request — {showJson.task_key}</h5>
                             <button className="ai-modal-close" onClick={() => setShowJson(null)}>
                                 <i className="fa-solid fa-xmark" />
                             </button>
                         </div>
                         <div className="ai-modal-body">
-                            <pre className="ai-json-preview">{JSON.stringify(showJson, null, 2)}</pre>
+                            <pre className="ai-json-preview">{JSON.stringify(formatTaskRequest(showJson, agentKey), null, 2)}</pre>
                         </div>
                         <div className="ai-modal-footer">
+                            <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => copyJson(showJson)}>
+                                <i className="fa-regular fa-copy me-1" aria-hidden="true" /> Copy JSON
+                            </button>
                             <button className="btn btn-outline-secondary btn-sm" onClick={() => exportJson(showJson)}>
                                 <i className="fa-solid fa-download me-1" /> Download JSON
                             </button>

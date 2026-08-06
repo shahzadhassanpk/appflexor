@@ -239,49 +239,56 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
 
                             {/* agent header row */}
                             <div className="ais-agent-header">
-                                <button
-                                    type="button"
-                                    className="ais-chevron"
-                                    onClick={() => toggleExpand(a.id)}
-                                    aria-label={expanded ? "Collapse tasks" : "Expand tasks"}>
-                                    <i className={`fa-solid ${expanded ? "fa-chevron-down" : "fa-chevron-right"}`} aria-hidden="true" />
-                                </button>
-                                <span className="ais-agent-icon" style={{ background: `${color}22`, color }}>
-                                    <i className="fa-solid fa-robot" aria-hidden="true" />
-                                </span>
-                                <span className="ais-agent-name">{a.agent_name}</span>
-                                
-                                <code className="ais-key-badge">{a.agent_key}</code>
+                                <div className="ais-agent-header-content d-flex align-items-center gap-2 flex-1 min-w-0">
+                                    <button
+                                        type="button"
+                                        className="ais-chevron"
+                                        onClick={() => toggleExpand(a.id)}
+                                        aria-label={expanded ? "Collapse tasks" : "Expand tasks"}>
+                                        <i className={`fa-solid ${expanded ? "fa-chevron-down" : "fa-chevron-right"}`} aria-hidden="true" />
+                                    </button>
+                                    <span className="ais-agent-icon" style={{ background: `${color}22`, color }}>
+                                        <i className="fa-solid fa-robot" aria-hidden="true" />
+                                    </span>
+                                    <span className="ais-agent-name">{a.agent_name}</span>
 
-                                {prov && (
-                                    <span className="ais-tag" style={{ background: `${provColor}18`, color: provColor, border: `1px solid ${provColor}30` }}>
-                                        <i className="fa-solid fa-brain me-1" style={{ fontSize: "0.6rem" }} aria-hidden="true" />
-                                        {prov.provider_name}
+                                    <code className="ais-key-badge">{a.agent_key}</code>
+
+                                    {prov && (
+                                        <span className="ais-tag" style={{ background: `${provColor}18`, color: provColor, border: `1px solid ${provColor}30` }}>
+                                            <i className="fa-solid fa-brain me-1" style={{ fontSize: "0.6rem" }} aria-hidden="true" />
+                                            {prov.provider_name}
+                                        </span>
+                                    )}
+                                    {cat && (
+                                        <span className="ais-tag" style={{ background: `${catColor}18`, color: catColor, border: `1px solid ${catColor}30` }}>
+                                            <i className="fa-solid fa-tag me-1" style={{ fontSize: "0.6rem" }} aria-hidden="true" />
+                                            {cat.title}
+                                        </span>
+                                    )}
+                                    <div className="ais-agent-actions ms-auto">
+                                        {/* <button type="button" className="ais-icon-btn" title="Preview JSON definition" onClick={() => setShowJson(a)}>
+                                            <i className="fa-solid fa-code" aria-hidden="true" />
+                                        </button> */}
+                                        <button type="button" className="ais-icon-btn" title="Edit agent" onClick={() => openEdit(a)}>
+                                            <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
+                                        </button>
+                                        <button type="button" className="ais-icon-btn danger" title="Delete agent" onClick={() => remove(a)}>
+                                            <i className="fa-regular fa-trash-can" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    <span className="ais-count-badge" title={`${taskCounts[a.id] ?? 0} tasks`} style={{ background: `${color}22`, color }}>
+                                        <i className="fa-solid fa-list-check me-1" aria-hidden="true" />
+                                        Tasks  {taskCounts[a.id] ?? 0}
+                                        <span className="visually-hidden"> tasks</span>
                                     </span>
-                                )}
-                                {cat && (
-                                    <span className="ais-tag" style={{ background: `${catColor}18`, color: catColor, border: `1px solid ${catColor}30` }}>
-                                        <i className="fa-solid fa-tag me-1" style={{ fontSize: "0.6rem" }} aria-hidden="true" />
-                                        {cat.title}
-                                    </span>
-                                )}
-                                <div className="ais-agent-actions ms-auto">
-                                    <button type="button" className="ais-icon-btn" title="Preview JSON definition" onClick={() => setShowJson(a)}>
-                                        <i className="fa-solid fa-code" aria-hidden="true" />
-                                    </button>
-                                    <button type="button" className="ais-icon-btn" title="Edit agent" onClick={() => openEdit(a)}>
-                                        <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
-                                    </button>
-                                    <button type="button" className="ais-icon-btn danger" title="Delete agent" onClick={() => remove(a)}>
-                                        <i className="fa-regular fa-trash-can" aria-hidden="true" />
-                                    </button>
                                 </div>
-                                <span className="ais-count-badge" title={`${taskCounts[a.id] ?? 0} tasks` } style={{ background: `${color}22`, color }}>
-                                    <i className="fa-solid fa-list-check me-1" aria-hidden="true" />
-                                    Tasks  {taskCounts[a.id] ?? 0}
-                                    <span className="visually-hidden"> tasks</span>
-                                </span>
+                                <div className="ais-agent-prompt-container p-2">
+                                    <span className="ais-system-prompt">{a.system_prompt}</span>
+                                </div>
                             </div>
+
+
 
                             {/* tasks panel — conditionally mounted so it fetches fresh on each open */}
                             {expanded && (
