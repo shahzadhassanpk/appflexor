@@ -19,12 +19,12 @@ const getColor = i => PALETTE[i % PALETTE.length];
 /* ── pre-defined providers ──────────────────────────────────────────────── */
 const PROVIDERS = [
     { name: "AppFlexor AI", key: "appflexor", api_url: "" },
-    { name: "Open AI", key: "openai", api_url: "https://api.openai.com/v1/chat/completions" },
+    // { name: "Open AI", key: "openai", api_url: "https://api.openai.com/v1/chat/completions" },
     // { name: "Ollama", key: "ollama", api_url: "" },
-    { name: "Anthropic",                key: "anthropic",   api_url: "https://api.anthropic.com/v1/messages" },
-    { name: "Google AI Studio (Gemini)",key: "googleai",    api_url: "https://generativelanguage.googleapis.com/v1beta/models" },
+    // { name: "Anthropic",                key: "anthropic",   api_url: "https://api.anthropic.com/v1/messages" },
+    // { name: "Google AI Studio (Gemini)",key: "googleai",    api_url: "https://generativelanguage.googleapis.com/v1beta/models" },
     // { name: "Groq",                     key: "groq",        api_url: "https://api.groq.com/openai/v1/chat/completions" },
-    { name: "OpenRouter",               key: "openrouter",  api_url: "https://openrouter.ai/api/v1/chat/completions" },
+    // { name: "OpenRouter",               key: "openrouter",  api_url: "https://openrouter.ai/api/v1/chat/completions" },
     // { name: "Mistral",                  key: "mistral",     api_url: "https://api.mistral.ai/v1/chat/completions" },
     // { name: "Cerebras",                 key: "cerebras",    api_url: "https://inference.cerebras.ai/v1/chat/completions" },
     // { name: "Together AI",              key: "togetherai",  api_url: "https://api.together.xyz/v1/chat/completions" },
