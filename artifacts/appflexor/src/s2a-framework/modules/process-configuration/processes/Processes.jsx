@@ -577,6 +577,7 @@ function Processes({ activeTab }) {
         setBpmnProcesses([]);
         setActiveProcessId("");
         setElementsMap({ userTasks: [], serviceTasks: [], variables: [] });
+        setActiveElemTab("userTasks");
         setSelectedItem(item);
         setDeployPending(false);
         setProcesses(
@@ -654,6 +655,7 @@ function Processes({ activeTab }) {
             ...prev,
             [name]: type === "checkbox" ? (checked ? "YES" : "NO") : value,
         }));
+        setDeployPending(true);
     }
 
     function handleDeleteFileClick(event) {
@@ -1681,7 +1683,7 @@ function Processes({ activeTab }) {
                                         <button
                                             className={`btn btn-sm proc-deploy-btn ${deployPending ? "proc-deploy-btn--pulse" : ""}`}
                                             onClick={() => deployProcess(selectedItem)}
-                                            disabled={saveIsDisabled || deploying}
+                                            disabled={!deployPending || deploying}
                                             title="Deploy to process engine">
                                             {deploying
                                                 ? <><i className="fa-solid fa-spinner fa-spin pe-1" />Deploying…</>
