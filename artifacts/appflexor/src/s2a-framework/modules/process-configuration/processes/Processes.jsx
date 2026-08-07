@@ -101,7 +101,7 @@ function Processes({ activeTab }) {
     const [bpmnProcesses, setBpmnProcesses]   = useState([]); // [{id,name}] from XML
     const [activeProcessId, setActiveProcessId] = useState("");
     const [elementsMap, setElementsMap]       = useState({
-        userTasks: [], serviceTasks: [], variables: [],
+        userTasks: [], serviceTasks: [], variables: [], startEvents: [],
     });
     const [activeElemTab, setActiveElemTab]   = useState("userTasks");
 
@@ -253,6 +253,7 @@ function Processes({ activeTab }) {
             userTasks:    filtered.filter(e => e.type === "bpmn:UserTask"),
             serviceTasks: filtered.filter(e => e.type === "bpmn:ServiceTask"),
             variables:    filtered.filter(e => e.type === "bpmn:DataObjectReference"),
+            startEvents:  filtered.filter(e => e.type === "bpmn:StartEvent"),
         });
 
         // Zoom canvas to the bounding box of this process's elements
@@ -293,6 +294,7 @@ function Processes({ activeTab }) {
                 userTasks:    filtered.filter(e => e.type === "bpmn:UserTask"),
                 serviceTasks: filtered.filter(e => e.type === "bpmn:ServiceTask"),
                 variables:    filtered.filter(e => e.type === "bpmn:DataObjectReference"),
+                startEvents:  filtered.filter(e => e.type === "bpmn:StartEvent"),
             });
         } catch (err) {
             console.error("Element extraction error:", err);
@@ -388,7 +390,7 @@ function Processes({ activeTab }) {
             const grp = attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"] || "";
             const usr = attrs["camunda:assignee"] || attrs["activiti:assignee"] || "";
             init = { assigneeType: grp ? "group" : "user", assignee: grp || usr };
-        } else if (type === "userTasks" && subType === "form") {
+        } else if ((type === "userTasks" || type === "startEvent") && subType === "form") {
             init = { formKey: attrs["camunda:formKey"] || attrs["activiti:formKey"] || "" };
         } else if (type === "serviceTasks") {
             const storedAgentKey = attrs["s2aAgentKey"] || "";
@@ -461,7 +463,7 @@ function Processes({ activeTab }) {
                 bo.$attrs["camunda:candidateGroups"] = propForm.assignee;
                 delete bo.$attrs["camunda:assignee"];
             }
-        } else if (type === "userTasks" && subType === "form") {
+        } else if ((type === "userTasks" || type === "startEvent") && subType === "form") {
             bo.$attrs["camunda:formKey"] = propForm.formKey;
         } else if (type === "serviceTasks") {
             if (propForm.serviceType === "ai") {
@@ -576,7 +578,7 @@ function Processes({ activeTab }) {
         allElementsRef.current = [];
         setBpmnProcesses([]);
         setActiveProcessId("");
-        setElementsMap({ userTasks: [], serviceTasks: [], variables: [] });
+        setElementsMap({ userTasks: [], serviceTasks: [], variables: [], startEvents: [] });
         setActiveElemTab("userTasks");
         setSelectedItem(item);
         setDeployPending(false);
@@ -595,7 +597,7 @@ function Processes({ activeTab }) {
         allElementsRef.current = [];
         setBpmnProcesses([]);
         setActiveProcessId("");
-        setElementsMap({ userTasks: [], serviceTasks: [], variables: [] });
+        setElementsMap({ userTasks: [], serviceTasks: [], variables: [], startEvents: [] });
         setDeployPending(false);
         setToggleBpmnViewer("restore");
         setFormShow(true);
@@ -667,7 +669,7 @@ function Processes({ activeTab }) {
             allElementsRef.current = [];
             setBpmnProcesses([]);
             setActiveProcessId("");
-            setElementsMap({ userTasks: [], serviceTasks: [], variables: [] });
+            setElementsMap({ userTasks: [], serviceTasks: [], variables: [], startEvents: [] });
             setSelectedItem(prev => ({ ...prev, process_def_key: "" }));
             selectedItem.process_file = "";
             event.target.value = "";
@@ -905,7 +907,7 @@ function Processes({ activeTab }) {
             );
         }
 
-        if (type === "userTasks" && subType === "form") {
+        if ((type === "userTasks" || type === "startEvent") && subType === "form") {
             return (
                 <div className="mb-1">
                     <label className="ai-label">Form</label>
@@ -1262,11 +1264,46 @@ function Processes({ activeTab }) {
                 </ul>
 
                 <div className="proc-elem-body">
+                    {isUserTasks && (() => {
+                        const startElem = elementsMap.startEvents?.[0] || null;
+                        const startForm = startElem ? resolveFormLabel(startElem) : null;
+                        return (
+                            <div className="proc-start-event-row">
+                                <div className="proc-start-event-info">
+                                    <span className="proc-start-event-badge">
+                                        <i className="fa-solid fa-circle-play me-1" />
+                                        Start Process
+                                    </span>
+                                    {startElem && (
+                                        startForm ? (
+                                            <span className="proc-form-chip">
+                                                <i className="fa-solid fa-file-lines me-1" />
+                                                {startForm}
+                                            </span>
+                                        ) : (
+                                            <span className="proc-elem-unset">No form linked</span>
+                                        )
+                                    )}
+                                    {!startElem && (
+                                        <span className="proc-elem-unset">No start event in diagram</span>
+                                    )}
+                                </div>
+                                {startElem && (
+                                    <button
+                                        className="btn btn-outline-secondary btn-sm proc-elem-edit-btn"
+                                        title="Edit start form"
+                                        onClick={() => openPropModal("startEvent", startElem, "form")}>
+                                        <i className="fa-solid fa-file-lines" />
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })()}
                     {currentElems.length === 0 ? (
                         <div className="proc-elem-empty">
                             {xmlLoading
                                 ? <><i className="fa-solid fa-spinner fa-spin me-1" /> Loading diagram…</>
-                                : <>No {ELEM_TABS.find(t => t.key === activeElemTab)?.label.toLowerCase()} found in this diagram.</>}
+                                : isUserTasks ? <>No user tasks found in this diagram.</> : <>No {ELEM_TABS.find(t => t.key === activeElemTab)?.label.toLowerCase()} found in this diagram.</>}
                         </div>
                     ) : (
                         <table className="proc-elem-table">

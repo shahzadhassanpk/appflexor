@@ -176,6 +176,37 @@
     padding: 0.25rem 0;
 }
 
+/* ── Start Process pinned row ────────────────────────────────────────────── */
+.proc-start-event-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
+    background: color-mix(in srgb, var(--font-color, #000) 2%, var(--secondary-color, #fff));
+}
+
+.proc-start-event-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.proc-start-event-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #16a34a;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 .proc-elem-empty {
     padding: 1rem;
     font-size: 0.78rem;
