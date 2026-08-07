@@ -92,6 +92,10 @@ function Processes({ activeTab }) {
     const [saveIsDisabled, setSaveIsDisabled]             = useState(true);
     const [deleteConfig, setDeleteConfig] = useState({ show: false, item: {} });
 
+    /* ── deployment state ── */
+    const [deployPending, setDeployPending] = useState(false);
+    const [deploying, setDeploying]         = useState(false);
+
     /* ── viewer state ── */
     const [xmlLoading, setXmlLoading]         = useState(false);
     const [bpmnProcesses, setBpmnProcesses]   = useState([]); // [{id,name}] from XML
@@ -574,6 +578,7 @@ function Processes({ activeTab }) {
         setActiveProcessId("");
         setElementsMap({ userTasks: [], serviceTasks: [], variables: [] });
         setSelectedItem(item);
+        setDeployPending(false);
         setProcesses(
             tryParseJSONObject(item.processes, [{ name: item.title, id: item.process_def_key }]),
         );
@@ -590,6 +595,7 @@ function Processes({ activeTab }) {
         setBpmnProcesses([]);
         setActiveProcessId("");
         setElementsMap({ userTasks: [], serviceTasks: [], variables: [] });
+        setDeployPending(false);
         setToggleBpmnViewer("restore");
         setFormShow(true);
     }
@@ -664,6 +670,7 @@ function Processes({ activeTab }) {
             selectedItem.process_file = "";
             event.target.value = "";
             deleteFromServer(fileName, "");
+            setDeployPending(true);
         }
     }
 
@@ -673,6 +680,7 @@ function Processes({ activeTab }) {
             title: proc.name,
             process_def_key: proc.id,
         }));
+        setDeployPending(true);
     };
 
     const handleFileUpload = event => {
@@ -697,6 +705,7 @@ function Processes({ activeTab }) {
 
             // Store XML for viewer
             currentXmlRef.current = xmlText;
+            setDeployPending(true);
         };
 
         fileReader.readAsDataURL(selectedFile);
@@ -798,7 +807,7 @@ function Processes({ activeTab }) {
         }
     }
 
-    const deployProcess = proc => {
+    const deployProcess = async proc => {
         const process_engine = appContext.tenantSubscription.process_engine;
         const request = {
             id: proc.id,
@@ -807,15 +816,23 @@ function Processes({ activeTab }) {
             mainProcessDefKey: proc.process_def_key,
             process_engine,
         };
-        axios.post(`${BPM_API_URL}?service.key=deploy.process`, request).then(res => {
+        setDeploying(true);
+        try {
+            const res = await axios.post(`${BPM_API_URL}?service.key=deploy.process`, request);
             if (res.data.C_STATUS === "SUCCESS") {
                 const data = res.data.C_DATA;
                 saveData({ ...proc, version: data.version, process_id: data.process_id, deployment: data.deployment });
-                toastEmitter("Process Deployed Successfully", true);
+                setDeployPending(false);
+                toastEmitter("Process deployed successfully", true);
             } else {
-                toastEmitter("Process Deployment Failed", true, "error");
+                toastEmitter("Process deployment failed", true, "error");
             }
-        });
+        } catch (err) {
+            console.error("Deploy error:", err);
+            toastEmitter("Process deployment failed", true, "error");
+        } finally {
+            setDeploying(false);
+        }
     };
 
     /* ─────────────────────────────────────────────────────────────────────
@@ -1531,7 +1548,7 @@ function Processes({ activeTab }) {
                 size="lg"
                 fullscreen={toggleModalWindow === "maximize"}>
                 <Modal.Header className="d-flex align-items-center justify-content-between">
-                    <Modal.Title>Process BPMN Model</Modal.Title>
+                    <Modal.Title>Process Deployment</Modal.Title>
                     <div className="d-flex gap-2">
                         {toggleModalWindow !== "maximize" && (
                             <div className="pointer" title="Maximize window" onClick={() => setToggleModalWindow("maximize")}>
@@ -1615,7 +1632,35 @@ function Processes({ activeTab }) {
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* Deployment status card */}
+                                    {formStatus === STATUS.update && (
+                                        <div className="proc-deploy-card">
+                                            <div className="proc-deploy-card-label">
+                                                <i className={`fa-solid ${selectedItem.version ? "fa-circle-check proc-deploy-icon--ok" : "fa-circle-xmark proc-deploy-icon--none"} me-1`} />
+                                                {selectedItem.version ? "Deployed" : "Not yet deployed"}
+                                            </div>
+                                            {selectedItem.version && (
+                                                <div className="proc-deploy-card-meta">
+                                                    <span className="proc-deploy-version">v{selectedItem.version}</span>
+                                                    {selectedItem.process_id && (
+                                                        <span className="proc-deploy-pid" title="Process definition ID">
+                                                            {selectedItem.process_id}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
+
+                                {/* Pending-deploy banner */}
+                                {deployPending && formStatus === STATUS.update && (
+                                    <div className="proc-deploy-pending-banner">
+                                        <i className="fa-solid fa-triangle-exclamation me-2" />
+                                        Changes saved — deploy to apply to the process engine
+                                    </div>
+                                )}
 
                                 {/* Footer */}
                                 <div className="proc-form-footer">
@@ -1627,11 +1672,22 @@ function Processes({ activeTab }) {
                                     </button>
                                     <button
                                         className="btn button-theme btn-sm"
-                                        onClick={() => saveData(selectedItem)}
+                                        onClick={() => { saveData(selectedItem); setDeployPending(true); }}
                                         disabled={saveIsDisabled}>
                                         <i className="fa-solid fa-floppy-disk pe-1" />
                                         Save
                                     </button>
+                                    {formStatus === STATUS.update && (
+                                        <button
+                                            className={`btn btn-sm proc-deploy-btn ${deployPending ? "proc-deploy-btn--pulse" : ""}`}
+                                            onClick={() => deployProcess(selectedItem)}
+                                            disabled={saveIsDisabled || deploying}
+                                            title="Deploy to process engine">
+                                            {deploying
+                                                ? <><i className="fa-solid fa-spinner fa-spin pe-1" />Deploying…</>
+                                                : <><i className="fa-solid fa-rocket pe-1" />Deploy</>}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 

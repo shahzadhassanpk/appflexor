@@ -434,6 +434,105 @@
     margin-left: 1px;
 }
 
+/* ── Deployment status card ─────────────────────────────────────────────── */
+.proc-deploy-card {
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    background: color-mix(in srgb, var(--secondary-color, #f8fafc) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color, #e2e8f0) 100%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.proc-deploy-card-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.proc-deploy-icon--ok  { color: #16a34a; }
+.proc-deploy-icon--none { color: color-mix(in srgb, var(--font-color, #9ca3af) 50%, transparent); }
+
+.proc-deploy-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.proc-deploy-version {
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: ui-monospace, monospace;
+    color: #2563eb;
+    background: color-mix(in srgb, #2563eb 8%, transparent);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+}
+
+.proc-deploy-pid {
+    font-size: 0.7rem;
+    font-family: ui-monospace, monospace;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 60%, transparent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+}
+
+/* ── Pending-deploy banner (shown after save, before deploy) ─────────────── */
+.proc-deploy-pending-banner {
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.45rem 0.85rem;
+    background: color-mix(in srgb, #f59e0b 12%, transparent);
+    border-top: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
+    color: #92400e;
+    gap: 0.35rem;
+}
+
+/* ── Deploy button ───────────────────────────────────────────────────────── */
+.proc-deploy-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: none;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+}
+
+.proc-deploy-btn:hover:not(:disabled) {
+    opacity: 0.9;
+    box-shadow: 0 2px 8px color-mix(in srgb, #2563eb 35%, transparent);
+}
+
+.proc-deploy-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Subtle pulse when deploy is pending */
+@keyframes proc-deploy-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, #f59e0b 50%, transparent); }
+    50%       { box-shadow: 0 0 0 5px color-mix(in srgb, #f59e0b 0%, transparent); }
+}
+
+.proc-deploy-btn--pulse {
+    animation: proc-deploy-pulse 1.6s ease-in-out infinite;
+}
+
 /* ── bpmn-js canvas override (ensure it fits our container) ─────────────── */
 .djs-container svg {
     width: 100% !important;
