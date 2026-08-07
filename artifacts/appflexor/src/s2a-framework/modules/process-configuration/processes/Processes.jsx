@@ -29,10 +29,9 @@ const INITIAL_STATE = {
     file_url: "",
 };
 const ELEM_TABS = [
-    { key: "participants", label: "Participants", icon: "fa-users" },
-    { key: "userTasks",    label: "User Tasks",   icon: "fa-user-check" },
-    { key: "serviceTasks", label: "Service Tasks", icon: "fa-gear" },
-    { key: "variables",    label: "Variables",     icon: "fa-database" },
+    { key: "userTasks",    label: "User Tasks",    icon: "fa-user-check" },
+    { key: "serviceTasks", label: "Service Tasks",  icon: "fa-gear" },
+    { key: "variables",    label: "Variables",      icon: "fa-database" },
 ];
 
 /* ── SearchableSelect ──────────────────────────────────────────────────── */
@@ -94,14 +93,16 @@ function Processes({ activeTab }) {
     const [deleteConfig, setDeleteConfig] = useState({ show: false, item: {} });
 
     /* ── viewer state ── */
-    const [xmlLoading, setXmlLoading]   = useState(false);
-    const [elementsMap, setElementsMap] = useState({
-        participants: [], userTasks: [], serviceTasks: [], variables: [],
+    const [xmlLoading, setXmlLoading]         = useState(false);
+    const [bpmnProcesses, setBpmnProcesses]   = useState([]); // [{id,name}] from XML
+    const [activeProcessId, setActiveProcessId] = useState("");
+    const [elementsMap, setElementsMap]       = useState({
+        userTasks: [], serviceTasks: [], variables: [],
     });
-    const [activeElemTab, setActiveElemTab] = useState("participants");
+    const [activeElemTab, setActiveElemTab]   = useState("userTasks");
 
     /* ── property editor state ── */
-    const [propModal, setPropModal]     = useState(null); // { type, element, title }
+    const [propModal, setPropModal]     = useState(null); // { type, subType, element, title }
     const [propForm, setPropForm]       = useState({});
     const [propLoading, setPropLoading] = useState(false);
     const [groups, setGroups]           = useState([]);
@@ -114,6 +115,7 @@ function Processes({ activeTab }) {
     const maxViewerRef      = useRef(null); // DOM container — maximize mode
     const viewerInstanceRef = useRef(null); // NavigatedViewer instance
     const currentXmlRef     = useRef(null); // current BPMN XML string
+    const allElementsRef    = useRef([]);   // all registry elements (for process filtering)
 
     const { id, process_file } = selectedItem;
     const fileUrl = FILE_URL + "/" + DB_TABLE + "/" + id + "/" + process_file;
@@ -166,11 +168,17 @@ function Processes({ activeTab }) {
             const xml = await res.text();
             currentXmlRef.current = xml;
 
+            // Parse process list from XML
+            const procs = parseProcessesFromXml(xml);
+            setBpmnProcesses(procs);
+            const firstId = procs[0]?.id || "";
+            setActiveProcessId(firstId);
+
             const viewer = viewerInstanceRef.current;
             if (viewer) {
                 await viewer.importXML(xml);
                 viewer.get("canvas").zoom("fit-viewport");
-                extractElements(viewer);
+                extractElements(viewer, firstId);
             }
         } catch (err) {
             console.error("BPMN fetch error:", err);
@@ -181,19 +189,87 @@ function Processes({ activeTab }) {
     }
 
     /* ─────────────────────────────────────────────────────────────────────
+       Walk businessObject parent chain to find owning bpmn:Process id
+    ───────────────────────────────────────────────────────────────────── */
+    function getProcessId(bo) {
+        let cur = bo;
+        while (cur) {
+            if (cur.$type === "bpmn:Process") return cur.id;
+            cur = cur.$parent;
+        }
+        return null;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       Parse process list from raw BPMN XML string
+    ───────────────────────────────────────────────────────────────────── */
+    function parseProcessesFromXml(xml) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xml, "application/xml");
+        let elems = Array.from(
+            doc.getElementsByTagNameNS("http://www.omg.org/spec/BPMN/20100524/MODEL", "process"),
+        );
+        if (elems.length === 0) elems = Array.from(doc.getElementsByTagName("bpmn:process"));
+        if (elems.length === 0) elems = Array.from(doc.getElementsByTagName("process"));
+        return elems
+            .map(p => ({ id: p.getAttribute("id") || "", name: p.getAttribute("name") || p.getAttribute("id") || "" }))
+            .filter(p => p.id);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       Switch active process: update elementsMap + zoom canvas to it
+    ───────────────────────────────────────────────────────────────────── */
+    function switchToProcess(processId) {
+        setActiveProcessId(processId);
+
+        // Filter stored elements by new process
+        const filtered = processId
+            ? allElementsRef.current.filter(e => getProcessId(e.businessObject) === processId)
+            : allElementsRef.current;
+        setElementsMap({
+            userTasks:    filtered.filter(e => e.type === "bpmn:UserTask"),
+            serviceTasks: filtered.filter(e => e.type === "bpmn:ServiceTask"),
+            variables:    filtered.filter(e => e.type === "bpmn:DataObjectReference"),
+        });
+
+        // Zoom canvas to the bounding box of this process's elements
+        const viewer = viewerInstanceRef.current;
+        if (!viewer || !processId) return;
+        try {
+            const canvas = viewer.get("canvas");
+            const shapes = allElementsRef.current.filter(
+                e => e.x !== undefined && getProcessId(e.businessObject) === processId,
+            );
+            if (shapes.length === 0) { canvas.zoom("fit-viewport"); return; }
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            shapes.forEach(s => {
+                minX = Math.min(minX, s.x);
+                minY = Math.min(minY, s.y);
+                maxX = Math.max(maxX, s.x + (s.width || 0));
+                maxY = Math.max(maxY, s.y + (s.height || 0));
+            });
+            const pad = 50;
+            canvas.viewbox({ x: minX - pad, y: minY - pad, width: maxX - minX + pad * 2, height: maxY - minY + pad * 2 });
+        } catch (err) {
+            console.error("Zoom to process error:", err);
+        }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
        Parse element registry into categorised lists
     ───────────────────────────────────────────────────────────────────── */
-    function extractElements(viewer) {
+    function extractElements(viewer, initialProcessId) {
         try {
             const registry = viewer.get("elementRegistry");
             const all = registry.getAll().filter(e => e.type !== "label");
+            allElementsRef.current = all;
+
+            const pid = initialProcessId || (all.length > 0 ? getProcessId(all[0]?.businessObject) : "") || "";
+            const filtered = pid ? all.filter(e => getProcessId(e.businessObject) === pid) : all;
             setElementsMap({
-                participants: all.filter(
-                    e => e.type === "bpmn:Participant" || e.type === "bpmn:Lane",
-                ),
-                userTasks: all.filter(e => e.type === "bpmn:UserTask"),
-                serviceTasks: all.filter(e => e.type === "bpmn:ServiceTask"),
-                variables: all.filter(e => e.type === "bpmn:DataObjectReference"),
+                userTasks:    filtered.filter(e => e.type === "bpmn:UserTask"),
+                serviceTasks: filtered.filter(e => e.type === "bpmn:ServiceTask"),
+                variables:    filtered.filter(e => e.type === "bpmn:DataObjectReference"),
             });
         } catch (err) {
             console.error("Element extraction error:", err);
@@ -239,31 +315,27 @@ function Processes({ activeTab }) {
 
     /* ─────────────────────────────────────────────────────────────────────
        Open property editor modal
+       subType: "form" | "assignee" for userTasks; undefined for others
     ───────────────────────────────────────────────────────────────────── */
-    function openPropModal(type, element) {
+    function openPropModal(type, element, subType) {
         const bo = element.businessObject;
         const attrs = bo.$attrs || {};
         let init = {};
 
-        if (type === "participants") {
+        if (type === "userTasks" && subType === "assignee") {
             const grp = attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"] || "";
             const usr = attrs["camunda:assignee"] || attrs["activiti:assignee"] || "";
             init = { assigneeType: grp ? "group" : "user", assignee: grp || usr };
-        } else if (type === "userTasks") {
-            init = {
-                formKey: attrs["camunda:formKey"] || attrs["activiti:formKey"] || "",
-            };
+        } else if (type === "userTasks" && subType === "form") {
+            init = { formKey: attrs["camunda:formKey"] || attrs["activiti:formKey"] || "" };
         } else if (type === "serviceTasks") {
-            init = {
-                type: "external",
-                topic: attrs["camunda:topic"] || "",
-            };
+            init = { type: "external", topic: attrs["camunda:topic"] || "" };
         } else if (type === "variables") {
             init = { name: bo.name || "" };
         }
 
         setPropForm(init);
-        setPropModal({ type, element, title: bo.name || element.id });
+        setPropModal({ type, subType, element, title: bo.name || element.id });
         loadRefData();
     }
 
@@ -271,14 +343,14 @@ function Processes({ activeTab }) {
        Save property changes → mutate businessObject → saveXML → upload
     ───────────────────────────────────────────────────────────────────── */
     async function savePropChanges() {
-        const { type, element } = propModal;
+        const { type, subType, element } = propModal;
         const bo = element.businessObject;
         if (!bo.$attrs) bo.$attrs = {};
 
         // Mutate businessObject attributes
         // NOTE: For full Camunda namespace support in new files, register
         //       camunda-bpmn-moddle as a moddleExtension on the viewer.
-        if (type === "participants") {
+        if (type === "userTasks" && subType === "assignee") {
             if (propForm.assigneeType === "user") {
                 bo.$attrs["camunda:assignee"]        = propForm.assignee;
                 delete bo.$attrs["camunda:candidateGroups"];
@@ -286,7 +358,7 @@ function Processes({ activeTab }) {
                 bo.$attrs["camunda:candidateGroups"] = propForm.assignee;
                 delete bo.$attrs["camunda:assignee"];
             }
-        } else if (type === "userTasks") {
+        } else if (type === "userTasks" && subType === "form") {
             bo.$attrs["camunda:formKey"] = propForm.formKey;
         } else if (type === "serviceTasks") {
             bo.$attrs["camunda:type"]  = "external";
@@ -372,7 +444,10 @@ function Processes({ activeTab }) {
         setFormStatus(STATUS.update);
         setToggleBpmnViewer("restore");
         currentXmlRef.current = null;
-        setElementsMap({ participants: [], userTasks: [], serviceTasks: [], variables: [] });
+        allElementsRef.current = [];
+        setBpmnProcesses([]);
+        setActiveProcessId("");
+        setElementsMap({ userTasks: [], serviceTasks: [], variables: [] });
         setSelectedItem(item);
         setProcesses(
             tryParseJSONObject(item.processes, [{ name: item.title, id: item.process_def_key }]),
@@ -386,7 +461,10 @@ function Processes({ activeTab }) {
         setSaveIsDisabled(true);
         setProcesses([]);
         currentXmlRef.current = null;
-        setElementsMap({ participants: [], userTasks: [], serviceTasks: [], variables: [] });
+        allElementsRef.current = [];
+        setBpmnProcesses([]);
+        setActiveProcessId("");
+        setElementsMap({ userTasks: [], serviceTasks: [], variables: [] });
         setToggleBpmnViewer("restore");
         setFormShow(true);
     }
@@ -453,7 +531,10 @@ function Processes({ activeTab }) {
             setFileStatus("deleted");
             setProcesses([]);
             currentXmlRef.current = null;
-            setElementsMap({ participants: [], userTasks: [], serviceTasks: [], variables: [] });
+            allElementsRef.current = [];
+            setBpmnProcesses([]);
+            setActiveProcessId("");
+            setElementsMap({ userTasks: [], serviceTasks: [], variables: [] });
             setSelectedItem(prev => ({ ...prev, process_def_key: "" }));
             selectedItem.process_file = "";
             event.target.value = "";
@@ -482,14 +563,11 @@ function Processes({ activeTab }) {
 
             // Parse process IDs from XML
             const xmlText = atob(encodedData);
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlText, "application/xml");
-            const processElements = xmlDoc.getElementsByTagName("bpmn:process");
-            const parsed = Array.from(processElements).map(p => ({
-                id: p.getAttribute("id"),
-                name: p.getAttribute("name"),
-            }));
+            const parsed = parseProcessesFromXml(xmlText);
             setProcesses(parsed);
+            setBpmnProcesses(parsed);
+            const firstId = parsed[0]?.id || "";
+            setActiveProcessId(firstId);
             if (parsed.length > 0) handleProcessSelected(parsed[0]);
 
             // Store XML for viewer
@@ -633,7 +711,7 @@ function Processes({ activeTab }) {
     ───────────────────────────────────────────────────────────────────── */
     function renderPropForm() {
         if (!propModal) return null;
-        const { type } = propModal;
+        const { type, subType } = propModal;
 
         if (propLoading && !refDataLoaded) {
             return (
@@ -644,7 +722,7 @@ function Processes({ activeTab }) {
             );
         }
 
-        if (type === "participants") {
+        if (type === "userTasks" && subType === "assignee") {
             return (
                 <>
                     <div className="mb-3">
@@ -683,7 +761,7 @@ function Processes({ activeTab }) {
             );
         }
 
-        if (type === "userTasks") {
+        if (type === "userTasks" && subType === "form") {
             return (
                 <div className="mb-1">
                     <label className="ai-label">Form</label>
@@ -737,10 +815,38 @@ function Processes({ activeTab }) {
     }
 
     /* ─────────────────────────────────────────────────────────────────────
+       Resolve display labels for a user task's assignee / form
+    ───────────────────────────────────────────────────────────────────── */
+    function resolveAssigneeLabel(elem) {
+        const attrs = elem.businessObject?.$attrs || {};
+        const grp = attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"];
+        const usr = attrs["camunda:assignee"]        || attrs["activiti:assignee"];
+        if (grp) {
+            const found = groups.find(g => g.value === grp);
+            return { label: found ? found.label : grp, type: "group" };
+        }
+        if (usr) {
+            const found = users.find(u => u.value === usr);
+            return { label: found ? found.label : usr, type: "user" };
+        }
+        return null;
+    }
+
+    function resolveFormLabel(elem) {
+        const attrs = elem.businessObject?.$attrs || {};
+        const key = attrs["camunda:formKey"] || attrs["activiti:formKey"];
+        if (!key) return null;
+        const found = formList.find(f => f.value === key);
+        return found ? found.label : key;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
        Element tabs panel (rendered inside the modal)
     ───────────────────────────────────────────────────────────────────── */
     function renderElemTabs() {
         const currentElems = elementsMap[activeElemTab] || [];
+        const isUserTasks  = activeElemTab === "userTasks";
+
         return (
             <div className="proc-elem-panel">
                 <ul className="nav nav-tabs proc-elem-nav">
@@ -774,32 +880,81 @@ function Processes({ activeTab }) {
                             <thead>
                                 <tr>
                                     <th>Name / ID</th>
-                                    <th>Type</th>
-                                    <th style={{ width: "5rem" }}></th>
+                                    {isUserTasks && <th>Assignee</th>}
+                                    {isUserTasks && <th>Form</th>}
+                                    {!isUserTasks && <th>Type</th>}
+                                    <th style={{ width: isUserTasks ? "9rem" : "5rem" }} />
                                 </tr>
                             </thead>
                             <tbody>
-                                {currentElems.map(elem => (
-                                    <tr key={elem.id}>
-                                        <td>
-                                            <span className="proc-elem-name">{elemDisplayName(elem)}</span>
-                                            {elemBadge(elem)}
-                                        </td>
-                                        <td>
-                                            <span className="proc-elem-type">
-                                                {elem.type.replace("bpmn:", "")}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button
-                                                className="btn btn-outline-secondary btn-sm proc-elem-edit-btn"
-                                                onClick={() => openPropModal(activeElemTab, elem)}>
-                                                <i className="fa-regular fa-edit me-1" />
-                                                Edit
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {currentElems.map(elem => {
+                                    const assignee  = isUserTasks ? resolveAssigneeLabel(elem) : null;
+                                    const formLabel = isUserTasks ? resolveFormLabel(elem) : null;
+                                    return (
+                                        <tr key={elem.id}>
+                                            <td>
+                                                <span className="proc-elem-name">{elemDisplayName(elem)}</span>
+                                                {elemBadge(elem)}
+                                            </td>
+                                            {isUserTasks && (
+                                                <td>
+                                                    {assignee ? (
+                                                        <span className="proc-assignee-chip">
+                                                            <i className={`fa-solid ${assignee.type === "group" ? "fa-users" : "fa-user"} me-1`} />
+                                                            {assignee.label}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="proc-elem-unset">—</span>
+                                                    )}
+                                                </td>
+                                            )}
+                                            {isUserTasks && (
+                                                <td>
+                                                    {formLabel ? (
+                                                        <span className="proc-form-chip">
+                                                            <i className="fa-solid fa-file-lines me-1" />
+                                                            {formLabel}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="proc-elem-unset">—</span>
+                                                    )}
+                                                </td>
+                                            )}
+                                            {!isUserTasks && (
+                                                <td>
+                                                    <span className="proc-elem-type">
+                                                        {elem.type.replace("bpmn:", "")}
+                                                    </span>
+                                                </td>
+                                            )}
+                                            <td>
+                                                {isUserTasks ? (
+                                                    <div className="d-flex gap-1">
+                                                        <button
+                                                            className="btn btn-outline-secondary btn-sm proc-elem-edit-btn"
+                                                            title="Edit assignee"
+                                                            onClick={() => openPropModal("userTasks", elem, "assignee")}>
+                                                            <i className="fa-solid fa-user-pen" />
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-outline-secondary btn-sm proc-elem-edit-btn"
+                                                            title="Edit form"
+                                                            onClick={() => openPropModal("userTasks", elem, "form")}>
+                                                            <i className="fa-solid fa-file-lines" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        className="btn btn-outline-secondary btn-sm proc-elem-edit-btn"
+                                                        onClick={() => openPropModal(activeElemTab, elem)}>
+                                                        <i className="fa-regular fa-edit me-1" />
+                                                        Edit
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     )}
@@ -819,11 +974,35 @@ function Processes({ activeTab }) {
             <div className={`proc-viewer-wrap ${isMax ? "proc-viewer-wrap--max" : ""}`}>
                 {/* Toolbar */}
                 <div className="proc-viewer-toolbar">
-                    <span className="proc-viewer-filename">
-                        <i className="fa-solid fa-file-code me-1" />
-                        {selectedItem.process_file || "No file loaded"}
-                    </span>
-                    <div className="d-flex gap-1 align-items-center">
+                    {/* File name + process switcher */}
+                    <div className="proc-viewer-toolbar-left">
+                        <span className="proc-viewer-filename">
+                            <i className="fa-solid fa-file-code me-1" />
+                            {selectedItem.process_file || "No file loaded"}
+                        </span>
+                        {bpmnProcesses.length > 1 && (
+                            <select
+                                className="form-select form-select-sm proc-process-select"
+                                value={activeProcessId}
+                                onChange={e => switchToProcess(e.target.value)}
+                                title="Switch process">
+                                {bpmnProcesses.map(p => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.name || p.id}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                        {bpmnProcesses.length === 1 && (
+                            <span className="proc-viewer-procname">
+                                <i className="fa-solid fa-sitemap me-1" />
+                                {bpmnProcesses[0].name || bpmnProcesses[0].id}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Right controls */}
+                    <div className="d-flex gap-1 align-items-center flex-shrink-0">
                         {xmlLoading && (
                             <span className="proc-viewer-loading">
                                 <i className="fa-solid fa-spinner fa-spin me-1" />
