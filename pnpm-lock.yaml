@@ -687,6 +687,9 @@ importers:
       bpmn-js-sketchy:
         specifier: ^0.7.2
         version: 0.7.2(bpmn-js@17.11.1)(diagram-js@15.18.0)
+      camunda-bpmn-moddle:
+        specifier: ^7.0.1
+        version: 7.0.1
       classnames:
         specifier: ^2.3.2
         version: 2.5.1
@@ -3917,6 +3920,9 @@ packages:
   camelize@1.0.1:
     resolution: {integrity: sha512-dU+Tx2fsypxTgtLoE36npi3UqcjSSMNYfkqgmoEhtZrraP5VWq0K7FkWVTYa8eMPtnU/G2txVsfdCJTn9uzpuQ==}
 
+  camunda-bpmn-moddle@7.0.1:
+    resolution: {integrity: sha512-Br8Diu6roMpziHdpl66Dhnm0DTnCFMrSD9zwLV08LpD52QA0UsXxU87XfHf08HjuB7ly0Hd1bvajZRpf9hbmYQ==}
+
   caniuse-lite@1.0.30001792:
     resolution: {integrity: sha512-hVLMUZFgR4JJ6ACt1uEESvQN1/dBVqPAKY0hgrV70eN3391K6juAfTjKZLKvOMsx8PxA7gsY1/tLMMTcfFLLpw==}
 
@@ -4152,6 +4158,7 @@ packages:
 
   crypto-js@4.2.0:
     resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
+    deprecated: Active development of CryptoJS has been discontinued. This library is no longer maintained.
 
   css-color-keywords@1.0.0:
     resolution: {integrity: sha512-FyyrDHZKEjXDpNJYvVsV960FiqQyXc/LlYmsxl2BcdMb2WPx0OGRVgTg55rPSyLSNMqP52R9r8geSp7apN3Ofg==}
@@ -11725,6 +11732,8 @@ snapshots:
   camelcase-css@2.0.1: {}
 
   camelize@1.0.1: {}
+
+  camunda-bpmn-moddle@7.0.1: {}
 
   caniuse-lite@1.0.30001792: {}
 

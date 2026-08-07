@@ -1,5 +1,6 @@
 import axios from "axios";
 import BpmnNavigatedViewer from "bpmn-js/lib/NavigatedViewer";
+import camundaModdle from "camunda-bpmn-moddle/resources/camunda.json";
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-js.css";
 import React, { useContext, useEffect, useRef, useState } from "react";
@@ -165,7 +166,10 @@ function Processes({ activeTab }) {
             viewerInstanceRef.current = null;
         }
 
-        const viewer = new BpmnNavigatedViewer({ container });
+        const viewer = new BpmnNavigatedViewer({
+            container,
+            moddleExtensions: { camunda: camundaModdle },
+        });
         viewerInstanceRef.current = viewer;
 
         if (currentXmlRef.current) {
