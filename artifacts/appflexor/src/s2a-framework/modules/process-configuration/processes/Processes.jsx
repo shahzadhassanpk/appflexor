@@ -404,6 +404,13 @@ function Processes({ activeTab }) {
                 }
             } catch (_) { /* keep defaults */ }
 
+            // Parse external worker params
+            let params = [];
+            try {
+                const raw = attrs["s2aParams"];
+                if (raw) params = Object.entries(JSON.parse(raw)).map(([k, v]) => ({ key: k, value: v }));
+            } catch (_) { /* keep empty */ }
+
             if (storedAgentKey) {
                 // Tasks are loaded later via useEffect once aiAgents is populated
                 init = {
@@ -411,6 +418,7 @@ function Processes({ activeTab }) {
                     agentKey: storedAgentKey, // this IS the select value; no agentId needed
                     taskKey:  storedTaskKey,
                     payload,
+                    params,
                 };
             } else {
                 init = {
@@ -418,6 +426,7 @@ function Processes({ activeTab }) {
                     topic:   attrs["camunda:topic"] || "",
                     agentKey: "", taskKey: "",
                     payload,
+                    params,
                 };
             }
         } else if (type === "variables") {
@@ -465,6 +474,16 @@ function Processes({ activeTab }) {
             } else {
                 bo.$attrs["camunda:type"]  = "external";
                 bo.$attrs["camunda:topic"] = propForm.topic;
+                const paramsObj = Object.fromEntries(
+                    (propForm.params || [])
+                        .filter(p => p.key.trim())
+                        .map(p => [p.key.trim(), p.value]),
+                );
+                if (Object.keys(paramsObj).length > 0) {
+                    bo.$attrs["s2aParams"] = JSON.stringify(paramsObj);
+                } else {
+                    delete bo.$attrs["s2aParams"];
+                }
                 delete bo.$attrs["s2aAgentKey"];
                 delete bo.$attrs["s2aTaskKey"];
                 delete bo.$attrs["s2aPayload"];
@@ -924,18 +943,108 @@ function Processes({ activeTab }) {
 
                     {/* ── External worker fields ──────────────────────────── */}
                     {!isAi && (
-                        <div className="mb-1">
-                            <label className="ai-label">Topic</label>
-                            <input
-                                className="form-control form-control-sm"
-                                placeholder="e.g. process-payment"
-                                value={propForm.topic || ""}
-                                onChange={e => setPropForm(p => ({ ...p, topic: e.target.value }))}
-                            />
-                            <div className="form-text" style={{ fontSize: "0.72rem" }}>
-                                External worker tasks are picked up by connected workflow engines.
+                        <>
+                            <div className="mb-3">
+                                <label className="ai-label">Topic</label>
+                                <input
+                                    className="form-control form-control-sm"
+                                    placeholder="e.g. process-payment"
+                                    value={propForm.topic || ""}
+                                    onChange={e => setPropForm(p => ({ ...p, topic: e.target.value }))}
+                                />
+                                <div className="form-text" style={{ fontSize: "0.72rem" }}>
+                                    External worker tasks are picked up by connected workflow engines.
+                                </div>
                             </div>
-                        </div>
+
+                            {/* ── Dynamic parameters ── */}
+                            <div className="mb-1">
+                                <label className="ai-label">
+                                    Parameters
+                                    <span className="proc-payload-hint ms-2">
+                                        Values are Camunda expressions, e.g. <code>{"${execution.businessKey}"}</code>
+                                    </span>
+                                </label>
+                                <table className="proc-payload-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Parameter</th>
+                                            <th>Value / Expression</th>
+                                            <th style={{ width: "2rem" }} />
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(propForm.params || []).length === 0 && (
+                                            <tr>
+                                                <td colSpan={3} className="proc-payload-hint" style={{ padding: "0.5rem 0.4rem" }}>
+                                                    No parameters yet — click Add Parameter below.
+                                                </td>
+                                            </tr>
+                                        )}
+                                        {(propForm.params || []).map((row, idx) => (
+                                            <tr key={idx}>
+                                                <td>
+                                                    <input
+                                                        className="form-control form-control-sm proc-payload-key-input"
+                                                        value={row.key}
+                                                        placeholder="param name"
+                                                        onChange={e =>
+                                                            setPropForm(p => ({
+                                                                ...p,
+                                                                params: p.params.map((r, i) =>
+                                                                    i === idx ? { ...r, key: e.target.value } : r,
+                                                                ),
+                                                            }))
+                                                        }
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        className="form-control form-control-sm proc-payload-val-input"
+                                                        value={row.value}
+                                                        placeholder="${...}"
+                                                        onChange={e =>
+                                                            setPropForm(p => ({
+                                                                ...p,
+                                                                params: p.params.map((r, i) =>
+                                                                    i === idx ? { ...r, value: e.target.value } : r,
+                                                                ),
+                                                            }))
+                                                        }
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-danger btn-sm proc-payload-del-btn"
+                                                        title="Remove parameter"
+                                                        onClick={() =>
+                                                            setPropForm(p => ({
+                                                                ...p,
+                                                                params: p.params.filter((_, i) => i !== idx),
+                                                            }))
+                                                        }>
+                                                        <i className="fa-solid fa-times" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary btn-sm mt-2 proc-payload-add-btn"
+                                    onClick={() =>
+                                        setPropForm(p => ({
+                                            ...p,
+                                            params: [...(p.params || []), { key: "", value: "" }],
+                                        }))
+                                    }>
+                                    <i className="fa-solid fa-plus me-1" />
+                                    Add Parameter
+                                </button>
+                            </div>
+                        </>
                     )}
 
                     {/* ── AI Agent Task fields ────────────────────────────── */}
@@ -1547,7 +1656,7 @@ function Processes({ activeTab }) {
                 show={!!propModal}
                 onHide={() => setPropModal(null)}
                 backdrop="static"
-                size="sm"
+                size="lg"
                 style={{ zIndex: 1060 }}
                 className="s2a-modal">
                 <Modal.Header>
