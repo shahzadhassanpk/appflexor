@@ -115,6 +115,20 @@ function Processes({ activeTab }) {
     const [aiAgentTasks, setAiAgentTasks] = useState([]); // [{ value:task_key, label:task_name }]
     const [aiTasksLoading, setAiTasksLoading] = useState(false);
 
+    /* ── auto-load tasks when agents arrive with a modal already open ── */
+    useEffect(() => {
+        if (
+            propModal?.type === "serviceTasks" &&
+            propForm.serviceType === "ai" &&
+            propForm.agentKey &&
+            aiAgents.length > 0 &&
+            aiAgentTasks.length === 0 &&
+            !aiTasksLoading
+        ) {
+            loadAiTasksForAgent(propForm.agentKey);
+        }
+    }, [aiAgents]); // eslint-disable-line react-hooks/exhaustive-deps
+
     /* ── viewer refs ── */
     const restoreViewerRef  = useRef(null); // DOM container — restore mode
     const maxViewerRef      = useRef(null); // DOM container — maximize mode
@@ -312,9 +326,9 @@ function Processes({ activeTab }) {
                 );
                 setAiAgents(
                     (d.agents || []).map(a => ({
-                        value: a.id,
+                        value: a.agent_key, // use agent_key as select value for stable lookup
                         label: a.agent_name,
-                        key:   a.agent_key,
+                        id:    a.id,        // db id kept for task-loading API calls
                     })),
                 );
                 setRefDataLoaded(true);
@@ -329,7 +343,11 @@ function Processes({ activeTab }) {
     /* ─────────────────────────────────────────────────────────────────────
        Load tasks for a given agent id (called when agent changes)
     ───────────────────────────────────────────────────────────────────── */
-    async function loadAiTasksForAgent(agentId) {
+    async function loadAiTasksForAgent(agentKey) {
+        if (!agentKey) { setAiAgentTasks([]); return; }
+        // Resolve db id from the key (aiAgents may or may not be populated yet)
+        const agentRec = aiAgents.find(a => a.value === agentKey);
+        const agentId  = agentRec?.id;
         if (!agentId) { setAiAgentTasks([]); return; }
         setAiTasksLoading(true);
         try {
@@ -369,14 +387,14 @@ function Processes({ activeTab }) {
         } else if (type === "userTasks" && subType === "form") {
             init = { formKey: attrs["camunda:formKey"] || attrs["activiti:formKey"] || "" };
         } else if (type === "serviceTasks") {
-            const storedAgentKey = attrs["appflexor:agentKey"] || "";
-            const storedTaskKey  = attrs["appflexor:taskKey"]  || "";
+            const storedAgentKey = attrs["s2aAgentKey"] || "";
+            const storedTaskKey  = attrs["s2aTaskKey"]  || "";
             let payload = [
                 { key: "business_key", value: "" },
                 { key: "message",      value: "" },
             ];
             try {
-                const raw = attrs["appflexor:payload"];
+                const raw = attrs["s2aPayload"];
                 if (raw) {
                     const parsed = JSON.parse(raw);
                     payload = Object.entries(parsed).map(([k, v]) => ({ key: k, value: v }));
@@ -387,13 +405,10 @@ function Processes({ activeTab }) {
             } catch (_) { /* keep defaults */ }
 
             if (storedAgentKey) {
-                // Restore task list for the stored agent
-                const agent = aiAgents.find(a => a.key === storedAgentKey);
-                if (agent) loadAiTasksForAgent(agent.value);
+                // Tasks are loaded later via useEffect once aiAgents is populated
                 init = {
                     serviceType: "ai",
-                    agentKey: storedAgentKey,
-                    agentId:  agent?.value || "",
+                    agentKey: storedAgentKey, // this IS the select value; no agentId needed
                     taskKey:  storedTaskKey,
                     payload,
                 };
@@ -401,7 +416,7 @@ function Processes({ activeTab }) {
                 init = {
                     serviceType: "external",
                     topic:   attrs["camunda:topic"] || "",
-                    agentKey: "", agentId: "", taskKey: "",
+                    agentKey: "", taskKey: "",
                     payload,
                 };
             }
@@ -437,22 +452,22 @@ function Processes({ activeTab }) {
             bo.$attrs["camunda:formKey"] = propForm.formKey;
         } else if (type === "serviceTasks") {
             if (propForm.serviceType === "ai") {
-                bo.$attrs["camunda:type"]          = "external";
-                bo.$attrs["camunda:topic"]         = "ai.agent.task";
-                bo.$attrs["appflexor:agentKey"]    = propForm.agentKey;
-                bo.$attrs["appflexor:taskKey"]     = propForm.taskKey;
+                bo.$attrs["camunda:type"]  = "external";
+                bo.$attrs["camunda:topic"] = "ai.agent.task";
+                bo.$attrs["s2aAgentKey"]   = propForm.agentKey;
+                bo.$attrs["s2aTaskKey"]    = propForm.taskKey;
                 const payloadObj = Object.fromEntries(
                     (propForm.payload || [])
                         .filter(p => p.key.trim())
                         .map(p => [p.key.trim(), p.value]),
                 );
-                bo.$attrs["appflexor:payload"] = JSON.stringify(payloadObj);
+                bo.$attrs["s2aPayload"] = JSON.stringify(payloadObj);
             } else {
                 bo.$attrs["camunda:type"]  = "external";
                 bo.$attrs["camunda:topic"] = propForm.topic;
-                delete bo.$attrs["appflexor:agentKey"];
-                delete bo.$attrs["appflexor:taskKey"];
-                delete bo.$attrs["appflexor:payload"];
+                delete bo.$attrs["s2aAgentKey"];
+                delete bo.$attrs["s2aTaskKey"];
+                delete bo.$attrs["s2aPayload"];
             }
         } else if (type === "variables") {
             bo.name = propForm.name;
@@ -879,15 +894,9 @@ function Processes({ activeTab }) {
                 }));
 
             /* helper: when agent changes, load its tasks and reset taskKey */
-            const handleAgentChange = agentId => {
-                const agent = aiAgents.find(a => a.value === agentId);
-                setPropForm(p => ({
-                    ...p,
-                    agentId,
-                    agentKey: agent?.key || "",
-                    taskKey: "",
-                }));
-                loadAiTasksForAgent(agentId);
+            const handleAgentChange = agentKey => {
+                setPropForm(p => ({ ...p, agentKey, taskKey: "" }));
+                loadAiTasksForAgent(agentKey);
             };
 
             return (
@@ -942,7 +951,7 @@ function Processes({ activeTab }) {
                                 ) : (
                                     <SearchableSelect
                                         options={aiAgents}
-                                        value={propForm.agentId || ""}
+                                        value={propForm.agentKey || ""}
                                         onChange={e => handleAgentChange(e.target.value)}
                                         placeholder="Search agents…"
                                     />
@@ -950,6 +959,8 @@ function Processes({ activeTab }) {
                                 {propForm.agentKey && (
                                     <div className="proc-payload-hint">
                                         key: <code>{propForm.agentKey}</code>
+                                        {" — "}
+                                        {aiAgents.find(a => a.value === propForm.agentKey)?.label || propForm.agentKey}
                                     </div>
                                 )}
                             </div>
@@ -966,7 +977,7 @@ function Processes({ activeTab }) {
                                         options={aiAgentTasks}
                                         value={propForm.taskKey || ""}
                                         onChange={e => setPropForm(p => ({ ...p, taskKey: e.target.value }))}
-                                        placeholder={propForm.agentId ? "Search tasks…" : "Select an agent first…"}
+                                        placeholder={propForm.agentKey ? "Search tasks…" : "Select an agent first…"}
                                     />
                                 )}
                             </div>
@@ -1176,13 +1187,13 @@ function Processes({ activeTab }) {
                                             )}
                                             {!isUserTasks && (
                                                 <td>
-                                                    {elem.businessObject?.$attrs?.["appflexor:agentKey"] ? (
+                                                    {elem.businessObject?.$attrs?.["s2aAgentKey"] ? (
                                                         <span className="proc-ai-chip">
                                                             <i className="fa-solid fa-robot me-1" />
-                                                            {elem.businessObject.$attrs["appflexor:agentKey"]}
-                                                            {elem.businessObject.$attrs["appflexor:taskKey"] && (
+                                                            {elem.businessObject.$attrs["s2aAgentKey"]}
+                                                            {elem.businessObject.$attrs["s2aTaskKey"] && (
                                                                 <span className="proc-ai-chip-task">
-                                                                    /{elem.businessObject.$attrs["appflexor:taskKey"]}
+                                                                    /{elem.businessObject.$attrs["s2aTaskKey"]}
                                                                 </span>
                                                             )}
                                                         </span>
