@@ -369,7 +369,7 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
                                         <option value="">— Select provider —</option>
                                         {providers.map(p => (
                                             <option key={p.id} value={p.id}>
-                                                {p.provider_name} ({p.provider_key})
+                                                {p.provider_name} ({p.model})
                                             </option>
                                         ))}
                                     </select>

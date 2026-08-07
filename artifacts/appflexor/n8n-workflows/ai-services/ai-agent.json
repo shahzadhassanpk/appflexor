@@ -1,0 +1,341 @@
+{
+  "name": "AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-agent",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        -32
+      ],
+      "id": "c5f6ee65-2af1-4c0a-bfe6-3552d4dd566f",
+      "name": "Webhook",
+      "webhookId": "700e8222-dee2-46c1-8775-cbb1b5518162"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -32,
+        -48
+      ],
+      "id": "f190b236-18a1-4cb1-b707-48d3df91ac97",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        256,
+        -64
+      ],
+      "id": "3a96d1ca-3711-4350-b9d9-bff4992e78b1",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        160
+      ],
+      "id": "e219e839-6a4a-4b9f-b039-d4913041e246",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.c_sql_query }}",
+        "options": {
+          "queryReplacement": "={{ $json.payload.business_key }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        192,
+        -256
+      ],
+      "id": "de331bf1-bca4-49f8-8abe-28246a6a121c",
+      "name": "Retrieve Context Data",
+      "credentials": {
+        "postgres": {
+          "id": "MT11H8kh6sWGRCfL",
+          "name": "TENANT_DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let arr_data = [];\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let data = {data: item.json};\n  arr_data.push(data);\n}\n\nreturn arr_data;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -256
+      ],
+      "id": "c6711169-6aa0-48a1-8a90-db118afbe726",
+      "name": "Format Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "let arr_data = [];\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let data = item.json.body;\n  data.tenant_host = item.json[\"headers\"][\"x-forwarded-host\"]\n  arr_data.push(data);\n}\n\nreturn arr_data;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        -32
+      ],
+      "id": "e30aa7eb-4240-4d0f-b3a3-f152ea081bf3",
+      "name": "Normalize Request"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list",
+          "cachedResultName": "GPT-4"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "={{ $json.c_system_prompt }}"
+            },
+            {
+              "content": "={{ $json.usermessage }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -96,
+        160
+      ],
+      "id": "7b2ec9ca-56b4-4439-aad3-be8c99bab3c3",
+      "name": "AI Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "1A2StWKt1cs3z1JD",
+          "name": "AppFlexor OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let results = [];\n\nfor (const item of $input.all()) {\n  let rawText = item.json.output?.[0]?.content?.[0]?.text || \"\";\n\n  let parsed = {};\n  try {\n    // First attempt: direct parse\n    parsed = JSON.parse(rawText);\n  } catch (e) {\n    // Fallback: try to clean up the text into valid JSON\n    let cleaned = rawText\n      // Remove leading/trailing junk\n      .trim()\n      // Replace raw newlines inside values with escaped \\n\n      .replace(/:\\s*\"([^\"]*?)\\n([^\"]*?)\"/g, (m, p1, p2) => {\n        return `: \"${p1}\\\\n${p2}\"`;\n      })\n      // Remove stray backticks or code fences\n      .replace(/```[a-z]*\\n?/g, \"\")\n      .replace(/```/g, \"\");\n\n    try {\n      parsed = JSON.parse(cleaned);\n    } catch (err) {\n      // Last fallback: regex key/value extraction\n      const matches = [...cleaned.matchAll(/\"([^\"]+)\"\\s*:\\s*\"([^\"]*)\"/g)];\n      for (const m of matches) {\n        parsed[m[1]] = m[2].replace(/\\\\n/g, \"\\n\").trim();\n      }\n    }\n  }\n\n  results.push({ json: parsed });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        160
+      ],
+      "id": "934a3778-4157-445a-b372-96dcadd2a5a7",
+      "name": "Normalize Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "function fillPrompt(template, data) {\n  return template.replace(/\\{([^}]+)\\}/g, (match, key) => {\n    // Handle nested keys like data.c_name\n    const parts = key.split('.');\n    let value = data;\n    for (const part of parts) {\n      if (value && part in value) {\n        value = value[part];\n      } else {\n        return match; // leave placeholder if not found\n      }\n    }\n    return Array.isArray(value) ? value.join(\", \") : value;\n  });\n}\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.usermessage = fillPrompt(item.json.c_user_prompt, item.json.data);\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        -64
+      ],
+      "id": "1a0bb957-22fa-4776-b113-4c523c8b20d2",
+      "name": "Prepare Prompts"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select a.c_system_prompt, t.c_user_prompt, t.c_sql_query,\n  t.c_vector_query\n  from app_fd_ai_agent a \njoin app_fd_ai_agent_task t on t.c_agent::uuid=a.id\nwhere a.c_agent_key=$1 and t.c_task_key=$2 limit 1",
+        "options": {
+          "queryReplacement": "={{ $json.agentKey }},{{ $json.taskKey }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -64,
+        -240
+      ],
+      "id": "3273e3f2-c4d6-4c2c-b345-5dddd8e368e6",
+      "name": "Retrieve Agent Config",
+      "credentials": {
+        "postgres": {
+          "id": "MT11H8kh6sWGRCfL",
+          "name": "TENANT_DB"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Context Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Prepare Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Context Data": {
+      "main": [
+        [
+          {
+            "node": "Format Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Data": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Agent Config",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Normalize Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Output": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Prompts": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Agent Config": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "BE4dhGcsWn5SRWzT",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "2e66099b-1512-4f1d-85e1-fdce99b4be87",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6254c1260eb2af98ad176dc897f9396a6e30c89f8579acd08ebe94e54822dcd3"
+  },
+  "id": "u1REbG5cwEwpi9vu",
+  "tags": []
+}
