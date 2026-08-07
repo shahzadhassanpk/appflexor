@@ -581,7 +581,7 @@ function Processes({ activeTab }) {
         setElementsMap({ userTasks: [], serviceTasks: [], variables: [], startEvents: [] });
         setActiveElemTab("userTasks");
         setSelectedItem(item);
-        setDeployPending(false);
+        setDeployPending(!!item.process_file);
         setProcesses(
             tryParseJSONObject(item.processes, [{ name: item.title, id: item.process_def_key }]),
         );
@@ -1718,7 +1718,7 @@ function Processes({ activeTab }) {
                                     </button>
                                     {formStatus === STATUS.update && (
                                         <button
-                                            className={`btn btn-sm proc-deploy-btn ${deployPending ? "proc-deploy-btn--pulse" : ""}`}
+                                            className={`btn button-theme btn-sm ${deployPending ? "proc-deploy-btn--pulse" : ""}`}
                                             onClick={() => deployProcess(selectedItem)}
                                             disabled={!deployPending || deploying}
                                             title="Deploy to process engine">
