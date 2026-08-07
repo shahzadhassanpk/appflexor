@@ -765,7 +765,7 @@ function Processes({ activeTab }) {
         }
     }
 
-    function saveData(item) {
+    async function saveData(item) {
         const fieldsData = { ...item, processes };
         const request = {
             data: [{
@@ -776,18 +776,31 @@ function Processes({ activeTab }) {
                 formData: { ...fieldsData, id: fieldsData.id || "new" },
             }],
         };
-        axios
-            .post(API_URL + "?service.key=update.formData", request)
-            .then(response => {
-                if (response.status === 200) {
-                    getData();
-                    clearFields();
-                    setFormShow(false);
-                    toastEmitter("Record saved successfully", true);
-                }
-            })
-            .catch(e => console.error("saveData error:", e));
+        try {
+            const response = await axios.post(API_URL + "?service.key=update.formData", request);
+            if (response.status === 200) {
+                const saved = response.data?.C_DATA?.[0]?.formData || fieldsData;
+                setSelectedItem(prev => ({ ...prev, ...saved }));
+                setFormStatus(STATUS.update);
+                setDeployPending(true);
+                getData();
+                toastEmitter("Record saved successfully", true);
+                return saved;
+            }
+        } catch (e) {
+            console.error("saveData error:", e);
+            toastEmitter("Failed to save record", true, "error");
+            throw e;
+        }
+        return null;
     }
+
+    const handleDeployClick = async () => {
+        try {
+            const saved = await saveData(selectedItem);
+            if (saved) await deployProcess(saved);
+        } catch (_) { /* saveData already toasted */ }
+    };
 
     function deleteData(item, isDelete) {
         if (isDelete === true) {
@@ -825,7 +838,7 @@ function Processes({ activeTab }) {
             const res = await axios.post(`${BPM_API_URL}?service.key=deploy.process`, request);
             if (res.data.C_STATUS === "SUCCESS") {
                 const data = res.data.C_DATA;
-                saveData({ ...proc, version: data.version, process_id: data.process_id, deployment: data.deployment });
+                await saveData({ ...proc, version: data.version, process_id: data.process_id, deployment: data.deployment });
                 setDeployPending(false);
                 toastEmitter("Process deployed successfully", true);
             } else {
@@ -1711,7 +1724,7 @@ function Processes({ activeTab }) {
                                     </button>
                                     <button
                                         className="btn button-theme btn-sm"
-                                        onClick={() => { saveData(selectedItem); setDeployPending(true); }}
+                                        onClick={() => saveData(selectedItem)}
                                         disabled={saveIsDisabled}>
                                         <i className="fa-solid fa-floppy-disk pe-1" />
                                         Save
@@ -1719,7 +1732,7 @@ function Processes({ activeTab }) {
                                     {formStatus === STATUS.update && (
                                         <button
                                             className={`btn button-theme btn-sm ${deployPending ? "proc-deploy-btn--pulse" : ""}`}
-                                            onClick={() => deployProcess(selectedItem)}
+                                            onClick={handleDeployClick}
                                             disabled={!deployPending || deploying}
                                             title="Deploy to process engine">
                                             {deploying
