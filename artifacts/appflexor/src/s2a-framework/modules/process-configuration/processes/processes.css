@@ -311,6 +311,129 @@
     color: color-mix(in srgb, var(--font-color, #6b7280) 30%, transparent);
 }
 
+/* ── Service-task type toggle (External Worker / AI Agent Task) ─────────── */
+.proc-svc-type-toggle {
+    display: flex;
+    gap: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--border-color, #d1d5db) 100%, transparent);
+}
+
+.proc-svc-type-btn {
+    flex: 1;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    border: none;
+    background: color-mix(in srgb, var(--secondary-color, #f9fafb) 100%, transparent);
+    color: color-mix(in srgb, var(--font-color, #374151) 70%, transparent);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    text-align: center;
+}
+
+.proc-svc-type-btn:first-child {
+    border-right: 1px solid color-mix(in srgb, var(--border-color, #d1d5db) 100%, transparent);
+}
+
+.proc-svc-type-btn.active {
+    background: var(--link-active-color, #2563eb);
+    color: #fff;
+}
+
+.proc-svc-type-btn:hover:not(.active) {
+    background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
+    color: var(--link-active-color, #2563eb);
+}
+
+/* ── Payload key-value editor table ─────────────────────────────────────── */
+.proc-payload-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    margin-top: 0.4rem;
+}
+
+.proc-payload-table th {
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.25rem 0.4rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color, #e5e7eb) 100%, transparent);
+    color: color-mix(in srgb, var(--font-color, #6b7280) 70%, transparent);
+}
+
+.proc-payload-table td {
+    padding: 0.25rem 0.4rem 0.25rem 0;
+    vertical-align: middle;
+}
+
+.proc-payload-fixed-key {
+    display: inline-block;
+    font-size: 0.74rem;
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    color: var(--link-active-color, #2563eb);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
+}
+
+.proc-payload-key-input,
+.proc-payload-val-input {
+    font-family: ui-monospace, monospace;
+    font-size: 0.74rem !important;
+}
+
+.proc-payload-del-btn {
+    padding: 0.15rem 0.35rem;
+    font-size: 0.72rem;
+    line-height: 1;
+}
+
+.proc-payload-add-btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.65rem;
+}
+
+.proc-payload-hint {
+    font-size: 0.71rem;
+    color: color-mix(in srgb, var(--font-color, #6b7280) 65%, transparent);
+    margin-top: 0.25rem;
+    line-height: 1.4;
+}
+
+.proc-payload-hint code {
+    font-size: 0.69rem;
+    background: color-mix(in srgb, var(--font-color, #6b7280) 10%, transparent);
+    padding: 0.05rem 0.25rem;
+    border-radius: 3px;
+}
+
+/* ── AI agent chip in service-task list rows ────────────────────────────── */
+.proc-ai-chip {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.72rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, #059669 10%, transparent);
+    color: #047857;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.proc-ai-chip-task {
+    opacity: 0.7;
+    font-weight: 400;
+    margin-left: 1px;
+}
+
 /* ── bpmn-js canvas override (ensure it fits our container) ─────────────── */
 .djs-container svg {
     width: 100% !important;

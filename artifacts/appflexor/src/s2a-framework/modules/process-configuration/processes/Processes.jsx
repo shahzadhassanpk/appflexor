@@ -110,6 +110,11 @@ function Processes({ activeTab }) {
     const [formList, setFormList]       = useState([]);
     const [refDataLoaded, setRefDataLoaded] = useState(false);
 
+    /* ── AI agent / task state (for service-task editor) ── */
+    const [aiAgents, setAiAgents]         = useState([]); // [{ value:id, label:name, key:agent_key }]
+    const [aiAgentTasks, setAiAgentTasks] = useState([]); // [{ value:task_key, label:task_name }]
+    const [aiTasksLoading, setAiTasksLoading] = useState(false);
+
     /* ── viewer refs ── */
     const restoreViewerRef  = useRef(null); // DOM container — restore mode
     const maxViewerRef      = useRef(null); // DOM container — maximize mode
@@ -288,6 +293,7 @@ function Processes({ activeTab }) {
                     { serviceParams: "", dataKey: "groups",   serviceKey: "sys.console.dir.group", mode: "formData" },
                     { serviceParams: "", dataKey: "users",    serviceKey: "sys.user.list",          mode: "formData" },
                     { serviceParams: "", dataKey: "formList", serviceKey: "sys.list.forms",         mode: "formData" },
+                    { serviceParams: "", dataKey: "agents",   serviceKey: "ai.agent.list",          mode: "formData" },
                 ],
             });
             if (res.data.C_STATUS === "SUCCESS") {
@@ -304,12 +310,46 @@ function Processes({ activeTab }) {
                 setFormList(
                     (d.formList || []).map(f => ({ value: f.form_key, label: f.name })),
                 );
+                setAiAgents(
+                    (d.agents || []).map(a => ({
+                        value: a.id,
+                        label: a.agent_name,
+                        key:   a.agent_key,
+                    })),
+                );
                 setRefDataLoaded(true);
             }
         } catch (err) {
             console.error("Ref data load error:", err);
         } finally {
             setPropLoading(false);
+        }
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+       Load tasks for a given agent id (called when agent changes)
+    ───────────────────────────────────────────────────────────────────── */
+    async function loadAiTasksForAgent(agentId) {
+        if (!agentId) { setAiAgentTasks([]); return; }
+        setAiTasksLoading(true);
+        try {
+            const res = await axios.post(API_URL + "?service.key=masterKey.tenantData", {
+                dataKeys: [
+                    { serviceParams: agentId, dataKey: "tasks", serviceKey: "ai.task.by.agent", mode: "formData" },
+                ],
+            });
+            if (res.data.C_STATUS === "SUCCESS") {
+                setAiAgentTasks(
+                    (res.data.C_DATA?.tasks || []).map(t => ({
+                        value: t.task_key,
+                        label: t.task_name,
+                    })),
+                );
+            }
+        } catch (err) {
+            console.error("Load AI tasks error:", err);
+        } finally {
+            setAiTasksLoading(false);
         }
     }
 
@@ -329,7 +369,42 @@ function Processes({ activeTab }) {
         } else if (type === "userTasks" && subType === "form") {
             init = { formKey: attrs["camunda:formKey"] || attrs["activiti:formKey"] || "" };
         } else if (type === "serviceTasks") {
-            init = { type: "external", topic: attrs["camunda:topic"] || "" };
+            const storedAgentKey = attrs["appflexor:agentKey"] || "";
+            const storedTaskKey  = attrs["appflexor:taskKey"]  || "";
+            let payload = [
+                { key: "business_key", value: "" },
+                { key: "message",      value: "" },
+            ];
+            try {
+                const raw = attrs["appflexor:payload"];
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    payload = Object.entries(parsed).map(([k, v]) => ({ key: k, value: v }));
+                    // Ensure business_key + message always present
+                    if (!payload.find(p => p.key === "business_key")) payload.unshift({ key: "business_key", value: "" });
+                    if (!payload.find(p => p.key === "message"))      payload.splice(1, 0, { key: "message", value: "" });
+                }
+            } catch (_) { /* keep defaults */ }
+
+            if (storedAgentKey) {
+                // Restore task list for the stored agent
+                const agent = aiAgents.find(a => a.key === storedAgentKey);
+                if (agent) loadAiTasksForAgent(agent.value);
+                init = {
+                    serviceType: "ai",
+                    agentKey: storedAgentKey,
+                    agentId:  agent?.value || "",
+                    taskKey:  storedTaskKey,
+                    payload,
+                };
+            } else {
+                init = {
+                    serviceType: "external",
+                    topic:   attrs["camunda:topic"] || "",
+                    agentKey: "", agentId: "", taskKey: "",
+                    payload,
+                };
+            }
         } else if (type === "variables") {
             init = { name: bo.name || "" };
         }
@@ -361,8 +436,24 @@ function Processes({ activeTab }) {
         } else if (type === "userTasks" && subType === "form") {
             bo.$attrs["camunda:formKey"] = propForm.formKey;
         } else if (type === "serviceTasks") {
-            bo.$attrs["camunda:type"]  = "external";
-            bo.$attrs["camunda:topic"] = propForm.topic;
+            if (propForm.serviceType === "ai") {
+                bo.$attrs["camunda:type"]          = "external";
+                bo.$attrs["camunda:topic"]         = "ai.agent.task";
+                bo.$attrs["appflexor:agentKey"]    = propForm.agentKey;
+                bo.$attrs["appflexor:taskKey"]     = propForm.taskKey;
+                const payloadObj = Object.fromEntries(
+                    (propForm.payload || [])
+                        .filter(p => p.key.trim())
+                        .map(p => [p.key.trim(), p.value]),
+                );
+                bo.$attrs["appflexor:payload"] = JSON.stringify(payloadObj);
+            } else {
+                bo.$attrs["camunda:type"]  = "external";
+                bo.$attrs["camunda:topic"] = propForm.topic;
+                delete bo.$attrs["appflexor:agentKey"];
+                delete bo.$attrs["appflexor:taskKey"];
+                delete bo.$attrs["appflexor:payload"];
+            }
         } else if (type === "variables") {
             bo.name = propForm.name;
         }
@@ -776,24 +867,187 @@ function Processes({ activeTab }) {
         }
 
         if (type === "serviceTasks") {
+            const isAi = propForm.serviceType === "ai";
+
+            /* helper: update a payload row */
+            const setPayloadRow = (idx, field, val) =>
+                setPropForm(p => ({
+                    ...p,
+                    payload: p.payload.map((row, i) =>
+                        i === idx ? { ...row, [field]: val } : row,
+                    ),
+                }));
+
+            /* helper: when agent changes, load its tasks and reset taskKey */
+            const handleAgentChange = agentId => {
+                const agent = aiAgents.find(a => a.value === agentId);
+                setPropForm(p => ({
+                    ...p,
+                    agentId,
+                    agentKey: agent?.key || "",
+                    taskKey: "",
+                }));
+                loadAiTasksForAgent(agentId);
+            };
+
             return (
                 <>
+                    {/* ── Service type toggle ─────────────────────────────── */}
                     <div className="mb-3">
-                        <label className="ai-label">Type</label>
-                        <input className="form-control form-control-sm" value="external" readOnly />
-                        <div className="form-text" style={{ fontSize: "0.72rem" }}>
-                            External worker tasks are picked up by connected workflow engines.
+                        <label className="ai-label">Service Type</label>
+                        <div className="proc-svc-type-toggle">
+                            <button
+                                type="button"
+                                className={`proc-svc-type-btn ${!isAi ? "active" : ""}`}
+                                onClick={() => setPropForm(p => ({ ...p, serviceType: "external" }))}>
+                                <i className="fa-solid fa-plug me-1" />
+                                External Worker
+                            </button>
+                            <button
+                                type="button"
+                                className={`proc-svc-type-btn ${isAi ? "active" : ""}`}
+                                onClick={() => setPropForm(p => ({ ...p, serviceType: "ai" }))}>
+                                <i className="fa-solid fa-robot me-1" />
+                                AI Agent Task
+                            </button>
                         </div>
                     </div>
-                    <div className="mb-1">
-                        <label className="ai-label">Topic</label>
-                        <input
-                            className="form-control form-control-sm"
-                            placeholder="e.g. process-payment"
-                            value={propForm.topic || ""}
-                            onChange={e => setPropForm(p => ({ ...p, topic: e.target.value }))}
-                        />
-                    </div>
+
+                    {/* ── External worker fields ──────────────────────────── */}
+                    {!isAi && (
+                        <div className="mb-1">
+                            <label className="ai-label">Topic</label>
+                            <input
+                                className="form-control form-control-sm"
+                                placeholder="e.g. process-payment"
+                                value={propForm.topic || ""}
+                                onChange={e => setPropForm(p => ({ ...p, topic: e.target.value }))}
+                            />
+                            <div className="form-text" style={{ fontSize: "0.72rem" }}>
+                                External worker tasks are picked up by connected workflow engines.
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── AI Agent Task fields ────────────────────────────── */}
+                    {isAi && (
+                        <>
+                            {/* Agent */}
+                            <div className="mb-3">
+                                <label className="ai-label">Agent</label>
+                                {propLoading && !refDataLoaded ? (
+                                    <div className="proc-payload-hint">
+                                        <i className="fa-solid fa-spinner fa-spin me-1" /> Loading agents…
+                                    </div>
+                                ) : (
+                                    <SearchableSelect
+                                        options={aiAgents}
+                                        value={propForm.agentId || ""}
+                                        onChange={e => handleAgentChange(e.target.value)}
+                                        placeholder="Search agents…"
+                                    />
+                                )}
+                                {propForm.agentKey && (
+                                    <div className="proc-payload-hint">
+                                        key: <code>{propForm.agentKey}</code>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Task */}
+                            <div className="mb-3">
+                                <label className="ai-label">Task</label>
+                                {aiTasksLoading ? (
+                                    <div className="proc-payload-hint">
+                                        <i className="fa-solid fa-spinner fa-spin me-1" /> Loading tasks…
+                                    </div>
+                                ) : (
+                                    <SearchableSelect
+                                        options={aiAgentTasks}
+                                        value={propForm.taskKey || ""}
+                                        onChange={e => setPropForm(p => ({ ...p, taskKey: e.target.value }))}
+                                        placeholder={propForm.agentId ? "Search tasks…" : "Select an agent first…"}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Payload */}
+                            <div className="mb-1">
+                                <label className="ai-label">
+                                    Payload
+                                    <span className="proc-payload-hint ms-2">
+                                        Values are Camunda expressions, e.g. <code>{"${execution.businessKey}"}</code>
+                                    </span>
+                                </label>
+                                <table className="proc-payload-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Parameter</th>
+                                            <th>Value / Expression</th>
+                                            <th style={{ width: "2rem" }} />
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(propForm.payload || []).map((row, idx) => {
+                                            const isFixed = row.key === "business_key" || row.key === "message";
+                                            return (
+                                                <tr key={idx}>
+                                                    <td>
+                                                        {isFixed ? (
+                                                            <span className="proc-payload-fixed-key">{row.key}</span>
+                                                        ) : (
+                                                            <input
+                                                                className="form-control form-control-sm proc-payload-key-input"
+                                                                value={row.key}
+                                                                placeholder="param name"
+                                                                onChange={e => setPayloadRow(idx, "key", e.target.value)}
+                                                            />
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            className="form-control form-control-sm proc-payload-val-input"
+                                                            value={row.value}
+                                                            placeholder="${...}"
+                                                            onChange={e => setPayloadRow(idx, "value", e.target.value)}
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        {!isFixed && (
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-outline-danger btn-sm proc-payload-del-btn"
+                                                                title="Remove parameter"
+                                                                onClick={() =>
+                                                                    setPropForm(p => ({
+                                                                        ...p,
+                                                                        payload: p.payload.filter((_, i) => i !== idx),
+                                                                    }))
+                                                                }>
+                                                                <i className="fa-solid fa-times" />
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary btn-sm mt-2 proc-payload-add-btn"
+                                    onClick={() =>
+                                        setPropForm(p => ({
+                                            ...p,
+                                            payload: [...p.payload, { key: "", value: "" }],
+                                        }))
+                                    }>
+                                    <i className="fa-solid fa-plus me-1" />
+                                    Add Parameter
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </>
             );
         }
@@ -922,9 +1176,21 @@ function Processes({ activeTab }) {
                                             )}
                                             {!isUserTasks && (
                                                 <td>
-                                                    <span className="proc-elem-type">
-                                                        {elem.type.replace("bpmn:", "")}
-                                                    </span>
+                                                    {elem.businessObject?.$attrs?.["appflexor:agentKey"] ? (
+                                                        <span className="proc-ai-chip">
+                                                            <i className="fa-solid fa-robot me-1" />
+                                                            {elem.businessObject.$attrs["appflexor:agentKey"]}
+                                                            {elem.businessObject.$attrs["appflexor:taskKey"] && (
+                                                                <span className="proc-ai-chip-task">
+                                                                    /{elem.businessObject.$attrs["appflexor:taskKey"]}
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="proc-elem-type">
+                                                            {elem.type.replace("bpmn:", "")}
+                                                        </span>
+                                                    )}
                                                 </td>
                                             )}
                                             <td>
