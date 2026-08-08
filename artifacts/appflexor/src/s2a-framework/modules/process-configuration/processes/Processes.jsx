@@ -1294,9 +1294,10 @@ function Processes({ activeTab }) {
        Resolve display labels for a user task's assignee / form
     ───────────────────────────────────────────────────────────────────── */
     function resolveAssigneeLabel(elem) {
-        const attrs = elem.businessObject?.$attrs || {};
-        const grp = attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"];
-        const usr = attrs["camunda:assignee"] || attrs["activiti:assignee"];
+        const bo = elem.businessObject || {};
+        const attrs = bo.$attrs || {};
+        const grp = bo.candidateGroups || attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"];
+        const usr = bo.assignee        || attrs["camunda:assignee"]        || attrs["activiti:assignee"];
         if (grp) {
             const found = groups.find(g => g.value === grp);
             return { label: found ? found.label : grp, type: "group" };
@@ -1309,8 +1310,9 @@ function Processes({ activeTab }) {
     }
 
     function resolveFormLabel(elem) {
-        const attrs = elem.businessObject?.$attrs || {};
-        const key = attrs["camunda:formKey"] || attrs["activiti:formKey"];
+        const bo = elem.businessObject || {};
+        const attrs = bo.$attrs || {};
+        const key = bo.formKey || attrs["camunda:formKey"] || attrs["activiti:formKey"];
         if (!key) return null;
         const found = formList.find(f => f.value === key);
         return found ? found.label : key;
