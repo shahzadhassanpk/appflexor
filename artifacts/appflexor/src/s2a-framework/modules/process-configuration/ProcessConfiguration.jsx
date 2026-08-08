@@ -466,8 +466,8 @@ function ProcessConfiguration() {
                     <div className="col-12 datalist-viewer">
                         <div className="s2a-datalist-header">
                             <div className="s2a-dl-title-wrapper">
-                                <div className="s2a-dl-title"><span>Orchestrate Business Processes</span></div>
-                                <span>Deploy, configure and monitor business processes that power your organisation.</span>
+                                <div className="s2a-dl-title"><span>Orchestrate — Execute Enterprise Architecture</span></div>
+                                <span>Deploy and manage processes that coordinate work and deliver business outcomes.</span>
                             </div>
                             <div className="d-flex align-items-center gap-2 flex-shrink-0">
                                 <button
@@ -511,7 +511,7 @@ function ProcessConfiguration() {
                                     </span>
                                     <div className="min-w-0">
                                         <div className="orch-panel-title">Business Processes</div>
-                                        <div className="orch-panel-desc">Tree view, grouped by Business Area and tagged with Governing Body</div>
+                                        <div className="orch-panel-desc">Business processes that deliver outcomes to stakeholders.</div>
                                     </div>
                                 </div>
                             </div>
@@ -637,8 +637,8 @@ function ProcessConfiguration() {
                                         <i className="fa-solid fa-building" aria-hidden="true" />
                                     </span>
                                     <div>
-                                        <div className="orch-panel-title">Business Areas</div>
-                                        <div className="orch-panel-desc">Business domains that group related processes</div>
+                                        <div className="orch-panel-title">Business areas</div>
+                                        <div className="orch-panel-desc">Business areas group related business services.</div>
                                     </div>
                                 </div>
                                 <button type="button" className="orch-add-btn" onClick={openAddBA}>
@@ -678,8 +678,8 @@ function ProcessConfiguration() {
                                         <i className="fa-solid fa-tag" aria-hidden="true" />
                                     </span>
                                     <div>
-                                        <div className="orch-panel-title">Governing Bodies</div>
-                                        <div className="orch-panel-desc">Bodies responsible for defining and optimising business processes</div>
+                                        <div className="orch-panel-title">Governing bodies</div>
+                                        <div className="orch-panel-desc">Governing bodies accountable for business service performance.</div>
                                     </div>
                                 </div>
                                 <button type="button" className="orch-add-btn" onClick={openAddGB}>

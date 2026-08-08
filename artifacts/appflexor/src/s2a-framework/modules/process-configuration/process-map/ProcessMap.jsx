@@ -531,10 +531,10 @@ function ProcessMap({ activeTab }) {
         return name ? name : "";
     }
 
-    function getCategoryByKey(key) {
+    function getCategoryById(id) {
         let title = "";
         categoryList.forEach(item => {
-            if (item.key === key) {
+            if (item.id === id) {
                 title = item.title;
             }
         });
@@ -658,7 +658,7 @@ function ProcessMap({ activeTab }) {
                                             {item.title}
                                         </Td>
                                         <Td className="col-sm-2 table-row text-left">
-                                            {getCategoryByKey(item.category)}
+                                            {getCategoryById(item.category)}
                                         </Td>
                                         <Td className="col-sm-2 table-row text-left">
                                             {getBusinessAreaById(item?.business_area)}
@@ -790,7 +790,7 @@ function ProcessMap({ activeTab }) {
                                                         <option
                                                             key={category.id}
                                                             value={
-                                                                category.key
+                                                                category.id
                                                             }>
                                                             {category.title}
                                                         </option>
