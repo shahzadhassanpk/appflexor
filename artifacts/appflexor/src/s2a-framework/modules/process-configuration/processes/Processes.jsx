@@ -30,9 +30,9 @@ const INITIAL_STATE = {
     file_url: "",
 };
 const ELEM_TABS = [
-    { key: "userTasks",    label: "User Tasks",    icon: "fa-user-check" },
-    { key: "serviceTasks", label: "Service Tasks",  icon: "fa-gear" },
-    { key: "variables",    label: "Variables",      icon: "fa-database" },
+    { key: "userTasks", label: "User Tasks", icon: "fa-user-check" },
+    { key: "serviceTasks", label: "Service Tasks", icon: "fa-gear" },
+    { key: "variables", label: "Variables", icon: "fa-database" },
 ];
 
 /* ── SearchableSelect ──────────────────────────────────────────────────── */
@@ -64,9 +64,9 @@ function SearchableSelect({ options = [], value, onChange, placeholder = "Search
                 value={value}
                 onChange={onChange}
                 size={Math.min(Math.max(filtered.length, 1), 6)}>
-                <option value="">— none —</option>
+                <option className="p-1" value="expression">— dynamic —</option>
                 {filtered.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option className="p-1" key={o.value} value={o.value}>{o.label}</option>
                 ))}
             </select>
         </div>
@@ -78,46 +78,46 @@ function Processes({ activeTab }) {
     const appContext = useContext(AppContext);
 
     /* ── list state ── */
-    const [items, setItems]               = useState([]);
-    const [searchTerm, setSearchTerm]     = useState("");
+    const [items, setItems] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedItem, setSelectedItem] = useState(INITIAL_STATE);
-    const [formStatus, setFormStatus]     = useState(STATUS.none);
-    const [fileStatus, setFileStatus]     = useState("");
-    const [processes, setProcesses]       = useState([]);
-    const [size, setSize]                 = useState(5);
-    const [current, setCurrent]           = useState(1);
-    const [formShow, setFormShow]         = useState(false);
+    const [formStatus, setFormStatus] = useState(STATUS.none);
+    const [fileStatus, setFileStatus] = useState("");
+    const [processes, setProcesses] = useState([]);
+    const [size, setSize] = useState(5);
+    const [current, setCurrent] = useState(1);
+    const [formShow, setFormShow] = useState(false);
     const [showDiscardDataModal, setShowDiscardDataModal] = useState(false);
-    const [toggleModalWindow, setToggleModalWindow]       = useState("maximize");
-    const [toggleBpmnViewer, setToggleBpmnViewer]         = useState("restore");
-    const [saveIsDisabled, setSaveIsDisabled]             = useState(true);
+    const [toggleModalWindow, setToggleModalWindow] = useState("maximize");
+    const [toggleBpmnViewer, setToggleBpmnViewer] = useState("restore");
+    const [saveIsDisabled, setSaveIsDisabled] = useState(true);
     const [deleteConfig, setDeleteConfig] = useState({ show: false, item: {} });
 
     /* ── deployment state ── */
     const [deployPending, setDeployPending] = useState(false);
-    const [deploying, setDeploying]         = useState(false);
+    const [deploying, setDeploying] = useState(false);
 
     /* ── viewer state ── */
-    const [xmlLoading, setXmlLoading]         = useState(false);
-    const [bpmnProcesses, setBpmnProcesses]   = useState([]); // [{id,name}] from XML
+    const [xmlLoading, setXmlLoading] = useState(false);
+    const [bpmnProcesses, setBpmnProcesses] = useState([]); // [{id,name}] from XML
     const [activeProcessId, setActiveProcessId] = useState("");
-    const [elementsMap, setElementsMap]       = useState({
+    const [elementsMap, setElementsMap] = useState({
         userTasks: [], serviceTasks: [], variables: [], startEvents: [],
     });
-    const [activeElemTab, setActiveElemTab]   = useState("userTasks");
-    const [xmlDirty, setXmlDirty]             = useState(false);
+    const [activeElemTab, setActiveElemTab] = useState("userTasks");
+    const [xmlDirty, setXmlDirty] = useState(false);
 
     /* ── property editor state ── */
-    const [propModal, setPropModal]     = useState(null); // { type, subType, element, title }
-    const [propForm, setPropForm]       = useState({});
+    const [propModal, setPropModal] = useState(null); // { type, subType, element, title }
+    const [propForm, setPropForm] = useState({});
     const [propLoading, setPropLoading] = useState(false);
-    const [groups, setGroups]           = useState([]);
-    const [users, setUsers]             = useState([]);
-    const [formList, setFormList]       = useState([]);
+    const [groups, setGroups] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [formList, setFormList] = useState([]);
     const [refDataLoaded, setRefDataLoaded] = useState(false);
 
     /* ── AI agent / task state (for service-task editor) ── */
-    const [aiAgents, setAiAgents]         = useState([]); // [{ value:id, label:name, key:agent_key }]
+    const [aiAgents, setAiAgents] = useState([]); // [{ value:id, label:name, key:agent_key }]
     const [aiAgentTasks, setAiAgentTasks] = useState([]); // [{ value:task_key, label:task_name }]
     const [aiTasksLoading, setAiTasksLoading] = useState(false);
 
@@ -136,11 +136,11 @@ function Processes({ activeTab }) {
     }, [aiAgents]); // eslint-disable-line react-hooks/exhaustive-deps
 
     /* ── viewer refs ── */
-    const restoreViewerRef  = useRef(null); // DOM container — restore mode
-    const maxViewerRef      = useRef(null); // DOM container — maximize mode
+    const restoreViewerRef = useRef(null); // DOM container — restore mode
+    const maxViewerRef = useRef(null); // DOM container — maximize mode
     const viewerInstanceRef = useRef(null); // NavigatedViewer instance
-    const currentXmlRef     = useRef(null); // current BPMN XML string
-    const allElementsRef    = useRef([]);   // all registry elements (for process filtering)
+    const currentXmlRef = useRef(null); // current BPMN XML string
+    const allElementsRef = useRef([]);   // all registry elements (for process filtering)
 
     const { id, process_file } = selectedItem;
     const fileUrl = FILE_URL + "/" + DB_TABLE + "/" + id + "/" + process_file;
@@ -256,10 +256,10 @@ function Processes({ activeTab }) {
             ? allElementsRef.current.filter(e => getProcessId(e.businessObject) === processId)
             : allElementsRef.current;
         setElementsMap({
-            userTasks:    filtered.filter(e => e.type === "bpmn:UserTask"),
+            userTasks: filtered.filter(e => e.type === "bpmn:UserTask"),
             serviceTasks: filtered.filter(e => e.type === "bpmn:ServiceTask"),
-            variables:    filtered.filter(e => e.type === "bpmn:DataObjectReference"),
-            startEvents:  filtered.filter(e => e.type === "bpmn:StartEvent"),
+            variables: filtered.filter(e => e.type === "bpmn:DataObjectReference"),
+            startEvents: filtered.filter(e => e.type === "bpmn:StartEvent"),
         });
 
         // Zoom canvas to the bounding box of this process's elements
@@ -297,10 +297,10 @@ function Processes({ activeTab }) {
             const pid = initialProcessId || (all.length > 0 ? getProcessId(all[0]?.businessObject) : "") || "";
             const filtered = pid ? all.filter(e => getProcessId(e.businessObject) === pid) : all;
             setElementsMap({
-                userTasks:    filtered.filter(e => e.type === "bpmn:UserTask"),
+                userTasks: filtered.filter(e => e.type === "bpmn:UserTask"),
                 serviceTasks: filtered.filter(e => e.type === "bpmn:ServiceTask"),
-                variables:    filtered.filter(e => e.type === "bpmn:DataObjectReference"),
-                startEvents:  filtered.filter(e => e.type === "bpmn:StartEvent"),
+                variables: filtered.filter(e => e.type === "bpmn:DataObjectReference"),
+                startEvents: filtered.filter(e => e.type === "bpmn:StartEvent"),
             });
         } catch (err) {
             console.error("Element extraction error:", err);
@@ -316,10 +316,10 @@ function Processes({ activeTab }) {
         try {
             const res = await axios.post(API_URL + "?service.key=masterKey.tenantData", {
                 dataKeys: [
-                    { serviceParams: "", dataKey: "groups",   serviceKey: "sys.console.dir.group", mode: "formData" },
-                    { serviceParams: "", dataKey: "users",    serviceKey: "sys.user.list",          mode: "formData" },
-                    { serviceParams: "", dataKey: "formList", serviceKey: "sys.list.forms",         mode: "formData" },
-                    { serviceParams: "", dataKey: "agents",   serviceKey: "ai.agent.list",          mode: "formData" },
+                    { serviceParams: "", dataKey: "groups", serviceKey: "sys.console.dir.group", mode: "formData" },
+                    { serviceParams: "", dataKey: "users", serviceKey: "sys.user.list", mode: "formData" },
+                    { serviceParams: "", dataKey: "formList", serviceKey: "sys.list.forms", mode: "formData" },
+                    { serviceParams: "", dataKey: "agents", serviceKey: "ai.agent.list", mode: "formData" },
                 ],
             });
             if (res.data.C_STATUS === "SUCCESS") {
@@ -340,7 +340,7 @@ function Processes({ activeTab }) {
                     (d.agents || []).map(a => ({
                         value: a.agent_key, // use agent_key as select value for stable lookup
                         label: a.agent_name,
-                        id:    a.id,        // db id kept for task-loading API calls
+                        id: a.id,        // db id kept for task-loading API calls
                     })),
                 );
                 setRefDataLoaded(true);
@@ -359,7 +359,7 @@ function Processes({ activeTab }) {
         if (!agentKey) { setAiAgentTasks([]); return; }
         // Resolve db id from the key (aiAgents may or may not be populated yet)
         const agentRec = aiAgents.find(a => a.value === agentKey);
-        const agentId  = agentRec?.id;
+        const agentId = agentRec?.id;
         if (!agentId) { setAiAgentTasks([]); return; }
         setAiTasksLoading(true);
         try {
@@ -400,10 +400,10 @@ function Processes({ activeTab }) {
             init = { formKey: attrs["camunda:formKey"] || attrs["activiti:formKey"] || "" };
         } else if (type === "serviceTasks") {
             const storedAgentKey = attrs["s2aAgentKey"] || "";
-            const storedTaskKey  = attrs["s2aTaskKey"]  || "";
+            const storedTaskKey = attrs["s2aTaskKey"] || "";
             let payload = [
                 { key: "business_key", value: "" },
-                { key: "message",      value: "" },
+                { key: "message", value: "" },
             ];
             try {
                 const raw = attrs["s2aPayload"];
@@ -412,7 +412,7 @@ function Processes({ activeTab }) {
                     payload = Object.entries(parsed).map(([k, v]) => ({ key: k, value: v }));
                     // Ensure business_key + message always present
                     if (!payload.find(p => p.key === "business_key")) payload.unshift({ key: "business_key", value: "" });
-                    if (!payload.find(p => p.key === "message"))      payload.splice(1, 0, { key: "message", value: "" });
+                    if (!payload.find(p => p.key === "message")) payload.splice(1, 0, { key: "message", value: "" });
                 }
             } catch (_) { /* keep defaults */ }
 
@@ -428,14 +428,14 @@ function Processes({ activeTab }) {
                 init = {
                     serviceType: "ai",
                     agentKey: storedAgentKey, // this IS the select value; no agentId needed
-                    taskKey:  storedTaskKey,
+                    taskKey: storedTaskKey,
                     payload,
                     params,
                 };
             } else {
                 init = {
                     serviceType: "external",
-                    topic:   attrs["camunda:topic"] || "",
+                    topic: attrs["camunda:topic"] || "",
                     agentKey: "", taskKey: "",
                     payload,
                     params,
@@ -463,7 +463,7 @@ function Processes({ activeTab }) {
         //       camunda-bpmn-moddle as a moddleExtension on the viewer.
         if (type === "userTasks" && subType === "assignee") {
             if (propForm.assigneeType === "user") {
-                bo.$attrs["camunda:assignee"]        = propForm.assignee;
+                bo.$attrs["camunda:assignee"] = propForm.assignee;
                 delete bo.$attrs["camunda:candidateGroups"];
             } else {
                 bo.$attrs["camunda:candidateGroups"] = propForm.assignee;
@@ -473,10 +473,10 @@ function Processes({ activeTab }) {
             bo.$attrs["camunda:formKey"] = propForm.formKey;
         } else if (type === "serviceTasks") {
             if (propForm.serviceType === "ai") {
-                bo.$attrs["camunda:type"]  = "external";
+                bo.$attrs["camunda:type"] = "external";
                 bo.$attrs["camunda:topic"] = "ai.agent.task";
-                bo.$attrs["s2aAgentKey"]   = propForm.agentKey;
-                bo.$attrs["s2aTaskKey"]    = propForm.taskKey;
+                bo.$attrs["s2aAgentKey"] = propForm.agentKey;
+                bo.$attrs["s2aTaskKey"] = propForm.taskKey;
                 const payloadObj = Object.fromEntries(
                     (propForm.payload || [])
                         .filter(p => p.key.trim())
@@ -484,7 +484,7 @@ function Processes({ activeTab }) {
                 );
                 bo.$attrs["s2aPayload"] = JSON.stringify(payloadObj);
             } else {
-                bo.$attrs["camunda:type"]  = "external";
+                bo.$attrs["camunda:type"] = "external";
                 bo.$attrs["camunda:topic"] = propForm.topic;
                 const paramsObj = Object.fromEntries(
                     (propForm.params || [])
@@ -557,8 +557,8 @@ function Processes({ activeTab }) {
         const q = searchTerm.trim().toLowerCase();
         return items.filter(it => {
             const title = (it.title || "").toLowerCase();
-            const key   = (it.process_def_key || "").toLowerCase();
-            const file  = (it.process_file || "").toLowerCase();
+            const key = (it.process_def_key || "").toLowerCase();
+            const file = (it.process_file || "").toLowerCase();
             return title.includes(q) || key.includes(q) || file.includes(q);
         });
     }
@@ -887,7 +887,7 @@ function Processes({ activeTab }) {
             return (
                 <>
                     <div className="mb-3">
-                        <label className="ai-label">Assign to</label>
+                        {/* <label className="ai-label">Assign to</label> */}
                         <div className="d-flex gap-3">
                             {["user", "group"].map(t => (
                                 <div key={t} className="form-check">
@@ -901,7 +901,7 @@ function Processes({ activeTab }) {
                                         onChange={() => setPropForm(p => ({ ...p, assigneeType: t, assignee: "" }))}
                                     />
                                     <label className="form-check-label" htmlFor={`at-${t}`}>
-                                        {t === "user" ? "User" : "Group"}
+                                        {t === "user" ? "Assign to Individual" : "Assign to Group"}
                                     </label>
                                 </div>
                             ))}
@@ -1230,7 +1230,7 @@ function Processes({ activeTab }) {
     function resolveAssigneeLabel(elem) {
         const attrs = elem.businessObject?.$attrs || {};
         const grp = attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"];
-        const usr = attrs["camunda:assignee"]        || attrs["activiti:assignee"];
+        const usr = attrs["camunda:assignee"] || attrs["activiti:assignee"];
         if (grp) {
             const found = groups.find(g => g.value === grp);
             return { label: found ? found.label : grp, type: "group" };
@@ -1255,7 +1255,7 @@ function Processes({ activeTab }) {
     ───────────────────────────────────────────────────────────────────── */
     function renderElemTabs() {
         const currentElems = elementsMap[activeElemTab] || [];
-        const isUserTasks  = activeElemTab === "userTasks";
+        const isUserTasks = activeElemTab === "userTasks";
 
         return (
             <div className="proc-elem-panel">
@@ -1325,15 +1325,15 @@ function Processes({ activeTab }) {
                             <thead>
                                 <tr>
                                     <th>Name / ID</th>
-                                    {isUserTasks && <th>Assignee</th>}
-                                    {isUserTasks && <th>Form</th>}
+                                    {isUserTasks && <th>Assigned User/Group</th>}
+                                    {isUserTasks && <th>Associated Form</th>}
                                     {!isUserTasks && <th>Type</th>}
                                     <th style={{ width: isUserTasks ? "9rem" : "5rem" }} />
                                 </tr>
                             </thead>
                             <tbody>
                                 {currentElems.map(elem => {
-                                    const assignee  = isUserTasks ? resolveAssigneeLabel(elem) : null;
+                                    const assignee = isUserTasks ? resolveAssigneeLabel(elem) : null;
                                     const formLabel = isUserTasks ? resolveFormLabel(elem) : null;
                                     return (
                                         <tr key={elem.id}>
@@ -1385,28 +1385,32 @@ function Processes({ activeTab }) {
                                                 </td>
                                             )}
                                             <td>
+
                                                 {isUserTasks ? (
-                                                    <div className="d-flex gap-1">
+                                                    <div className="d-flex gap-1 min-w-50">
                                                         <button
-                                                            className="btn btn-outline-secondary btn-sm proc-elem-edit-btn"
-                                                            title="Edit assignee"
+                                                            className="btn btn-outline-secondary btn-sm proc-elem-edit-btn no-wrap"
+                                                            title="Assign User/Group to perform this task"
                                                             onClick={() => openPropModal("userTasks", elem, "assignee")}>
-                                                            <i className="fa-solid fa-user-pen" />
+                                                            <i className="fa-solid fa-user-pen" /> Assign
                                                         </button>
                                                         <button
-                                                            className="btn btn-outline-secondary btn-sm proc-elem-edit-btn"
-                                                            title="Edit form"
+                                                            className="btn btn-outline-secondary btn-sm proc-elem-edit-btn no-wrap"
+                                                            title="Configure Form"
                                                             onClick={() => openPropModal("userTasks", elem, "form")}>
-                                                            <i className="fa-solid fa-file-lines" />
+                                                            <i className="fa-solid fa-file-lines" /> Configure
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <button
-                                                        className="btn btn-outline-secondary btn-sm proc-elem-edit-btn"
-                                                        onClick={() => openPropModal(activeElemTab, elem)}>
-                                                        <i className="fa-regular fa-edit me-1" />
-                                                        Edit
-                                                    </button>
+                                                    <div className="d-flex gap-1 min-w-30">
+                                                        <button
+                                                            className="btn btn-outline-secondary btn-sm proc-elem-edit-btn no-wrap"
+                                                            title="Configure AI Agent or External Worker"
+                                                            onClick={() => openPropModal(activeElemTab, elem)}>
+                                                            <i className="fa-solid fa-file-lines me-1" />
+                                                            Configure
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </td>
                                         </tr>
@@ -1595,7 +1599,7 @@ function Processes({ activeTab }) {
             {/* ── Main modal ── */}
             <Modal
                 show={formShow}
-                onHide={() => {}}
+                onHide={() => { }}
                 backdrop="static"
                 keyboard={true}
                 animation={true}
@@ -1630,7 +1634,10 @@ function Processes({ activeTab }) {
                                     {/* Process select */}
                                     <div className="mb-3">
                                         <label className="fw-bold form-label">
-                                            Select Main Process <span className="text-danger">*</span>
+                                            Primary Process <span className="text-danger">*</span>
+                                            <span className="ai-tooltip ms-1" title="A BPMN file may contain multiple processes. Select which process should start when this workflow is triggered.">
+                                                <i className="fa-solid fa-circle-info" />
+                                            </span>
                                         </label>
                                         <select
                                             className="form-control"
@@ -1650,7 +1657,10 @@ function Processes({ activeTab }) {
                                     {/* Def key */}
                                     <div className="mb-3">
                                         <label className="fw-bold form-label">
-                                            Main Process Def Key <span className="text-danger">*</span>
+                                            Primary Process Def Key <span className="text-danger">*</span>
+                                            <span className="ai-tooltip ms-1" title="Primary process definition key is used to start this process using API.">
+                                                <i className="fa-solid fa-circle-info" />
+                                            </span>
                                         </label>
                                         <input
                                             type="text"
@@ -1665,7 +1675,10 @@ function Processes({ activeTab }) {
                                     {/* BPMN file */}
                                     <div className="mb-3">
                                         <label className="fw-bold form-label">
-                                            BPMN File <span className="text-danger">*</span>
+                                            Upload BPMN File <span className="text-danger">*</span>
+                                            <span className="ai-tooltip ms-1" title="The source file containing one or more processes. Upload a new file to replace the existing one.">
+                                                <i className="fa-solid fa-circle-info" />
+                                            </span>
                                         </label>
                                         {(!selectedItem.process_file || fileStatus === "deleted") ? (
                                             <input
@@ -1718,18 +1731,18 @@ function Processes({ activeTab }) {
 
                                 {/* Footer */}
                                 <div className="proc-form-footer">
-                                    <button
+                                    {/* <button
                                         className="btn button-theme btn-sm"
                                         onClick={() => handleModalClose(formStatus)}>
                                         <i className="fa-solid fa-xmark pe-1" />
                                         Close
-                                    </button>
+                                    </button> */}
                                     <button
                                         className="btn button-theme btn-sm"
                                         onClick={() => saveData(selectedItem)}
                                         disabled={saveIsDisabled}>
                                         <i className="fa-solid fa-floppy-disk pe-1" />
-                                        Save
+                                        Save Draft
                                     </button>
                                     {formStatus === STATUS.update && (
                                         <button
@@ -1739,7 +1752,7 @@ function Processes({ activeTab }) {
                                             title="Deploy to process engine">
                                             {deploying
                                                 ? <><i className="fa-solid fa-spinner fa-spin pe-1" />Deploying…</>
-                                                : <><i className="fa-solid fa-rocket pe-1" />Deploy</>}
+                                                : <><i className="fa-solid fa-rocket pe-1" />Deploy Process</>}
                                         </button>
                                     )}
                                 </div>
@@ -1770,9 +1783,9 @@ function Processes({ activeTab }) {
                 style={{ zIndex: 1060 }}
                 className="s2a-modal">
                 <Modal.Header>
-                    <Modal.Title className="modal-title" style={{ fontSize: "0.9rem" }}>
+                    <Modal.Title className="h4" style={{ fontSize: "0.9rem" }}>
                         <i className="fa-solid fa-sliders me-2" />
-                        {propModal?.title}
+                        Assign this {propModal?.title} task to a user or group.
                     </Modal.Title>
                     <button className="btn-close" onClick={() => setPropModal(null)} />
                 </Modal.Header>

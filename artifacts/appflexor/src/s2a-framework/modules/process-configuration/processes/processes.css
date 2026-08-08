@@ -224,7 +224,7 @@
     padding: 0.3rem 0.75rem;
     font-size: 0.7rem;
     font-weight: 700;
-    text-transform: uppercase;
+    /* text-transform: uppercase; */
     letter-spacing: 0.03em;
     color: color-mix(in srgb, var(--font-color, #6b7280) 55%, transparent);
     border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
