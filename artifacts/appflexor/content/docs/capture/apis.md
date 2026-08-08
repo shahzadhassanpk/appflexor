@@ -221,6 +221,213 @@ AUTH_KEY: <AUTH_KEY from Login API>
 
 ---
 
+## Step 5a — Upload a File with a Record
+
+Add a `fileData` array to any `update.formData` request to attach one or more files in the same round trip. The platform stores the file and links it to the saved record automatically.
+
+**How it works**
+
+1. Read the file in your client and base64-encode its contents.
+2. Include the base64 string in `fileData[].content`.
+3. Set the field that holds the file name in `formData` (e.g. `attachment`) to the same `fileName`.
+4. Send the request — the platform saves the record and stores the file together.
+
+---
+
+### JavaScript — encode a file before uploading
+
+```js
+function encodeFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            // FileReader returns "data:<mime>;base64,<content>"
+            const base64Content = e.target.result.split("base64,")[1];
+            resolve(base64Content);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+```
+
+---
+
+### Create a new record and upload a file
+
+Use `id: "new"` in both `data[].id` and `formData.id`. The platform inserts the record and returns the generated ID.
+
+**Request**
+
+```
+POST /app/service?service.key=update.formData
+Content-Type: application/json
+AUTH_KEY: <AUTH_KEY from Login API>
+```
+
+```json
+{
+  "data": [
+    {
+      "formId":   "employee_documents",
+      "entity":   "employee_documents",
+      "action":   "update",
+      "id":       "new",
+      "formData": {
+        "id":          "new",
+        "attachment":  "contract_alice.pdf",
+        "title":       "Employment Contract",
+        "tags":        "contract,onboarding",
+        "employee_id": "42"
+      },
+      "fileData": [
+        {
+          "fileName": "contract_alice.pdf",
+          "content":  "<base64-encoded file content>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+| Field | Description |
+|---|---|
+| `formData.<fieldColumn>` | The form field that stores the file name — set it to `fileName` so the record knows which file is attached |
+| `fileData[].fileName` | File name including extension — must match `formData.<fieldColumn>` |
+| `fileData[].content` | Base64-encoded file content (the string after `"base64,"` from a `FileReader` result) |
+
+**Response**
+
+```json
+{
+  "C_STATUS": "SUCCESS",
+  "C_DATA": [
+    {
+      "formData": {
+        "id":          "107",
+        "attachment":  "contract_alice.pdf",
+        "title":       "Employment Contract",
+        "tags":        "contract,onboarding",
+        "employee_id": "42"
+      }
+    }
+  ]
+}
+```
+
+The returned `formData.id` is the generated record ID. Use it to link the record in your application or to build the file URL.
+
+---
+
+### Update an existing record and replace its file
+
+Supply the existing record `id` to update the row and overwrite the stored file.
+
+```json
+{
+  "data": [
+    {
+      "formId":   "employee_documents",
+      "entity":   "employee_documents",
+      "action":   "update",
+      "id":       "107",
+      "formData": {
+        "id":          "107",
+        "attachment":  "contract_alice_v2.pdf",
+        "title":       "Employment Contract (Revised)"
+      },
+      "fileData": [
+        {
+          "fileName": "contract_alice_v2.pdf",
+          "content":  "<base64-encoded file content>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### Upload multiple files in one call
+
+Include one object per file in the `data` array. Each object can target the same or different entities.
+
+```json
+{
+  "data": [
+    {
+      "formId": "employee_documents", "entity": "employee_documents",
+      "action": "update", "id": "new",
+      "formData": { "id": "new", "attachment": "id_scan.jpg",  "employee_id": "42" },
+      "fileData": [{ "fileName": "id_scan.jpg",  "content": "<base64>" }]
+    },
+    {
+      "formId": "employee_documents", "entity": "employee_documents",
+      "action": "update", "id": "new",
+      "formData": { "id": "new", "attachment": "cv_alice.pdf", "employee_id": "42" },
+      "fileData": [{ "fileName": "cv_alice.pdf", "content": "<base64>" }]
+    }
+  ]
+}
+```
+
+---
+
+### Full JavaScript example
+
+```js
+async function uploadDocumentWithRecord(file, employeeId) {
+    // 1. Base64-encode the file
+    const reader = new FileReader();
+    const base64Content = await new Promise((resolve, reject) => {
+        reader.onload = e => resolve(e.target.result.split("base64,")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+
+    // 2. Build the request
+    const request = {
+        data: [
+            {
+                formId:   "employee_documents",
+                entity:   "employee_documents",
+                action:   "update",
+                id:       "new",
+                formData: {
+                    id:          "new",
+                    attachment:  file.name,
+                    title:       file.name,
+                    employee_id: employeeId,
+                },
+                fileData: [
+                    { fileName: file.name, content: base64Content },
+                ],
+            },
+        ],
+    };
+
+    // 3. Send the request
+    const response = await fetch("/app/service?service.key=update.formData", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json", AUTH_KEY: authKey },
+        body:    JSON.stringify(request),
+    });
+
+    const result = await response.json();
+    if (result.C_STATUS !== "SUCCESS") throw new Error(result.C_MESSAGE);
+
+    const saved = result.C_DATA[0].formData;
+    console.log("Saved record ID:", saved.id);
+    return saved;
+}
+```
+
+> **Note:** Large files should be chunked or uploaded via a dedicated object-storage endpoint. The `fileData` approach is intended for document-sized attachments (PDFs, images, BPMN files, etc.).
+
+---
+
 ## Step 6 — Delete Records
 
 Use `update.formData` with `action: "delete"`. Pass each record `id` to remove as a separate entry in the `data` array.
