@@ -807,32 +807,36 @@ function Processes({ activeTab }) {
 
     async function saveData(item) {
         const fieldsData = { ...item, processes };
-        const request = {
-            data: [{
-                formId: DB_TABLE,
-                entity: DB_TABLE,
-                action: "update",
+        const pending = pendingFileRef.current; // file held locally for new records
+
+        const entry = {
+            formId: DB_TABLE,
+            entity: DB_TABLE,
+            action: "update",
+            id: fieldsData.id || "new",
+            formData: {
+                ...fieldsData,
                 id: fieldsData.id || "new",
-                formData: { ...fieldsData, id: fieldsData.id || "new" },
-            }],
+                ...(pending ? { process_file: pending.fileName } : {}),
+            },
         };
+        if (pending) {
+            entry.fileData = [{ fileName: pending.fileName, content: pending.encodedData }];
+        }
+
         try {
-            const response = await axios.post(API_URL + "?service.key=update.formData", request);
+            const response = await axios.post(API_URL + "?service.key=update.formData", { data: [entry] });
             if (response.status === 200) {
                 const saved = response.data?.C_DATA?.[0]?.formData || fieldsData;
+                if (pending) {
+                    pendingFileRef.current = null;
+                    saved.file_url = `${FILE_URL}/${DB_TABLE}/${saved.id}/${saved.process_file}`;
+                }
                 setSelectedItem(prev => ({ ...prev, ...saved }));
                 setFormStatus(STATUS.update);
                 setDeployPending(true);
                 setXmlDirty(false);
                 getData();
-
-                // Upload any file that was held locally while the record had no id yet
-                if (pendingFileRef.current) {
-                    const { fileName, encodedData } = pendingFileRef.current;
-                    pendingFileRef.current = null;
-                    await uploadFilesToServer(fileName, encodedData, saved);
-                }
-
                 setStatus("Record saved");
                 return saved;
             }
