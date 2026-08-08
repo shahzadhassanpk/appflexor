@@ -1839,10 +1839,9 @@ function Processes({ activeTab }) {
                             </div>
                         </div>
                     ) : (
-                        /* ── Maximize layout: full-width viewer + tabs ── */
+                        /* ── Maximize layout: full-width viewer only ── */
                         <div className="proc-modal-max-layout">
                             {renderViewerPanel("maximize")}
-                            {renderElemTabs()}
                         </div>
                     )}
                 </Modal.Body>
