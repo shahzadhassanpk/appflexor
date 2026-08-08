@@ -401,13 +401,14 @@ function Processes({ activeTab }) {
         let init = {};
 
         if (type === "userTasks" && subType === "assignee") {
-            const grp = attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"] || "";
-            const usr = attrs["camunda:assignee"] || attrs["activiti:assignee"] || "";
+            // With camunda-bpmn-moddle registered, re-imported values land on bo directly
+            const grp = bo.candidateGroups || attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"] || "";
+            const usr = bo.assignee        || attrs["camunda:assignee"]        || attrs["activiti:assignee"]        || "";
             const val = grp || usr;
             const isExpr = /^\$\{|^#\{/.test(val);
             init = { assigneeType: isExpr ? "expression" : (grp ? "group" : "user"), assignee: val };
         } else if ((type === "userTasks" || type === "startEvent") && subType === "form") {
-            const fk = attrs["camunda:formKey"] || attrs["activiti:formKey"] || "";
+            const fk = bo.formKey || attrs["camunda:formKey"] || attrs["activiti:formKey"] || "";
             init = { formKey: fk, formType: /^\$\{|^#\{/.test(fk) ? "expression" : "key" };
         } else if (type === "serviceTasks") {
             const storedAgentKey = attrs["s2aAgentKey"] || "";
@@ -434,6 +435,7 @@ function Processes({ activeTab }) {
                 if (raw) params = Object.entries(JSON.parse(raw)).map(([k, v]) => ({ key: k, value: v }));
             } catch (_) { /* keep empty */ }
 
+            const topic = bo.topic || attrs["camunda:topic"] || "";
             if (storedAgentKey) {
                 // Tasks are loaded later via useEffect once aiAgents is populated
                 init = {
@@ -446,7 +448,7 @@ function Processes({ activeTab }) {
             } else {
                 init = {
                     serviceType: "external",
-                    topic: attrs["camunda:topic"] || "",
+                    topic,
                     agentKey: "", taskKey: "",
                     payload,
                     params,
@@ -474,19 +476,24 @@ function Processes({ activeTab }) {
         //       camunda-bpmn-moddle as a moddleExtension on the viewer.
         if (type === "userTasks" && subType === "assignee") {
             if (propForm.assigneeType === "group") {
+                bo.candidateGroups = propForm.assignee;
                 bo.$attrs["camunda:candidateGroups"] = propForm.assignee;
+                delete bo.assignee;
                 delete bo.$attrs["camunda:assignee"];
             } else {
                 // user or expression — both write to camunda:assignee
+                bo.assignee = propForm.assignee;
                 bo.$attrs["camunda:assignee"] = propForm.assignee;
+                delete bo.candidateGroups;
                 delete bo.$attrs["camunda:candidateGroups"];
             }
         } else if ((type === "userTasks" || type === "startEvent") && subType === "form") {
+            bo.formKey = propForm.formKey;
             bo.$attrs["camunda:formKey"] = propForm.formKey;
         } else if (type === "serviceTasks") {
             if (propForm.serviceType === "ai") {
-                bo.$attrs["camunda:type"] = "external";
-                bo.$attrs["camunda:topic"] = "ai.agent.task";
+                bo.type = "external";  bo.$attrs["camunda:type"]  = "external";
+                bo.topic = "ai.agent.task"; bo.$attrs["camunda:topic"] = "ai.agent.task";
                 bo.$attrs["s2aAgentKey"] = propForm.agentKey;
                 bo.$attrs["s2aTaskKey"] = propForm.taskKey;
                 const payloadObj = Object.fromEntries(
@@ -496,8 +503,8 @@ function Processes({ activeTab }) {
                 );
                 bo.$attrs["s2aPayload"] = JSON.stringify(payloadObj);
             } else {
-                bo.$attrs["camunda:type"] = "external";
-                bo.$attrs["camunda:topic"] = propForm.topic;
+                bo.type = "external";  bo.$attrs["camunda:type"]  = "external";
+                bo.topic = propForm.topic; bo.$attrs["camunda:topic"] = propForm.topic;
                 const paramsObj = Object.fromEntries(
                     (propForm.params || [])
                         .filter(p => p.key.trim())
