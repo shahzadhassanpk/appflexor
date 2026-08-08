@@ -16,7 +16,6 @@ import {
     tryParseJSONObject,
     updateDeleteConfig,
 } from "../../../utils/utils";
-import { toastEmitter } from "../../../components/Toastify/Toastify";
 import "./processes.css";
 
 /* ── constants ─────────────────────────────────────────────────────────── */
@@ -96,6 +95,15 @@ function Processes({ activeTab }) {
     /* ── deployment state ── */
     const [deployPending, setDeployPending] = useState(false);
     const [deploying, setDeploying] = useState(false);
+
+    /* ── inline status message (replaces toast) ── */
+    const [statusMsg, setStatusMsg] = useState(null); // { text, type: "success"|"error"|"info" }
+    const statusTimeoutRef = useRef(null);
+    const setStatus = (text, type = "success") => {
+        if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current);
+        setStatusMsg({ text, type });
+        statusTimeoutRef.current = setTimeout(() => setStatusMsg(null), 4000);
+    };
 
     /* ── viewer state ── */
     const [xmlLoading, setXmlLoading] = useState(false);
@@ -211,7 +219,7 @@ function Processes({ activeTab }) {
             }
         } catch (err) {
             console.error("BPMN fetch error:", err);
-            toastEmitter("Failed to load BPMN diagram", true, "error");
+            setStatus("Failed to load BPMN diagram", "error");
         } finally {
             setXmlLoading(false);
         }
@@ -395,9 +403,12 @@ function Processes({ activeTab }) {
         if (type === "userTasks" && subType === "assignee") {
             const grp = attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"] || "";
             const usr = attrs["camunda:assignee"] || attrs["activiti:assignee"] || "";
-            init = { assigneeType: grp ? "group" : "user", assignee: grp || usr };
+            const val = grp || usr;
+            const isExpr = /^\$\{|^#\{/.test(val);
+            init = { assigneeType: isExpr ? "expression" : (grp ? "group" : "user"), assignee: val };
         } else if ((type === "userTasks" || type === "startEvent") && subType === "form") {
-            init = { formKey: attrs["camunda:formKey"] || attrs["activiti:formKey"] || "" };
+            const fk = attrs["camunda:formKey"] || attrs["activiti:formKey"] || "";
+            init = { formKey: fk, formType: /^\$\{|^#\{/.test(fk) ? "expression" : "key" };
         } else if (type === "serviceTasks") {
             const storedAgentKey = attrs["s2aAgentKey"] || "";
             const storedTaskKey = attrs["s2aTaskKey"] || "";
@@ -462,12 +473,13 @@ function Processes({ activeTab }) {
         // NOTE: For full Camunda namespace support in new files, register
         //       camunda-bpmn-moddle as a moddleExtension on the viewer.
         if (type === "userTasks" && subType === "assignee") {
-            if (propForm.assigneeType === "user") {
-                bo.$attrs["camunda:assignee"] = propForm.assignee;
-                delete bo.$attrs["camunda:candidateGroups"];
-            } else {
+            if (propForm.assigneeType === "group") {
                 bo.$attrs["camunda:candidateGroups"] = propForm.assignee;
                 delete bo.$attrs["camunda:assignee"];
+            } else {
+                // user or expression — both write to camunda:assignee
+                bo.$attrs["camunda:assignee"] = propForm.assignee;
+                delete bo.$attrs["camunda:candidateGroups"];
             }
         } else if ((type === "userTasks" || type === "startEvent") && subType === "form") {
             bo.$attrs["camunda:formKey"] = propForm.formKey;
@@ -504,17 +516,22 @@ function Processes({ activeTab }) {
             bo.name = propForm.name;
         }
 
-        // Serialize locally. The main process Save button performs the server write.
+        // Serialize + upload to server immediately
         try {
             const { xml } = await viewerInstanceRef.current.saveXML({ format: true });
             currentXmlRef.current = xml;
             setXmlDirty(true);
             setDeployPending(true);
-            toastEmitter("Properties applied. Click Save to persist changes.", true);
+            // Encode XML as base64 (handles UTF-8 correctly)
+            const xmlBytes = new TextEncoder().encode(xml);
+            let binary = "";
+            xmlBytes.forEach(b => { binary += String.fromCharCode(b); });
+            await uploadFilesToServer(selectedItem.process_file, btoa(binary));
+            setStatus("Properties saved");
             setPropModal(null);
         } catch (err) {
-            console.error("saveXML error:", err);
-            toastEmitter("Failed to apply BPMN changes", true, "error");
+            console.error("saveXML/upload error:", err);
+            setStatus("Failed to save properties", "error");
         }
     }
 
@@ -761,12 +778,6 @@ function Processes({ activeTab }) {
 
     async function saveData(item) {
         const fieldsData = { ...item, processes };
-        const fileData = xmlDirty && currentXmlRef.current && fieldsData.process_file
-            ? [{
-                fileName: fieldsData.process_file,
-                content: btoa(unescape(encodeURIComponent(currentXmlRef.current))),
-            }]
-            : undefined;
         const request = {
             data: [{
                 formId: DB_TABLE,
@@ -774,7 +785,6 @@ function Processes({ activeTab }) {
                 action: "update",
                 id: fieldsData.id || "new",
                 formData: { ...fieldsData, id: fieldsData.id || "new" },
-                ...(fileData ? { fileData } : {}),
             }],
         };
         try {
@@ -786,12 +796,12 @@ function Processes({ activeTab }) {
                 setDeployPending(true);
                 setXmlDirty(false);
                 getData();
-                toastEmitter("Record saved successfully", true);
+                setStatus("Record saved");
                 return saved;
             }
         } catch (e) {
             console.error("saveData error:", e);
-            toastEmitter("Failed to save record", true, "error");
+            setStatus("Failed to save record", "error");
             throw e;
         }
         return null;
@@ -842,13 +852,13 @@ function Processes({ activeTab }) {
                 const data = res.data.C_DATA;
                 await saveData({ ...proc, version: data.version, process_id: data.process_id, deployment: data.deployment });
                 setDeployPending(false);
-                toastEmitter("Process deployed successfully", true);
+                setStatus("Process deployed successfully");
             } else {
-                toastEmitter("Process deployment failed", true, "error");
+                setStatus("Deployment failed", "error");
             }
         } catch (err) {
             console.error("Deploy error:", err);
-            toastEmitter("Process deployment failed", true, "error");
+            setStatus("Deployment failed", "error");
         } finally {
             setDeploying(false);
         }
@@ -884,55 +894,104 @@ function Processes({ activeTab }) {
         }
 
         if (type === "userTasks" && subType === "assignee") {
+            const isExprMode = propForm.assigneeType === "expression";
             return (
                 <>
                     <div className="mb-3">
-                        {/* <label className="ai-label">Assign to</label> */}
-                        <div className="d-flex gap-3">
-                            {["user", "group"].map(t => (
-                                <div key={t} className="form-check">
+                        <div className="d-flex gap-3 flex-wrap">
+                            {[
+                                { value: "user",       label: "Individual" },
+                                { value: "group",      label: "Group" },
+                                { value: "expression", label: "Expression" },
+                            ].map(t => (
+                                <div key={t.value} className="form-check">
                                     <input
                                         className="form-check-input"
                                         type="radio"
                                         name="assigneeType"
-                                        id={`at-${t}`}
-                                        value={t}
-                                        checked={propForm.assigneeType === t}
-                                        onChange={() => setPropForm(p => ({ ...p, assigneeType: t, assignee: "" }))}
+                                        id={`at-${t.value}`}
+                                        value={t.value}
+                                        checked={propForm.assigneeType === t.value}
+                                        onChange={() => setPropForm(p => ({ ...p, assigneeType: t.value, assignee: "" }))}
                                     />
-                                    <label className="form-check-label" htmlFor={`at-${t}`}>
-                                        {t === "user" ? "Assign to Individual" : "Assign to Group"}
+                                    <label className="form-check-label" htmlFor={`at-${t.value}`}>
+                                        {t.label}
                                     </label>
                                 </div>
                             ))}
                         </div>
                     </div>
                     <div className="mb-1">
-                        <label className="ai-label">
-                            {propForm.assigneeType === "group" ? "Group" : "User"}
-                        </label>
-                        <SearchableSelect
-                            options={propForm.assigneeType === "group" ? groups : users}
-                            value={propForm.assignee}
-                            onChange={e => setPropForm(p => ({ ...p, assignee: e.target.value }))}
-                            placeholder={propForm.assigneeType === "group" ? "Search groups…" : "Search users…"}
-                        />
+                        {isExprMode ? (
+                            <>
+                                <label className="ai-label">Expression</label>
+                                <input
+                                    type="text"
+                                    className="form-control form-control-sm font-monospace"
+                                    value={propForm.assignee}
+                                    onChange={e => setPropForm(p => ({ ...p, assignee: e.target.value }))}
+                                    placeholder="${initiator} or #{someVariable}"
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <label className="ai-label">
+                                    {propForm.assigneeType === "group" ? "Group" : "User"}
+                                </label>
+                                <SearchableSelect
+                                    options={propForm.assigneeType === "group" ? groups : users}
+                                    value={propForm.assignee}
+                                    onChange={e => setPropForm(p => ({ ...p, assignee: e.target.value }))}
+                                    placeholder={propForm.assigneeType === "group" ? "Search groups…" : "Search users…"}
+                                />
+                            </>
+                        )}
                     </div>
                 </>
             );
         }
 
         if ((type === "userTasks" || type === "startEvent") && subType === "form") {
+            const isExprMode = propForm.formType === "expression";
             return (
-                <div className="mb-1">
-                    <label className="ai-label">Form</label>
-                    <SearchableSelect
-                        options={formList}
-                        value={propForm.formKey}
-                        onChange={e => setPropForm(p => ({ ...p, formKey: e.target.value }))}
-                        placeholder="Search forms…"
-                    />
-                </div>
+                <>
+                    <div className="mb-2">
+                        <div className="d-flex gap-3">
+                            {[{ value: "key", label: "Form Key" }, { value: "expression", label: "Expression" }].map(t => (
+                                <div key={t.value} className="form-check">
+                                    <input
+                                        className="form-check-input"
+                                        type="radio"
+                                        name="formType"
+                                        id={`ft-${t.value}`}
+                                        value={t.value}
+                                        checked={propForm.formType === t.value}
+                                        onChange={() => setPropForm(p => ({ ...p, formType: t.value, formKey: "" }))}
+                                    />
+                                    <label className="form-check-label" htmlFor={`ft-${t.value}`}>{t.label}</label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="mb-1">
+                        {isExprMode ? (
+                            <input
+                                type="text"
+                                className="form-control form-control-sm font-monospace"
+                                value={propForm.formKey}
+                                onChange={e => setPropForm(p => ({ ...p, formKey: e.target.value }))}
+                                placeholder="${someExpression}"
+                            />
+                        ) : (
+                            <SearchableSelect
+                                options={formList}
+                                value={propForm.formKey}
+                                onChange={e => setPropForm(p => ({ ...p, formKey: e.target.value }))}
+                                placeholder="Search forms…"
+                            />
+                        )}
+                    </div>
+                </>
             );
         }
 
@@ -1607,6 +1666,12 @@ function Processes({ activeTab }) {
                 fullscreen={toggleModalWindow === "maximize"}>
                 <Modal.Header className="d-flex align-items-center justify-content-between">
                     <Modal.Title>Process Deployment</Modal.Title>
+                    {statusMsg && (
+                        <span className={`proc-status-msg proc-status-msg--${statusMsg.type}`}>
+                            <i className={`fa-solid ${statusMsg.type === "error" ? "fa-circle-xmark" : "fa-circle-check"} me-1`} />
+                            {statusMsg.text}
+                        </span>
+                    )}
                     <div className="d-flex gap-2">
                         {toggleModalWindow !== "maximize" && (
                             <div className="pointer" title="Maximize window" onClick={() => setToggleModalWindow("maximize")}>
