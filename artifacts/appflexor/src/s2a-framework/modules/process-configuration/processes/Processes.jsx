@@ -271,26 +271,26 @@ function Processes({ activeTab }) {
         });
 
         // Zoom canvas to the bounding box of this process's elements
-        const viewer = viewerInstanceRef.current;
-        if (!viewer || !processId) return;
-        try {
-            const canvas = viewer.get("canvas");
-            const shapes = allElementsRef.current.filter(
-                e => e.x !== undefined && getProcessId(e.businessObject) === processId,
-            );
-            if (shapes.length === 0) { canvas.zoom("fit-viewport"); return; }
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            shapes.forEach(s => {
-                minX = Math.min(minX, s.x);
-                minY = Math.min(minY, s.y);
-                maxX = Math.max(maxX, s.x + (s.width || 0));
-                maxY = Math.max(maxY, s.y + (s.height || 0));
-            });
-            const pad = 50;
-            canvas.viewbox({ x: minX - pad, y: minY - pad, width: maxX - minX + pad * 2, height: maxY - minY + pad * 2 });
-        } catch (err) {
-            console.error("Zoom to process error:", err);
-        }
+        // const viewer = viewerInstanceRef.current;
+        // if (!viewer || !processId) return;
+        // try {
+        //     const canvas = viewer.get("canvas");
+        //     const shapes = allElementsRef.current.filter(
+        //         e => e.x !== undefined && getProcessId(e.businessObject) === processId,
+        //     );
+        //     if (shapes.length === 0) { canvas.zoom("fit-viewport"); return; }
+        //     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        //     shapes.forEach(s => {
+        //         minX = Math.min(minX, s.x);
+        //         minY = Math.min(minY, s.y);
+        //         maxX = Math.max(maxX, s.x + (s.width || 0));
+        //         maxY = Math.max(maxY, s.y + (s.height || 0));
+        //     });
+        //     const pad = 50;
+        //     canvas.viewbox({ x: minX - pad, y: minY - pad, width: maxX - minX + pad * 2, height: maxY - minY + pad * 2 });
+        // } catch (err) {
+        //     console.error("Zoom to process error:", err);
+        // }
     }
 
     /* ─────────────────────────────────────────────────────────────────────
@@ -403,7 +403,7 @@ function Processes({ activeTab }) {
         if (type === "userTasks" && subType === "assignee") {
             // With camunda-bpmn-moddle registered, re-imported values land on bo directly
             const grp = bo.candidateGroups || attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"] || "";
-            const usr = bo.assignee        || attrs["camunda:assignee"]        || attrs["activiti:assignee"]        || "";
+            const usr = bo.assignee || attrs["camunda:assignee"] || attrs["activiti:assignee"] || "";
             const val = grp || usr;
             const isExpr = /^\$\{|^#\{/.test(val);
             init = { assigneeType: isExpr ? "expression" : (grp ? "group" : "user"), assignee: val };
@@ -492,7 +492,7 @@ function Processes({ activeTab }) {
             bo.$attrs["camunda:formKey"] = propForm.formKey;
         } else if (type === "serviceTasks") {
             if (propForm.serviceType === "ai") {
-                bo.type = "external";  bo.$attrs["camunda:type"]  = "external";
+                bo.type = "external"; bo.$attrs["camunda:type"] = "external";
                 bo.topic = "ai.agent.task"; bo.$attrs["camunda:topic"] = "ai.agent.task";
                 bo.$attrs["s2aAgentKey"] = propForm.agentKey;
                 bo.$attrs["s2aTaskKey"] = propForm.taskKey;
@@ -503,7 +503,7 @@ function Processes({ activeTab }) {
                 );
                 bo.$attrs["s2aPayload"] = JSON.stringify(payloadObj);
             } else {
-                bo.type = "external";  bo.$attrs["camunda:type"]  = "external";
+                bo.type = "external"; bo.$attrs["camunda:type"] = "external";
                 bo.topic = propForm.topic; bo.$attrs["camunda:topic"] = propForm.topic;
                 const paramsObj = Object.fromEntries(
                     (propForm.params || [])
@@ -907,8 +907,8 @@ function Processes({ activeTab }) {
                     <div className="mb-3">
                         <div className="d-flex gap-3 flex-wrap">
                             {[
-                                { value: "user",       label: "Individual" },
-                                { value: "group",      label: "Group" },
+                                { value: "user", label: "Individual" },
+                                { value: "group", label: "Group" },
                                 { value: "expression", label: "Expression" },
                             ].map(t => (
                                 <div key={t.value} className="form-check">
@@ -1297,7 +1297,7 @@ function Processes({ activeTab }) {
         const bo = elem.businessObject || {};
         const attrs = bo.$attrs || {};
         const grp = bo.candidateGroups || attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"];
-        const usr = bo.assignee        || attrs["camunda:assignee"]        || attrs["activiti:assignee"];
+        const usr = bo.assignee || attrs["camunda:assignee"] || attrs["activiti:assignee"];
         if (grp) {
             const found = groups.find(g => g.value === grp);
             return { label: found ? found.label : grp, type: "group" };
@@ -1327,24 +1327,43 @@ function Processes({ activeTab }) {
 
         return (
             <div className="proc-elem-panel">
-                <ul className="nav nav-tabs proc-elem-nav">
-                    {ELEM_TABS.map(t => {
-                        const count = elementsMap[t.key]?.length || 0;
-                        return (
-                            <li key={t.key} className="nav-item">
-                                <button
-                                    className={`nav-link proc-elem-tab ${activeElemTab === t.key ? "active" : ""}`}
-                                    onClick={() => setActiveElemTab(t.key)}>
-                                    <i className={`fa-solid ${t.icon} me-1`} />
-                                    {t.label}
-                                    {count > 0 && (
-                                        <span className="proc-elem-count ms-1">{count}</span>
-                                    )}
-                                </button>
-                            </li>
-                        );
-                    })}
+                <ul className="nav nav-tabs proc-elem-nav d-flex justify-content-between">
+                    <div className="d-flex">
+                        {ELEM_TABS.map(t => {
+                            const count = elementsMap[t.key]?.length || 0;
+                            return (
+                                <li key={t.key} className="nav-item">
+                                    <button
+                                        className={`nav-link proc-elem-tab ${activeElemTab === t.key ? "active" : ""}`}
+                                        onClick={() => setActiveElemTab(t.key)}>
+                                        <i className={`fa-solid ${t.icon} me-1`} />
+                                        {t.label}
+                                        {count > 0 && (
+                                            <span className="proc-elem-count ms-1">{count}</span>
+                                        )}
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </div>
+
+                    {bpmnProcesses.length > 1 && (
+                        <div className="ms-auto">
+                            <select
+                                className="h-100"
+                                value={activeProcessId}
+                                onChange={e => switchToProcess(e.target.value)}
+                                title="Switch process">
+                                {bpmnProcesses.map(p => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.name || p.id}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                 </ul>
+
 
                 <div className="proc-elem-body">
                     {/* {isUserTasks && (() => {
@@ -1500,7 +1519,7 @@ function Processes({ activeTab }) {
         const containerRef = isMax ? maxViewerRef : restoreViewerRef;
 
         return (
-            <div className={`proc-viewer-wrap ${isMax ? "proc-viewer-wrap--max" : ""}`}>
+            <div className={`proc-viewer-wrap ${isMax ? "proc-viewer-wrap--max" : "h-60vh"}`}>
                 {/* Toolbar */}
                 <div className="proc-viewer-toolbar">
                     {/* File name + process switcher */}
@@ -1509,19 +1528,7 @@ function Processes({ activeTab }) {
                             <i className="fa-solid fa-file-code me-1" />
                             {selectedItem.process_file || "No file loaded"}
                         </span>
-                        {bpmnProcesses.length > 1 && (
-                            <select
-                                className="form-select form-select-sm proc-process-select"
-                                value={activeProcessId}
-                                onChange={e => switchToProcess(e.target.value)}
-                                title="Switch process">
-                                {bpmnProcesses.map(p => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.name || p.id}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
+
                         {bpmnProcesses.length === 1 && (
                             <span className="proc-viewer-procname">
                                 <i className="fa-solid fa-sitemap me-1" />
@@ -1568,7 +1575,7 @@ function Processes({ activeTab }) {
 
                 {/* Canvas */}
                 <div
-                    className={`proc-viewer-canvas ${isMax ? "proc-viewer-canvas--max" : ""}`}
+                    className={`proc-viewer-canvas ${isMax ? "proc-viewer-canvas--max" : "h-100"}`}
                     ref={containerRef}
                 />
             </div>
