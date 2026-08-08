@@ -301,11 +301,11 @@ function RenderListView({
 
         // Day label
         const dueDay = new Date(due); dueDay.setHours(0, 0, 0, 0);
-        const today  = new Date(now); today.setHours(0, 0, 0, 0);
+        const today = new Date(now); today.setHours(0, 0, 0, 0);
         const diffDays = Math.round((dueDay - today) / 86400000);
 
-        if (diffDays === 0)  return `Today, ${timeStr}`;
-        if (diffDays === 1)  return `Tomorrow, ${timeStr}`;
+        if (diffDays === 0) return `Today, ${timeStr}`;
+        if (diffDays === 1) return `Tomorrow, ${timeStr}`;
         if (diffDays === -1) return `Yesterday, ${timeStr}`;
         if (diffDays > 1 && diffDays < 7) {
             const dayName = due.toLocaleDateString([], { weekday: "short" });
@@ -407,43 +407,12 @@ function RenderListView({
 
     return (
         <div id="processes" className="processes container-fluid">
-            <div className="row" style={{ height: "100%" }}>
-                {/* ── LEFT PANEL ─────────────────────────────── */}
-                <div className="col-sm-3 task-panel p-0">
-                    <div className="inbox-panel">
-
-                        {/* Header */}
-                        <div className="inbox-panel-header">
-                            <span className="inbox-panel-title">
-                                <i className="fa-solid fa-inbox" style={{ fontSize: 14 }}></i>
-                                Tasks
-                                {/* <span className="inbox-panel-title-count">{taskList?.length || 0}</span> */}
-                            </span>
-                            <div className="inbox-header-actions">
-                                <button
-                                    type="button"
-                                    className="inbox-icon-btn"
-                                    title="Refresh task list"
-                                    aria-label="Refresh task list"
-                                    onClick={() => syncTaskList()}>
-                                    <i className={`fa-solid fa-arrows-rotate ${notification?.count > 0 ? "active" : ""}`}
-                                        title={notification.message}></i>
-                                </button>
-                                {data?.allow_start_task && (
-                                    <button
-                                        type="button"
-                                        className="inbox-icon-btn"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#startProcessModal"
-                                        title="Start process instance"
-                                        aria-label="Start process instance"
-                                        onClick={() => handleProcessModal()}>
-                                        <i className="fa fa-bolt"></i>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
+            <div className="row">
+                {/* Header */}
+                <div className="inbox-panel-header">
+                    <span className="inbox-panel-title">
+                        <i className="fa-solid fa-inbox" style={{ fontSize: 14 }}></i>
+                        Tasks
                         {/* My Tasks / All Tasks tabs */}
                         <div className="inbox-tab-row">
                             {((data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
@@ -464,7 +433,29 @@ function RenderListView({
                                     <span className="inbox-tab-badge">{allCount}</span>
                                 </button>
                             )}
+                            {data?.allow_start_task && (
+                                <button
+                                    type="button"
+                                    className="inbox-icon-btn ms-2"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#startProcessModal"
+                                    title="Start process instance"
+                                    aria-label="Start process instance"
+                                    onClick={() => handleProcessModal()}>
+                                    <i className="fa fa-bolt"></i>
+                                </button>
+                            )}
                         </div>
+                        {/* <span className="inbox-panel-title-count">{taskList?.length || 0}</span> */}
+                    </span>
+
+
+                </div>
+            </div>
+            <div className="row" style={{ height: "100%" }}>
+                {/* ── LEFT PANEL ─────────────────────────────── */}
+                <div className="col-sm-3 task-panel p-0">
+                    <div className="inbox-panel">
 
                         {/* Search */}
                         <div className="inbox-search-row">
@@ -479,17 +470,22 @@ function RenderListView({
                                     aria-label="Search tasks"
                                 />
                             </div>
-                            <button className="inbox-icon-btn" title="Filter" aria-label="Filter">
-                                <i className="fa-solid fa-filter" style={{ fontSize: 12 }}></i>
-                            </button>
-                            <button className="inbox-icon-btn" title="Sort" aria-label="Sort">
-                                <i className="fa-solid fa-arrow-up-wide-short" style={{ fontSize: 12 }}></i>
-                            </button>
+                            <div className="inbox-header-actions">
+                                <button
+                                    type="button"
+                                    className="inbox-icon-btn"
+                                    title="Refresh task list"
+                                    aria-label="Refresh task list"
+                                    onClick={() => syncTaskList()}>
+                                    <i className={`fa-solid fa-arrows-rotate ${notification?.count > 0 ? "active" : ""}`}
+                                        title={notification.message}></i>
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Filter chips */}
-                        <div className="inbox-filter-row" ref={filterRef}>
-                            {/* Priority filter */}
+                        {/* Filter chips */}  {/* Priority filter */} {/* Due Date filter */}
+                        {/* <div className="inbox-filter-row" ref={filterRef}>
+
                             <div className="inbox-filter-chip-wrap">
                                 <button
                                     className={`inbox-filter-chip ${filters.priority !== "all" ? "active" : ""}`}
@@ -512,7 +508,7 @@ function RenderListView({
                                 )}
                             </div>
 
-                            {/* Due Date filter */}
+
                             <div className="inbox-filter-chip-wrap">
                                 <button
                                     className={`inbox-filter-chip ${filters.dueDate !== "all" ? "active" : ""}`}
@@ -540,7 +536,8 @@ function RenderListView({
                                     Clear All
                                 </button>
                             )}
-                        </div>
+
+                        </div> */}
 
                         {/* Task groups */}
                         <div className="inbox-task-groups-scroll">

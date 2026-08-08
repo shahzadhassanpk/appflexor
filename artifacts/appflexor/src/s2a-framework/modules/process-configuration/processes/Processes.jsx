@@ -63,7 +63,7 @@ function SearchableSelect({ options = [], value, onChange, placeholder = "Search
                 value={value}
                 onChange={onChange}
                 size={Math.min(Math.max(filtered.length, 1), 6)}>
-                <option className="p-1" value="expression">— dynamic —</option>
+                {/* <option className="p-1" value="expression">— dynamic —</option> */}
                 {filtered.map(o => (
                     <option className="p-1" key={o.value} value={o.value}>{o.label}</option>
                 ))}
@@ -1553,7 +1553,7 @@ function Processes({ activeTab }) {
         const containerRef = isMax ? maxViewerRef : restoreViewerRef;
 
         return (
-            <div className={`proc-viewer-wrap ${isMax ? "proc-viewer-wrap--max" : "h-60vh"}`}>
+            <div className={`proc-viewer-wrap ${isMax ? "proc-viewer-wrap--max" : "h-80"}`}>
                 {/* Toolbar */}
                 <div className="proc-viewer-toolbar">
                     {/* File name + process switcher */}

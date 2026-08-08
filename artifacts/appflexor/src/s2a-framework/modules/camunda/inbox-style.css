@@ -20,6 +20,8 @@
     justify-content: space-between;
     padding: 10px 14px 6px;
     flex-shrink: 0;
+    border: 1px solid var(--border-color);
+    background: var(--primary-color);
 }
 
 .inbox-panel-title {
