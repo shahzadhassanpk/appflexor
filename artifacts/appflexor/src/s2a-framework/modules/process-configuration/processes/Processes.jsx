@@ -105,6 +105,7 @@ function Processes({ activeTab }) {
         userTasks: [], serviceTasks: [], variables: [], startEvents: [],
     });
     const [activeElemTab, setActiveElemTab]   = useState("userTasks");
+    const [xmlDirty, setXmlDirty]             = useState(false);
 
     /* ── property editor state ── */
     const [propModal, setPropModal]     = useState(null); // { type, subType, element, title }
@@ -194,6 +195,7 @@ function Processes({ activeTab }) {
             if (!res.ok) throw new Error("HTTP " + res.status);
             const xml = await res.text();
             currentXmlRef.current = xml;
+            setXmlDirty(false);
 
             // Parse process list from XML
             const procs = parseProcessesFromXml(xml);
@@ -502,37 +504,23 @@ function Processes({ activeTab }) {
             bo.name = propForm.name;
         }
 
-        // Serialize and upload
+        // Serialize locally. The main process Save button performs the server write.
         try {
             const { xml } = await viewerInstanceRef.current.saveXML({ format: true });
             currentXmlRef.current = xml;
-            const b64 = btoa(unescape(encodeURIComponent(xml)));
-            await saveXmlToServer(selectedItem.process_file, b64);
-            toastEmitter("Properties saved", true);
+            setXmlDirty(true);
+            setDeployPending(true);
+            toastEmitter("Properties applied. Click Save to persist changes.", true);
             setPropModal(null);
         } catch (err) {
             console.error("saveXML error:", err);
-            toastEmitter("Failed to persist BPMN changes", true, "error");
+            toastEmitter("Failed to apply BPMN changes", true, "error");
         }
     }
 
     /* ─────────────────────────────────────────────────────────────────────
        Save updated XML back to server (without changing record metadata)
     ───────────────────────────────────────────────────────────────────── */
-    async function saveXmlToServer(fileName, encodedData) {
-        const request = {
-            data: [{
-                formId: DB_TABLE,
-                entity: DB_TABLE,
-                action: "update",
-                id: selectedItem.id,
-                formData: { ...selectedItem },
-                fileData: [{ fileName, content: encodedData }],
-            }],
-        };
-        await axios.post(API_URL + "?service.key=update.formData", request);
-    }
-
     /* ─────────────────────────────────────────────────────────────────────
        Existing list / CRUD logic (unchanged)
     ───────────────────────────────────────────────────────────────────── */
@@ -578,6 +566,7 @@ function Processes({ activeTab }) {
     function editItem(item) {
         setFormStatus(STATUS.update);
         setToggleBpmnViewer("restore");
+        setXmlDirty(false);
         currentXmlRef.current = null;
         allElementsRef.current = [];
         setBpmnProcesses([]);
@@ -595,6 +584,7 @@ function Processes({ activeTab }) {
     function addNewItem() {
         setFormStatus(STATUS.create);
         setSelectedItem(INITIAL_STATE);
+        setXmlDirty(false);
         setSaveIsDisabled(true);
         setProcesses([]);
         currentXmlRef.current = null;
@@ -771,6 +761,12 @@ function Processes({ activeTab }) {
 
     async function saveData(item) {
         const fieldsData = { ...item, processes };
+        const fileData = xmlDirty && currentXmlRef.current && fieldsData.process_file
+            ? [{
+                fileName: fieldsData.process_file,
+                content: btoa(unescape(encodeURIComponent(currentXmlRef.current))),
+            }]
+            : undefined;
         const request = {
             data: [{
                 formId: DB_TABLE,
@@ -778,6 +774,7 @@ function Processes({ activeTab }) {
                 action: "update",
                 id: fieldsData.id || "new",
                 formData: { ...fieldsData, id: fieldsData.id || "new" },
+                ...(fileData ? { fileData } : {}),
             }],
         };
         try {
@@ -787,6 +784,7 @@ function Processes({ activeTab }) {
                 setSelectedItem(prev => ({ ...prev, ...saved }));
                 setFormStatus(STATUS.update);
                 setDeployPending(true);
+                setXmlDirty(false);
                 getData();
                 toastEmitter("Record saved successfully", true);
                 return saved;
@@ -801,7 +799,7 @@ function Processes({ activeTab }) {
 
     const handleDeployClick = async () => {
         try {
-            const saved = await saveData(selectedItem);
+            const saved = true; //await saveData(selectedItem);
             if (saved) await deployProcess(saved);
         } catch (_) { /* saveData already toasted */ }
     };
@@ -1281,7 +1279,7 @@ function Processes({ activeTab }) {
                 </ul>
 
                 <div className="proc-elem-body">
-                    {isUserTasks && (() => {
+                    {/* {isUserTasks && (() => {
                         const startElem = elementsMap.startEvents?.[0] || null;
                         const startForm = startElem ? resolveFormLabel(startElem) : null;
                         return (
@@ -1315,7 +1313,7 @@ function Processes({ activeTab }) {
                                 )}
                             </div>
                         );
-                    })()}
+                    })()} */}
                     {currentElems.length === 0 ? (
                         <div className="proc-elem-empty">
                             {xmlLoading
@@ -1736,7 +1734,7 @@ function Processes({ activeTab }) {
                                     {formStatus === STATUS.update && (
                                         <button
                                             className={`btn button-theme btn-sm ${deployPending ? "proc-deploy-btn--pulse" : ""}`}
-                                            onClick={handleDeployClick}
+                                            onClick={() => deployProcess(selectedItem)}
                                             disabled={!deployPending || deploying}
                                             title="Deploy to process engine">
                                             {deploying

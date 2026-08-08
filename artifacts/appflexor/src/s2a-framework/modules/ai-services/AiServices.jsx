@@ -270,7 +270,6 @@ function AiServices() {
     }
 
     function saveProv() {
-        debugger;
         if (!validateProv()) return;
         setProvSaving(true);
         handleSave({ entity: "ai_provider", formData: selectedProv })
