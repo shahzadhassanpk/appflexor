@@ -637,7 +637,7 @@ function ProcessConfiguration() {
                                         <i className="fa-solid fa-building" aria-hidden="true" />
                                     </span>
                                     <div>
-                                        <div className="orch-panel-title">Business areas</div>
+                                        <div className="orch-panel-title">Business Areas</div>
                                         <div className="orch-panel-desc">Business areas group related business services.</div>
                                     </div>
                                 </div>
@@ -678,8 +678,8 @@ function ProcessConfiguration() {
                                         <i className="fa-solid fa-tag" aria-hidden="true" />
                                     </span>
                                     <div>
-                                        <div className="orch-panel-title">Governing bodies</div>
-                                        <div className="orch-panel-desc">Governing bodies accountable for business service performance.</div>
+                                        <div className="orch-panel-title">Governing Bodies</div>
+                                        <div className="orch-panel-desc">Bodies accountable for business process performance.</div>
                                     </div>
                                 </div>
                                 <button type="button" className="orch-add-btn" onClick={openAddGB}>
