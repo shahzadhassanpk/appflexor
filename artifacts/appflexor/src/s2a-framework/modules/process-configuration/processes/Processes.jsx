@@ -149,6 +149,7 @@ function Processes({ activeTab }) {
     const viewerInstanceRef = useRef(null); // NavigatedViewer instance
     const currentXmlRef = useRef(null); // current BPMN XML string
     const allElementsRef = useRef([]);   // all registry elements (for process filtering)
+    const pendingFileRef = useRef(null); // { fileName, encodedData } held for new records until Save
 
     const { id, process_file } = selectedItem;
     const fileUrl = FILE_URL + "/" + DB_TABLE + "/" + id + "/" + process_file;
@@ -624,6 +625,7 @@ function Processes({ activeTab }) {
     function clearFields() {
         setSelectedItem(INITIAL_STATE);
         setSaveIsDisabled(true);
+        pendingFileRef.current = null;
     }
 
     const handleModalClose = status => {
@@ -707,14 +709,13 @@ function Processes({ activeTab }) {
 
     const handleFileUpload = event => {
         const selectedFile = event.target.files[0];
+        if (!selectedFile) return;
         const fileName = selectedFile.name;
         const fileReader = new FileReader();
 
         fileReader.onload = fileLoadedEvent => {
             const content = fileLoadedEvent.target.result;
-            const newArr = content.split("base64,");
-            const encodedData = newArr[1] || "";
-            uploadFilesToServer(fileName, encodedData);
+            const encodedData = content.split("base64,")[1] || "";
 
             // Parse process IDs from XML
             const xmlText = atob(encodedData);
@@ -725,9 +726,27 @@ function Processes({ activeTab }) {
             setActiveProcessId(firstId);
             if (parsed.length > 0) handleProcessSelected(parsed[0]);
 
-            // Store XML for viewer
+            // Load diagram immediately into the already-mounted viewer
             currentXmlRef.current = xmlText;
+            const viewer = viewerInstanceRef.current;
+            if (viewer) {
+                viewer.importXML(xmlText)
+                    .then(() => {
+                        viewer.get("canvas").zoom("fit-viewport");
+                        extractElements(viewer, firstId);
+                    })
+                    .catch(err => console.error("BPMN local import error:", err));
+            }
+
             setDeployPending(true);
+
+            // For new (unsaved) records: hold the file locally until Save is clicked.
+            // For existing records: upload immediately (same as before).
+            if (!selectedItem.id || selectedItem.id === "new") {
+                pendingFileRef.current = { fileName, encodedData };
+            } else {
+                uploadFilesToServer(fileName, encodedData);
+            }
         };
 
         fileReader.readAsDataURL(selectedFile);
@@ -758,12 +777,15 @@ function Processes({ activeTab }) {
         }
     }
 
-    async function uploadFilesToServer(fileName, encodedData) {
-        const rid = selectedItem.id || "new";
+    // savedRecord: pass the just-saved record when calling from saveData so the
+    // correct id is used even before React state has flushed the update.
+    async function uploadFilesToServer(fileName, encodedData, savedRecord = null) {
+        const base = savedRecord || selectedItem;
+        const rid = base.id || "new";
         const request = {
             data: [{
                 formId: DB_TABLE, entity: DB_TABLE, action: "update", id: rid,
-                formData: { ...selectedItem, id: rid, process_file: fileName },
+                formData: { ...base, id: rid, process_file: fileName },
                 fileData: [{ fileName, content: encodedData }],
             }],
         };
@@ -803,6 +825,14 @@ function Processes({ activeTab }) {
                 setDeployPending(true);
                 setXmlDirty(false);
                 getData();
+
+                // Upload any file that was held locally while the record had no id yet
+                if (pendingFileRef.current) {
+                    const { fileName, encodedData } = pendingFileRef.current;
+                    pendingFileRef.current = null;
+                    await uploadFilesToServer(fileName, encodedData, saved);
+                }
+
                 setStatus("Record saved");
                 return saved;
             }
