@@ -599,8 +599,9 @@ export function ProcessDeployDialog({
             init = { formKey: fk, formType: /^\$\{|^#\{/.test(fk) ? "expression" : "key" };
 
         } else if (type === "serviceTasks") {
-            const storedAgentKey = attrs["s2aAgentKey"] || "";
-            const storedTaskKey  = attrs["s2aTaskKey"]  || "";
+            const storedAgentKey      = attrs["s2aAgentKey"]        || "";
+            const storedTaskKey       = attrs["s2aTaskKey"]         || "";
+            const storedAppServiceKey = attrs["s2aAppServiceKey"]   || "";
             let payload = [
                 { key: "business_key", value: "" },
                 { key: "message",      value: "" },
@@ -626,8 +627,18 @@ export function ProcessDeployDialog({
             const topic = bo.topic || attrs["camunda:topic"] || "";
             if (storedAgentKey) {
                 init = { serviceType: "ai", agentKey: storedAgentKey, taskKey: storedTaskKey, payload, params };
+            } else if (storedAppServiceKey) {
+                let appConfig = {};
+                try { appConfig = JSON.parse(attrs["s2aAppServiceConfig"] || "{}"); } catch (_) { /* keep empty */ }
+                init = { serviceType: "app", appServiceKey: storedAppServiceKey, appConfig };
             } else {
-                init = { serviceType: "external", topic, agentKey: "", taskKey: "", payload, params };
+                // kafka.topic stored as dedicated field; strip it from the params table
+                const existingWorkerTopic = params.find(p => p.key === "kafka.topic");
+                const workerTopic = existingWorkerTopic
+                    ? existingWorkerTopic.value
+                    : (topic === "kafka.connector" ? "" : topic);
+                const extParams = params.filter(p => p.key !== "kafka.topic");
+                init = { serviceType: "external", workerTopic, agentKey: "", taskKey: "", payload, params: extParams };
             }
 
         } else if (type === "variables") {
@@ -673,14 +684,29 @@ export function ProcessDeployDialog({
                         .map(p => [p.key.trim(), p.value]),
                 );
                 bo.$attrs["s2aPayload"] = JSON.stringify(payloadObj);
+                delete bo.$attrs["s2aAppServiceKey"];
+                delete bo.$attrs["s2aAppServiceConfig"];
+                delete bo.$attrs["s2aParams"];
+            } else if (propForm.serviceType === "app") {
+                bo.type  = "external"; bo.$attrs["camunda:type"]  = "external";
+                bo.topic = "app.service.api"; bo.$attrs["camunda:topic"] = "app.service.api";
+                bo.$attrs["s2aAppServiceKey"]    = propForm.appServiceKey || "get.formData";
+                bo.$attrs["s2aAppServiceConfig"] = JSON.stringify(propForm.appConfig || {});
+                delete bo.$attrs["s2aAgentKey"];
+                delete bo.$attrs["s2aTaskKey"];
+                delete bo.$attrs["s2aPayload"];
+                delete bo.$attrs["s2aParams"];
             } else {
                 bo.type  = "external"; bo.$attrs["camunda:type"]  = "external";
-                bo.topic = propForm.topic; bo.$attrs["camunda:topic"] = propForm.topic;
-                const paramsObj = Object.fromEntries(
-                    (propForm.params || [])
-                        .filter(p => p.key.trim())
-                        .map(p => [p.key.trim(), p.value]),
-                );
+                bo.topic = "kafka.connector"; bo.$attrs["camunda:topic"] = "kafka.connector";
+                const paramsObj = {
+                    ...(propForm.workerTopic ? { "kafka.topic": propForm.workerTopic } : {}),
+                    ...Object.fromEntries(
+                        (propForm.params || [])
+                            .filter(p => p.key.trim())
+                            .map(p => [p.key.trim(), p.value]),
+                    ),
+                };
                 if (Object.keys(paramsObj).length > 0) {
                     bo.$attrs["s2aParams"] = JSON.stringify(paramsObj);
                 } else {
@@ -689,6 +715,8 @@ export function ProcessDeployDialog({
                 delete bo.$attrs["s2aAgentKey"];
                 delete bo.$attrs["s2aTaskKey"];
                 delete bo.$attrs["s2aPayload"];
+                delete bo.$attrs["s2aAppServiceKey"];
+                delete bo.$attrs["s2aAppServiceConfig"];
             }
 
         } else if (type === "variables") {
@@ -949,6 +977,21 @@ export function ProcessDeployDialog({
                                                                     /{elem.businessObject.$attrs["s2aTaskKey"]}
                                                                 </span>
                                                             )}
+                                                        </span>
+                                                    ) : elem.businessObject?.$attrs?.["s2aAppServiceKey"] ? (
+                                                        <span className="proc-app-svc-chip">
+                                                            <i className="fa-solid fa-server me-1" />
+                                                            {elem.businessObject.$attrs["s2aAppServiceKey"]}
+                                                        </span>
+                                                    ) : (elem.businessObject?.topic === "kafka.connector" || elem.businessObject?.$attrs?.["camunda:topic"] === "kafka.connector") ? (
+                                                        <span className="proc-kafka-chip">
+                                                            <i className="fa-solid fa-plug me-1" />
+                                                            {(() => {
+                                                                try {
+                                                                    const p = JSON.parse(elem.businessObject.$attrs?.["s2aParams"] || "{}");
+                                                                    return p["kafka.topic"] || "kafka.connector";
+                                                                } catch { return "kafka.connector"; }
+                                                            })()}
                                                         </span>
                                                     ) : (
                                                         <span className="proc-elem-type">

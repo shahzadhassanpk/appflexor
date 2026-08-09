@@ -38,6 +38,10 @@ export function SearchableSelect({ options = [], value, onChange, placeholder = 
                     value={value}
                     onChange={onChange}
                     size={Math.min(Math.max(filtered.length, 1), 6)}>
+                    {/* Hidden sentinel keeps browser selectedIndex on this slot
+                        when value is empty, so clicking the first real option
+                        always fires onChange. */}
+                    <option value="" style={{ display: "none" }} aria-hidden="true" />
                     {filtered.map(o => (
                         <option className="p-1" key={o.value} value={o.value}>
                             {o.label}
