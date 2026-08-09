@@ -581,130 +581,77 @@ function ProcessMap({ activeTab }) {
                 setState={setDeleteConfig}
                 modalType="deleteModal"
             />
-            <div className="row p-2 m-0">
-                <div className="col-sm-12 p-2">
-                    <div className="input-group">
-                        <span className="input-group-text">
-                            <i className="fa fa-search"></i>
-                        </span>
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Search by title, key or category"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
-                        {searchTerm && (
-                            <button
-                                className="btn btn-light"
-                                onClick={() => setSearchTerm("")}
-                                title="Clear">
-                                <i className="fa fa-times" />
-                            </button>
-                        )}
-                    </div>
+            <div className="proc-list-wrap">
+                {/* ── Search bar ── */}
+                <div className="proc-list-search">
+                    <span className="proc-list-search-icon"><i className="fa fa-search" /></span>
+                    <input
+                        type="text"
+                        placeholder="Search by title, key or category…"
+                        value={searchTerm}
+                        onChange={e => { setSearchTerm(e.target.value); setCurrent(1); }}
+                    />
+                    {searchTerm && (
+                        <button className="proc-list-search-clear" onClick={() => setSearchTerm("")} title="Clear">
+                            <i className="fa fa-times" />
+                        </button>
+                    )}
                 </div>
-                <div className="col-sm-12 p-0">
-                    <Table className="s2a-table table-bordered table-hover mb-0">
-                        <Thead className="thead">
-                            <Tr className="tableHeader">
-                                <Th className="col-sm-1 table-row text-left">
-                                    Active
+
+                {/* ── Table ── */}
+                <div className="proc-list-table-wrap">
+                    <Table className="proc-list-table">
+                        <Thead>
+                            <Tr>
+                                <Th style={{ width: "6rem" }}>
+                                    <TableSorting state={items} setState={setItems} fieldName="is_active" headerTitle="Active" />
                                 </Th>
-                                <Th className="col-sm-2 table-row text-left">
-                                    <TableSorting
-                                        state={items}
-                                        setState={setItems}
-                                        fieldName={"title"}
-                                        headerTitle={"Title"}
-                                    />
+                                <Th>
+                                    <TableSorting state={items} setState={setItems} fieldName="title" headerTitle="Title" />
                                 </Th>
-                                <Th className="col-sm-2 table-row text-left">
-                                    Category
-                                </Th>
-                                <Th className="col-sm-2 table-row text-left">
-                                    Business Area
-                                </Th>
-                                <Th className="col-sm-2 table-row text-left">
-                                    Governing Body
-                                </Th>
-                                <Th className="col-sm-2 table-row text-left">
-                                    Form
-                                </Th>
-                                <Th className="col-sm-2 table-row text-left"></Th>
+                                <Th>Category</Th>
+                                <Th>Business Area</Th>
+                                <Th>Governing Body</Th>
+                                <Th>Form</Th>
+                                <Th style={{ width: "6rem" }} />
                             </Tr>
                         </Thead>
                         <Tbody>
-                            {getPaginateData(current, size).map(item => {
-                                return (
-                                    <Tr
-                                        key={item.id}
-                                        className={` ${item.id === selectedItem.id
-                                                ? "selected-cell"
-                                                : " "
-                                            }`}>
-                                        <Td className="col-sm-1 table-row text-left">
-                                            <input
-                                                className="form-check-input"
-                                                type="checkbox"
-                                                checked={
-                                                    item.is_active === "YES"
-                                                        ? true
-                                                        : false
-                                                }
-                                            />
-                                        </Td>
-                                        <Td className="col-sm-2 table-row text-left">
-                                            {item.title}
-                                        </Td>
-                                        <Td className="col-sm-2 table-row text-left">
-                                            {getCategoryById(item.category)}
-                                        </Td>
-                                        <Td className="col-sm-2 table-row text-left">
-                                            {getBusinessAreaById(item?.business_area)}
-                                        </Td>
-                                        <Td className="col-sm-2 table-row text-left">
-                                            {getGoverningBodyById(item?.process_gov)}
-                                        </Td>
-                                        <Td className="col-sm-2 table-row text-left">
-                                            {getNameById(item.form_id)}
-                                        </Td>
-                                        <Td className="col-sm-2 table-row text-left">
-                                            <div className="data-cell d-flex">
-                                                <span
-                                                    className="table-edit-font"
-                                                    title="Edit"
-                                                    onClick={() =>
-                                                        editItem(item)
-                                                    }>
-                                                    <i className="fa-regular fa-edit"></i>
-                                                </span>
-                                                <span
-                                                    className="table-del-font"
-                                                    title="Delete"
-                                                    onClick={() =>
-                                                        deleteData(item)
-                                                    }>
-                                                    <i className="fa-regular fa-trash-can"></i>
-                                                </span>
-                                            </div>
-                                        </Td>
-                                    </Tr>
-                                );
-                            })}
+                            {getPaginateData(current, size).map(item => (
+                                <Tr
+                                    key={item.id}
+                                    className={item.id === selectedItem.id ? "proc-row-selected" : ""}>
+                                    <Td>
+                                        <span className={`proc-list-badge ${item.is_active === "YES" ? "proc-list-badge-active" : "proc-list-badge-inactive"}`}>
+                                            {item.is_active === "YES" ? "Active" : "Inactive"}
+                                        </span>
+                                    </Td>
+                                    <Td>{item.title}</Td>
+                                    <Td>{getCategoryById(item.category)}</Td>
+                                    <Td>{getBusinessAreaById(item?.business_area)}</Td>
+                                    <Td>{getGoverningBodyById(item?.process_gov)}</Td>
+                                    <Td>{getNameById(item.form_id)}</Td>
+                                    <Td>
+                                        <div className="proc-list-actions">
+                                            <button className="proc-list-action-btn" title="Edit" onClick={() => editItem(item)}>
+                                                <i className="fa-regular fa-edit" />
+                                            </button>
+                                            <button className="proc-list-action-btn danger" title="Delete" onClick={() => deleteData(item)}>
+                                                <i className="fa-regular fa-trash-can" />
+                                            </button>
+                                        </div>
+                                    </Td>
+                                </Tr>
+                            ))}
                         </Tbody>
                     </Table>
                 </div>
-                <div className="col-sm-8 p-0">
-                    <span
-                        type="button"
-                        className="button-theme btn btn-sm pull-left my-2"
-                        onClick={addNewItem}>
-                        <i className="fa-solid fa-plus pe-1"></i>
-                        Add New
-                    </span>
-                </div>
-                <div className="col-sm-4 p-0">
+
+                {/* ── Footer: add + pagination ── */}
+                <div className="proc-list-footer">
+                    <button className="button-theme btn btn-sm" onClick={addNewItem}>
+                        <i className="fa-solid fa-plus pe-1" />Add New
+                    </button>
                     <TablePagination
                         size={size}
                         setSize={setSize}

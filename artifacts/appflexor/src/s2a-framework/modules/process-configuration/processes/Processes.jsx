@@ -169,67 +169,62 @@ function Processes({ activeTab }) {
     ═══════════════════════════════════════════════════════════════════ */
     return (
         <div className="process-configuration-map">
-            {/* ── Search + table ── */}
-            <div className="row p-2 m-0">
-                <div className="col-sm-12 p-2">
-                    <div className="input-group">
-                        <span className="input-group-text">
-                            <i className="fa fa-search" />
-                        </span>
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Search by title, def key or file"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
-                        {searchTerm && (
-                            <button className="btn btn-light" onClick={() => setSearchTerm("")} title="Clear">
-                                <i className="fa fa-times" />
-                            </button>
-                        )}
-                    </div>
+            <div className="proc-list-wrap">
+                {/* ── Search bar ── */}
+                <div className="proc-list-search">
+                    <span className="proc-list-search-icon"><i className="fa fa-search" /></span>
+                    <input
+                        type="text"
+                        placeholder="Search by title, def key or file…"
+                        value={searchTerm}
+                        onChange={e => { setSearchTerm(e.target.value); setCurrent(1); }}
+                    />
+                    {searchTerm && (
+                        <button className="proc-list-search-clear" onClick={() => setSearchTerm("")} title="Clear">
+                            <i className="fa fa-times" />
+                        </button>
+                    )}
                 </div>
 
-                <div className="col-sm-12 p-0">
-                    <Table className="s2a-table table-bordered table-hover mb-0">
-                        <Thead className="thead">
-                            <Tr className="tableHeader">
-                                <Th className="col-sm-2 table-row text-left">
-                                    <TableSorting state={items} setState={setItems} fieldName="title" headerTitle="Select Main Process" />
-                                </Th>
-                                <Th className="col-sm-2 table-row text-left">
-                                    <TableSorting state={items} setState={setItems} fieldName="process_def_key" headerTitle="Main Process Def Key" />
-                                </Th>
-                                <Th className="col-sm-2 table-row text-left">Process File</Th>
-                                <Th className="col-sm-2 table-row text-left">Current Deployment</Th>
-                                <Th className="col-sm-2 table-row text-left">Last Updated</Th>
-                                <Th className="col-sm-2 table-row text-left" />
+                {/* ── Table ── */}
+                <div className="proc-list-table-wrap">
+                    <Table className="proc-list-table">
+                        <Thead>
+                            <Tr>
+                                <Th><TableSorting state={items} setState={setItems} fieldName="title" headerTitle="Process Title" /></Th>
+                                <Th><TableSorting state={items} setState={setItems} fieldName="process_def_key" headerTitle="Def Key" /></Th>
+                                <Th><TableSorting state={items} setState={setItems} fieldName="process_file" headerTitle="File" /></Th>
+                                <Th><TableSorting state={items} setState={setItems} fieldName="version" headerTitle="Deployment" /></Th>
+                                <Th><TableSorting state={items} setState={setItems} fieldName="datemodified" headerTitle="Last Updated" /></Th>
+                                <Th style={{ width: "7rem" }} />
                             </Tr>
                         </Thead>
                         <Tbody>
                             {getPaginateData(current, size).map(item => (
                                 <Tr
                                     key={item.id}
-                                    className={item.id === selectedItemId ? "selected-cell" : ""}>
-                                    <Td className="col-sm-2 table-row text-left">{item.title}</Td>
-                                    <Td className="col-sm-2 table-row text-left">{item.process_def_key}</Td>
-                                    <Td className="col-sm-2 table-row text-left">{item.process_file}</Td>
-                                    <Td className="col-sm-2 table-row text-left">{item?.version}</Td>
-                                    <Td className="col-sm-2 table-row text-left">
-                                        {formatDateTimeForUserView(item?.datemodified)}
+                                    className={item.id === selectedItemId ? "proc-row-selected" : ""}>
+                                    <Td>{item.title}</Td>
+                                    <Td><span className="proc-list-file">{item.process_def_key}</span></Td>
+                                    <Td><span className="proc-list-file">{item.process_file}</span></Td>
+                                    <Td>
+                                        {item?.version
+                                            ? <span className="proc-list-badge proc-list-badge-version">v{item.version}</span>
+                                            : <span style={{ color: "color-mix(in srgb, var(--font-color,#374151) 35%, transparent)", fontSize: "0.75rem" }}>—</span>
+                                        }
                                     </Td>
-                                    <Td className="col-sm-2 table-row text-left">
-                                        <div className="data-cell d-flex">
-                                            <span className="table-edit-font px-2" title="Redeploy" onClick={() => quickDeploy(item)}>
-                                                <i className="fa fa-retweet m-0" />
-                                            </span>
-                                            <span className="table-edit-font" title="Edit" onClick={() => editItem(item)}>
+                                    <Td>{formatDateTimeForUserView(item?.datemodified)}</Td>
+                                    <Td>
+                                        <div className="proc-list-actions">
+                                            <button className="proc-list-action-btn warning" title="Redeploy" onClick={() => quickDeploy(item)}>
+                                                <i className="fa fa-retweet" />
+                                            </button>
+                                            <button className="proc-list-action-btn" title="Edit" onClick={() => editItem(item)}>
                                                 <i className="fa-regular fa-edit" />
-                                            </span>
-                                            <span className="table-del-font" title="Delete" onClick={() => deleteData(item)}>
+                                            </button>
+                                            <button className="proc-list-action-btn danger" title="Delete" onClick={() => deleteData(item)}>
                                                 <i className="fa-regular fa-trash-can" />
-                                            </span>
+                                            </button>
                                         </div>
                                     </Td>
                                 </Tr>
@@ -238,12 +233,11 @@ function Processes({ activeTab }) {
                     </Table>
                 </div>
 
-                <div className="col-sm-8 p-0">
-                    <span type="button" className="button-theme btn btn-sm pull-left my-2" onClick={addNewItem}>
+                {/* ── Footer: add + pagination ── */}
+                <div className="proc-list-footer">
+                    <button className="button-theme btn btn-sm" onClick={addNewItem}>
                         <i className="fa-solid fa-plus pe-1" />Add New
-                    </span>
-                </div>
-                <div className="col-sm-4 p-0">
+                    </button>
                     <TablePagination
                         size={size}
                         setSize={setSize}

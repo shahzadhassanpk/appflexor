@@ -608,6 +608,218 @@
     animation: proc-deploy-pulse 1.6s ease-in-out infinite;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   Process list table  (Processes tab + Process Map tab)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.proc-list-wrap {
+    padding: 0.75rem 0.75rem 0;
+}
+
+/* Search bar */
+.proc-list-search {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+    border-radius: 7px;
+    overflow: hidden;
+    background: var(--secondary-color, #fff);
+    margin-bottom: 0.75rem;
+}
+
+.proc-list-search-icon {
+    padding: 0 0.65rem;
+    color: color-mix(in srgb, var(--font-color, #374151) 45%, transparent);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.proc-list-search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.83rem;
+    padding: 0.42rem 0;
+    color: var(--font-color, #374151);
+    min-width: 0;
+}
+
+.proc-list-search input::placeholder {
+    color: color-mix(in srgb, var(--font-color, #374151) 38%, transparent);
+}
+
+.proc-list-search-clear {
+    border: none;
+    background: transparent;
+    padding: 0 0.65rem;
+    cursor: pointer;
+    color: color-mix(in srgb, var(--font-color, #374151) 45%, transparent);
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+}
+
+.proc-list-search-clear:hover {
+    color: var(--font-color, #374151);
+}
+
+/* Table */
+.proc-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    table-layout: auto;
+}
+
+.proc-list-table thead tr {
+    background: color-mix(in srgb, var(--font-color, #000) 4%, var(--secondary-color, #fff));
+    border-bottom: 2px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
+}
+
+.proc-list-table th {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.71rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: color-mix(in srgb, var(--font-color, #374151) 60%, transparent);
+    white-space: nowrap;
+    border: none;
+}
+
+/* Sortable header — contains the TableSorting widget */
+.proc-list-table th .s2a-table-sorting {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.proc-list-table th .s2a-table-sorting:hover {
+    color: var(--font-color, #374151);
+}
+
+.proc-list-table th .sorted-header {
+    font-size: inherit;
+    color: inherit;
+}
+
+.proc-list-table td {
+    padding: 0.55rem 0.75rem;
+    border: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.07)) 100%, transparent);
+    vertical-align: middle;
+    color: var(--font-color, #374151);
+}
+
+.proc-list-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.proc-list-table tbody tr {
+    transition: background 0.12s;
+}
+
+.proc-list-table tbody tr:hover {
+    background: color-mix(in srgb, var(--font-color, #000) 3%, var(--secondary-color, #fff));
+}
+
+.proc-list-table tbody tr.proc-row-selected {
+    background: color-mix(in srgb, var(--link-active-color, #2563eb) 7%, var(--secondary-color, #fff));
+}
+
+/* Table outer border */
+.proc-list-table-wrap {
+    border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Action buttons */
+.proc-list-actions {
+    display: flex;
+    gap: 0.1rem;
+    align-items: center;
+}
+
+.proc-list-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
+    transition: background 0.14s, color 0.14s;
+    font-size: 0.78rem;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.proc-list-action-btn:hover {
+    background: color-mix(in srgb, var(--font-color, #000) 8%, transparent);
+    color: var(--font-color, #374151);
+}
+
+.proc-list-action-btn.danger:hover {
+    background: color-mix(in srgb, #ef4444 12%, transparent);
+    color: #dc2626;
+}
+
+.proc-list-action-btn.warning:hover {
+    background: color-mix(in srgb, #f59e0b 14%, transparent);
+    color: #b45309;
+}
+
+/* Inline badges */
+.proc-list-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.69rem;
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1.5;
+}
+
+.proc-list-badge-active {
+    background: color-mix(in srgb, #22c55e 12%, transparent);
+    color: #15803d;
+}
+
+.proc-list-badge-inactive {
+    background: color-mix(in srgb, var(--font-color, #000) 7%, transparent);
+    color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
+}
+
+.proc-list-badge-version {
+    background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
+    color: var(--link-active-color, #2563eb);
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.68rem;
+}
+
+.proc-list-file {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.74rem;
+    color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
+}
+
+/* Footer row: add button + pagination */
+.proc-list-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+}
+
 /* ── bpmn-js canvas override (ensure it fits our container) ─────────────── */
 .djs-container svg {
     width: 100% !important;
