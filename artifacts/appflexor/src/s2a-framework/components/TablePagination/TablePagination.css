@@ -1,5 +1,12 @@
 /* Pagination */
 
+#table-pagination .form-select {
+    color: var(--font-color) !important;
+    background-color: var(--secondary-color, #fff) !important;
+    border-color: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+    font-size: 12px;
+}
+
 #table-pagination {
     border: none !important;
     font-size: 13px !important;
