@@ -698,7 +698,7 @@ export function ProcessDeployDialog({
                 delete bo.$attrs["s2aParams"];
             } else {
                 bo.type  = "external"; bo.$attrs["camunda:type"]  = "external";
-                bo.topic = "kafka.connector"; bo.$attrs["camunda:topic"] = "kafka.connector";
+                bo.topic = "kafka.connector"; bo.$attrs["camunda:topic"] = "appflexor.connector";
                 const paramsObj = {
                     ...(propForm.workerTopic ? { "kafka.topic": propForm.workerTopic } : {}),
                     ...Object.fromEntries(
@@ -983,14 +983,14 @@ export function ProcessDeployDialog({
                                                             <i className="fa-solid fa-server me-1" />
                                                             {elem.businessObject.$attrs["s2aAppServiceKey"]}
                                                         </span>
-                                                    ) : (elem.businessObject?.topic === "kafka.connector" || elem.businessObject?.$attrs?.["camunda:topic"] === "kafka.connector") ? (
+                                                    ) : (elem.businessObject?.topic === "appflexor.connector" || elem.businessObject?.$attrs?.["camunda:topic"] === "kafka.connector") ? (
                                                         <span className="proc-kafka-chip">
                                                             <i className="fa-solid fa-plug me-1" />
                                                             {(() => {
                                                                 try {
                                                                     const p = JSON.parse(elem.businessObject.$attrs?.["s2aParams"] || "{}");
-                                                                    return p["kafka.topic"] || "kafka.connector";
-                                                                } catch { return "kafka.connector"; }
+                                                                    return p["kafka.topic"] || "";
+                                                                } catch { return ""; }
                                                             })()}
                                                         </span>
                                                     ) : (

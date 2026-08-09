@@ -193,7 +193,7 @@ export function PropertyEditorModal({
                         <button
                             className={`proc-svc-type-btn${(!isAi && !isApp) ? " active" : ""}`}
                             onClick={() => onFormChange(p => ({ ...p, serviceType: "external" }))}>
-                            <i className="fa-solid fa-plug me-1" />Kafka Connector
+                            <i className="fa-solid fa-plug me-1" />AppFlexor Connector
                         </button>
                         <button
                             className={`proc-svc-type-btn${isApp ? " active" : ""}`}
@@ -532,12 +532,12 @@ export function PropertyEditorModal({
                         /* External worker */
                         <>
                             <div className="mb-2">
-                                <label className="ai-label">Kafka Topic</label>
+                                <label className="ai-label">Connector Topic</label>
                                 <input
                                     className="form-control form-control-sm"
                                     value={propForm.workerTopic || ""}
                                     onChange={e => onFormChange(p => ({ ...p, workerTopic: e.target.value }))}
-                                    placeholder="e.g. my.kafka.topic"
+                                    placeholder="e.g. my.connector.topic"
                                 />
                             </div>
                             <div className="mb-1">
@@ -607,7 +607,7 @@ export function PropertyEditorModal({
                             </div>
                             <p className="proc-payload-hint mb-0 mt-2 d-flex align-items-center gap-1">
                                 <i className="fa-solid fa-circle-info" />
-                                Worker topic: <code>kafka.connector</code>
+                                Worker topic: <code>appflexor.connector</code>
                             </p>
                         </>
                     ) : null}
