@@ -59,7 +59,8 @@
 .proc-viewer-wrap {
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
+    flex: 6;
+    min-height: 0;
     border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
 }
 
@@ -105,7 +106,8 @@
 
 /* ── BPMN canvas ────────────────────────────────────────────────────────── */
 .proc-viewer-canvas {
-    height: 60vh;
+    flex: 1;
+    min-height: 0;
     position: relative;
     overflow: hidden;
     background: color-mix(in srgb, var(--font-color, #000) 1%, var(--secondary-color, #fff));
@@ -129,7 +131,7 @@
 .proc-elem-panel {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    flex: 4;
     min-height: 0;
     overflow: hidden;
 }

@@ -579,6 +579,51 @@ export function ProcessDeployDialog({
     };
 
     /* ═══════════════════════════════════════════════════════════════════
+       Property editor — inputParameter helpers
+    ═══════════════════════════════════════════════════════════════════ */
+
+    /** Read all camunda:inputParameter elements as a plain {name→value} map. */
+    function getInputParamMap(bo) {
+        const ext = bo?.extensionElements;
+        if (!ext) return {};
+        const io = (ext.values || []).find(v => v.$type === "camunda:InputOutput");
+        if (!io) return {};
+        return Object.fromEntries((io.inputParameters || []).map(p => [p.name, p.value ?? ""]));
+    }
+
+    /**
+     * Replace the camunda:InputOutput block on bo with new inputParameters
+     * built from paramsObj {name: value}.  Entries with undefined/null value
+     * are skipped so callers can use spread to omit optional keys cleanly.
+     */
+    function setInputParams(bo, paramsObj) {
+        const moddle = viewerInstanceRef.current?.get("moddle");
+        if (!moddle) return;
+
+        const inputParameters = Object.entries(paramsObj)
+            .filter(([, v]) => v !== undefined && v !== null && v !== "")
+            .map(([name, value]) =>
+                moddle.create("camunda:InputParameter", { name, value: String(value) }),
+            );
+
+        const io = moddle.create("camunda:InputOutput", { inputParameters });
+
+        if (!bo.extensionElements) {
+            bo.extensionElements = moddle.create("bpmn:ExtensionElements", { values: [io] });
+        } else {
+            bo.extensionElements.values = [
+                ...(bo.extensionElements.values || []).filter(v => v.$type !== "camunda:InputOutput"),
+                io,
+            ];
+        }
+
+        // Clean up legacy $attrs written by the old approach
+        const legacyKeys = ["s2aAgentKey","s2aTaskKey","s2aPayload","s2aParams",
+                            "s2aAppServiceKey","s2aAppServiceConfig"];
+        if (bo.$attrs) legacyKeys.forEach(k => delete bo.$attrs[k]);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
        Property editor
     ═══════════════════════════════════════════════════════════════════ */
     function openPropModal(type, element, subType) {
@@ -599,46 +644,65 @@ export function ProcessDeployDialog({
             init = { formKey: fk, formType: /^\$\{|^#\{/.test(fk) ? "expression" : "key" };
 
         } else if (type === "serviceTasks") {
-            const storedAgentKey      = attrs["s2aAgentKey"]        || "";
-            const storedTaskKey       = attrs["s2aTaskKey"]         || "";
-            const storedAppServiceKey = attrs["s2aAppServiceKey"]   || "";
-            let payload = [
-                { key: "business_key", value: "" },
-                { key: "message",      value: "" },
-            ];
-            try {
-                const raw = attrs["s2aPayload"];
-                if (raw) {
-                    const parsed = JSON.parse(raw);
-                    payload = Object.entries(parsed).map(([k, v]) => ({ key: k, value: v }));
-                    if (!payload.find(p => p.key === "business_key"))
-                        payload.unshift({ key: "business_key", value: "" });
-                    if (!payload.find(p => p.key === "message"))
-                        payload.splice(1, 0, { key: "message", value: "" });
-                }
-            } catch (_) { /* keep defaults */ }
-
-            let params = [];
-            try {
-                const raw = attrs["s2aParams"];
-                if (raw) params = Object.entries(JSON.parse(raw)).map(([k, v]) => ({ key: k, value: v }));
-            } catch (_) { /* keep empty */ }
+            // Read from camunda:inputParameter elements (new format).
+            // Fall back to legacy $attrs for backward compatibility.
+            const ip = getInputParamMap(bo);
+            const storedAgentKey      = ip["s2aAgentKey"]      || attrs["s2aAgentKey"]      || "";
+            const storedTaskKey       = ip["s2aTaskKey"]       || attrs["s2aTaskKey"]       || "";
+            const storedAppServiceKey = ip["s2aAppServiceKey"] || attrs["s2aAppServiceKey"] || "";
 
             const topic = bo.topic || attrs["camunda:topic"] || "";
+
             if (storedAgentKey) {
-                init = { serviceType: "ai", agentKey: storedAgentKey, taskKey: storedTaskKey, payload, params };
+                // AI Agent — payload comes from inputParams (all keys except meta keys)
+                const metaKeys = new Set(["s2aAgentKey", "s2aTaskKey"]);
+                const payloadFromIp = Object.entries(ip)
+                    .filter(([k]) => !metaKeys.has(k))
+                    .map(([key, value]) => ({ key, value }));
+                // Ensure business_key + message are always first two rows
+                let payload = payloadFromIp;
+                if (!payload.find(p => p.key === "business_key"))
+                    payload.unshift({ key: "business_key", value: "" });
+                if (!payload.find(p => p.key === "message"))
+                    payload.splice(1, 0, { key: "message", value: "" });
+
+                // Legacy fallback
+                if (payloadFromIp.length === 0 && attrs["s2aPayload"]) {
+                    try {
+                        const parsed = JSON.parse(attrs["s2aPayload"]);
+                        payload = Object.entries(parsed).map(([k, v]) => ({ key: k, value: v }));
+                        if (!payload.find(p => p.key === "business_key"))
+                            payload.unshift({ key: "business_key", value: "" });
+                        if (!payload.find(p => p.key === "message"))
+                            payload.splice(1, 0, { key: "message", value: "" });
+                    } catch (_) { /* keep defaults */ }
+                }
+                init = { serviceType: "ai", agentKey: storedAgentKey, taskKey: storedTaskKey, payload };
+
             } else if (storedAppServiceKey) {
+                // App Service — config stored as JSON in s2aAppServiceConfig inputParam
                 let appConfig = {};
-                try { appConfig = JSON.parse(attrs["s2aAppServiceConfig"] || "{}"); } catch (_) { /* keep empty */ }
+                const rawCfg = ip["s2aAppServiceConfig"] || attrs["s2aAppServiceConfig"] || "";
+                try { if (rawCfg) appConfig = JSON.parse(rawCfg); } catch (_) { /* keep empty */ }
                 init = { serviceType: "app", appServiceKey: storedAppServiceKey, appConfig };
+
             } else {
-                // kafka.topic stored as dedicated field; strip it from the params table
-                const existingWorkerTopic = params.find(p => p.key === "kafka.topic");
-                const workerTopic = existingWorkerTopic
-                    ? existingWorkerTopic.value
-                    : (topic === "kafka.connector" ? "" : topic);
-                const extParams = params.filter(p => p.key !== "kafka.topic");
-                init = { serviceType: "external", workerTopic, agentKey: "", taskKey: "", payload, params: extParams };
+                // Kafka Connector — kafka.topic is dedicated; rest are extra params
+                const workerTopic = ip["kafka.topic"] ||
+                    (topic === "appflexor.connector" || topic === "kafka.connector" ? "" : topic);
+                const reserved = new Set(["kafka.topic"]);
+                // Legacy s2aParams fallback
+                let extParams = Object.entries(ip)
+                    .filter(([k]) => !reserved.has(k))
+                    .map(([key, value]) => ({ key, value }));
+                if (extParams.length === 0 && attrs["s2aParams"]) {
+                    try {
+                        extParams = Object.entries(JSON.parse(attrs["s2aParams"]))
+                            .filter(([k]) => k !== "kafka.topic" && k !== "worker.topic")
+                            .map(([key, value]) => ({ key, value }));
+                    } catch (_) { /* keep empty */ }
+                }
+                init = { serviceType: "external", workerTopic, params: extParams };
             }
 
         } else if (type === "variables") {
@@ -658,65 +722,57 @@ export function ProcessDeployDialog({
         if (type === "userTasks" && subType === "assignee") {
             if (propForm.assigneeType === "group") {
                 bo.candidateGroups = propForm.assignee;
-                bo.$attrs["camunda:candidateGroups"] = propForm.assignee;
                 bo.assignee = undefined;
-                delete bo.$attrs["camunda:assignee"];
             } else {
                 bo.assignee = propForm.assignee;
-                bo.$attrs["camunda:assignee"] = propForm.assignee;
                 bo.candidateGroups = undefined;
-                delete bo.$attrs["camunda:candidateGroups"];
             }
+            // Clean up any legacy $attrs duplicates
+            delete bo.$attrs["camunda:candidateGroups"];
+            delete bo.$attrs["activiti:candidateGroups"];
+            delete bo.$attrs["camunda:assignee"];
+            delete bo.$attrs["activiti:assignee"];
 
         } else if ((type === "userTasks" || type === "startEvent") && subType === "form") {
             bo.formKey = propForm.formKey;
-            bo.$attrs["camunda:formKey"] = propForm.formKey;
+            // Clean up any legacy $attrs duplicates
+            delete bo.$attrs["camunda:formKey"];
+            delete bo.$attrs["activiti:formKey"];
 
         } else if (type === "serviceTasks") {
+            bo.type = "external";
+
             if (propForm.serviceType === "ai") {
-                bo.type  = "external"; bo.$attrs["camunda:type"]  = "external";
-                bo.topic = "ai.agent.task"; bo.$attrs["camunda:topic"] = "ai.agent.task";
-                bo.$attrs["s2aAgentKey"] = propForm.agentKey;
-                bo.$attrs["s2aTaskKey"]  = propForm.taskKey;
-                const payloadObj = Object.fromEntries(
+                bo.topic = "ai.agent.task";
+                const payloadParams = Object.fromEntries(
                     (propForm.payload || [])
                         .filter(p => p.key.trim())
                         .map(p => [p.key.trim(), p.value]),
                 );
-                bo.$attrs["s2aPayload"] = JSON.stringify(payloadObj);
-                delete bo.$attrs["s2aAppServiceKey"];
-                delete bo.$attrs["s2aAppServiceConfig"];
-                delete bo.$attrs["s2aParams"];
+                setInputParams(bo, {
+                    s2aAgentKey: propForm.agentKey,
+                    s2aTaskKey:  propForm.taskKey,
+                    ...payloadParams,
+                });
+
             } else if (propForm.serviceType === "app") {
-                bo.type  = "external"; bo.$attrs["camunda:type"]  = "external";
-                bo.topic = "app.service.api"; bo.$attrs["camunda:topic"] = "app.service.api";
-                bo.$attrs["s2aAppServiceKey"]    = propForm.appServiceKey || "get.formData";
-                bo.$attrs["s2aAppServiceConfig"] = JSON.stringify(propForm.appConfig || {});
-                delete bo.$attrs["s2aAgentKey"];
-                delete bo.$attrs["s2aTaskKey"];
-                delete bo.$attrs["s2aPayload"];
-                delete bo.$attrs["s2aParams"];
+                bo.topic = "app.service.api";
+                setInputParams(bo, {
+                    s2aAppServiceKey:    propForm.appServiceKey || "get.formData",
+                    s2aAppServiceConfig: JSON.stringify(propForm.appConfig || {}),
+                });
+
             } else {
-                bo.type  = "external"; bo.$attrs["camunda:type"]  = "external";
-                bo.topic = "kafka.connector"; bo.$attrs["camunda:topic"] = "appflexor.connector";
-                const paramsObj = {
+                bo.topic = "appflexor.connector";
+                const extraParams = Object.fromEntries(
+                    (propForm.params || [])
+                        .filter(p => p.key.trim())
+                        .map(p => [p.key.trim(), p.value]),
+                );
+                setInputParams(bo, {
                     ...(propForm.workerTopic ? { "kafka.topic": propForm.workerTopic } : {}),
-                    ...Object.fromEntries(
-                        (propForm.params || [])
-                            .filter(p => p.key.trim())
-                            .map(p => [p.key.trim(), p.value]),
-                    ),
-                };
-                if (Object.keys(paramsObj).length > 0) {
-                    bo.$attrs["s2aParams"] = JSON.stringify(paramsObj);
-                } else {
-                    delete bo.$attrs["s2aParams"];
-                }
-                delete bo.$attrs["s2aAgentKey"];
-                delete bo.$attrs["s2aTaskKey"];
-                delete bo.$attrs["s2aPayload"];
-                delete bo.$attrs["s2aAppServiceKey"];
-                delete bo.$attrs["s2aAppServiceConfig"];
+                    ...extraParams,
+                });
             }
 
         } else if (type === "variables") {
@@ -968,36 +1024,41 @@ export function ProcessDeployDialog({
                                             )}
                                             {!isUserTasks && (
                                                 <td>
-                                                    {elem.businessObject?.$attrs?.["s2aAgentKey"] ? (
-                                                        <span className="proc-ai-chip">
-                                                            <i className="fa-solid fa-robot me-1" />
-                                                            {elem.businessObject.$attrs["s2aAgentKey"]}
-                                                            {elem.businessObject.$attrs["s2aTaskKey"] && (
-                                                                <span className="proc-ai-chip-task">
-                                                                    /{elem.businessObject.$attrs["s2aTaskKey"]}
+                                                    {(() => {
+                                                        const bo2   = elem.businessObject;
+                                                        const topic = bo2?.topic || bo2?.$attrs?.["camunda:topic"] || "";
+                                                        const ip    = getInputParamMap(bo2);
+                                                        if (topic === "ai.agent.task") {
+                                                            const agentKey = ip["s2aAgentKey"] || bo2?.$attrs?.["s2aAgentKey"] || "";
+                                                            const taskKey  = ip["s2aTaskKey"]  || bo2?.$attrs?.["s2aTaskKey"]  || "";
+                                                            return agentKey ? (
+                                                                <span className="proc-ai-chip">
+                                                                    <i className="fa-solid fa-robot me-1" />
+                                                                    {agentKey}
+                                                                    {taskKey && <span className="proc-ai-chip-task">/{taskKey}</span>}
                                                                 </span>
-                                                            )}
-                                                        </span>
-                                                    ) : elem.businessObject?.$attrs?.["s2aAppServiceKey"] ? (
-                                                        <span className="proc-app-svc-chip">
-                                                            <i className="fa-solid fa-server me-1" />
-                                                            {elem.businessObject.$attrs["s2aAppServiceKey"]}
-                                                        </span>
-                                                    ) : (elem.businessObject?.topic === "appflexor.connector" || elem.businessObject?.$attrs?.["camunda:topic"] === "kafka.connector") ? (
-                                                        <span className="proc-kafka-chip">
-                                                            <i className="fa-solid fa-plug me-1" />
-                                                            {(() => {
-                                                                try {
-                                                                    const p = JSON.parse(elem.businessObject.$attrs?.["s2aParams"] || "{}");
-                                                                    return p["kafka.topic"] || "";
-                                                                } catch { return ""; }
-                                                            })()}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="proc-elem-type">
-                                                            {elem.type.replace("bpmn:", "")}
-                                                        </span>
-                                                    )}
+                                                            ) : <span className="proc-elem-type">AI Agent</span>;
+                                                        }
+                                                        if (topic === "app.service.api") {
+                                                            const svcKey = ip["s2aAppServiceKey"] || bo2?.$attrs?.["s2aAppServiceKey"] || "";
+                                                            return (
+                                                                <span className="proc-app-svc-chip">
+                                                                    <i className="fa-solid fa-server me-1" />
+                                                                    {svcKey || "app.service.api"}
+                                                                </span>
+                                                            );
+                                                        }
+                                                        if (topic === "appflexor.connector" || topic === "kafka.connector") {
+                                                            const kafkaTopic = ip["kafka.topic"] || "";
+                                                            return (
+                                                                <span className="proc-kafka-chip">
+                                                                    <i className="fa-solid fa-plug me-1" />
+                                                                    {kafkaTopic || "appflexor.connector"}
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return <span className="proc-elem-type">{elem.type.replace("bpmn:", "")}</span>;
+                                                    })()}
                                                 </td>
                                             )}
                                             <td>
