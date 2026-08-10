@@ -257,30 +257,33 @@ export function PropertyEditorModal({
                 );
             }
 
+            /* Auto-generate title from current form state */
+            function computeAutoTitle() {
+                if (isAi) {
+                    const agentLabel = aiAgents.find(a => a.value === propForm.agentKey)?.label || propForm.agentKey || "";
+                    const taskLabel  = aiAgentTasks.find(t => t.value === propForm.taskKey)?.label || propForm.taskKey || "";
+                    if (agentLabel && taskLabel) return `AI Agent (${agentLabel}: ${taskLabel})`;
+                    if (agentLabel)              return `AI Agent (${agentLabel})`;
+                    return "AI Agent";
+                }
+                if (isApp) {
+                    const svcName = svcKey === "get.formData"     ? "Fetch/Read"
+                                  : svcKey === "update.formData"  ? "Create/Update/Delete"
+                                  : "Send Email";
+                    const detail  = svcKey === "get.formData"     ? (cfg.serviceKey || "")
+                                  : svcKey === "update.formData"  ? (cfg.formId     || "")
+                                  : (cfg.emailKey || "");
+                    return detail ? `App Service (${svcName}: ${detail})` : `App Service (${svcName})`;
+                }
+                // AppFlexor Connector
+                const topic = propForm.workerTopic || "";
+                return topic ? `AppFlexor Connector (${topic})` : "AppFlexor Connector";
+            }
+
+            const autoTitle = computeAutoTitle();
+
             return (
                 <>
-                    {/* ── Common: Title + Description ─────────────────────────── */}
-                    <div className="row g-2 mb-3">
-                        <div className="col-6">
-                            <label className="ai-label">Title</label>
-                            <input
-                                className="form-control form-control-sm"
-                                value={propForm.workerTitle || ""}
-                                onChange={e => onFormChange(p => ({ ...p, workerTitle: e.target.value }))}
-                                placeholder="Display title for this task"
-                            />
-                        </div>
-                        <div className="col-6">
-                            <label className="ai-label">Description</label>
-                            <input
-                                className="form-control form-control-sm"
-                                value={propForm.workerDescription || ""}
-                                onChange={e => onFormChange(p => ({ ...p, workerDescription: e.target.value }))}
-                                placeholder="Short description"
-                            />
-                        </div>
-                    </div>
-
                     {/* ── Type toggle ─────────────────────────────────────────── */}
                     <div className="proc-svc-type-toggle mb-3">
                         <button
@@ -303,6 +306,29 @@ export function PropertyEditorModal({
                             onClick={() => onFormChange(p => ({ ...p, serviceType: "ai" }))}>
                             <i className="fa-solid fa-robot me-1" />AI Agent
                         </button>
+                    </div>
+
+                    {/* ── Auto-generated title (readonly) + Description ────────── */}
+                    <div className="row g-2 mb-3">
+                        <div className="col-6">
+                            <label className="ai-label">Title <span className="proc-payload-hint">(auto-generated)</span></label>
+                            <input
+                                className="form-control form-control-sm"
+                                value={autoTitle}
+                                readOnly
+                                tabIndex={-1}
+                                style={{ background: "var(--secondary-color)", opacity: 0.75, cursor: "default" }}
+                            />
+                        </div>
+                        <div className="col-6">
+                            <label className="ai-label">Description</label>
+                            <input
+                                className="form-control form-control-sm"
+                                value={propForm.workerDescription || ""}
+                                onChange={e => onFormChange(p => ({ ...p, workerDescription: e.target.value }))}
+                                placeholder="Short description"
+                            />
+                        </div>
                     </div>
 
                     {/* ── AppFlexor Connector ─────────────────────────────────── */}

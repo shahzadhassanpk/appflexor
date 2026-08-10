@@ -766,9 +766,35 @@ export function ProcessDeployDialog({
         } else if (type === "serviceTasks") {
             bo.type = "external";
 
-            // Build appflexor.worker.meta with common + type-specific config
+            // Auto-generate title from current form state (mirrors computeAutoTitle in PropertyEditorModal)
+            function computeAutoTitle() {
+                const svcKey = propForm.appServiceKey || "get.formData";
+                const cfg    = propForm.appConfig    || {};
+                if (propForm.serviceType === "ai") {
+                    const agentLabel = aiAgents.find(a => a.value === propForm.agentKey)?.label || propForm.agentKey || "";
+                    const taskLabel  = aiAgentTasks.find(t => t.value === propForm.taskKey)?.label || propForm.taskKey || "";
+                    if (agentLabel && taskLabel) return `AI Agent (${agentLabel}: ${taskLabel})`;
+                    if (agentLabel)              return `AI Agent (${agentLabel})`;
+                    return "AI Agent";
+                }
+                if (propForm.serviceType === "app") {
+                    const svcName = svcKey === "get.formData"    ? "Fetch/Read"
+                                  : svcKey === "update.formData" ? "Create/Update/Delete"
+                                  : "Send Email";
+                    const detail  = svcKey === "get.formData"    ? (cfg.serviceKey || "")
+                                  : svcKey === "update.formData" ? (cfg.formId     || "")
+                                  : (cfg.emailKey || "");
+                    return detail ? `App Service (${svcName}: ${detail})` : `App Service (${svcName})`;
+                }
+                // AppFlexor Connector
+                const topic = propForm.workerTopic || "";
+                return topic ? `AppFlexor Connector (${topic})` : "AppFlexor Connector";
+            }
+
+            // Build appflexor.worker.meta with auto-title + description + type-specific config
             const meta = {};
-            if (propForm.workerTitle)       meta.title       = propForm.workerTitle;
+            const autoTitle = computeAutoTitle();
+            if (autoTitle)                  meta.title       = autoTitle;
             if (propForm.workerDescription) meta.description = propForm.workerDescription;
 
             // User-defined input parameters (Add Parameter rows)
