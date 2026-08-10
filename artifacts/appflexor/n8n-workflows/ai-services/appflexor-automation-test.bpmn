@@ -4,65 +4,97 @@
     <bpmn:participant id="Participant_0na7ymu" name="AppFlexor Automation Test" processRef="appflexor-automation-test" />
   </bpmn:collaboration>
   <bpmn:process id="appflexor-automation-test" name="AppFlexor Automation Test" isExecutable="true" camunda:historyTimeToLive="1">
-    <bpmn:startEvent id="StartEvent_1">
-      <bpmn:outgoing>Flow_0aoa2fv</bpmn:outgoing>
-    </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_0aoa2fv" sourceRef="StartEvent_1" targetRef="Activity_06xvl8u" />
-    <bpmn:sequenceFlow id="Flow_0xees0x" sourceRef="Activity_06xvl8u" targetRef="Activity_02xm07z" />
-    <bpmn:sequenceFlow id="Flow_1l7y4rf" sourceRef="Activity_02xm07z" targetRef="Activity_00cgrzx" />
-    <bpmn:endEvent id="Event_1mt0qyt">
-      <bpmn:incoming>Flow_1cky98r</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1cky98r" sourceRef="Activity_00cgrzx" targetRef="Event_1mt0qyt" />
-    <bpmn:serviceTask id="Activity_06xvl8u" name="External Connector">
-      <bpmn:incoming>Flow_0aoa2fv</bpmn:incoming>
+    <bpmn:sequenceFlow id="Flow_0aoa2fv" sourceRef="StartEvent_1" targetRef="Activity_0klap5l" />
+    <bpmn:sequenceFlow id="Flow_1nfdk5c" sourceRef="Activity_0klap5l" targetRef="Activity_06xvl8u" />
+    <bpmn:serviceTask id="Activity_06xvl8u" name="External Connector" camunda:type="external" camunda:topic="appflexor.connector">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="kafka.topic">my.connector.topic</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1nfdk5c</bpmn:incoming>
       <bpmn:outgoing>Flow_0xees0x</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="Activity_02xm07z" name="App Service">
+    <bpmn:serviceTask id="Activity_02xm07z" name="App Service" camunda:type="external" camunda:topic="app.service.api">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="s2aAppServiceKey">get.formData</camunda:inputParameter>
+          <camunda:inputParameter name="s2aAppServiceConfig">{"serviceKey":"user.profile","serviceParams":"admin","dataKey":"result","mode":"formData"}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_0xees0x</bpmn:incoming>
       <bpmn:outgoing>Flow_1l7y4rf</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="Activity_00cgrzx" name="AI Agent">
+    <bpmn:serviceTask id="Activity_00cgrzx" name="AI Agent" camunda:type="external" camunda:topic="ai.agent.task">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="s2aAgentKey">dine-app-marketer</camunda:inputParameter>
+          <camunda:inputParameter name="s2aTaskKey">email-sequence-1</camunda:inputParameter>
+          <camunda:inputParameter name="business_key">${execution.businessKey}</camunda:inputParameter>
+          <camunda:inputParameter name="message">Draft Email</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_1l7y4rf</bpmn:incoming>
       <bpmn:outgoing>Flow_1cky98r</bpmn:outgoing>
     </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_1mt0qyt">
+      <bpmn:incoming>Flow_1cky98r</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0xees0x" sourceRef="Activity_06xvl8u" targetRef="Activity_02xm07z" />
+    <bpmn:sequenceFlow id="Flow_1l7y4rf" sourceRef="Activity_02xm07z" targetRef="Activity_00cgrzx" />
+    <bpmn:sequenceFlow id="Flow_1cky98r" sourceRef="Activity_00cgrzx" targetRef="Event_1mt0qyt" />
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0aoa2fv</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Activity_0klap5l" name="Review">
+      <bpmn:incoming>Flow_0aoa2fv</bpmn:incoming>
+      <bpmn:outgoing>Flow_1nfdk5c</bpmn:outgoing>
+    </bpmn:userTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0nurznc">
       <bpmndi:BPMNShape id="Participant_0na7ymu_di" bpmnElement="Participant_0na7ymu" isHorizontal="true">
-        <dc:Bounds x="129" y="52" width="769" height="250" />
+        <dc:Bounds x="129" y="52" width="981" height="250" />
         <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1bdwict_di" bpmnElement="Activity_06xvl8u">
+        <dc:Bounds x="470" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_10l6k4v_di" bpmnElement="Activity_02xm07z">
+        <dc:Bounds x="650" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0975j1q_di" bpmnElement="Activity_00cgrzx">
+        <dc:Bounds x="800" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1mt0qyt_di" bpmnElement="Event_1mt0qyt">
+        <dc:Bounds x="952" y="159" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="192" y="159" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1mt0qyt_di" bpmnElement="Event_1mt0qyt">
-        <dc:Bounds x="762" y="159" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1bdwict_di" bpmnElement="Activity_06xvl8u">
-        <dc:Bounds x="280" y="137" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_10l6k4v_di" bpmnElement="Activity_02xm07z">
-        <dc:Bounds x="440" y="137" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0975j1q_di" bpmnElement="Activity_00cgrzx">
-        <dc:Bounds x="600" y="137" width="100" height="80" />
+      <bpmndi:BPMNShape id="Activity_0lq8o02_di" bpmnElement="Activity_0klap5l">
+        <dc:Bounds x="300" y="137" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0aoa2fv_di" bpmnElement="Flow_0aoa2fv">
         <di:waypoint x="228" y="177" />
-        <di:waypoint x="280" y="177" />
+        <di:waypoint x="300" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1nfdk5c_di" bpmnElement="Flow_1nfdk5c">
+        <di:waypoint x="400" y="177" />
+        <di:waypoint x="470" y="177" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0xees0x_di" bpmnElement="Flow_0xees0x">
-        <di:waypoint x="380" y="177" />
-        <di:waypoint x="440" y="177" />
+        <di:waypoint x="570" y="177" />
+        <di:waypoint x="650" y="177" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1l7y4rf_di" bpmnElement="Flow_1l7y4rf">
-        <di:waypoint x="540" y="177" />
-        <di:waypoint x="600" y="177" />
+        <di:waypoint x="750" y="177" />
+        <di:waypoint x="800" y="177" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1cky98r_di" bpmnElement="Flow_1cky98r">
-        <di:waypoint x="700" y="177" />
-        <di:waypoint x="762" y="177" />
+        <di:waypoint x="900" y="177" />
+        <di:waypoint x="952" y="177" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
