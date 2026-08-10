@@ -261,7 +261,10 @@ export function PropertyEditorModal({
             function computeAutoTitle() {
                 if (isAi) {
                     const agentLabel = aiAgents.find(a => a.value === propForm.agentKey)?.label || propForm.agentKey || "";
-                    return agentLabel ? `AI Agent (${agentLabel})` : "AI Agent";
+                    const taskLabel  = aiAgentTasks.find(t => t.value === propForm.taskKey)?.label || propForm.taskKey || "";
+                    if (agentLabel && taskLabel) return `AI Agent (${agentLabel}: ${taskLabel})`;
+                    if (agentLabel)              return `AI Agent (${agentLabel})`;
+                    return "AI Agent";
                 }
                 if (isApp) {
                     const svcName = svcKey === "get.formData"     ? "Fetch/Read"
