@@ -772,10 +772,7 @@ export function ProcessDeployDialog({
                 const cfg    = propForm.appConfig    || {};
                 if (propForm.serviceType === "ai") {
                     const agentLabel = aiAgents.find(a => a.value === propForm.agentKey)?.label || propForm.agentKey || "";
-                    const taskLabel  = aiAgentTasks.find(t => t.value === propForm.taskKey)?.label || propForm.taskKey || "";
-                    if (agentLabel && taskLabel) return `AI Agent (${agentLabel}: ${taskLabel})`;
-                    if (agentLabel)              return `AI Agent (${agentLabel})`;
-                    return "AI Agent";
+                    return agentLabel ? `AI Agent (${agentLabel})` : "AI Agent";
                 }
                 if (propForm.serviceType === "app") {
                     const svcName = svcKey === "get.formData"    ? "Fetch/Read"
@@ -1091,36 +1088,45 @@ export function ProcessDeployDialog({
                                                         catch (_) { /* keep empty */ }
                                                         const metaTitle = meta.title || "";
 
+                                                        const metaDesc = meta.description || "";
+
                                                         // AI Agent — new & legacy topics
                                                         if (topic === "appflexor.ai.agent" || topic === "ai.agent.task") {
                                                             const agentKey = meta.agentKey || ip["s2aAgentKey"] || bo2?.$attrs?.["s2aAgentKey"] || "";
-                                                            const taskKey  = meta.taskKey  || ip["s2aTaskKey"]  || bo2?.$attrs?.["s2aTaskKey"]  || "";
                                                             return agentKey ? (
-                                                                <span className="proc-ai-chip">
-                                                                    <i className="fa-solid fa-robot me-1" />
-                                                                    {metaTitle || agentKey}
-                                                                    {taskKey && <span className="proc-ai-chip-task">/{taskKey}</span>}
-                                                                </span>
+                                                                <div>
+                                                                    <span className="proc-ai-chip">
+                                                                        <i className="fa-solid fa-robot me-1" />
+                                                                        {metaTitle || agentKey}
+                                                                    </span>
+                                                                    {metaDesc && <div className="proc-svc-chip-desc">{metaDesc}</div>}
+                                                                </div>
                                                             ) : <span className="proc-elem-type">AI Agent</span>;
                                                         }
                                                         // App Service — new & legacy topics
                                                         if (topic === "appflexor.app.service" || topic === "app.service.api") {
                                                             const svcKey = meta.service || ip["s2aAppServiceKey"] || bo2?.$attrs?.["s2aAppServiceKey"] || "";
                                                             return (
-                                                                <span className="proc-app-svc-chip">
-                                                                    <i className="fa-solid fa-server me-1" />
-                                                                    {metaTitle || svcKey || topic}
-                                                                </span>
+                                                                <div>
+                                                                    <span className="proc-app-svc-chip">
+                                                                        <i className="fa-solid fa-server me-1" />
+                                                                        {metaTitle || svcKey || topic}
+                                                                    </span>
+                                                                    {metaDesc && <div className="proc-svc-chip-desc">{metaDesc}</div>}
+                                                                </div>
                                                             );
                                                         }
                                                         // AppFlexor Connector — new & legacy
                                                         if (topic === "appflexor.connector" || topic === "kafka.connector") {
                                                             const connTopic = meta["connector.topic"] || ip["kafka.topic"] || "";
                                                             return (
-                                                                <span className="proc-kafka-chip">
-                                                                    <i className="fa-solid fa-plug me-1" />
-                                                                    {metaTitle || connTopic || "appflexor.connector"}
-                                                                </span>
+                                                                <div>
+                                                                    <span className="proc-kafka-chip">
+                                                                        <i className="fa-solid fa-plug me-1" />
+                                                                        {metaTitle || connTopic || "appflexor.connector"}
+                                                                    </span>
+                                                                    {metaDesc && <div className="proc-svc-chip-desc">{metaDesc}</div>}
+                                                                </div>
                                                             );
                                                         }
                                                         return <span className="proc-elem-type">{elem.type.replace("bpmn:", "")}</span>;
