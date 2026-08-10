@@ -644,65 +644,89 @@ export function ProcessDeployDialog({
             init = { formKey: fk, formType: /^\$\{|^#\{/.test(fk) ? "expression" : "key" };
 
         } else if (type === "serviceTasks") {
-            // Read from camunda:inputParameter elements (new format).
-            // Fall back to legacy $attrs for backward compatibility.
-            const ip = getInputParamMap(bo);
-            const storedAgentKey      = ip["s2aAgentKey"]      || attrs["s2aAgentKey"]      || "";
-            const storedTaskKey       = ip["s2aTaskKey"]       || attrs["s2aTaskKey"]       || "";
-            const storedAppServiceKey = ip["s2aAppServiceKey"] || attrs["s2aAppServiceKey"] || "";
-
+            // Read from camunda:inputParameter elements.
+            // New format: all config stored in "appflexor.worker.meta" JSON param.
+            // Legacy formats: s2aAgentKey / s2aAppServiceKey / kafka.topic kept for backward compat.
+            const ip    = getInputParamMap(bo);
             const topic = bo.topic || attrs["camunda:topic"] || "";
 
-            if (storedAgentKey) {
-                // AI Agent — payload comes from inputParams (all keys except meta keys)
+            // Parse appflexor.worker.meta (new format)
+            let meta = {};
+            try { if (ip["appflexor.worker.meta"]) meta = JSON.parse(ip["appflexor.worker.meta"]); }
+            catch (_) { /* keep empty */ }
+
+            const workerTitle       = meta.title       || "";
+            const workerDescription = meta.description || "";
+
+            if (topic === "appflexor.ai.agent") {
+                // New AI Agent format
+                const agentKey = meta.agentKey || "";
+                const taskKey  = meta.taskKey  || "";
+                const reserved = new Set(["appflexor.worker.meta"]);
+                const params = Object.entries(ip)
+                    .filter(([k]) => !reserved.has(k))
+                    .map(([key, value]) => ({ key, value }));
+                init = { serviceType: "ai", workerTitle, workerDescription, agentKey, taskKey, params };
+
+            } else if (topic === "appflexor.app.service") {
+                // New App Service format
+                const appServiceKey = meta.service || "get.formData";
+                const appConfig     = meta.serviceConfig || {};
+                const reserved = new Set(["appflexor.worker.meta"]);
+                const params = Object.entries(ip)
+                    .filter(([k]) => !reserved.has(k))
+                    .map(([key, value]) => ({ key, value }));
+                init = { serviceType: "app", workerTitle, workerDescription, appServiceKey, appConfig, params };
+
+            } else if (topic === "appflexor.connector" && ip["appflexor.worker.meta"]) {
+                // New Connector format (meta present)
+                const workerTopic = meta["connector.topic"] || "";
+                const reserved = new Set(["appflexor.worker.meta"]);
+                const params = Object.entries(ip)
+                    .filter(([k]) => !reserved.has(k))
+                    .map(([key, value]) => ({ key, value }));
+                init = { serviceType: "external", workerTitle, workerDescription, workerTopic, params };
+
+            } else if (ip["s2aAgentKey"] || attrs["s2aAgentKey"]) {
+                // Legacy AI Agent (topic: ai.agent.task)
+                const agentKey = ip["s2aAgentKey"] || attrs["s2aAgentKey"] || "";
+                const taskKey  = ip["s2aTaskKey"]  || attrs["s2aTaskKey"]  || "";
                 const metaKeys = new Set(["s2aAgentKey", "s2aTaskKey"]);
-                const payloadFromIp = Object.entries(ip)
+                let params = Object.entries(ip)
                     .filter(([k]) => !metaKeys.has(k))
                     .map(([key, value]) => ({ key, value }));
-                // Ensure business_key + message are always first two rows
-                let payload = payloadFromIp;
-                if (!payload.find(p => p.key === "business_key"))
-                    payload.unshift({ key: "business_key", value: "" });
-                if (!payload.find(p => p.key === "message"))
-                    payload.splice(1, 0, { key: "message", value: "" });
-
-                // Legacy fallback
-                if (payloadFromIp.length === 0 && attrs["s2aPayload"]) {
+                if (params.length === 0 && attrs["s2aPayload"]) {
                     try {
-                        const parsed = JSON.parse(attrs["s2aPayload"]);
-                        payload = Object.entries(parsed).map(([k, v]) => ({ key: k, value: v }));
-                        if (!payload.find(p => p.key === "business_key"))
-                            payload.unshift({ key: "business_key", value: "" });
-                        if (!payload.find(p => p.key === "message"))
-                            payload.splice(1, 0, { key: "message", value: "" });
-                    } catch (_) { /* keep defaults */ }
+                        params = Object.entries(JSON.parse(attrs["s2aPayload"]))
+                            .map(([k, v]) => ({ key: k, value: v }));
+                    } catch (_) { /* keep empty */ }
                 }
-                init = { serviceType: "ai", agentKey: storedAgentKey, taskKey: storedTaskKey, payload };
+                init = { serviceType: "ai", workerTitle: "", workerDescription: "", agentKey, taskKey, params };
 
-            } else if (storedAppServiceKey) {
-                // App Service — config stored as JSON in s2aAppServiceConfig inputParam
+            } else if (ip["s2aAppServiceKey"] || attrs["s2aAppServiceKey"]) {
+                // Legacy App Service (topic: app.service.api)
+                const appServiceKey = ip["s2aAppServiceKey"] || attrs["s2aAppServiceKey"] || "get.formData";
                 let appConfig = {};
                 const rawCfg = ip["s2aAppServiceConfig"] || attrs["s2aAppServiceConfig"] || "";
                 try { if (rawCfg) appConfig = JSON.parse(rawCfg); } catch (_) { /* keep empty */ }
-                init = { serviceType: "app", appServiceKey: storedAppServiceKey, appConfig };
+                init = { serviceType: "app", workerTitle: "", workerDescription: "", appServiceKey, appConfig, params: [] };
 
             } else {
-                // Kafka Connector — kafka.topic is dedicated; rest are extra params
+                // AppFlexor Connector — legacy: kafka.topic param
                 const workerTopic = ip["kafka.topic"] ||
                     (topic === "appflexor.connector" || topic === "kafka.connector" ? "" : topic);
                 const reserved = new Set(["kafka.topic"]);
-                // Legacy s2aParams fallback
-                let extParams = Object.entries(ip)
+                let params = Object.entries(ip)
                     .filter(([k]) => !reserved.has(k))
                     .map(([key, value]) => ({ key, value }));
-                if (extParams.length === 0 && attrs["s2aParams"]) {
+                if (params.length === 0 && attrs["s2aParams"]) {
                     try {
-                        extParams = Object.entries(JSON.parse(attrs["s2aParams"]))
+                        params = Object.entries(JSON.parse(attrs["s2aParams"]))
                             .filter(([k]) => k !== "kafka.topic" && k !== "worker.topic")
                             .map(([key, value]) => ({ key, value }));
                     } catch (_) { /* keep empty */ }
                 }
-                init = { serviceType: "external", workerTopic, params: extParams };
+                init = { serviceType: "external", workerTitle: "", workerDescription: "", workerTopic, params };
             }
 
         } else if (type === "variables") {
@@ -742,35 +766,41 @@ export function ProcessDeployDialog({
         } else if (type === "serviceTasks") {
             bo.type = "external";
 
+            // Build appflexor.worker.meta with common + type-specific config
+            const meta = {};
+            if (propForm.workerTitle)       meta.title       = propForm.workerTitle;
+            if (propForm.workerDescription) meta.description = propForm.workerDescription;
+
+            // User-defined input parameters (Add Parameter rows)
+            const extraParams = Object.fromEntries(
+                (propForm.params || [])
+                    .filter(p => p.key.trim())
+                    .map(p => [p.key.trim(), p.value]),
+            );
+
             if (propForm.serviceType === "ai") {
-                bo.topic = "ai.agent.task";
-                const payloadParams = Object.fromEntries(
-                    (propForm.payload || [])
-                        .filter(p => p.key.trim())
-                        .map(p => [p.key.trim(), p.value]),
-                );
+                bo.topic = "appflexor.ai.agent";
+                if (propForm.agentKey) meta.agentKey = propForm.agentKey;
+                if (propForm.taskKey)  meta.taskKey  = propForm.taskKey;
                 setInputParams(bo, {
-                    s2aAgentKey: propForm.agentKey,
-                    s2aTaskKey:  propForm.taskKey,
-                    ...payloadParams,
+                    "appflexor.worker.meta": JSON.stringify(meta),
+                    ...extraParams,
                 });
 
             } else if (propForm.serviceType === "app") {
-                bo.topic = "app.service.api";
+                bo.topic = "appflexor.app.service";
+                meta.service       = propForm.appServiceKey || "get.formData";
+                meta.serviceConfig = propForm.appConfig || {};
                 setInputParams(bo, {
-                    s2aAppServiceKey:    propForm.appServiceKey || "get.formData",
-                    s2aAppServiceConfig: JSON.stringify(propForm.appConfig || {}),
+                    "appflexor.worker.meta": JSON.stringify(meta),
+                    ...extraParams,
                 });
 
             } else {
                 bo.topic = "appflexor.connector";
-                const extraParams = Object.fromEntries(
-                    (propForm.params || [])
-                        .filter(p => p.key.trim())
-                        .map(p => [p.key.trim(), p.value]),
-                );
+                if (propForm.workerTopic) meta["connector.topic"] = propForm.workerTopic;
                 setInputParams(bo, {
-                    ...(propForm.workerTopic ? { "kafka.topic": propForm.workerTopic } : {}),
+                    "appflexor.worker.meta": JSON.stringify(meta),
                     ...extraParams,
                 });
             }
@@ -1028,32 +1058,42 @@ export function ProcessDeployDialog({
                                                         const bo2   = elem.businessObject;
                                                         const topic = bo2?.topic || bo2?.$attrs?.["camunda:topic"] || "";
                                                         const ip    = getInputParamMap(bo2);
-                                                        if (topic === "ai.agent.task") {
-                                                            const agentKey = ip["s2aAgentKey"] || bo2?.$attrs?.["s2aAgentKey"] || "";
-                                                            const taskKey  = ip["s2aTaskKey"]  || bo2?.$attrs?.["s2aTaskKey"]  || "";
+
+                                                        // Parse appflexor.worker.meta (new format)
+                                                        let meta = {};
+                                                        try { if (ip["appflexor.worker.meta"]) meta = JSON.parse(ip["appflexor.worker.meta"]); }
+                                                        catch (_) { /* keep empty */ }
+                                                        const metaTitle = meta.title || "";
+
+                                                        // AI Agent — new & legacy topics
+                                                        if (topic === "appflexor.ai.agent" || topic === "ai.agent.task") {
+                                                            const agentKey = meta.agentKey || ip["s2aAgentKey"] || bo2?.$attrs?.["s2aAgentKey"] || "";
+                                                            const taskKey  = meta.taskKey  || ip["s2aTaskKey"]  || bo2?.$attrs?.["s2aTaskKey"]  || "";
                                                             return agentKey ? (
                                                                 <span className="proc-ai-chip">
                                                                     <i className="fa-solid fa-robot me-1" />
-                                                                    {agentKey}
+                                                                    {metaTitle || agentKey}
                                                                     {taskKey && <span className="proc-ai-chip-task">/{taskKey}</span>}
                                                                 </span>
                                                             ) : <span className="proc-elem-type">AI Agent</span>;
                                                         }
-                                                        if (topic === "app.service.api") {
-                                                            const svcKey = ip["s2aAppServiceKey"] || bo2?.$attrs?.["s2aAppServiceKey"] || "";
+                                                        // App Service — new & legacy topics
+                                                        if (topic === "appflexor.app.service" || topic === "app.service.api") {
+                                                            const svcKey = meta.service || ip["s2aAppServiceKey"] || bo2?.$attrs?.["s2aAppServiceKey"] || "";
                                                             return (
                                                                 <span className="proc-app-svc-chip">
                                                                     <i className="fa-solid fa-server me-1" />
-                                                                    {svcKey || "app.service.api"}
+                                                                    {metaTitle || svcKey || topic}
                                                                 </span>
                                                             );
                                                         }
+                                                        // AppFlexor Connector — new & legacy
                                                         if (topic === "appflexor.connector" || topic === "kafka.connector") {
-                                                            const kafkaTopic = ip["kafka.topic"] || "";
+                                                            const connTopic = meta["connector.topic"] || ip["kafka.topic"] || "";
                                                             return (
                                                                 <span className="proc-kafka-chip">
                                                                     <i className="fa-solid fa-plug me-1" />
-                                                                    {kafkaTopic || "appflexor.connector"}
+                                                                    {metaTitle || connTopic || "appflexor.connector"}
                                                                 </span>
                                                             );
                                                         }

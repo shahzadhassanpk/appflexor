@@ -186,9 +186,102 @@ export function PropertyEditorModal({
             const cfg    = propForm.appConfig    || {};
             const svcKey = propForm.appServiceKey || "get.formData";
 
+            /* Shared user-defined input parameters table — same for all tabs */
+            function renderParamsTable() {
+                return (
+                    <div className="mb-2 mt-3">
+                        <label className="ai-label">Input Parameters</label>
+                        <table className="proc-payload-table">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                    <th style={{ width: "2rem" }} />
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(propForm.params || []).map((p, i) => (
+                                    <tr key={i}>
+                                        <td>
+                                            <input
+                                                className="form-control form-control-sm proc-payload-key-input"
+                                                placeholder="key"
+                                                value={p.key}
+                                                onChange={e => {
+                                                    const params = [...(propForm.params || [])];
+                                                    params[i] = { ...params[i], key: e.target.value };
+                                                    onFormChange(prev => ({ ...prev, params }));
+                                                }}
+                                            />
+                                        </td>
+                                        <td>
+                                            <input
+                                                className="form-control form-control-sm proc-payload-val-input"
+                                                placeholder="value or ${expr}"
+                                                value={p.value}
+                                                onChange={e => {
+                                                    const params = [...(propForm.params || [])];
+                                                    params[i] = { ...params[i], value: e.target.value };
+                                                    onFormChange(prev => ({ ...prev, params }));
+                                                }}
+                                            />
+                                        </td>
+                                        <td>
+                                            <button
+                                                className="btn btn-outline-danger btn-sm proc-payload-del-btn"
+                                                onClick={() => {
+                                                    const params = (propForm.params || []).filter((_, j) => j !== i);
+                                                    onFormChange(prev => ({ ...prev, params }));
+                                                }}>
+                                                <i className="fa fa-times" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <button
+                            className="btn btn-outline-secondary btn-sm proc-payload-add-btn mt-2"
+                            onClick={() => {
+                                const params = [...(propForm.params || []), { key: "", value: "" }];
+                                onFormChange(prev => ({ ...prev, params }));
+                            }}>
+                            <i className="fa fa-plus me-1" />Add Parameter
+                        </button>
+                        <p className="proc-payload-hint mt-1 mb-0">
+                            Values support Camunda expressions, e.g.{" "}
+                            <code>{"${execution.businessKey}"}</code> or{" "}
+                            <code>{"${someVariable}"}</code>
+                        </p>
+                    </div>
+                );
+            }
+
             return (
                 <>
-                    {/* Type toggle — uses proc-svc-type-toggle / proc-svc-type-btn */}
+                    {/* ── Common: Title + Description ─────────────────────────── */}
+                    <div className="row g-2 mb-3">
+                        <div className="col-6">
+                            <label className="ai-label">Title</label>
+                            <input
+                                className="form-control form-control-sm"
+                                value={propForm.workerTitle || ""}
+                                onChange={e => onFormChange(p => ({ ...p, workerTitle: e.target.value }))}
+                                placeholder="Display title for this task"
+                            />
+                        </div>
+                        <div className="col-6">
+                            <label className="ai-label">Description</label>
+                            <input
+                                className="form-control form-control-sm"
+                                value={propForm.workerDescription || ""}
+                                onChange={e => onFormChange(p => ({ ...p, workerDescription: e.target.value }))}
+                                placeholder="Short description"
+                            />
+                        </div>
+                    </div>
+
+                    {/* ── Type toggle ─────────────────────────────────────────── */}
                     <div className="proc-svc-type-toggle mb-3">
                         <button
                             className={`proc-svc-type-btn${(!isAi && !isApp) ? " active" : ""}`}
@@ -211,6 +304,26 @@ export function PropertyEditorModal({
                             <i className="fa-solid fa-robot me-1" />AI Agent
                         </button>
                     </div>
+
+                    {/* ── AppFlexor Connector ─────────────────────────────────── */}
+                    {!isAi && !isApp && (
+                        <>
+                            <div className="mb-2">
+                                <label className="ai-label">Connector Topic</label>
+                                <input
+                                    className="form-control form-control-sm"
+                                    value={propForm.workerTopic || ""}
+                                    onChange={e => onFormChange(p => ({ ...p, workerTopic: e.target.value }))}
+                                    placeholder="e.g. my.connector.topic"
+                                />
+                            </div>
+                            {renderParamsTable()}
+                            <p className="proc-payload-hint mb-0 mt-2 d-flex align-items-center gap-1">
+                                <i className="fa-solid fa-circle-info" />
+                                Worker topic: <code>appflexor.connector</code>
+                            </p>
+                        </>
+                    )}
 
                     {/* ── App Service ─────────────────────────────────────────── */}
                     {isApp && (
@@ -406,17 +519,16 @@ export function PropertyEditorModal({
                                 </>
                             )}
 
+                            {renderParamsTable()}
                             <p className="proc-payload-hint mb-0 mt-2 d-flex align-items-center gap-1">
                                 <i className="fa-solid fa-circle-info" />
-                                Worker topic: <code>app.service.api</code> →{" "}
-                                <code>/app/service?service.key={svcKey}</code>
+                                Worker topic: <code>appflexor.app.service</code>
                             </p>
                         </>
                     )}
 
-                    {/* ── AI Agent / External Worker (hidden when App Service active) ─ */}
-                    {!isApp && isAi ? (
-                        /* AI agent */
+                    {/* ── AI Agent ────────────────────────────────────────────── */}
+                    {isAi && (
                         <>
                             <div className="mb-2">
                                 <label className="ai-label">AI Agent</label>
@@ -452,165 +564,13 @@ export function PropertyEditorModal({
                                     </select>
                                 )}
                             </div>
-                            <div className="mb-1">
-                                <label className="ai-label">Payload Parameters</label>
-                                <table className="proc-payload-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Key</th>
-                                            <th>Value</th>
-                                            <th style={{ width: "2rem" }} />
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {(propForm.payload || []).map((p, i) => (
-                                            <tr key={i}>
-                                                <td>
-                                                    {i < 2 ? (
-                                                        <span className="proc-payload-fixed-key">{p.key}</span>
-                                                    ) : (
-                                                        <input
-                                                            className="form-control form-control-sm proc-payload-key-input"
-                                                            placeholder="key"
-                                                            value={p.key}
-                                                            onChange={e => {
-                                                                const payload = [...(propForm.payload || [])];
-                                                                payload[i] = { ...payload[i], key: e.target.value };
-                                                                onFormChange(prev => ({ ...prev, payload }));
-                                                            }}
-                                                        />
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    <input
-                                                        className="form-control form-control-sm proc-payload-val-input"
-                                                        placeholder="value"
-                                                        value={p.value}
-                                                        onChange={e => {
-                                                            const payload = [...(propForm.payload || [])];
-                                                            payload[i] = { ...payload[i], value: e.target.value };
-                                                            onFormChange(prev => ({ ...prev, payload }));
-                                                        }}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    {i >= 2 && (
-                                                        <button
-                                                            className="btn btn-outline-danger btn-sm proc-payload-del-btn"
-                                                            onClick={() => {
-                                                                const payload = (propForm.payload || []).filter((_, j) => j !== i);
-                                                                onFormChange(prev => ({ ...prev, payload }));
-                                                            }}>
-                                                            <i className="fa fa-times" />
-                                                        </button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                <button
-                                    className="btn btn-outline-secondary btn-sm proc-payload-add-btn mt-2"
-                                    onClick={() => {
-                                        const payload = [...(propForm.payload || []), { key: "", value: "" }];
-                                        onFormChange(prev => ({ ...prev, payload }));
-                                    }}>
-                                    <i className="fa fa-plus me-1" />Add Parameter
-                                </button>
-                                <p className="proc-payload-hint mt-1 mb-0">
-                                    Values support Camunda expressions, e.g.{" "}
-                                    <code>{"${execution.businessKey}"}</code> or{" "}
-                                    <code>{"${someVariable}"}</code>
-                                </p>
-                            </div>
+                            {renderParamsTable()}
                             <p className="proc-payload-hint mb-0 mt-2 d-flex align-items-center gap-1">
                                 <i className="fa-solid fa-circle-info" />
-                                Worker topic: <code>ai.run.agent</code>
+                                Worker topic: <code>appflexor.ai.agent</code>
                             </p>
                         </>
-                    ) : !isApp ? (
-                        /* External worker */
-                        <>
-                            <div className="mb-2">
-                                <label className="ai-label">Connector Topic</label>
-                                <input
-                                    className="form-control form-control-sm"
-                                    value={propForm.workerTopic || ""}
-                                    onChange={e => onFormChange(p => ({ ...p, workerTopic: e.target.value }))}
-                                    placeholder="e.g. my.connector.topic"
-                                />
-                            </div>
-                            <div className="mb-1">
-                                <label className="ai-label">Input Parameters</label>
-                                <table className="proc-payload-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Key</th>
-                                            <th>Value</th>
-                                            <th style={{ width: "2rem" }} />
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {(propForm.params || []).map((p, i) => (
-                                            <tr key={i}>
-                                                <td>
-                                                    <input
-                                                        className="form-control form-control-sm proc-payload-key-input"
-                                                        placeholder="key"
-                                                        value={p.key}
-                                                        onChange={e => {
-                                                            const params = [...(propForm.params || [])];
-                                                            params[i] = { ...params[i], key: e.target.value };
-                                                            onFormChange(prev => ({ ...prev, params }));
-                                                        }}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <input
-                                                        className="form-control form-control-sm proc-payload-val-input"
-                                                        placeholder="value"
-                                                        value={p.value}
-                                                        onChange={e => {
-                                                            const params = [...(propForm.params || [])];
-                                                            params[i] = { ...params[i], value: e.target.value };
-                                                            onFormChange(prev => ({ ...prev, params }));
-                                                        }}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <button
-                                                        className="btn btn-outline-danger btn-sm proc-payload-del-btn"
-                                                        onClick={() => {
-                                                            const params = (propForm.params || []).filter((_, j) => j !== i);
-                                                            onFormChange(prev => ({ ...prev, params }));
-                                                        }}>
-                                                        <i className="fa fa-times" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                <button
-                                    className="btn btn-outline-secondary btn-sm proc-payload-add-btn mt-2"
-                                    onClick={() => {
-                                        const params = [...(propForm.params || []), { key: "", value: "" }];
-                                        onFormChange(prev => ({ ...prev, params }));
-                                    }}>
-                                    <i className="fa fa-plus me-1" />Add Parameter
-                                </button>
-                                <p className="proc-payload-hint mt-1 mb-0">
-                                    Values support Camunda expressions, e.g.{" "}
-                                    <code>{"${execution.businessKey}"}</code> or{" "}
-                                    <code>{"${someVariable}"}</code>
-                                </p>
-                            </div>
-                            <p className="proc-payload-hint mb-0 mt-2 d-flex align-items-center gap-1">
-                                <i className="fa-solid fa-circle-info" />
-                                Worker topic: <code>appflexor.connector</code>
-                            </p>
-                        </>
-                    ) : null}
+                    )}
                 </>
             );
         }
