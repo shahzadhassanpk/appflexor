@@ -1,0 +1,280 @@
+{
+  "name": "AppFlexor Connector",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://172.17.0.1:8089/engine-rest/external-task/fetchAndLock",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"workerId\": \"appflexor-connector\",\n  \"maxTasks\": 10,\n  \"usePriority\": true,\n  \"topics\": [\n    {\n      \"topicName\": \"appflexor.connector\",\n      \"lockDuration\": 3600000\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        -128
+      ],
+      "id": "d178586d-6dea-4611-b4eb-f0b70013a1fd",
+      "name": "Fetch and Lock"
+    },
+    {
+      "parameters": {
+        "topic": "={{ $json.kafkaTopic }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.kafka",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        -160
+      ],
+      "id": "47b25888-74c2-48fb-bd03-367ed62b4421",
+      "name": "Kafka",
+      "credentials": {
+        "kafka": {
+          "id": "TIlj4QEuoohEWIqJ",
+          "name": "Kafka account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        -128
+      ],
+      "id": "21a8c38b-724a-4e96-8eb6-9370ec9afb2e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted AS (\n  INSERT INTO external_task_dispatch (\n    tenant_id, external_task_id, status, fetched_at\n  )\n  VALUES ($1, $2, 'CLAIMED', NOW())\n  ON CONFLICT (tenant_id, external_task_id) DO NOTHING\n  RETURNING 1\n)\nSELECT\n  $1 AS tenant_id,\n  $2 AS external_task_id,\n  COALESCE(MAX(1), 0) = 1 AS is_new\nFROM inserted;",
+        "options": {
+          "queryReplacement": "={{ $json.tenantId }},{{ $json.id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        560,
+        32
+      ],
+      "id": "38367b72-8399-4180-a875-690d64fa7098",
+      "name": "Claim Idempotency",
+      "credentials": {
+        "postgres": {
+          "id": "2TDmvrsJ2ceAVUEW",
+          "name": "appflexor_runtime_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2175c29e-b82e-4a93-a316-a421be167c7b",
+              "leftValue": "={{ $json.is_new }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        736,
+        32
+      ],
+      "id": "43378d5d-8fcd-45c6-9671-034156346952",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        768,
+        -144
+      ],
+      "id": "c15c658a-9ace-4d91-a4ca-33eba7f0a759",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f0e1fe09-a295-41bd-a551-ae8da0acbd7b",
+              "leftValue": "={{ $json.isValid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1168,
+        -144
+      ],
+      "id": "71d423c5-a169-4e9e-b761-03aa2a8be97c",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "let data = [];\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let raw = item.json.variables[\"appflexor.worker.meta\"];\n  try{\n    let parsed = JSON.parse(raw.value);\n    let connectorTopic = parsed[\"connector.topic\"];\n    let kafkaTopic = `${item.json.tenantId}.${connectorTopic}`;\n    let task = {kafkaTopic, payload:item.json, isValid:true};\n    data.push(task);\n  }catch(e){\n    data.push({raw:raw.value, isValid:false});\n  }  \n}\n\nreturn data;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -144
+      ],
+      "id": "01065837-a812-481c-8335-eea20fb02634",
+      "name": "Prepare Payload"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Fetch and Lock": {
+      "main": [
+        [
+          {
+            "node": "Claim Idempotency",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch and Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Idempotency": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Prepare Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Kafka",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Payload": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1
+  },
+  "versionId": "1b2ac000-6918-4318-b553-5db238e47193",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6254c1260eb2af98ad176dc897f9396a6e30c89f8579acd08ebe94e54822dcd3"
+  },
+  "id": "o1jA08fViNqgF6In",
+  "tags": []
+}
