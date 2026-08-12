@@ -164,7 +164,7 @@
     },
     {
       "parameters": {
-        "jsCode": "let data = [];\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let raw = item.json.variables[\"appflexor.worker.meta\"];\n  try{\n    let parsed = JSON.parse(raw.value);\n    let connectorTopic = parsed[\"connector.topic\"];\n    let kafkaTopic = `${item.json.tenantId}.${connectorTopic}`;\n    let task = {kafkaTopic, payload:item.json, isValid:true};\n    data.push(task);\n  }catch(e){\n    data.push({raw:raw.value, isValid:false});\n  }  \n}\n\nreturn data;"
+        "jsCode": "let data = [];\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let raw = item.json.variables[\"appflexor.worker.meta\"];\n  try{\n    let parsed = JSON.parse(raw.value);\n    let connectorTopic = parsed[\"connector.topic\"];\n    let kafkaTopic = `${item.json.tenantId}-${connectorTopic}`;\n    let task = {kafkaTopic, payload:item.json, isValid:true};\n    data.push(task);\n  }catch(e){\n    data.push({raw:raw.value, isValid:false});\n  }  \n}\n\nreturn data;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -267,10 +267,9 @@
     "binaryMode": "separate",
     "availableInMCP": false,
     "timeSavedMode": "fixed",
-    "callerPolicy": "workflowsFromSameOwner",
-    "executionTimeout": -1
+    "callerPolicy": "workflowsFromSameOwner"
   },
-  "versionId": "1b2ac000-6918-4318-b553-5db238e47193",
+  "versionId": "02b390e2-f077-4d47-adc0-bd1707ad5dbf",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6254c1260eb2af98ad176dc897f9396a6e30c89f8579acd08ebe94e54822dcd3"
