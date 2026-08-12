@@ -290,8 +290,8 @@
     color: var(--dl-primary);
 }
 .s2a-sort-pair i {
-    font-size: 8px;
-    line-height: 1.1;
+    font-size: var(--font-size-xs, 10px);
+    line-height: 0.3;
     display: block;
 }
 

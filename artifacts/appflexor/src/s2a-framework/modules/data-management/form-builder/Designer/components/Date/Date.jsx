@@ -108,18 +108,18 @@ function DateField(props) {
             ? `${classes} ${dbColumnAsClass}`
             : "";
 
-    if (!componentData.db_column) {
-        return (
-            <div className="mb-3 p-3">
-                <label className="form-label">Date</label>
-                <input
-                    type="date"
-                    className="form-control form-control-sm"
-                    disabled
-                />
-            </div>
-        );
-    }
+    // if (!componentData.db_column) {
+    //     return (
+    //         <div className="mb-3 p-3">                
+    //             <label className="form-label">Date</label>
+    //             <input
+    //                 type="date"
+    //                 className="form-control form-control-sm"
+    //                 disabled
+    //             />
+    //         </div>
+    //     );
+    // }
 
     const Error = () => <div>Error occurred in Date.</div>;
 
@@ -170,20 +170,19 @@ function DateField(props) {
                                         obj[componentData.db_column],
                                     )}
                                     // value={obj[componentData.db_column] || ""}
-                                    className={`form-control date-time-picker form-control-sm ${
-                                        componentData.required === "YES" &&
-                                        !isValidField
+                                    className={`form-control date-time-picker form-control-sm ${componentData.required === "YES" &&
+                                            !isValidField
                                             ? "form-control-danger"
                                             : ""
-                                    }`}
+                                        }`}
                                     id={componentData.db_column}
                                     onChange={handleChange}
                                     onBlur={handleOnBlur}
                                     disabled={
                                         props.mode === props.modeType.design ||
                                         props.mode ===
-                                            props.modeType.readonly ||
-                                        props.mode === props.modeType.preview ||
+                                        props.modeType.readonly ||
+                                        // props.mode === props.modeType.preview ||
                                         componentData.readonly === "YES" ||
                                         disable
                                     }
@@ -206,19 +205,18 @@ function DateField(props) {
                                     )}
                                     // data={obj[componentData.db_column] || ""}
                                     value={obj[componentData.db_column] || ""}
-                                    className={`form-control date-time-picker form-control-sm ${
-                                        componentData.required === "YES" &&
-                                        !isValidField
+                                    className={`form-control date-time-picker form-control-sm ${componentData.required === "YES" &&
+                                            !isValidField
                                             ? "form-control-danger"
                                             : ""
-                                    }`}
+                                        }`}
                                     id={componentData.db_column}
                                     onChange={handleChange}
                                     onBlur={handleOnBlur}
                                     disabled={
                                         props.mode === props.modeType.design ||
                                         props.mode ===
-                                            props.modeType.readonly ||
+                                        props.modeType.readonly ||
                                         props.mode === props.modeType.preview ||
                                         componentData.readonly === "YES" ||
                                         disable

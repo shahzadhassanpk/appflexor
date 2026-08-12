@@ -267,7 +267,6 @@ export default function ReactTable({
 
     const filterRef = useRef(null);
     const [filterCol, setFilterCol] = useState({});
-    let message;
     const titleShowingFields = {};
 
     useEffect(() => {
@@ -440,7 +439,7 @@ export default function ReactTable({
     const checkApiResponseOrData = () => {
         let length = 0;
         let showDatalist = false;
-        let _message = "";
+        let notificationMessage = "";
         const notFound = (
             <>
                 <i className="fa-solid fa-magnifying-glass search__icon"></i>
@@ -450,30 +449,33 @@ export default function ReactTable({
         );
         if (apiResponse === "resolve") {
             length = data ? data.length : 0;
-            if (length > 0 && page.length === 0) {
-                showDatalist = false;
+            const viewType = selectedItem?.datalist_type || selectedItem?.view;
 
-                _message = notFound;
-            } else if (length === 0 && page.length === 0) {
-                // table not exist
-                _message = notFound;
-
-                showDatalist = false;
-            } else {
-                _message = notFound;
-
+            if (length > 0) {
                 showDatalist = true;
+                notificationMessage = "";
+            } else {
+                // No data: show table headers for TABLE view, otherwise show notification
+                if (viewType === "TABLE") {
+                    showDatalist = true;
+                    notificationMessage = notFound;
+                } else {
+                    showDatalist = false;
+                    notificationMessage = notFound;
+                }
             }
         } else if (apiResponse === "pending") {
-            _message = "Loading please wait...";
+            notificationMessage = "Loading please wait...";
+            showDatalist = false;
         } else if (apiResponse === "failed") {
             showDatalist = true;
-            _message = notFound;
+            notificationMessage = notFound;
         }
 
-        message = _message;
-        return showDatalist;
+        return { showDatalist, notificationMessage };
     };
+
+    const { showDatalist, notificationMessage } = checkApiResponseOrData();
 
     const Cart = (
         <>
@@ -530,6 +532,7 @@ export default function ReactTable({
             footerGroups={footerGroups}
             notIncludeFooter={notIncludeFooter}
             titleShowingFields={titleShowingFields}
+            emptyMessage={notificationMessage}
             hideActions={hideActions}
             hideSearch={hideSearch}
             hidePagination={hidePagination}
@@ -806,10 +809,10 @@ export default function ReactTable({
                 </ChildrenModal>
 
                 {/* <button onClick={() => resetFilters()}>Reset</button>; */}
-                {checkApiResponseOrData() ? (
+                {showDatalist ? (
                     RenderView(selectedItem)
                 ) : (
-                    <DatalistNotification message={message} />
+                    <DatalistNotification message={notificationMessage} />
                 )}
             </div>
             {/* Bulk selection tray — shows when rows are selected */}

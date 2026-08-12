@@ -82,6 +82,13 @@ const TableView = props => {
                         </tr>
                     );
                 })}
+                {page.length === 0 && (
+                    <tr>
+                        <td colSpan={headerGroups?.[0]?.headers?.length || 1} className="text-center py-4">
+                            {props.emptyMessage || "No records found."}
+                        </td>
+                    </tr>
+                )}
             </tbody>
             {footer && 
                 <DatalistFooter
