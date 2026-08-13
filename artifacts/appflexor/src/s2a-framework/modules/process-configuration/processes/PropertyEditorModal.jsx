@@ -574,21 +574,40 @@ export function PropertyEditorModal({
                             </div>
                             <div className="mb-2">
                                 <label className="ai-label">Task</label>
-                                {aiTasksLoading ? (
-                                    <div className="text-muted small">
-                                        <i className="fa-solid fa-spinner fa-spin me-1" />Loading tasks…
-                                    </div>
-                                ) : (
-                                    <select
-                                        className="form-control form-control-sm"
-                                        value={propForm.taskKey || ""}
-                                        onChange={e => onFormChange(p => ({ ...p, taskKey: e.target.value }))}>
-                                        <option value="">— Select task —</option>
-                                        {aiAgentTasks.map(t => (
-                                            <option key={t.value} value={t.value}>{t.label}</option>
-                                        ))}
-                                    </select>
-                                )}
+                                {(() => {
+                                    const currentTask = propForm.taskKey || "";
+                                    const hasTaskOption = !currentTask || aiAgentTasks.some(t => t.value === currentTask);
+                                    return aiTasksLoading ? (
+                                        <div className="text-muted small">
+                                            <i className="fa-solid fa-spinner fa-spin me-1" />Loading tasks…
+                                        </div>
+                                    ) : (
+                                        <select
+                                            className="form-control form-control-sm"
+                                            value={currentTask}
+                                            onChange={e => onFormChange(p => ({ ...p, taskKey: e.target.value }))}>
+                                            <option value="">— Select task —</option>
+                                            {!hasTaskOption && (
+                                                <option value={currentTask}>{currentTask}</option>
+                                            )}
+                                            {aiAgentTasks.map(t => (
+                                                <option key={t.value} value={t.value}>{t.label}</option>
+                                            ))}
+                                        </select>
+                                    );
+                                })()}
+                            </div>
+                            <div className="mb-2">
+                                <label className="ai-label">Result Variable</label>
+                                <input
+                                    className="form-control form-control-sm font-monospace"
+                                    value={propForm.result || ""}
+                                    onChange={e => onFormChange(p => ({ ...p, result: e.target.value }))}
+                                    placeholder="e.g. result"
+                                />
+                                <p className="proc-payload-hint mt-1 mb-0">
+                                    Process variable where the response will be stored
+                                </p>
                             </div>
                             {renderParamsTable()}
                             <p className="proc-payload-hint mb-0 mt-2 d-flex align-items-center gap-1">
