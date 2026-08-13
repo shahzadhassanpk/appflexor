@@ -1,0 +1,203 @@
+{
+  "name": "appflexor-signup",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/appflexor/signup",
+        "options": {
+          "allowedOrigins": "*.step2agility.com,*.appflexor.com"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -336,
+        -48
+      ],
+      "id": "bf7f4247-23eb-4ff6-8312-d605ddc44763",
+      "name": "Webhook",
+      "webhookId": "8b869e30-f6c4-42b8-837c-7c15aa38f9a3"
+    },
+    {
+      "parameters": {
+        "fromEmail": "support@step2agility.com",
+        "toEmail": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "=Appflexor Signup - {{ $json.body.firstName }} {{ $json.body.lastName }}",
+        "emailFormat": "text",
+        "text": "=Appflexor Signup Request Received:\n{{ $('Webhook').item.json.body.firstName }}\n{{ $('Webhook').item.json.body.lastName }}\n{{ $('Webhook').item.json.body.company }}\n{{ $('Webhook').item.json.body.siteName }}\n{{ $('Webhook').item.json.body.email }}\n{{ $('Webhook').item.json.body.phone }}\n{{ $('Webhook').item.json.body.employees }}\n{{ $('Webhook').item.json.body.website }}\n{{ $('Webhook').item.json.body.country }}\n{{ $('Webhook').item.json.body.agreed }}\n{{ $('Webhook').item.json.body.countryCode }}{{ $('Webhook').item.json.body.phone }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        352,
+        -48
+      ],
+      "id": "5f862817-c823-4555-858b-20c1839b4b1d",
+      "name": "Send an Email",
+      "webhookId": "909d3c5a-400d-4c8f-bc69-353cb7f563f8",
+      "credentials": {
+        "smtp": {
+          "id": "dasx8mcs8OtRDN8g",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.step2agility.com/app/service?service.key=update.formData",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "1d59ea80-22ba-4475-96db-13127f668971"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": [\n    {\n      \"formId\": \"subscription\",\n      \"entity\": \"subscription\",\n      \"action\": \"update\",\n      \"id\": \"new\",\n      \"formData\": {\n        \"id\": \"new\",\n        \"site_name\": \"{{ $json.body.siteName }}\",\n        \"first_name\": \"{{ $json.body.firstName }}\",\n        \"last_name\": \"{{ $json.body.lastName }}\",\n        \"email\": \"{{ $json.body.email }}\",\n        \"phone\": \"{{ $json.body.countryCode }}{{ $json.body.phone }}\",\n        \"company\": \"{{ $json.body.company }}\",\n        \"agreement\": \"{{ $json.body.agreed }}\",\n        \"website\": \"{{ $json.body.website }}\",\n        \"no_of_emp\": \"{{ $json.body.employees }}\"\n      }\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -128,
+        -48
+      ],
+      "id": "a520f7ff-150e-4f3e-8c24-cbdd89bcf524",
+      "name": "Insert Data"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.step2agility.com/bpm/service?service.key=bpm.data",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "1d59ea80-22ba-4475-96db-13127f668971"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"path\": \"/process-definition/key/init_subscription/start\",\n  \"method\": \"POST\",\n  \"data\": {\n    \"businessKey\": \"{{$json.C_DATA[0].id}}\"\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        96,
+        -48
+      ],
+      "id": "4056d401-00ba-48f3-ba97-986f21ae21a0",
+      "name": "Start Process"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "172.31.17.3:5678",
+            "pragma": "no-cache",
+            "cache-control": "no-cache",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"152\", \"Not?A_Brand\";v=\"24\", \"Google Chrome\";v=\"152\"",
+            "content-type": "application/json",
+            "sec-ch-ua-mobile": "?0",
+            "accept": "*/*",
+            "origin": "https://cloud.appflexor.com",
+            "sec-fetch-site": "same-site",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-dest": "empty",
+            "referer": "https://cloud.appflexor.com/",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+            "priority": "u=1, i",
+            "x-forwarded-for": "110.39.140.230",
+            "x-forwarded-host": "signup.appflexor.com",
+            "x-forwarded-server": "fe80::41e:97ff:fe95:2fe5%ens5",
+            "content-length": "227",
+            "connection": "Keep-Alive"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "firstName": "Taha",
+            "lastName": "Shahzad",
+            "company": "TAHA LLC",
+            "siteName": "TS GIGBOX",
+            "email": "tahashahzad45@gmail.com",
+            "phone": "3204781365",
+            "employees": "1-10",
+            "website": "",
+            "country": "Pakistan",
+            "agreed": true,
+            "countryCode": "+92"
+          },
+          "webhookUrl": "https://n8n.step2agility.com/webhook/appflexor/signup",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Insert Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Data": {
+      "main": [
+        [
+          {
+            "node": "Start Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Process": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "cde9ce15-75aa-45f1-b858-957aed472426",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "6yPLRIseeSCjDFd5",
+  "tags": []
+}
