@@ -1864,9 +1864,10 @@ div.text-color-hover > span.text-color:hover {
 .form-control {
     font-size: var(--font-size-md);
     border-radius: 4px;
-    background-color: transparent;
+    background-color: transparent !important;
     color: var(--text-primary);
     border: 1px solid var(--border-color);
+    margin-bottom: 10px;
 }
 
 .form-control.is-valid {
@@ -1880,7 +1881,7 @@ div.text-color-hover > span.text-color:hover {
 .form-select {
     font-size: var(--font-size-md);
     border-radius: 4px;
-    background-color: var(--secondary-color);
+    background-color: transparent !important;
     color: var(--text-primary);
     border: 1px solid var(--border-color);
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
@@ -1888,7 +1889,7 @@ div.text-color-hover > span.text-color:hover {
 
 .form-select:disabled {
     opacity: 0.5 !important;
-    background-color: transparent !important;
+    /* background-color: transparent !important; */
     cursor: not-allowed;
 }
 
@@ -1906,12 +1907,12 @@ option:checked {
     background: var(--primary-color) !important;
 }
 
-.form-select:focus {
+/* .form-select:focus {
     color: var(--text-primary) !important;
     background-color: var(--navigation-color) !important;
     border-color: var(--border-color) !important;
     box-shadow: 0 0 0.1rem 0.05rem var(--link-active-color) !important;
-}
+} */
 
 input::file-selector-button {
     color: var(--text-primary) !important;

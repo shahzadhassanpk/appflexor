@@ -392,7 +392,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.7rem 1.25rem;
-  background: var(--secondary-color, #fff);
+  background: var(--primary-color, #fff);
   border-bottom: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
   flex-shrink: 0;
   gap: 1rem;
@@ -433,4 +433,5 @@
   flex: 1;
   overflow-y: auto;
   padding: 0;
+  background-color: var(--secondary-color);
 }

@@ -62,7 +62,7 @@ const MenuForm = props => {
                             <select
                                 name="location"
                                 className="form-select"
-                                value={selectedItem.location}
+                                value={selectedItem?.location}
                                 onChange={handleInputField}>
                                 <option
                                     value=""

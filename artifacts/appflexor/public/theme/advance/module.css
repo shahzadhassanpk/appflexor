@@ -3975,17 +3975,17 @@
     min-height: fit-content;
 }
 
-.DateInput_input:disabled,
+/* .DateInput_input:disabled,
 .form-control:read-only,
 .form-control:disabled {
     color: hsl(0, 0%, 60%) !important;
     background-color: transparent !important;
-}
-.form-control:focus,
+} */
+/* .form-control:focus,
 .form-control {
     background-color: transparent !important;
     color: var(--font-color);
-}
+} */
 
 .sticky-div {
     position: fixed;
@@ -4000,7 +4000,7 @@
 div[class*="-control"] {
     height: 31px !important;
     min-height: 31px !important;
-    background-color: var(--navigation-color) !important;
+    background-color: transparent !important;
     border-color: var(--border-color) !important;
     color: var(--font-color) !important;
 }
