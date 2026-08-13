@@ -1309,7 +1309,7 @@ export default function DataListForm(props) {
                                     {selectedItem &&
                                         selectedItem.type !== "" && (
                                             <div className="actions-row">
-                                                <div className="col d-flex input-align">
+                                                <div className="col-sm-8 d-flex input-align">
                                                     <div className="action-font">
                                                         <label htmlFor="fields">
                                                             Fields
@@ -1317,20 +1317,20 @@ export default function DataListForm(props) {
                                                     </div>
                                                     {/* {check ? `Unselect All` : `Select All`} */}
                                                 </div>
-                                                <div className="col-sm-2 input-align">
+                                                <div className="col-sm-4 input-align">
                                                     <div className="d-inline-flex mt-1">
                                                         <div
                                                             className="col-sm pointer"
                                                             title="Search"
                                                             onClick={showHide}>
-                                                            <i className="fa-solid fa-magnifying-glass"></i>
+                                                            <i className="fa-solid fa-magnifying-glass me-2"></i>
                                                         </div>
 
                                                         <div className="col-sm">
                                                             {selectedItem.type ===
                                                             "SQL" ? (
                                                                 <div
-                                                                    className="action-font get-fields pointer"
+                                                                    className="action-font get-fields pointer d-flex align-items-center gap-2"
                                                                     title="Refresh"
                                                                     onClick={() =>
                                                                         saveData(
@@ -1339,11 +1339,11 @@ export default function DataListForm(props) {
                                                                             "sql",
                                                                         )
                                                                     }>
-                                                                    <i className="fa fa-refresh fields-refresh-btn"></i>
+                                                                    <i className="fa fa-refresh fields-refresh-btn ms-2"></i>
                                                                 </div>
                                                             ) : (
                                                                 <div
-                                                                    className="action-font get-fields pointer"
+                                                                    className="action-font get-fields pointer d-flex align-items-center gap-2"
                                                                     title="Refresh"
                                                                     onClick={() =>
                                                                         updateFormFields()
