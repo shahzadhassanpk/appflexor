@@ -1,0 +1,440 @@
+{
+  "name": "Create Tenant",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id as subscription, c_first_name, c_last_name, c_email, c_phone, c_company, c_site_name, lower(LEFT(c_first_name, 1)||LEFT(c_last_name, 1)||LEFT(c_company, 2)||to_char(c_tenant_id, 'fm00000')) as datasource, $1 as businessKey from app_fd_subscription where id = $1",
+        "options": {
+          "queryReplacement": "={{ $json.businessKey }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -304,
+        -112
+      ],
+      "id": "c550f02d-6dc5-4c64-91c2-65b39f09956b",
+      "name": "Get Subscription",
+      "credentials": {
+        "postgres": {
+          "id": "RuHBLOxdiJCdaJr5",
+          "name": "S2A_CLOUD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update app_fd_subscription set c_package_type ='Standard' , c_user_limit='2', c_package_id='19dd9e5a-3c93-4cf5-9462-13ad6b31b0a0', c_price_id='', c_datasource= 'tenant{{ $json.datasource }}', c_domain =lower('{{ $json.datasource }}.appflexor.com') , c_plan='STARTER', c_status =  'TRIAL', c_lockout_date=(date(now())+INTERVAL '30 day'), c_process_datasource ='tenant00061', c_process_engine_url='zeebe:26501', c_process_deployment='S2A_CLOUD', c_process_engine='CAMUNDA_SEVEN' where id = $1",
+        "options": {
+          "queryReplacement": "={{ $json.subscription }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -16,
+        -192
+      ],
+      "id": "4d127d89-b443-4b1b-a6f0-819d1eb9d632",
+      "name": "Update Subscription",
+      "credentials": {
+        "postgres": {
+          "id": "RuHBLOxdiJCdaJr5",
+          "name": "S2A_CLOUD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE DATABASE tenant{{ $json.datasource }} WITH TEMPLATE s2a_tenant_template owner postgres",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        -16
+      ],
+      "id": "cdf65774-7118-4b85-8b4e-9f8faf197698",
+      "name": "Create Tenant DB",
+      "credentials": {
+        "postgres": {
+          "id": "RuHBLOxdiJCdaJr5",
+          "name": "S2A_CLOUD"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "numberInputs": 3,
+        "useDataOfInput": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        208,
+        -128
+      ],
+      "id": "7105d3f5-19b8-4303-928f-17f006aeade5",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\n\nlet sitePref = {\n  menu_position: \"below-header\",\n  color_palette: \"1\",\n};\nconst items = [];\nfunction generateRandomString(length = 8) {\n  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';\n  let result = '';\n  for (let i = 0; i < length; i++) {\n    result += chars.charAt(Math.floor(Math.random() * chars.length));\n  }\n  return result;\n}\n\nfor (const item of $input.all()) {\n  let site = {\n    ...item.json,\n    domain:`${item.json.datasource}.appflexor.com`,\n    site_name: item.json.c_company,\n    sitePref: sitePref,\n    randomString: generateRandomString(8)\n  };\n  site.datasource=`tenant${item.json.datasource}`;\n  items.push(site);\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        240
+      ],
+      "id": "b2de18cd-7949-4d51-b5ec-139891cd5210",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update dir_organization set name=$1 where id='34eb5135-4737-474f-85f4-eed5fceabc58'",
+        "options": {
+          "queryReplacement": "={{ $json.site_name }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        416,
+        160
+      ],
+      "id": "bedbb4d9-a621-4038-8a22-43b7de8917c0",
+      "name": "updateOrganization",
+      "credentials": {
+        "postgres": {
+          "id": "anJV88BkR6LF5LkB",
+          "name": "Tenant DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update dir_user set password=md5($1), firstname=$2, lastname=$3, email=$4, phone=$5 where id = 'admin'",
+        "options": {
+          "queryReplacement": "={{ $json.randomString }},{{ $json.c_first_name }},{{ $json.c_last_name }},{{ $json.c_email }},{{ $json.c_phone }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        368,
+        432
+      ],
+      "id": "4cf2a551-cff0-45b5-bf93-5b2444bd92d2",
+      "name": "updateUser",
+      "credentials": {
+        "postgres": {
+          "id": "anJV88BkR6LF5LkB",
+          "name": "Tenant DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "numberInputs": 4,
+        "useDataOfInput": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        640,
+        192
+      ],
+      "id": "3954071d-6aeb-453b-9e53-12e9cb9aff8e",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "insert into  app_fd_app_site (id,datecreated,datemodified,createdby,modifiedby, c_domain, c_brand_title,c_subscription, c_color_palette, c_entity_id, c_site_preference) values (uuid_generate_v1(), now(), now(),'admin','admin',$1,$2,$3,'1', '34eb5135-4737-474f-85f4-eed5fceabc58', $4)",
+        "options": {
+          "queryReplacement": "={{ $json.domain }},{{ $json.site_name }},{{ $json.subscription }},{{ JSON.stringify($json.sitePref) }},"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        416,
+        -16
+      ],
+      "id": "0238235d-157d-41b9-9b8b-bcaec1147b7f",
+      "name": "Update Tenant Site",
+      "credentials": {
+        "postgres": {
+          "id": "RuHBLOxdiJCdaJr5",
+          "name": "S2A_CLOUD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.step2agility.com/app/service?service.key=send.email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "AUTH_KEY",
+              "value": "1d59ea80-22ba-4475-96db-13127f668971"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"dataKeys\": [\n        {\n            \"dataParams\": \"{{ $json.randomString }};{{ $json.businesskey }}\",\n            \"emailKey\": \"activation.email\"\n        }\n    ]\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        816,
+        224
+      ],
+      "id": "dc1e5048-6e4b-4216-b312-0e686a2f3edb",
+      "name": "Send Email"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 120
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -784,
+        -112
+      ],
+      "id": "8f9bb984-5339-4447-84a6-678129dffc3d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://172.17.0.1:8089/engine-rest/external-task/fetchAndLock",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"workerId\": \"CREATE_TENANT\",\n  \"maxTasks\": 1,\n  \"usePriority\": true,\n  \"topics\": [\n    {\n      \"topicName\": \"CREATE_TENANT\",\n      \"lockDuration\": 6000\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -544,
+        -112
+      ],
+      "id": "8f31126d-2bda-4527-aa8f-6d441713de37",
+      "name": "Fetch and Lock"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://172.17.0.1:8089/engine-rest/external-task/{{ $('Fetch and Lock').item.json.id }}/complete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify( {workerId:$('Fetch and Lock').item.json.workerId}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        992,
+        224
+      ],
+      "id": "a2c38a51-5090-498b-a109-56a5508d9358",
+      "name": "Complete Task",
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get Subscription": {
+      "main": [
+        [
+          {
+            "node": "Update Subscription",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Tenant DB",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Create Tenant DB": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Update Tenant Site",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "updateOrganization",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "updateUser",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "updateOrganization": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "updateUser": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Update Subscription": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Tenant Site": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch and Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch and Lock": {
+      "main": [
+        [
+          {
+            "node": "Get Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Complete Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e5fa9972-10a9-4265-aead-c1e2c2f8f7ad",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "RvVsMJrhKrWGEf0g",
+  "tags": []
+}
