@@ -104,6 +104,27 @@ export default TableView;
 
 export const DatalistHeader = props => {
     const { headerGroups, onFilterClick } = props;
+    const extractHeaderText = value => {
+        if (typeof value === "string" || typeof value === "number") {
+            return String(value);
+        }
+        if (Array.isArray(value)) {
+            return value.map(extractHeaderText).join(" ");
+        }
+        if (React.isValidElement(value)) {
+            return extractHeaderText(value.props?.children);
+        }
+        return "";
+    };
+
+    const isActionIdentifier = value => {
+        const normalized = String(value || "").trim().toLowerCase();
+        return (
+            /(^|[\s_-])actions?($|[\s_-])/.test(normalized) ||
+            normalized.includes("action")
+        );
+    };
+
     return headerGroups.map((headerGroup, i) => {
         return (
             <thead
@@ -113,7 +134,26 @@ export const DatalistHeader = props => {
                     {...headerGroup.getHeaderGroupProps()}
                     key={i}>
                     {headerGroup.headers.map((column, i) => {
-                        const isAction = column?.parent?.Header === "Action";
+                        const renderedHeader = column.render("Header");
+                        const renderedHeaderText = extractHeaderText(
+                            renderedHeader,
+                        );
+                        const headerLabel =
+                            typeof column?.Header === "string"
+                                ? column.Header
+                                : typeof column?.parent?.Header === "string"
+                                  ? column.parent.Header
+                                  : "";
+                        const isAction = [
+                            headerLabel,
+                            renderedHeaderText,
+                            column?.id,
+                            column?.originalId,
+                            column?.className,
+                            typeof column?.accessor === "string"
+                                ? column.accessor
+                                : "",
+                        ].some(isActionIdentifier);
                         return column.hideHeader === false ||
                             column.id === "selection_placeholder_0" ? null : (
                             <th
@@ -133,11 +173,17 @@ export const DatalistHeader = props => {
                                         </span>
                                     )}
                                     <div
-                                        className="sortBy"
-                                        {...column.getHeaderProps(
-                                            column.getSortByToggleProps(),
-                                        )}>
-                                        {column.render("Header")}
+                                        className={
+                                            !isAction && column.canSort
+                                                ? "sortBy"
+                                                : ""
+                                        }
+                                        {...(isAction
+                                            ? column.getHeaderProps()
+                                            : column.getHeaderProps(
+                                                  column.getSortByToggleProps(),
+                                              ))}>
+                                        {renderedHeader}
                                         {/* Always-visible sort arrows */}
                                         {!isAction && column.canSort && (
                                             <span
