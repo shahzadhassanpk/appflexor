@@ -150,12 +150,15 @@ export function ProcessDeployDialog({
             propForm.serviceType === "ai" &&
             propForm.agentKey &&
             aiAgents.length > 0 &&
-            aiAgentTasks.length === 0 &&
             !aiTasksLoading
         ) {
-            loadAiTasksForAgent(propForm.agentKey);
+            // Reload when modal/agent changes or when current saved task isn't in the loaded list.
+            const hasCurrentTask = !propForm.taskKey || aiAgentTasks.some(t => t.value === propForm.taskKey);
+            if (aiAgentTasks.length === 0 || !hasCurrentTask) {
+                loadAiTasksForAgent(propForm.agentKey);
+            }
         }
-    }, [aiAgents]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [propModal, propForm.serviceType, propForm.agentKey, propForm.taskKey, aiAgents, aiTasksLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
     /* ═══════════════════════════════════════════════════════════════════
        Viewer lifecycle — recreate when dialog shows / viewer mode toggles
@@ -662,11 +665,12 @@ export function ProcessDeployDialog({
                 // New AI Agent format
                 const agentKey = meta.agentKey || "";
                 const taskKey  = meta.taskKey  || "";
+                const result = meta.result || "";
                 const reserved = new Set(["appflexor.worker.meta"]);
                 const params = Object.entries(ip)
                     .filter(([k]) => !reserved.has(k))
                     .map(([key, value]) => ({ key, value }));
-                init = { serviceType: "ai", workerTitle, workerDescription, agentKey, taskKey, params };
+                init = { serviceType: "ai", workerTitle, workerDescription, agentKey, taskKey, result, params };
 
             } else if (topic === "appflexor.app.service") {
                 // New App Service format
@@ -691,6 +695,7 @@ export function ProcessDeployDialog({
                 // Legacy AI Agent (topic: ai.agent.task)
                 const agentKey = ip["s2aAgentKey"] || attrs["s2aAgentKey"] || "";
                 const taskKey  = ip["s2aTaskKey"]  || attrs["s2aTaskKey"]  || "";
+                const dataKey  = ip["s2aResultKey"] || attrs["s2aResultKey"] || "";
                 const metaKeys = new Set(["s2aAgentKey", "s2aTaskKey"]);
                 let params = Object.entries(ip)
                     .filter(([k]) => !metaKeys.has(k))
@@ -701,7 +706,7 @@ export function ProcessDeployDialog({
                             .map(([k, v]) => ({ key: k, value: v }));
                     } catch (_) { /* keep empty */ }
                 }
-                init = { serviceType: "ai", workerTitle: "", workerDescription: "", agentKey, taskKey, params };
+                init = { serviceType: "ai", workerTitle: "", workerDescription: "", agentKey, taskKey, dataKey, params };
 
             } else if (ip["s2aAppServiceKey"] || attrs["s2aAppServiceKey"]) {
                 // Legacy App Service (topic: app.service.api)
@@ -732,7 +737,6 @@ export function ProcessDeployDialog({
         } else if (type === "variables") {
             init = { name: bo.name || "" };
         }
-
         setPropForm(init);
         setPropModal({ type, subType, element, title: bo.name || element.id });
         loadRefData();
@@ -805,9 +809,13 @@ export function ProcessDeployDialog({
             );
 
             if (propForm.serviceType === "ai") {
+                debugger
                 bo.topic = "appflexor.ai.agent";
                 if (propForm.agentKey) meta.agentKey = propForm.agentKey;
                 if (propForm.taskKey)  meta.taskKey  = propForm.taskKey;
+                const resultVar = (propForm.result || "").trim();
+                if (resultVar) meta.result = resultVar;
+                debugger
                 setInputParams(bo, {
                     "appflexor.worker.meta": JSON.stringify(meta),
                     ...extraParams,
