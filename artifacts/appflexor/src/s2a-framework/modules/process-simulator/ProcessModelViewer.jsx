@@ -21,8 +21,8 @@ const STATE = {
 };
 
 function ProcessModelViewer({ scenario, initialProcess }) {
-    const processTitle = scenario?.processTitle || scenario?.processKey || initialProcess?.title;
-    const processKey   = scenario?.processKey   || initialProcess?.process_key || "";
+    const processTitle = scenario?.metadata?.processTitle || scenario?.model_ref || initialProcess?.title;
+    const processKey   = scenario?.model_ref              || initialProcess?.process_key || "";
 
     /* ── resolved BPMN state ───────────────────────────────────────────── */
     const [viewState, setViewState] = useState(STATE.idle);
@@ -155,9 +155,9 @@ function ProcessModelViewer({ scenario, initialProcess }) {
                     <i className="fa-solid fa-flask-vial" aria-hidden="true" />
                     <span>{scenario.name}</span>
                 </div>
-                {scenario.description && (
+                {scenario.metadata?.description && (
                     <div className="psim-meta-item psim-meta-desc">
-                        {scenario.description}
+                        {scenario.metadata.description}
                     </div>
                 )}
             </div>
@@ -237,10 +237,10 @@ function ProcessModelViewer({ scenario, initialProcess }) {
             </div>
 
             {/* ── notes strip ──────────────────────────────────────────── */}
-            {scenario.notes && (
+            {scenario.metadata?.description && (
                 <div className="psim-notes">
                     <i className="fa-solid fa-note-sticky" aria-hidden="true" />
-                    <span>{scenario.notes}</span>
+                    <span>{scenario.metadata.description}</span>
                 </div>
             )}
         </div>

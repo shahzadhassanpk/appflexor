@@ -362,3 +362,336 @@
 }
 .psim-proc-error i { color: #d97706; }
 .psim-proc-empty i { color: color-mix(in srgb, var(--font-color, #6b7280) 40%, transparent); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Scenario Cards (SimulationScenarioList)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.psim-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.06)) 100%, transparent);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.psim-card:last-child { border-bottom: none; }
+.psim-card:hover      { background: color-mix(in srgb, var(--font-color, #000) 3%, transparent); }
+
+.psim-card--selected {
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 6%, transparent);
+  border-left: 3px solid var(--link-active-color, #2563eb);
+}
+.psim-card--selected:hover {
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
+}
+
+/* row 1 — icon + name + action buttons */
+.psim-card-row1 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.psim-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+.psim-card-name {
+  flex: 1;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--font-color, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* action buttons — revealed on hover */
+.psim-card-actions {
+  display: flex;
+  gap: 0.05rem;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.psim-card:hover .psim-card-actions { opacity: 1; }
+.psim-card--selected .psim-card-actions { opacity: 1; }
+
+.psim-action-open { color: var(--link-active-color, #2563eb); }
+.psim-action-run:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* row 2 — scenario ID + process key */
+.psim-card-row2 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 55%, transparent);
+  padding-left: 2.2rem;
+  min-width: 0;
+}
+.psim-card-id {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: monospace;
+  white-space: nowrap;
+}
+.psim-card-model {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--link-active-color, #2563eb) 70%, transparent);
+  font-weight: 500;
+}
+.psim-card-id i, .psim-card-model i {
+  font-size: 0.62rem;
+  flex-shrink: 0;
+}
+
+/* row 3 — tags */
+.psim-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding-left: 2.2rem;
+}
+.psim-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+}
+
+/* row 4 — footer meta (author, created, last run) */
+.psim-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.8rem;
+  padding-left: 2.2rem;
+  font-size: 0.69rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent);
+}
+.psim-card-footer-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.psim-card-footer-item i { font-size: 0.62rem; }
+
+/* count strip */
+.psim-count-strip {
+  padding: 0.2rem 0.85rem;
+  font-size: 0.7rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 45%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.05)) 100%, transparent);
+  display: flex;
+  gap: 0.35rem;
+}
+.psim-count-filtered { font-style: italic; }
+
+/* load-error / info banner */
+.psim-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+}
+.psim-banner--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+.psim-banner--error i { color: #dc2626; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SimulationScenarioForm — tabs
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.psim-form-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+  flex-wrap: wrap;
+}
+.psim-form-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 60%, transparent);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1.5px;
+  cursor: pointer;
+  border-radius: 0.35rem 0.35rem 0 0;
+  transition: color 0.12s, border-color 0.12s;
+  position: relative;
+}
+.psim-form-tab:hover {
+  color: var(--font-color, #374151);
+  background: color-mix(in srgb, var(--font-color, #000) 4%, transparent);
+}
+.psim-form-tab--active {
+  color: var(--link-active-color, #2563eb);
+  border-bottom-color: var(--link-active-color, #2563eb);
+  font-weight: 600;
+}
+.psim-form-tab i { font-size: 0.72rem; }
+
+/* required-field indicator dot on tab */
+.psim-tab-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+/* ── Section label (inside form body) */
+.psim-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--font-color, #374151);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.15rem;
+}
+.psim-section-label i {
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.75rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SimulationScenarioForm — parameter tables
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.psim-param-block { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.psim-param-table {
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  font-size: 0.82rem;
+}
+.psim-param-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  background: color-mix(in srgb, var(--font-color, #000) 4%, transparent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
+}
+.psim-param-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.05)) 100%, transparent);
+}
+.psim-param-row:last-child { border-bottom: none; }
+.psim-param-row .form-control-sm,
+.psim-param-row .form-select-sm {
+  font-size: 0.8rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SimulationScenarioForm — tag picker
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.psim-tag-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.psim-preset-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+  background: color-mix(in srgb, var(--font-color, #000) 4%, transparent);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--font-color, #374151) 70%, transparent);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.psim-preset-tag:hover {
+  border-color: var(--link-active-color, #2563eb);
+  color: var(--link-active-color, #2563eb);
+}
+.psim-preset-tag--on {
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
+  border-color: var(--link-active-color, #2563eb);
+  color: var(--link-active-color, #2563eb);
+}
+.psim-preset-tag i { font-size: 0.65rem; }
+
+/* custom tags display */
+.psim-custom-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.psim-custom-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  color: #374151;
+}
+.psim-custom-tag button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.1s;
+}
+.psim-custom-tag button:hover { color: #dc2626; }
