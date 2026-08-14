@@ -39,10 +39,10 @@ function ProcessSimulator({ initialProcess = null }) {
     const [loadError,  setLoadError]  = useState(false);
 
     /* ── right panel state ────────────────────────────────────────────────── */
-    // mode:     "idle" | "view" | "form"
-    // scenario: scenario in the right panel (null = adding new)
-    const [panelMode,     setPanelMode]     = useState("idle");
+    // panelScenario: scenario loaded in the edit panel (null = new)
+    // formKey: increment to force-reset the panel form without changing scenario
     const [panelScenario, setPanelScenario] = useState(null);
+    const [formKey,       setFormKey]       = useState(0);
     const [saving,        setSaving]        = useState(false);
 
     /* ── delete ───────────────────────────────────────────────────────────── */
@@ -107,8 +107,7 @@ function ProcessSimulator({ initialProcess = null }) {
                         setScenarios(prev => prev.map(s => s.id === merged.id ? merged : s));
                         toastEmitter("Scenario updated", true);
                     }
-                    /* after save: switch to view mode showing the saved scenario */
-                    setPanelMode("view");
+                    /* after save: keep panel populated with the saved scenario */
                     setPanelScenario(merged);
                 } else {
                     toastEmitter("Failed to save scenario", false);
@@ -128,8 +127,8 @@ function ProcessSimulator({ initialProcess = null }) {
                 if (res.data?.C_STATUS === "SUCCESS") {
                     const gone = res.data.C_DATA?.[0]?.id || item.id;
                     setScenarios(prev => prev.filter(s => s.id !== gone));
-                    /* if deleted scenario was in the right panel, go idle */
-                    if (panelScenario?.id === gone) { setPanelMode("idle"); setPanelScenario(null); }
+                    /* if deleted scenario was in the right panel, clear it */
+                    if (panelScenario?.id === gone) { setPanelScenario(null); setFormKey(k => k + 1); }
                     updateDeleteConfig(false, {}, setDeleteConfig);
                     toastEmitter("Scenario deleted", true);
                 } else {
@@ -142,16 +141,16 @@ function ProcessSimulator({ initialProcess = null }) {
     /* ══════════════════════════════════════════════════════════════════════
        Right-panel handlers
        ══════════════════════════════════════════════════════════════════════ */
-    const handleAdd    = ()       => { setPanelMode("form"); setPanelScenario(null); };
-    const handleEdit   = s        => { setPanelMode("form"); setPanelScenario(s);    };
-    const handleOpen   = s        => { setPanelMode("view"); setPanelScenario(s);    };
-    const handleRun    = ()       => toastEmitter("Token simulation coming in a future release.", false);
-    const handleDelete = scenario => updateDeleteConfig(true, scenario, setDeleteConfig);
+    /* Both Open and Edit simply load the scenario into the (always-edit) panel */
+    const handleAdd    = ()  => { setPanelScenario(null); setFormKey(k => k + 1); };
+    const handleEdit   = s   => { setPanelScenario(s); };
+    const handleOpen   = s   => { setPanelScenario(s); };
+    const handleRun    = ()  => toastEmitter("Token simulation coming in a future release.", false);
+    const handleDelete = s   => updateDeleteConfig(true, s, setDeleteConfig);
 
     function handleCancel() {
-        /* if editing an existing scenario, return to view; if adding new, go idle */
-        if (panelScenario?.id) { setPanelMode("view"); }
-        else                   { setPanelMode("idle");  setPanelScenario(null); }
+        /* revert form to last-saved state by bumping formKey */
+        setFormKey(k => k + 1);
     }
 
     /* ── loading ──────────────────────────────────────────────────────────── */
@@ -199,17 +198,14 @@ function ProcessSimulator({ initialProcess = null }) {
                     />
                 </div>
 
-                {/* RIGHT — scenario panel (view / form / idle) */}
+                {/* RIGHT — scenario panel (always edit mode) */}
                 <div className="psim-col psim-col-right">
                     <ScenarioPanel
-                        mode={panelMode}
                         scenario={panelScenario}
                         saving={saving}
+                        formKey={formKey}
                         onSave={saveScenario}
                         onCancel={handleCancel}
-                        onEdit={handleEdit}
-                        onRun={handleRun}
-                        initialProcess={initialProcess}
                     />
                 </div>
             </div>

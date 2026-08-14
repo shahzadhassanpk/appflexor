@@ -708,12 +708,15 @@
 .psim-custom-tag button:hover { color: #dc2626; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ScenarioPanel — 3-section right column layout
-   Top 10% · Middle 60% · Bottom 30%
+   ScenarioPanel — right column (always-edit, 3 top-level tabs)
+   Tab: Process  → 3-section (10% name+proc · 60% BPMN · 30% param sub-tabs)
+   Tab: Meta     → scrollable edit form
+   Tab: Constraints → scrollable edit form
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ── Outer container ───────────────────────────────────────────────────── */
 .psim-right-panel {
-  position: relative;       /* anchor for BPMN maximize overlay */
+  position: relative;   /* anchor for BPMN maximize overlay */
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -721,8 +724,93 @@
   overflow: hidden;
 }
 
-/* ── TOP (10%) ─────────────────────────────────────────────────────────── */
-.psim-rp-top {
+/* ── Top-level tab navigation bar ──────────────────────────────────────── */
+.psim-top-tab-nav {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.09)) 100%, transparent);
+  padding: 0 0.5rem;
+  padding-top: 0.25rem;
+  background: var(--secondary-color, #fff);
+  gap: 0;
+}
+
+.psim-top-tab-btns {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.psim-top-tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-bottom: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* individual top-level tab button */
+.psim-top-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s, border-color 0.12s;
+  margin-bottom: -1.5px;   /* sit on the nav border */
+}
+.psim-top-tab i { font-size: 0.72rem; }
+.psim-top-tab:hover {
+  color: var(--link-active-color, #2563eb);
+}
+.psim-top-tab--active {
+  color: var(--link-active-color, #2563eb);
+  border-bottom-color: var(--link-active-color, #2563eb);
+  font-weight: 600;
+}
+
+/* save/cancel buttons share the cancel style */
+.psim-rp-cancel-btn {
+  color: color-mix(in srgb, var(--font-color, #374151) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+}
+.psim-rp-cancel-btn:hover {
+  background: color-mix(in srgb, var(--font-color, #000) 6%, transparent);
+}
+.psim-rp-cancel-btn i { margin-right: 0.2rem; }
+
+/* ── Content area below the tab nav ────────────────────────────────────── */
+.psim-top-tab-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Process tab — inner 3-section layout
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.psim-proc-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ── Top (10%): scenario name + process selector ────────────────────────── */
+.psim-proc-top {
   flex: 0 0 10%;
   min-height: 52px;
   max-height: 72px;
@@ -734,7 +822,7 @@
   background: var(--secondary-color, #fff);
 }
 
-/* leading icon */
+/* flask icon badge */
 .psim-rp-top-icon {
   display: inline-flex;
   align-items: center;
@@ -748,31 +836,47 @@
   flex-shrink: 0;
 }
 
-/* name input (form mode) */
+/* scenario name input */
 .psim-rp-name-input {
   flex: 1;
   min-width: 0;
   font-weight: 600;
 }
 
-/* process picker wrapper */
-.psim-rp-proc-wrap {
-  flex: 0 0 auto;
-  min-width: 0;
-  max-width: 240px;
-}
-
-/* compact selected-process badge inside the top strip */
-.psim-rp-proc-badge {
+/* "Select Process" button (nothing selected) */
+.psim-proc-select-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.2rem 0.5rem;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--link-active-color, #2563eb);
+  border: 1.5px dashed color-mix(in srgb, var(--link-active-color, #2563eb) 45%, transparent);
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 5%, transparent);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s;
+}
+.psim-proc-select-btn:hover {
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
+  border-color: var(--link-active-color, #2563eb);
+}
+.psim-proc-select-btn i { font-size: 0.7rem; }
+
+/* selected-process badge */
+.psim-rp-proc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.5rem;
   border-radius: 0.4rem;
   background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 25%, transparent);
   font-size: 0.78rem;
-  max-width: 240px;
+  max-width: 220px;
+  flex-shrink: 0;
 }
 .psim-rp-proc-badge > i {
   color: var(--link-active-color, #2563eb);
@@ -785,57 +889,33 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--font-color, #111827);
-}
-
-.psim-rp-proc-loading {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.78rem;
-  color: color-mix(in srgb, var(--font-color, #6b7280) 60%, transparent);
-}
-
-/* action buttons in the top strip */
-.psim-rp-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  flex-shrink: 0;
-}
-.psim-rp-cancel-btn {
-  color: color-mix(in srgb, var(--font-color, #374151) 70%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
-}
-.psim-rp-cancel-btn:hover {
-  background: color-mix(in srgb, var(--font-color, #000) 6%, transparent);
-}
-.psim-rp-cancel-btn i { margin-right: 0.2rem; }
-
-/* view-mode name + process display */
-.psim-rp-view-name {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--font-color, #111827);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   flex: 1;
   min-width: 0;
 }
-.psim-rp-view-proc {
+
+/* edit / clear icon buttons inside the badge */
+.psim-selected-proc-clear {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: color-mix(in srgb, var(--link-active-color, #2563eb) 80%, transparent);
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: color-mix(in srgb, var(--font-color, #374151) 45%, transparent);
+  font-size: 0.62rem;
+  border-radius: 50%;
   flex-shrink: 0;
-  white-space: nowrap;
+  transition: color 0.1s, background 0.1s;
 }
-.psim-rp-view-proc i { font-size: 0.68rem; }
+.psim-selected-proc-clear:hover {
+  color: var(--link-active-color, #2563eb);
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
+}
 
-/* ── MIDDLE (60%): BPMN section ────────────────────────────────────────── */
-.psim-rp-bpmn {
+/* ── Middle (60%): BPMN viewer ─────────────────────────────────────────── */
+.psim-proc-bpmn {
   flex: 0 0 60%;
   min-height: 0;
   position: relative;
@@ -845,8 +925,8 @@
   background: color-mix(in srgb, var(--font-color, #000) 1.5%, transparent);
 }
 
-/* maximize overlay — covers the whole right panel */
-.psim-rp-bpmn--max {
+/* maximize overlay — covers the entire right panel */
+.psim-proc-bpmn--max {
   position: absolute;
   inset: 0;
   z-index: 20;
@@ -856,17 +936,18 @@
   flex-direction: column;
 }
 
-/* BPMN diagram fills the section */
-.psim-rp-bpmn .psim-bpmn-container {
+.psim-proc-bpmn .psim-bpmn-container,
+.psim-proc-bpmn--max .psim-bpmn-container {
   flex: 1;
   width: 100%;
   min-height: 0;
 }
-.psim-rp-bpmn .psim-bpmn-status {
+.psim-proc-bpmn .psim-bpmn-status,
+.psim-proc-bpmn--max .psim-bpmn-status {
   flex: 1;
 }
 
-/* maximize / restore button */
+/* maximize / restore toggle */
 .psim-bpmn-max-btn {
   position: absolute;
   top: 0.5rem;
@@ -892,8 +973,8 @@
   box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
 
-/* ── BOTTOM (30%): tab panel ───────────────────────────────────────────── */
-.psim-rp-bottom {
+/* ── Bottom (30%): parameter sub-tabs ──────────────────────────────────── */
+.psim-proc-bottom {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -902,52 +983,93 @@
   background: var(--secondary-color, #fff);
 }
 
-.psim-rp-tab-nav {
+.psim-proc-subtab-nav {
   display: flex;
   gap: 0;
   border-bottom: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.09)) 100%, transparent);
   flex-shrink: 0;
   padding: 0 0.5rem;
-  padding-top: 0.25rem;
+  padding-top: 0.2rem;
+  overflow-x: auto;
 }
+/* sub-tabs reuse psim-form-tab — no extra overrides needed */
 
-/* tab body — scrollable */
+/* scrollable tab body (used by all tabs) */
 .psim-tab-body-scroll {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
 }
 
-/* read-only rows inside tabs */
-.psim-ro-row {
-  display: flex;
-  gap: 0.6rem;
-  font-size: 0.8rem;
-  margin-bottom: 0.5rem;
-  color: var(--font-color, #374151);
-}
-.psim-ro-label {
+/* ═══════════════════════════════════════════════════════════════════════════
+   Process selector dialog (overlay within the right panel)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.psim-proc-dlg-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  font-weight: 600;
-  min-width: 90px;
-  flex-shrink: 0;
-  color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
-  font-size: 0.75rem;
+  justify-content: center;
+  backdrop-filter: blur(1px);
 }
-.psim-ro-label i { font-size: 0.65rem; color: var(--link-active-color, #2563eb); }
+
+.psim-proc-dlg {
+  background: var(--secondary-color, #fff);
+  border-radius: 0.75rem;
+  border: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  width: min(420px, 90%);
+  display: flex;
+  flex-direction: column;
+  max-height: 70%;
+  overflow: hidden;
+}
+
+.psim-proc-dlg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
+  flex-shrink: 0;
+}
+
+.psim-proc-dlg-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--font-color, #111827);
+}
+.psim-proc-dlg-title i {
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.78rem;
+}
+
+.psim-proc-dlg-body {
+  padding: 0.75rem 1rem 1rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.psim-proc-dlg-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
+}
+.psim-proc-dlg-loading i { color: var(--link-active-color, #2563eb); }
+
+/* ── Shared form helpers ────────────────────────────────────────────────── */
 
 /* compact field label inside tab forms */
 .psim-field-label {
   font-size: 0.78rem;
   font-weight: 600;
   color: color-mix(in srgb, var(--font-color, #374151) 80%, transparent);
-}
-
-/* read-only parameter cell */
-.psim-param-readonly {
-  font-size: 0.78rem;
-  color: var(--font-color, #374151);
-  padding: 0.15rem 0.3rem;
 }
