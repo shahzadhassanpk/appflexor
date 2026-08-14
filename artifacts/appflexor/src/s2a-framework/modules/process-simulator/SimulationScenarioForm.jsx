@@ -1,9 +1,14 @@
-import React, { useState } from "react";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
 import ModuleFormViewer from "../../components/ModuleFormViewer/ModuleFormViewer";
+import { SearchableSelect } from "../process-configuration/processes/SearchableSelect";
+import { API_URL } from "../../Config";
 
 /* ════════════════════════════════════════════════════════════════════════════
    SimulationScenarioForm
-   Add / edit a simulation scenario via the shared ModuleFormViewer modal.
+   Add / edit a simulation scenario.
+   "Target Process" is a searchable dropdown populated from the live
+   process.map API — selecting a process auto-fills the title.
    ════════════════════════════════════════════════════════════════════════════ */
 const SCENARIO_INIT = {
     id: "",
@@ -22,8 +27,61 @@ function SimulationScenarioForm({ scenario, onSave, onCancel }) {
             : { ...SCENARIO_INIT }
     );
 
+    /* ── process list from API ─────────────────────────────────────────── */
+    const [processes, setProcesses] = useState([]);
+    const [loadingProcs, setLoadingProcs] = useState(true);
+    const [procsError, setProcsError] = useState(false);
+
+    useEffect(() => {
+        setLoadingProcs(true);
+        setProcsError(false);
+        axios
+            .post(`${API_URL}?service.key=masterKey.tenantData`, {
+                dataKeys: [
+                    {
+                        serviceParams: "",
+                        dataKey: "processMap",
+                        serviceKey: "process.map",
+                        mode: "formData",
+                    },
+                ],
+            })
+            .then(res => {
+                if (res.data?.C_STATUS === "SUCCESS") {
+                    const list = (res.data.C_DATA?.processMap || [])
+                        .filter(p => p.process_key);
+                    setProcesses(list);
+                } else {
+                    setProcsError(true);
+                }
+            })
+            .catch(() => setProcsError(true))
+            .finally(() => setLoadingProcs(false));
+    }, []);
+
+    /* ── select options ────────────────────────────────────────────────── */
+    const procOptions = processes.map(p => ({
+        value: p.process_key,
+        label: p.title ? `${p.title}  (${p.process_key})` : p.process_key,
+    }));
+
+    /* ── handlers ──────────────────────────────────────────────────────── */
     function set(field, value) {
         setForm(prev => ({ ...prev, [field]: value }));
+    }
+
+    function handleProcessSelect(e) {
+        const key = e.target.value;
+        const match = processes.find(p => p.process_key === key);
+        setForm(prev => ({
+            ...prev,
+            processKey: key,
+            processTitle: match?.title || prev.processTitle,
+        }));
+    }
+
+    function handleClearProcess() {
+        setForm(prev => ({ ...prev, processKey: "", processTitle: "" }));
     }
 
     function handleSave() {
@@ -32,6 +90,10 @@ function SimulationScenarioForm({ scenario, onSave, onCancel }) {
     }
 
     const isValid = form.name.trim().length > 0;
+
+    /* ── derive display label for currently selected process ───────────── */
+    const selectedProc = processes.find(p => p.process_key === form.processKey);
+    const selectedLabel = selectedProc?.title || form.processKey;
 
     return (
         <ModuleFormViewer
@@ -42,7 +104,7 @@ function SimulationScenarioForm({ scenario, onSave, onCancel }) {
 
             <div className="col-12 form-background pt-2 pb-3 px-3">
 
-                {/* Name */}
+                {/* ── Scenario Name ─────────────────────────────────────── */}
                 <div className="mb-3">
                     <label className="fw-semibold mt-1">
                         Scenario Name <span className="text-danger">*</span>
@@ -56,34 +118,75 @@ function SimulationScenarioForm({ scenario, onSave, onCancel }) {
                     />
                 </div>
 
-                {/* Process key (free-text until DB is wired) */}
+                {/* ── Target Process ────────────────────────────────────── */}
                 <div className="mb-3">
-                    <label className="fw-semibold mt-1">Target Process Key</label>
-                    <input
-                        type="text"
-                        className="form-control mt-1"
-                        placeholder="e.g. customer-onboarding"
-                        value={form.processKey}
-                        onChange={e => set("processKey", e.target.value)}
-                    />
+                    <label className="fw-semibold mt-1">Target Process</label>
+
+                    {/* selected process badge */}
+                    {form.processKey && (
+                        <div className="psim-selected-proc-badge mt-1">
+                            <i className="fa-solid fa-diagram-project" aria-hidden="true" />
+                            <span className="psim-selected-proc-title">{selectedLabel}</span>
+                            <code className="psim-selected-proc-key">{form.processKey}</code>
+                            <button
+                                type="button"
+                                className="psim-selected-proc-clear"
+                                onClick={handleClearProcess}
+                                title="Clear selection"
+                                aria-label="Clear process selection">
+                                <i className="fa-solid fa-xmark" aria-hidden="true" />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* process picker */}
+                    {!form.processKey && (
+                        <div className="mt-1">
+                            {loadingProcs && (
+                                <div className="psim-proc-loading">
+                                    <i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" />
+                                    <span>Loading processes…</span>
+                                </div>
+                            )}
+
+                            {!loadingProcs && procsError && (
+                                <div className="psim-proc-error">
+                                    <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+                                    <span>Could not load processes. Enter the key manually:</span>
+                                    <input
+                                        type="text"
+                                        className="form-control form-control-sm mt-1"
+                                        placeholder="e.g. customer-onboarding"
+                                        value={form.processKey}
+                                        onChange={e => set("processKey", e.target.value)}
+                                    />
+                                </div>
+                            )}
+
+                            {!loadingProcs && !procsError && procOptions.length === 0 && (
+                                <div className="psim-proc-empty">
+                                    <i className="fa-solid fa-inbox" aria-hidden="true" />
+                                    <span>No processes found. Deploy a process first.</span>
+                                </div>
+                            )}
+
+                            {!loadingProcs && !procsError && procOptions.length > 0 && (
+                                <SearchableSelect
+                                    options={procOptions}
+                                    value={form.processKey}
+                                    onChange={handleProcessSelect}
+                                    placeholder="Search processes…"
+                                />
+                            )}
+                        </div>
+                    )}
+
                     <small className="text-muted">
-                        Process definition key from the Camunda engine.
+                        Select the deployed business process this scenario targets.
                     </small>
                 </div>
 
-                {/* Process display title */}
-                <div className="mb-3">
-                    <label className="fw-semibold mt-1">Process Title</label>
-                    <input
-                        type="text"
-                        className="form-control mt-1"
-                        placeholder="e.g. Customer Onboarding"
-                        value={form.processTitle}
-                        onChange={e => set("processTitle", e.target.value)}
-                    />
-                </div>
-
-                {/* Description */}
+                {/* ── Description ───────────────────────────────────────── */}
                 <div className="mb-3">
                     <label className="fw-semibold mt-1">Description</label>
                     <textarea
@@ -95,7 +198,7 @@ function SimulationScenarioForm({ scenario, onSave, onCancel }) {
                     />
                 </div>
 
-                {/* Notes */}
+                {/* ── Notes ─────────────────────────────────────────────── */}
                 <div className="mb-1">
                     <label className="fw-semibold mt-1">Notes</label>
                     <textarea

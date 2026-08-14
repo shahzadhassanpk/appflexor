@@ -276,3 +276,88 @@
   padding: 0.05rem 0.35rem;
   border-radius: 0.25rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SimulationScenarioForm — process picker styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Selected-process badge (shown when a process is already chosen) */
+.psim-selected-proc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 28%, transparent);
+  font-size: 0.82rem;
+  color: var(--font-color, #374151);
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.psim-selected-proc-badge > i {
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+.psim-selected-proc-title {
+  font-weight: 600;
+  color: var(--font-color, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.psim-selected-proc-key {
+  font-family: monospace;
+  font-size: 0.74em;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 12%, transparent);
+  color: var(--link-active-color, #2563eb);
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+.psim-selected-proc-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: none;
+  background: color-mix(in srgb, var(--font-color, #000) 8%, transparent);
+  color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
+  cursor: pointer;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+  margin-left: 0.1rem;
+}
+.psim-selected-proc-clear:hover {
+  background: color-mix(in srgb, #dc2626 12%, transparent);
+  color: #dc2626;
+}
+
+/* Loading / error / empty states inside the picker area */
+.psim-proc-loading,
+.psim-proc-error,
+.psim-proc-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px dashed color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+  color: color-mix(in srgb, var(--font-color, #6b7280) 65%, transparent);
+  background: color-mix(in srgb, var(--font-color, #000) 2%, transparent);
+}
+.psim-proc-loading i { color: var(--link-active-color, #2563eb); }
+.psim-proc-error {
+  flex-direction: column;
+  align-items: flex-start;
+  color: #b45309;
+  border-color: #fbbf2444;
+  background: #fef9c344;
+}
+.psim-proc-error i { color: #d97706; }
+.psim-proc-empty i { color: color-mix(in srgb, var(--font-color, #6b7280) 40%, transparent); }
