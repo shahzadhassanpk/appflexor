@@ -1092,19 +1092,30 @@
   height: 100%;
 }
 
-/* The library injects a .bts-toggle-mode button (position:absolute) with SVG
-   icons that render at their intrinsic size and break the layout.  We hide it
-   because SimulationControls outside the canvas drives the toggle instead. */
-.psim-model-viewer-root .bts-toggle-mode {
+/* ── Hide all library standalone overlay panels ───────────────────────────
+   bpmn-js-token-simulation injects several absolute-positioned UI panels
+   directly into the canvas DOM.  Their SVG icons render at full intrinsic
+   size and break our layout.  We hide every standalone overlay because
+   SimulationControls (outside the canvas) replaces all of them.
+
+   We keep the diagram-embedded elements:
+     .bts-context-pad  — per-element context pads (signal / advance tokens)
+     .bts-token-count  — animated token count badges on elements
+     .bts-element-notification — per-element warnings on the diagram
+   ─────────────────────────────────────────────────────────────────────── */
+.psim-model-viewer-root .bts-toggle-mode,
+.psim-model-viewer-root .bts-palette,
+.psim-model-viewer-root .bts-set-animation-speed,
+.psim-model-viewer-root .bts-notifications,
+.psim-model-viewer-root .bts-log {
   display: none !important;
 }
 
-/* Constrain any remaining library SVG icons so they never overflow the chip */
-.psim-model-viewer-root .bts-icon > svg,
-.psim-model-viewer-root .bts-toggle > svg {
-  width:  1em;
-  height: 1em;
-  display: block;
+/* Safety cap: any SVG the library renders inside our viewer must never
+   exceed 1em so a missing width/height attribute cannot break the layout */
+.psim-model-viewer-root svg:not(.djs-container svg) {
+  max-width: 1.25em;
+  max-height: 1.25em;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
