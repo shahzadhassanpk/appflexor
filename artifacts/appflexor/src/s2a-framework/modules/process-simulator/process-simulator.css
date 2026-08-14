@@ -747,9 +747,63 @@
 .psim-top-tab-actions {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
   padding-bottom: 0.4rem;
   flex-shrink: 0;
+}
+
+/* ── Save / Update button ───────────────────────────────────────────────── */
+.psim-hdr-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.75rem;
+  padding: 0 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 0.4rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+.psim-hdr-save-btn i { font-size: 0.7rem; }
+.psim-hdr-save-btn:not(:disabled):hover {
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+.psim-hdr-save-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Cancel button ──────────────────────────────────────────────────────── */
+.psim-hdr-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 1.75rem;
+  padding: 0 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.18)) 100%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--font-color, #374151) 70%, transparent);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.psim-hdr-cancel-btn i { font-size: 0.7rem; }
+.psim-hdr-cancel-btn:hover {
+  background: color-mix(in srgb, var(--font-color, #000) 6%, transparent);
+  border-color: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.28)) 100%, transparent);
+  color: var(--font-color, #374151);
+}
+
+/* ── Divider between action group and utility button ────────────────────── */
+.psim-hdr-divider {
+  display: inline-block;
+  width: 1px;
+  height: 1.1rem;
+  background: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+  flex-shrink: 0;
+  margin: 0 0.15rem;
 }
 
 /* individual top-level tab button */

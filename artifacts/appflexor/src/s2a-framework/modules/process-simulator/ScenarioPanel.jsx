@@ -780,15 +780,16 @@ function ScenarioPanel({ scenario, saving, formKey, onSave, onCancel }) {
                     ))}
                 </div>
                 <div className="psim-top-tab-actions">
-                    <button type="button" className="btn button-theme btn-sm"
+                    <button type="button" className="btn button-theme psim-hdr-save-btn"
                         onClick={handleSave} disabled={!isValid || saving}>
                         {saving
-                            ? <><i className="fa-solid fa-circle-notch fa-spin" />Saving…</>
-                            : <><i className="fa-solid fa-floppy-disk" />{isEdit ? "Update" : "Save"}</>}
+                            ? <><i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" /><span>Saving…</span></>
+                            : <><i className="fa-solid fa-floppy-disk" aria-hidden="true" /><span>{isEdit ? "Update" : "Save"}</span></>}
                     </button>
-                    <button type="button" className="btn btn-sm psim-rp-cancel-btn" onClick={onCancel}>
-                        <i className="fa-solid fa-xmark" />Cancel
+                    <button type="button" className="psim-hdr-cancel-btn" onClick={onCancel}>
+                        <i className="fa-solid fa-xmark" aria-hidden="true" /><span>Cancel</span>
                     </button>
+                    <span className="psim-hdr-divider" aria-hidden="true" />
                     <button
                         type="button"
                         className="psim-top-maximize-btn"
