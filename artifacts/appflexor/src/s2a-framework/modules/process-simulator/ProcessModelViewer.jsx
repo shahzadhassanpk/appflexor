@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import ReactBpmn from "react-bpmn";
-import { API_URL, FILE_URL } from "../../Config";
+import { API_URL, BPM_API_URL, FILE_URL } from "../../Config";
 
 /* ════════════════════════════════════════════════════════════════════════════
    ProcessModelViewer
@@ -46,8 +46,8 @@ function ProcessModelViewer({ scenario, initialProcess }) {
                 dataKeys: [
                     {
                         serviceParams: "",
-                        dataKey: "tenantProcess",
-                        serviceKey: "sys.tenant.process",
+                        dataKey: "engine",
+                        serviceKey: "bpm.list.process",
                         mode: "formData",
                     },
                 ],
@@ -58,7 +58,7 @@ function ProcessModelViewer({ scenario, initialProcess }) {
                     return;
                 }
 
-                const list = res.data.C_DATA?.tenantProcess || [];
+                const list = res.data.C_DATA?.engine || [];
                 const match = list.find(
                     tp => (tp.process_def_key || "").toLowerCase().trim()
                        === processKey.toLowerCase().trim()
