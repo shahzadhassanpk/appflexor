@@ -11,19 +11,40 @@
  *   ✓ Reset                            (resetSimulation.resetSimulation)
  *   ✓ Exclusive-gateway path routing   (simulator.setConfig with activeOutgoing)
  *
+ * Custom logic layered on top:
+ *   ✓ Multi-token injection            — auto-injects maxTokens on start
+ *   ✓ Time-horizon enforcement         — countdown auto-stops simulation when elapsed
+ *
  * What the library does NOT support (requires custom logic or is simply unsupported):
  *   ✗ Automatic task-duration advance — user must click each context-pad button
  *   ✗ Resource pools
- *   ✗ Maximum-token enforcement        — shown as informational only
- *   ✗ Time-horizon enforcement         — shown as informational only
  *
  * Props:
- *   viewer             bpmn-js NavigatedViewer instance (or null when no diagram is loaded)
- *   scenario           scenario form object — read .parameters and .constraints from it
- *   maximized          bool — whether the BPMN section is currently maximized
- *   onToggleMaximize   () => void — toggle the maximized state
+ *   viewer    bpmn-js NavigatedViewer instance (or null when no diagram is loaded)
+ *   scenario  scenario form object — read .parameters and .constraints from it
  */
 import React, { useEffect, useRef, useState } from "react";
+
+/* ── Time-horizon helpers ───────────────────────────────────────────────── */
+const UNIT_MS = { seconds: 1_000, minutes: 60_000, hours: 3_600_000, days: 86_400_000 };
+
+/** Convert a user-configured time horizon to milliseconds (simulated time). */
+function horizonToMs(value, unit) {
+    const n = parseFloat(value);
+    if (!(n > 0)) return null;
+    return n * (UNIT_MS[unit] || UNIT_MS.hours);
+}
+
+/** Format simulated-ms into a compact "1h 23m" / "MM:SS" string. */
+function formatCountdown(ms) {
+    if (ms == null) return null;
+    const totalSec = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 /* ── Simulation lifecycle states ───────────────────────────────────────── */
 const S = {
@@ -141,21 +162,37 @@ function findNoneStartEventSub(viewer) {
 }
 
 export default function SimulationControls({ viewer, scenario }) {
-    const [simState,  setSimState]  = useState(S.IDLE);
+    const [simState,   setSimState]  = useState(S.IDLE);
     const [modeActive, setModeActive] = useState(false);
     const [speed,      setSpeed]      = useState(1);
-    const scopeCountRef     = useRef(0);
-    const listenersRef      = useRef([]);   /* [eventName, handler] pairs for cleanup */
-    const pendingInjectRef  = useRef(0);    /* tokens to inject when mode activates   */
-    const injectTimerRef    = useRef(null); /* setTimeout handle for batched injection */
+    const [countdown,  setCountdown]  = useState(null); /* simulated-ms remaining, null = no horizon */
 
-    /* Cancel any in-progress token injection */
+    const scopeCountRef        = useRef(0);
+    const listenersRef         = useRef([]);   /* [eventName, handler] pairs for cleanup     */
+    const pendingInjectRef     = useRef(0);    /* tokens to inject when mode activates       */
+    const injectTimerRef       = useRef(null); /* setTimeout handle for batched injection    */
+    const speedRef             = useRef(1);    /* mutable mirror of speed (read by interval) */
+    const simCountdownRef      = useRef(null); /* simulated-ms remaining (mutable)           */
+    const countdownIntervalRef = useRef(null); /* setInterval handle for countdown tick      */
+    const horizonMsRef         = useRef(null); /* total configured horizon in simulated-ms   */
+
+    /* ── Cancel any in-progress token injection ─────────────────────────── */
     const cancelInjection = () => {
         if (injectTimerRef.current) {
             clearTimeout(injectTimerRef.current);
             injectTimerRef.current = null;
         }
         pendingInjectRef.current = 0;
+    };
+
+    /* ── Countdown helpers (component-scope so changeSpeed can call them) ── */
+    const clearCountdown = () => {
+        if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+        }
+        simCountdownRef.current = null;
+        setCountdown(null);
     };
 
     /* ── Event subscriptions — re-subscribe whenever viewer changes ────── */
@@ -169,6 +206,7 @@ export default function SimulationControls({ viewer, scenario }) {
 
         /* reset local state */
         cancelInjection();
+        clearCountdown();
         setSimState(S.IDLE);
         setModeActive(false);
         scopeCountRef.current = 0;
@@ -192,13 +230,63 @@ export default function SimulationControls({ viewer, scenario }) {
             }, 120);
         }
 
+        /* ── Countdown interval factory ───────────────────────────────── */
+        /*
+         * Each real-time tick (500 ms) drains speedRef.current × 500 ms of
+         * simulated time. speedRef is a mutable ref so changing the speed
+         * setting automatically adjusts the drain rate on the next tick —
+         * no manual recalculation needed.
+         */
+        function makeCountdownInterval() {
+            return setInterval(() => {
+                if (simCountdownRef.current === null) return;
+                simCountdownRef.current -= 500 * speedRef.current;
+                if (simCountdownRef.current <= 0) {
+                    simCountdownRef.current = 0;
+                    setCountdown(0);
+                    clearInterval(countdownIntervalRef.current);
+                    countdownIntervalRef.current = null;
+                    /* Time horizon elapsed — auto-stop simulation */
+                    try { viewer.get("toggleMode").toggleMode(false); } catch (_) {}
+                } else {
+                    setCountdown(simCountdownRef.current);
+                }
+            }, 500);
+        }
+
+        function startCountdown(horizonMs) {
+            clearCountdown();
+            horizonMsRef.current    = horizonMs;
+            simCountdownRef.current = horizonMs;
+            setCountdown(horizonMs);
+            countdownIntervalRef.current = makeCountdownInterval();
+        }
+
+        function pauseCountdown() {
+            if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+                countdownIntervalRef.current = null;
+                /* simCountdownRef retains its current value */
+            }
+        }
+
+        function resumeCountdown() {
+            if (
+                simCountdownRef.current !== null &&
+                simCountdownRef.current > 0 &&
+                !countdownIntervalRef.current
+            ) {
+                countdownIntervalRef.current = makeCountdownInterval();
+            }
+        }
+
+        /* ── Event handlers ───────────────────────────────────────────── */
         const onToggle = (event) => {
             const active = event.active;
             setModeActive(active);
             if (active) {
-                /* Simulation mode enabled: apply gateway config from scenario.
-                   ExclusiveGatewaySettings already ran at default priority
-                   (registered at viewer creation); we override here. */
+                /* Simulation mode enabled: apply gateway config, inject tokens,
+                   start countdown. */
                 applyGatewayConfig(viewer, scenario);
                 setSimState(S.ACTIVE);
 
@@ -208,19 +296,27 @@ export default function SimulationControls({ viewer, scenario }) {
                 if (total > 0) {
                     const found = findNoneStartEventSub(viewer);
                     if (found) {
-                        /* First token immediately */
                         try { found.simulator.trigger({ event: found.sub.event, scope: found.sub.scope }); }
                         catch (_) {}
-                        /* Remaining tokens in batches */
                         scheduleBatch(found, total - 1);
                     }
                 }
+
+                /* Start countdown if a time horizon is configured */
+                const horizonMs = horizonToMs(
+                    scenario?.constraints?.timeHorizonValue,
+                    scenario?.constraints?.timeHorizonUnit || "hours",
+                );
+                if (horizonMs) startCountdown(horizonMs);
+
             } else {
-                /* Simulation mode disabled — cancel any pending injection */
+                /* Simulation mode disabled — cancel injection and countdown */
                 cancelInjection();
+                clearCountdown();
                 scopeCountRef.current = 0;
                 setSimState(S.IDLE);
                 setSpeed(1);
+                speedRef.current = 1;
             }
         };
 
@@ -236,12 +332,18 @@ export default function SimulationControls({ viewer, scenario }) {
             }
         };
 
-        const onPlay  = () => setSimState(S.RUNNING);
-        const onPause = () => setSimState(S.PAUSED);
+        const onPlay  = () => { resumeCountdown(); setSimState(S.RUNNING); };
+        const onPause = () => { pauseCountdown();  setSimState(S.PAUSED);  };
         const onReset = () => {
             cancelInjection();
             scopeCountRef.current = 0;
-            setSimState(S.ACTIVE); /* mode still on, ready for new tokens */
+            setSimState(S.ACTIVE);
+            /* Restart countdown from the beginning */
+            if (horizonMsRef.current) {
+                startCountdown(horizonMsRef.current);
+            } else {
+                clearCountdown();
+            }
         };
 
         const pairs = [
@@ -255,12 +357,12 @@ export default function SimulationControls({ viewer, scenario }) {
 
         pairs.forEach(([ev, fn]) => eventBus.on(ev, fn));
 
-        /* store with a back-reference to the eventBus for cleanup */
-        listenersRef.current       = pairs;
-        listenersRef.current._eb   = eventBus;
+        listenersRef.current     = pairs;
+        listenersRef.current._eb = eventBus;
 
         return () => {
             cancelInjection();
+            clearCountdown();
             pairs.forEach(([ev, fn]) => eventBus.off(ev, fn));
             listenersRef.current = [];
         };
@@ -269,26 +371,31 @@ export default function SimulationControls({ viewer, scenario }) {
     /* ── Speed control ─────────────────────────────────────────────────── */
     const changeSpeed = (value) => {
         try { viewer?.get("animation").setAnimationSpeed(value); } catch (_) {}
+        speedRef.current = value; /* interval reads this on next tick — no recalc needed */
         setSpeed(value);
     };
 
     /* ── Control functions (call real library service APIs) ────────────── */
     const startSimulation = () => {
-        /* Record how many tokens to inject once mode is active */
         const count = parseInt(scenario?.constraints?.maxTokens, 10);
         pendingInjectRef.current = (count > 0) ? count : 1;
         viewer?.get("toggleMode").toggleMode(true);
     };
-    const stopSimulation  = () => { cancelInjection(); viewer?.get("toggleMode").toggleMode(false); };
-    const pauseSimulation = () => viewer?.get("pauseSimulation").pause();
+    const stopSimulation   = () => { cancelInjection(); clearCountdown(); viewer?.get("toggleMode").toggleMode(false); };
+    const pauseSimulation  = () => viewer?.get("pauseSimulation").pause();
     const resumeSimulation = () => viewer?.get("pauseSimulation").unpause();
-    const resetSimulation = () => { cancelInjection(); viewer?.get("resetSimulation").resetSimulation(); };
+    const resetSimulation  = () => { cancelInjection(); viewer?.get("resetSimulation").resetSimulation(); };
 
-    /* ── Informational constraint values from scenario ─────────────────── */
-    const maxTokens    = scenario?.constraints?.maxTokens;
-    const thValue      = scenario?.constraints?.timeHorizonValue;
-    const thUnit       = scenario?.constraints?.timeHorizonUnit || "hours";
-    const hasInfo      = !!(maxTokens || thValue);
+    /* ── Constraint values from scenario ───────────────────────────────── */
+    const maxTokens = scenario?.constraints?.maxTokens;
+    const thValue   = scenario?.constraints?.timeHorizonValue;
+    const thUnit    = scenario?.constraints?.timeHorizonUnit || "hours";
+    const hasInfo   = !!(maxTokens || thValue);
+
+    /* Countdown display: low = <10% remaining */
+    const horizonMs    = horizonMsRef.current;
+    const cdLow        = countdown !== null && horizonMs && countdown / horizonMs < 0.10;
+    const cdFormatted  = formatCountdown(countdown);
 
     /* ── State meta ────────────────────────────────────────────────────── */
     const stateMeta = {
@@ -310,20 +417,31 @@ export default function SimulationControls({ viewer, scenario }) {
                 {stateMeta.label}
             </span>
 
-            {/* constraint hints — informational only */}
+            {/* constraint info + live countdown */}
             {hasInfo && (
                 <span className="psim-sim-info">
                     {maxTokens && (
-                        <span title="Max tokens (informational — not enforced by the simulator)">
+                        <span title="Process instances auto-injected when simulation starts">
                             <i className="fa-solid fa-circle-nodes" />
-                            {maxTokens} tokens max
+                            {maxTokens} tokens
                         </span>
                     )}
                     {thValue && (
-                        <span title="Time horizon (informational — not enforced by the simulator)">
-                            <i className="fa-solid fa-clock" />
-                            {thValue} {thUnit}
-                        </span>
+                        cdFormatted !== null ? (
+                            /* Active countdown — replaces the static label */
+                            <span
+                                className={`psim-sim-countdown${cdLow ? " psim-sim-countdown--low" : ""}`}
+                                title={`Time horizon: ${thValue} ${thUnit} — simulation auto-stops when elapsed`}>
+                                <i className={`fa-solid ${countdown === 0 ? "fa-hourglass-end" : "fa-hourglass-half"}`} aria-hidden="true" />
+                                {countdown === 0 ? "Time up" : `${cdFormatted} left`}
+                            </span>
+                        ) : (
+                            /* Idle — show configured value */
+                            <span title={`Time horizon: simulation will auto-stop after ${thValue} ${thUnit}`}>
+                                <i className="fa-solid fa-hourglass-half" />
+                                {thValue} {thUnit}
+                            </span>
+                        )
                     )}
                 </span>
             )}

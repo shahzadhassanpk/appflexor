@@ -1266,6 +1266,30 @@
 }
 .psim-sim-info i { font-size: 0.62rem; }
 
+/* ── Live countdown (replaces static time-horizon label when active) ─────── */
+.psim-sim-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--link-active-color, #2563eb);
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 20%, transparent);
+  transition: background 0.3s, border-color 0.3s, color 0.3s;
+}
+.psim-sim-countdown i {
+  font-size: 0.62rem;
+}
+/* Low (<10%) — amber warning */
+.psim-sim-countdown--low {
+  color: #b45309;
+  background: color-mix(in srgb, #d97706 10%, transparent);
+  border-color: color-mix(in srgb, #d97706 30%, transparent);
+}
+
 /* tip text (shown in ACTIVE and COMPLETED states) */
 .psim-sim-tip {
   display: inline-flex;
