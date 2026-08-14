@@ -969,10 +969,26 @@
   box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
 
-/* When maximized: hide bottom tabs so the BPMN section fills all remaining
-   space below the sim bar (which stays visible because it's above in DOM) */
+/* Maximized: fixed full-viewport overlay showing sim bar + viewer + tabs */
+.psim-proc-tab--max {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: var(--secondary-color, #fff);
+  display: flex;
+  flex-direction: column;
+}
+
+/* BPMN viewer fills all space between sim bar and bottom tabs */
+.psim-proc-tab--max .psim-proc-bpmn {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Bottom tabs get a comfortable fixed slice */
 .psim-proc-tab--max .psim-proc-bottom {
-  display: none;
+  flex: 0 0 220px;
+  min-height: 0;
 }
 
 /* ── Bottom (30%): parameter sub-tabs ──────────────────────────────────── */
