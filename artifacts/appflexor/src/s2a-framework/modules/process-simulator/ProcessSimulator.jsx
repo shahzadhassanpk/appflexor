@@ -6,8 +6,7 @@ import { toastEmitter } from "../../components/Toastify/Toastify";
 import { updateDeleteConfig } from "../../utils/utils";
 import { API_URL } from "../../Config";
 import SimulationScenarioList from "./SimulationScenarioList";
-import SimulationScenarioForm from "./SimulationScenarioForm";
-import ProcessModelViewer from "./ProcessModelViewer";
+import ScenarioPanel from "./ScenarioPanel";
 import "./process-simulator.css";
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -34,18 +33,17 @@ function hydrate(s) {
    ProcessSimulator
    ════════════════════════════════════════════════════════════════════════════ */
 function ProcessSimulator({ initialProcess = null }) {
-    /* ── data ─────────────────────────────────────────────────────────────── */
-    const [scenarios,       setScenarios]       = useState([]);
-    const [isLoading,       setIsLoading]       = useState(true);
-    const [loadError,       setLoadError]       = useState(false);
+    /* ── scenario list ────────────────────────────────────────────────────── */
+    const [scenarios,  setScenarios]  = useState([]);
+    const [isLoading,  setIsLoading]  = useState(true);
+    const [loadError,  setLoadError]  = useState(false);
 
-    /* ── view ─────────────────────────────────────────────────────────────── */
-    const [selectedScenario, setSelectedScenario] = useState(null);
-
-    /* ── form ─────────────────────────────────────────────────────────────── */
-    const [showForm,         setShowForm]         = useState(false);
-    const [editingScenario,  setEditingScenario]  = useState(null);
-    const [saving,           setSaving]           = useState(false);
+    /* ── right panel state ────────────────────────────────────────────────── */
+    // mode:     "idle" | "view" | "form"
+    // scenario: scenario in the right panel (null = adding new)
+    const [panelMode,     setPanelMode]     = useState("idle");
+    const [panelScenario, setPanelScenario] = useState(null);
+    const [saving,        setSaving]        = useState(false);
 
     /* ── delete ───────────────────────────────────────────────────────────── */
     const [deleteConfig, setDeleteConfig] = useState({ show: false, item: {} });
@@ -100,18 +98,18 @@ function ProcessSimulator({ initialProcess = null }) {
             })
             .then(res => {
                 if (res.data?.C_STATUS === "SUCCESS") {
-                    const raw = res.data.C_DATA?.[0]?.formData || {};
+                    const raw    = res.data.C_DATA?.[0]?.formData || {};
                     const merged = hydrate({ ...formData, id: raw.id || formData.id, ...raw });
                     if (isNew) {
                         setScenarios(prev => [...prev, merged]);
                         toastEmitter("Scenario created", true);
                     } else {
                         setScenarios(prev => prev.map(s => s.id === merged.id ? merged : s));
-                        if (selectedScenario?.id === merged.id) setSelectedScenario(merged);
                         toastEmitter("Scenario updated", true);
                     }
-                    setShowForm(false);
-                    setEditingScenario(null);
+                    /* after save: switch to view mode showing the saved scenario */
+                    setPanelMode("view");
+                    setPanelScenario(merged);
                 } else {
                     toastEmitter("Failed to save scenario", false);
                 }
@@ -130,7 +128,8 @@ function ProcessSimulator({ initialProcess = null }) {
                 if (res.data?.C_STATUS === "SUCCESS") {
                     const gone = res.data.C_DATA?.[0]?.id || item.id;
                     setScenarios(prev => prev.filter(s => s.id !== gone));
-                    if (selectedScenario?.id === gone) setSelectedScenario(null);
+                    /* if deleted scenario was in the right panel, go idle */
+                    if (panelScenario?.id === gone) { setPanelMode("idle"); setPanelScenario(null); }
                     updateDeleteConfig(false, {}, setDeleteConfig);
                     toastEmitter("Scenario deleted", true);
                 } else {
@@ -141,14 +140,19 @@ function ProcessSimulator({ initialProcess = null }) {
     }
 
     /* ══════════════════════════════════════════════════════════════════════
-       Handlers
+       Right-panel handlers
        ══════════════════════════════════════════════════════════════════════ */
-    const handleAdd    = ()         => { setEditingScenario(null);      setShowForm(true); };
-    const handleEdit   = scenario   => { setEditingScenario(scenario);  setShowForm(true); };
-    const handleOpen   = scenario   => setSelectedScenario(scenario);
-    const handleRun    = ()         => toastEmitter("Token simulation coming in a future release.", false);
-    const handleDelete = scenario   => updateDeleteConfig(true, scenario, setDeleteConfig);
-    const handleCancel = ()         => { setShowForm(false); setEditingScenario(null); };
+    const handleAdd    = ()       => { setPanelMode("form"); setPanelScenario(null); };
+    const handleEdit   = s        => { setPanelMode("form"); setPanelScenario(s);    };
+    const handleOpen   = s        => { setPanelMode("view"); setPanelScenario(s);    };
+    const handleRun    = ()       => toastEmitter("Token simulation coming in a future release.", false);
+    const handleDelete = scenario => updateDeleteConfig(true, scenario, setDeleteConfig);
+
+    function handleCancel() {
+        /* if editing an existing scenario, return to view; if adding new, go idle */
+        if (panelScenario?.id) { setPanelMode("view"); }
+        else                   { setPanelMode("idle");  setPanelScenario(null); }
+    }
 
     /* ── loading ──────────────────────────────────────────────────────────── */
     if (isLoading) return (
@@ -186,7 +190,7 @@ function ProcessSimulator({ initialProcess = null }) {
                 <div className="psim-col psim-col-left">
                     <SimulationScenarioList
                         scenarios={scenarios}
-                        selectedScenario={selectedScenario}
+                        selectedScenario={panelScenario}
                         onAdd={handleAdd}
                         onOpen={handleOpen}
                         onEdit={handleEdit}
@@ -195,24 +199,20 @@ function ProcessSimulator({ initialProcess = null }) {
                     />
                 </div>
 
-                {/* RIGHT — BPMN viewer */}
+                {/* RIGHT — scenario panel (view / form / idle) */}
                 <div className="psim-col psim-col-right">
-                    <ProcessModelViewer
-                        scenario={selectedScenario}
+                    <ScenarioPanel
+                        mode={panelMode}
+                        scenario={panelScenario}
+                        saving={saving}
+                        onSave={saveScenario}
+                        onCancel={handleCancel}
+                        onEdit={handleEdit}
+                        onRun={handleRun}
                         initialProcess={initialProcess}
                     />
                 </div>
             </div>
-
-            {/* scenario form modal */}
-            {showForm && (
-                <SimulationScenarioForm
-                    scenario={editingScenario}
-                    saving={saving}
-                    onSave={saveScenario}
-                    onCancel={handleCancel}
-                />
-            )}
         </div>
     );
 }

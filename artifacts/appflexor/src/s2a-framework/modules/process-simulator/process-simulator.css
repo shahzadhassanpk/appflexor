@@ -19,7 +19,7 @@
   display: grid;
   grid-template-columns: 380px 1fr;
   gap: 1.25rem;
-  align-items: start;
+  align-items: stretch;   /* right panel must fill height */
   flex: 1;
   min-height: 0;
 }
@@ -29,6 +29,17 @@
 }
 
 .psim-col { min-width: 0; }
+
+/* left column scrolls independently */
+.psim-col-left { align-self: start; }
+
+/* right column fills the grid row */
+.psim-col-right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
 
 /* ── Panel card (mirrors .orch-panel) ───────────────────────────────────── */
 .psim-panel {
@@ -695,3 +706,248 @@
   transition: color 0.1s;
 }
 .psim-custom-tag button:hover { color: #dc2626; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ScenarioPanel — 3-section right column layout
+   Top 10% · Middle 60% · Bottom 30%
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.psim-right-panel {
+  position: relative;       /* anchor for BPMN maximize overlay */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 520px;
+  overflow: hidden;
+}
+
+/* ── TOP (10%) ─────────────────────────────────────────────────────────── */
+.psim-rp-top {
+  flex: 0 0 10%;
+  min-height: 52px;
+  max-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
+  background: var(--secondary-color, #fff);
+}
+
+/* leading icon */
+.psim-rp-top-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+/* name input (form mode) */
+.psim-rp-name-input {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+/* process picker wrapper */
+.psim-rp-proc-wrap {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 240px;
+}
+
+/* compact selected-process badge inside the top strip */
+.psim-rp-proc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 25%, transparent);
+  font-size: 0.78rem;
+  max-width: 240px;
+}
+.psim-rp-proc-badge > i {
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+.psim-rp-proc-label {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--font-color, #111827);
+}
+
+.psim-rp-proc-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 60%, transparent);
+}
+
+/* action buttons in the top strip */
+.psim-rp-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+.psim-rp-cancel-btn {
+  color: color-mix(in srgb, var(--font-color, #374151) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+}
+.psim-rp-cancel-btn:hover {
+  background: color-mix(in srgb, var(--font-color, #000) 6%, transparent);
+}
+.psim-rp-cancel-btn i { margin-right: 0.2rem; }
+
+/* view-mode name + process display */
+.psim-rp-view-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--font-color, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.psim-rp-view-proc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--link-active-color, #2563eb) 80%, transparent);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.psim-rp-view-proc i { font-size: 0.68rem; }
+
+/* ── MIDDLE (60%): BPMN section ────────────────────────────────────────── */
+.psim-rp-bpmn {
+  flex: 0 0 60%;
+  min-height: 0;
+  position: relative;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--font-color, #000) 1.5%, transparent);
+}
+
+/* maximize overlay — covers the whole right panel */
+.psim-rp-bpmn--max {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: var(--secondary-color, #fff);
+  flex: unset;
+  display: flex;
+  flex-direction: column;
+}
+
+/* BPMN diagram fills the section */
+.psim-rp-bpmn .psim-bpmn-container {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+.psim-rp-bpmn .psim-bpmn-status {
+  flex: 1;
+}
+
+/* maximize / restore button */
+.psim-bpmn-max-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
+  background: var(--secondary-color, #fff);
+  color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.psim-bpmn-max-btn:hover {
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
+  color: var(--link-active-color, #2563eb);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* ── BOTTOM (30%): tab panel ───────────────────────────────────────────── */
+.psim-rp-bottom {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--secondary-color, #fff);
+}
+
+.psim-rp-tab-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.09)) 100%, transparent);
+  flex-shrink: 0;
+  padding: 0 0.5rem;
+  padding-top: 0.25rem;
+}
+
+/* tab body — scrollable */
+.psim-tab-body-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* read-only rows inside tabs */
+.psim-ro-row {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  color: var(--font-color, #374151);
+}
+.psim-ro-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+  min-width: 90px;
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
+  font-size: 0.75rem;
+}
+.psim-ro-label i { font-size: 0.65rem; color: var(--link-active-color, #2563eb); }
+
+/* compact field label inside tab forms */
+.psim-field-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--font-color, #374151) 80%, transparent);
+}
+
+/* read-only parameter cell */
+.psim-param-readonly {
+  font-size: 0.78rem;
+  color: var(--font-color, #374151);
+  padding: 0.15rem 0.3rem;
+}
