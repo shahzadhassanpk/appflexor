@@ -194,61 +194,62 @@
   font-style: italic;
 }
 
-/* BPMN placeholder area */
-.psim-bpmn-placeholder {
+/* ── BPMN area (replaces placeholder) ───────────────────────────────────── */
+.psim-bpmn-area {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   min-height: 420px;
-  padding: 2rem;
-  background: color-mix(in srgb, var(--font-color, #000) 2%, transparent);
-  border: 1.5px dashed color-mix(in srgb, var(--border-color, rgba(0,0,0,0.18)) 100%, transparent);
-  margin: 1rem;
-  border-radius: 0.6rem;
+  position: relative;
 }
-.psim-bpmn-placeholder-inner {
+
+/* Live BPMN diagram container — ReactBpmn needs a sized parent */
+.psim-bpmn-container {
+  flex: 1;
+  width: 100%;
+  min-height: 420px;
+  /* react-bpmn-diagram-container already sets width/height:100% */
+}
+
+/* Generic status card (loading / idle / not-deployed / error) */
+.psim-bpmn-status {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 3rem 2rem;
   text-align: center;
-  color: color-mix(in srgb, var(--font-color, #6b7280) 45%, transparent);
+  color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent);
 }
-.psim-bpmn-placeholder-inner i {
+.psim-bpmn-status > i {
   font-size: 2.25rem;
-  color: color-mix(in srgb, var(--link-active-color, #2563eb) 35%, transparent);
+  color: color-mix(in srgb, var(--link-active-color, #2563eb) 40%, transparent);
 }
-.psim-bpmn-placeholder-title {
+.psim-bpmn-status-title {
   font-size: 1rem;
   font-weight: 700;
-  color: color-mix(in srgb, var(--font-color, #374151) 60%, transparent);
+  color: color-mix(in srgb, var(--font-color, #374151) 75%, transparent);
   margin: 0;
 }
-.psim-bpmn-placeholder-hint {
+.psim-bpmn-status-hint {
   font-size: 0.8rem;
-  max-width: 340px;
+  max-width: 360px;
   margin: 0;
   line-height: 1.55;
 }
-.psim-bpmn-proc-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.65rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  font-family: monospace;
-  background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
-  color: var(--link-active-color, #2563eb);
-  border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 25%, transparent);
-  margin-top: 0.25rem;
+
+/* Warning variant (not-deployed / no-file) */
+.psim-bpmn-status--warn > i { color: #d97706; }
+.psim-bpmn-status--warn .psim-bpmn-status-title {
+  color: #92400e;
 }
-.psim-bpmn-no-key {
-  font-size: 0.75rem;
-  font-style: italic;
-  color: color-mix(in srgb, var(--font-color, #6b7280) 40%, transparent);
+
+/* Error variant */
+.psim-bpmn-status--error > i { color: #dc2626; }
+.psim-bpmn-status--error .psim-bpmn-status-title {
+  color: #991b1b;
 }
 
 /* Notes strip */
