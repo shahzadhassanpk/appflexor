@@ -88,6 +88,7 @@ function ProcessSimulator({ initialProcess = null }) {
                     action:   "update",
                     id:       isNew ? "new" : formData.id,
                     formData: {
+                        ...(formData.id ? { id: formData.id } : {}),
                         name:        formData.name,
                         model_ref:   formData.model_ref,
                         parameters:  JSON.stringify(formData.parameters  || {}),
