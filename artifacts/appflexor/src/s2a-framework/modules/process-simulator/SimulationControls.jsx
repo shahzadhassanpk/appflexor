@@ -90,9 +90,17 @@ function applyGatewayConfig(viewer, scenario) {
 /* ═════════════════════════════════════════════════════════════════════════
    Component
    ═════════════════════════════════════════════════════════════════════════ */
+/* Speed presets — values accepted by animation.setAnimationSpeed() */
+const SPEEDS = [
+    { value: 1, label: "1×", faIcon: "fa-angle-right",  title: "Normal speed (1×)"  },
+    { value: 2, label: "2×", faIcon: "fa-angles-right", title: "Fast speed (2×)"     },
+    { value: 4, label: "4×", faIcon: "fa-forward-fast", title: "Fastest speed (4×)"  },
+];
+
 export default function SimulationControls({ viewer, scenario, maximized, onToggleMaximize }) {
     const [simState,  setSimState]  = useState(S.IDLE);
     const [modeActive, setModeActive] = useState(false);
+    const [speed,      setSpeed]      = useState(1);
     const scopeCountRef = useRef(0);
     /* keep a list of [eventName, handler] pairs for cleanup */
     const listenersRef  = useRef([]);
@@ -125,9 +133,10 @@ export default function SimulationControls({ viewer, scenario, maximized, onTogg
                 applyGatewayConfig(viewer, scenario);
                 setSimState(S.ACTIVE);
             } else {
-                /* Simulation mode disabled */
+                /* Simulation mode disabled — reset speed to default */
                 scopeCountRef.current = 0;
                 setSimState(S.IDLE);
+                setSpeed(1);
             }
         };
 
@@ -170,6 +179,12 @@ export default function SimulationControls({ viewer, scenario, maximized, onTogg
             listenersRef.current = [];
         };
     }, [viewer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    /* ── Speed control ─────────────────────────────────────────────────── */
+    const changeSpeed = (value) => {
+        try { viewer?.get("animation").setAnimationSpeed(value); } catch (_) {}
+        setSpeed(value);
+    };
 
     /* ── Control functions (call real library service APIs) ────────────── */
     const startSimulation = () => viewer?.get("toggleMode").toggleMode(true);
@@ -224,6 +239,23 @@ export default function SimulationControls({ viewer, scenario, maximized, onTogg
 
             {/* spacer */}
             <span style={{ flex: 1 }} />
+
+            {/* speed buttons — visible only when simulation mode is on */}
+            {modeActive && (
+                <div className="psim-sim-speed">
+                    <i className="fa-solid fa-gauge-high psim-sim-speed-icon" aria-hidden="true" />
+                    {SPEEDS.map(s => (
+                        <button
+                            key={s.value}
+                            type="button"
+                            className={`psim-sim-speed-btn${speed === s.value ? " psim-sim-speed-btn--active" : ""}`}
+                            title={s.title}
+                            onClick={() => changeSpeed(s.value)}>
+                            <i className={`fa-solid ${s.faIcon}`} aria-hidden="true" />
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* buttons */}
             <div className="psim-sim-btns">

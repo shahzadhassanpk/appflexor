@@ -1216,6 +1216,51 @@
 .psim-sim-tip i { font-size: 0.62rem; }
 .psim-sim-tip--done { color: #7c3aed; font-style: normal; font-weight: 500; }
 
+/* speed selector — speedometer icon + compact chevron buttons */
+.psim-sim-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.psim-sim-speed-icon {
+  font-size: 0.82rem;
+  padding: 0 0.45rem;
+  color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
+  background: color-mix(in srgb, var(--font-color, #000) 4%, transparent);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
+}
+
+.psim-sim-speed-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.22rem 0.5rem;
+  font-size: 0.72rem;
+  background: color-mix(in srgb, var(--font-color, #000) 3%, var(--secondary-color, #fff));
+  border: none;
+  border-right: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.10)) 100%, transparent);
+  color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.psim-sim-speed-btn:last-child { border-right: none; }
+.psim-sim-speed-btn:hover:not(.psim-sim-speed-btn--active) {
+  background: color-mix(in srgb, var(--font-color, #000) 8%, transparent);
+  color: color-mix(in srgb, var(--font-color, #374151) 90%, transparent);
+}
+.psim-sim-speed-btn--active {
+  background: #16a34a;
+  color: #fff;
+}
+
 /* button group */
 .psim-sim-btns {
   display: flex;
