@@ -925,15 +925,11 @@
   background: color-mix(in srgb, var(--font-color, #000) 1.5%, transparent);
 }
 
-/* maximize overlay — covers the entire right panel */
+/* maximize — fills all remaining flex space below the sim bar;
+   bottom tabs are hidden via psim-proc-tab--max on the parent */
 .psim-proc-bpmn--max {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  background: var(--secondary-color, #fff);
-  flex: unset;
-  display: flex;
-  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .psim-proc-bpmn .psim-bpmn-container,
@@ -971,6 +967,12 @@
   background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
   color: var(--link-active-color, #2563eb);
   box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* When maximized: hide bottom tabs so the BPMN section fills all remaining
+   space below the sim bar (which stays visible because it's above in DOM) */
+.psim-proc-tab--max .psim-proc-bottom {
+  display: none;
 }
 
 /* ── Bottom (30%): parameter sub-tabs ──────────────────────────────────── */

@@ -804,7 +804,7 @@ function ScenarioPanel({ scenario, saving, formKey, onSave, onCancel }) {
 
                 {/* ── PROCESS TAB ─────────────────────────────────────────── */}
                 {topTab === "process" && (
-                    <div className="psim-proc-tab">
+                    <div className={`psim-proc-tab${bpmnMax ? " psim-proc-tab--max" : ""}`}>
 
                         {/* Top 10%: name + process selector */}
                         <div className="psim-proc-top">
