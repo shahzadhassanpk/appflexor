@@ -137,6 +137,14 @@ export const staticAdminModuleFeatures = [
         feature_key: "/orchestrate-configuration",
         icon: "fa-solid fa-diagram-project",
     },
+    {
+        module: `${suid}`,
+        type: OPEN_AS.internalLink,
+        name: "Process Simulator",
+        code: "MOD_PROCESS_SIMULATOR",
+        feature_key: "/process-simulator",
+        icon: "fa-solid fa-circle-play",
+    },
 ];
 
 export { said, suid };

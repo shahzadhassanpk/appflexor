@@ -48,6 +48,7 @@ import ProcessFormViewer from "./modules/data-management/form-builder/Forms/Form
 
 import { isEmpty } from "./modules/data-management/form-builder/Forms/FormViewer/utils";
 import ProcessConfiguration from "./modules/process-configuration/ProcessConfiguration";
+import ProcessSimulator from "./modules/process-simulator/ProcessSimulator";
 import SiteAdministration from "./modules/site-administrater/SiteAdministrater";
 import UserManagement from "./modules/user-management/UserManagement";
 import SignUpSubscription from "./theme/advance/Pages/SignUpSubscription";
@@ -86,6 +87,7 @@ function AppRoutes({
         "/content-management": ContentManagement,
         "/site-administration": SiteAdministration,
         "/orchestrate-configuration": ProcessConfiguration,
+        "/process-simulator": ProcessSimulator,
         "/welcome": Welcome,
         "/ai-services": AiServices,
     };

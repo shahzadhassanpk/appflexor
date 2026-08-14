@@ -1,0 +1,278 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Process Simulator — module styles
+   Extends the shared orch-* tokens; uses psim-* namespace for new rules.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Root container (fills the FullScreenDialog body) ──────────────────── */
+.psim-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.25rem;
+  background: var(--body-bg, #f3f4f6);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+/* ── Two-column layout ──────────────────────────────────────────────────── */
+.psim-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 1000px) {
+  .psim-layout { grid-template-columns: 1fr; }
+}
+
+.psim-col { min-width: 0; }
+
+/* ── Panel card (mirrors .orch-panel) ───────────────────────────────────── */
+.psim-panel {
+  background: var(--secondary-color, #fff);
+  border: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+/* ── Search row ─────────────────────────────────────────────────────────── */
+.psim-search-row {
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.06)) 100%, transparent);
+}
+.psim-search-row .orch-search {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* ── Scenario list ──────────────────────────────────────────────────────── */
+.psim-scenario-list {
+  overflow-y: auto;
+  max-height: calc(100vh - 260px);
+}
+
+/* ── Scenario row ───────────────────────────────────────────────────────── */
+.psim-scenario-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.05)) 100%, transparent);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.psim-scenario-item:last-child { border-bottom: none; }
+.psim-scenario-item:hover {
+  background: color-mix(in srgb, var(--font-color, #000) 3%, transparent);
+}
+.psim-scenario-item--selected {
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 7%, transparent);
+  border-left: 3px solid var(--link-active-color, #2563eb);
+}
+.psim-scenario-item--selected:hover {
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 11%, transparent);
+}
+
+/* icon circle */
+.psim-scenario-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+/* text block */
+.psim-scenario-text {
+  flex: 1;
+  min-width: 0;
+}
+.psim-scenario-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--font-color, #111827);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.psim-scenario-proc {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--link-active-color, #2563eb) 80%, transparent);
+  margin-top: 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.psim-scenario-desc {
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 55%, transparent);
+  margin-top: 0.1rem;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* actions — shown on hover */
+.psim-scenario-actions {
+  display: flex;
+  gap: 0.1rem;
+  opacity: 0;
+  transition: opacity 0.13s;
+  flex-shrink: 0;
+}
+.psim-scenario-item:hover .psim-scenario-actions { opacity: 1; }
+
+/* ── Process Model Viewer panel ─────────────────────────────────────────── */
+.psim-viewer-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* empty state */
+.psim-viewer-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 5rem 2rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 42%, transparent);
+  text-align: center;
+}
+.psim-viewer-empty i { font-size: 2.5rem; }
+.psim-viewer-empty-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
+}
+.psim-viewer-empty-hint {
+  font-size: 0.8rem;
+  margin: 0;
+  max-width: 320px;
+  line-height: 1.55;
+}
+
+/* scenario meta strip */
+.psim-scenario-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 1rem;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 4%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.07)) 100%, transparent);
+  font-size: 0.78rem;
+  color: var(--font-color, #374151);
+}
+.psim-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+}
+.psim-meta-item i {
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.72rem;
+}
+.psim-meta-desc {
+  font-weight: 400;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 65%, transparent);
+  font-style: italic;
+}
+
+/* BPMN placeholder area */
+.psim-bpmn-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  padding: 2rem;
+  background: color-mix(in srgb, var(--font-color, #000) 2%, transparent);
+  border: 1.5px dashed color-mix(in srgb, var(--border-color, rgba(0,0,0,0.18)) 100%, transparent);
+  margin: 1rem;
+  border-radius: 0.6rem;
+}
+.psim-bpmn-placeholder-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: center;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 45%, transparent);
+}
+.psim-bpmn-placeholder-inner i {
+  font-size: 2.25rem;
+  color: color-mix(in srgb, var(--link-active-color, #2563eb) 35%, transparent);
+}
+.psim-bpmn-placeholder-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--font-color, #374151) 60%, transparent);
+  margin: 0;
+}
+.psim-bpmn-placeholder-hint {
+  font-size: 0.8rem;
+  max-width: 340px;
+  margin: 0;
+  line-height: 1.55;
+}
+.psim-bpmn-proc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: monospace;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 10%, transparent);
+  color: var(--link-active-color, #2563eb);
+  border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 25%, transparent);
+  margin-top: 0.25rem;
+}
+.psim-bpmn-no-key {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 40%, transparent);
+}
+
+/* Notes strip */
+.psim-notes {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.78rem;
+  color: color-mix(in srgb, var(--font-color, #374151) 70%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.06)) 100%, transparent);
+  line-height: 1.5;
+}
+.psim-notes i {
+  color: #d97706;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+/* ── Inline code ────────────────────────────────────────────────────────── */
+.psim-code {
+  font-family: monospace;
+  font-size: 0.78em;
+  background: color-mix(in srgb, var(--font-color, #000) 6%, transparent);
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.25rem;
+}

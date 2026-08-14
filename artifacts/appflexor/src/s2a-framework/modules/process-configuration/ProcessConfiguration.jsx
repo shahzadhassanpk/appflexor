@@ -12,6 +12,7 @@ import Loading from "../../components/Loading/loading";
 import ProcessMap from "./process-map/ProcessMap";
 import ProcessMonitor from "./process-monitor/ProcessMonitor";
 import Processes from "./processes/Processes";
+import ProcessSimulator from "../process-simulator/ProcessSimulator";
 import "./process-config.css";
 
 /* ── colour palette (deterministic by index) ────────────────────────────── */
@@ -148,6 +149,7 @@ function ProcessConfiguration() {
     const [showProcessMap, setShowProcessMap] = useState(false);
     const [showMonitor, setShowMonitor] = useState(false);
     const [showDeploy, setShowDeploy] = useState(false);
+    const [showSimulator, setShowSimulator] = useState(false);
     const [showBPMN, setShowBPMN] = useState(false);
     const [urlBPMN, setUrlBPMN] = useState("");
 
@@ -458,6 +460,15 @@ function ProcessConfiguration() {
                 </FullScreenDialog>
             )}
 
+            {showSimulator && (
+                <FullScreenDialog
+                    title="Process Simulator"
+                    icon="fa-circle-play"
+                    onClose={() => setShowSimulator(false)}>
+                    <ProcessSimulator />
+                </FullScreenDialog>
+            )}
+
             {/* ══════════ MAIN PAGE ═══════════════════════════════════════ */}
             <div id="ProcessConfig" className="process-config container-fluid static-module-bg">
 
@@ -470,6 +481,13 @@ function ProcessConfiguration() {
                                 <span>Deploy and manage processes that coordinate work and deliver business outcomes.</span>
                             </div>
                             <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                                <button
+                                    type="button"
+                                    className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
+                                    onClick={() => setShowSimulator(true)}>
+                                    <i className="fa-solid fa-circle-play" aria-hidden="true" />
+                                    Simulate
+                                </button>
                                 <button
                                     type="button"
                                     className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
