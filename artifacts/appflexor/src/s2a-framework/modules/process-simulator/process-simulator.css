@@ -1075,6 +1075,175 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   ProcessModelViewer — host div for bpmn-js + token simulation
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.psim-model-viewer-root {
+  width: 100%;
+  height: 100%;
+  /* bpmn-js sets position:absolute on its internals; needs a positioned parent */
+  position: relative;
+  overflow: hidden;
+}
+
+/* bpmn-js container gets .bjs-container from the library */
+.psim-bpmn-container .bjs-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SimulationControls bar — thin strip between the name row and BPMN viewer
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.psim-sim-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
+  background: color-mix(in srgb, var(--font-color, #000) 1.5%, var(--secondary-color, #fff));
+  flex-wrap: wrap;
+  min-height: 38px;
+}
+
+/* state badge */
+.psim-sim-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.14rem 0.5rem;
+  border-radius: 999px;
+  letter-spacing: 0.01em;
+  position: relative;
+  flex-shrink: 0;
+}
+.psim-sim-badge i { font-size: 0.65rem; }
+
+.psim-sim-badge--idle {
+  color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent);
+  background: color-mix(in srgb, var(--font-color, #000) 5%, transparent);
+}
+.psim-sim-badge--active {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+.psim-sim-badge--running {
+  color: #166534;
+  background: #dcfce7;
+}
+.psim-sim-badge--paused {
+  color: #92400e;
+  background: #ffedd5;
+}
+.psim-sim-badge--completed {
+  color: #6b21a8;
+  background: #f3e8ff;
+}
+
+/* animated pulse dot shown when RUNNING */
+.psim-sim-pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16a34a;
+  flex-shrink: 0;
+  animation: psim-pulse 1.4s ease-in-out infinite;
+}
+@keyframes psim-pulse {
+  0%, 100% { opacity: 1; transform: scale(1);   }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* informational constraint labels */
+.psim-sim-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
+  flex-shrink: 0;
+}
+.psim-sim-info > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.psim-sim-info i { font-size: 0.62rem; }
+
+/* tip text (shown in ACTIVE and COMPLETED states) */
+.psim-sim-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
+  flex-shrink: 0;
+  font-style: italic;
+}
+.psim-sim-tip i { font-size: 0.62rem; }
+.psim-sim-tip--done { color: #7c3aed; font-style: normal; font-weight: 500; }
+
+/* button group */
+.psim-sim-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+/* shared button base */
+.psim-sim-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.35rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+}
+.psim-sim-btn i { font-size: 0.68rem; }
+.psim-sim-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.psim-sim-btn--start {
+  color: #fff;
+  background: #16a34a;
+  border-color: #15803d;
+}
+.psim-sim-btn--start:hover:not(:disabled) { background: #15803d; }
+
+.psim-sim-btn--pause {
+  color: #92400e;
+  background: #ffedd5;
+  border-color: #fed7aa;
+}
+.psim-sim-btn--pause:hover:not(:disabled) { background: #fde68a; border-color: #f59e0b; }
+
+.psim-sim-btn--reset {
+  color: color-mix(in srgb, var(--font-color, #374151) 80%, transparent);
+  background: color-mix(in srgb, var(--font-color, #000) 6%, transparent);
+  border-color: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+}
+.psim-sim-btn--reset:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--font-color, #000) 10%, transparent);
+}
+
+.psim-sim-btn--stop {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+.psim-sim-btn--stop:hover:not(:disabled) { background: #fecaca; border-color: #f87171; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Element list — BPMN-parsed elements inside the bottom 30% tabs
    ═══════════════════════════════════════════════════════════════════════════ */
 

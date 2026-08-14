@@ -687,6 +687,9 @@ importers:
       bpmn-js-sketchy:
         specifier: ^0.7.2
         version: 0.7.2(bpmn-js@17.11.1)(diagram-js@15.18.0)
+      bpmn-js-token-simulation:
+        specifier: 0.40.0
+        version: 0.40.0(diagram-js-direct-editing@3.4.0(diagram-js@15.18.0))(diagram-js@15.18.0)
       camunda-bpmn-moddle:
         specifier: ^7.0.1
         version: 7.0.1
@@ -711,6 +714,9 @@ importers:
       dayjs:
         specifier: ^1.11.21
         version: 1.11.21
+      diagram-js:
+        specifier: 15.18.0
+        version: 15.18.0
       dompurify:
         specifier: ^3.4.12
         version: 3.4.12
@@ -1835,6 +1841,15 @@ packages:
       react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
+        optional: true
+
+  '@bpmn-io/diagram-js-canvas-lock@0.1.0':
+    resolution: {integrity: sha512-97sF+juqMeet4XdbU9lWUM8jWXLm7pNLBsDIcWz7+sGPqoZwAB8bQusOIMQiAPU9YGgliwj3b0o0kLP5h2jk1g==}
+    peerDependencies:
+      diagram-js: '>= 15.16.0'
+      diagram-js-direct-editing: '>= 3.4.0'
+    peerDependenciesMeta:
+      diagram-js-direct-editing:
         optional: true
 
   '@bpmn-io/diagram-js-ui@0.2.4':
@@ -3854,6 +3869,10 @@ packages:
     peerDependencies:
       bpmn-js: '>= 11'
       diagram-js: '>= 11'
+
+  bpmn-js-token-simulation@0.40.0:
+    resolution: {integrity: sha512-FmewE0KfI4sm1j5BTY9kZumAT2lji7zlAMCt+wf4LoKjgviqvJV4j5xjHCrXDBJJ/znPbek+hhUeOnNp0xIVIA==}
+    engines: {node: '>= 16'}
 
   bpmn-js@17.11.1:
     resolution: {integrity: sha512-ywCeTg5kvN8lYkU+fHE+YXTGlfKc55lRBn7zW3k1//toeMNPy/PS/uQiujRWdFhMrH5dbtDvlwWukNw2pjWw8Q==}
@@ -9148,6 +9167,12 @@ snapshots:
     optionalDependencies:
       '@types/react': 18.3.31
 
+  '@bpmn-io/diagram-js-canvas-lock@0.1.0(diagram-js-direct-editing@3.4.0(diagram-js@15.18.0))(diagram-js@15.18.0)':
+    dependencies:
+      diagram-js: 15.18.0
+    optionalDependencies:
+      diagram-js-direct-editing: 3.4.0(diagram-js@15.18.0)
+
   '@bpmn-io/diagram-js-ui@0.2.4':
     dependencies:
       htm: 3.1.1
@@ -11644,6 +11669,18 @@ snapshots:
       min-dom: 5.3.0
       roughjs: 4.6.6
       tiny-svg: 4.1.4
+
+  bpmn-js-token-simulation@0.40.0(diagram-js-direct-editing@3.4.0(diagram-js@15.18.0))(diagram-js@15.18.0):
+    dependencies:
+      '@bpmn-io/diagram-js-canvas-lock': 0.1.0(diagram-js-direct-editing@3.4.0(diagram-js@15.18.0))(diagram-js@15.18.0)
+      ids: 3.0.2
+      inherits-browser: 0.1.0
+      min-dash: 5.0.0
+      min-dom: 5.3.0
+      randomcolor: 0.6.2
+    transitivePeerDependencies:
+      - diagram-js
+      - diagram-js-direct-editing
 
   bpmn-js@17.11.1:
     dependencies:

@@ -1,8 +1,9 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import ReactBpmn from "react-bpmn";
 import { SearchableSelect } from "../process-configuration/processes/SearchableSelect";
 import { API_URL, FILE_URL } from "../../Config";
+import ProcessModelViewer from "./ProcessModelViewer";
+import SimulationControls from "./SimulationControls";
 
 /* ════════════════════════════════════════════════════════════════════════════
    ScenarioPanel — right column of Process Simulator
@@ -181,22 +182,30 @@ function StatusCard({ icon, title, hint, warn, err, onRetry }) {
 }
 
 /* ── BPMN viewer (middle 60%) ──────────────────────────────────────────── */
-/* Fetches the BPMN file URL from the API, renders it via ReactBpmn,
-   and also fetches the raw XML to parse elements → onElementsParsed. */
-function BpmnSection({ processKey, maximized, onToggleMaximize, onElementsParsed }) {
+/* Fetches the BPMN file URL from the API, resolves the XML text, and hands
+   both to the caller:
+     • onElementsParsed(elements | null) — DOMParser extraction of BPMN elements
+     • onViewerReady(viewer)            — live bpmn-js instance after importXML
+     • onViewerReset()                  — fired when the viewer is torn down    */
+function BpmnSection({
+    processKey, maximized, onToggleMaximize,
+    onElementsParsed, onViewerReady, onViewerReset,
+}) {
     const [vState,  setVState]  = useState(BSTATE.idle);
-    const [bpmnUrl, setBpmnUrl] = useState("");
+    const [bpmnXml, setBpmnXml] = useState(null);
     const [bustKey, setBustKey] = useState(0);
 
     useEffect(() => {
         if (!processKey) {
             setVState(BSTATE.idle);
-            setBpmnUrl("");
+            setBpmnXml(null);
             onElementsParsed(null);
+            onViewerReset?.();
             return;
         }
         setVState(BSTATE.loading);
-        setBpmnUrl("");
+        setBpmnXml(null);
+        onViewerReset?.();
 
         axios.post(`${API_URL}?service.key=masterKey.tenantData`, {
             dataKeys: [{ serviceParams: "", dataKey: "engine", serviceKey: "bpm.list.process", mode: "formData" }],
@@ -210,14 +219,20 @@ function BpmnSection({ processKey, maximized, onToggleMaximize, onElementsParsed
             if (!match.process_file) { setVState(BSTATE.noFile);      onElementsParsed(null); return; }
 
             const url = `${FILE_URL}/process/${encodeURIComponent(match.id)}/${encodeURIComponent(match.process_file)}`;
-            setBpmnUrl(url);
-            setVState(BSTATE.found);
 
-            /* fetch raw XML separately for element parsing */
+            /* Single fetch — XML used for both element parsing and viewer import */
             fetch(`${url}?v=${Date.now()}`)
                 .then(r => r.text())
-                .then(xml => onElementsParsed(parseBpmnXml(xml)))
-                .catch(err => { console.warn("BPMN XML parse error:", err); onElementsParsed(null); });
+                .then(xml => {
+                    setBpmnXml(xml);
+                    setVState(BSTATE.found);
+                    onElementsParsed(parseBpmnXml(xml));
+                })
+                .catch(err => {
+                    console.warn("BPMN XML fetch error:", err);
+                    setVState(BSTATE.error);
+                    onElementsParsed(null);
+                });
         })
         .catch(() => { setVState(BSTATE.error); onElementsParsed(null); });
     }, [processKey, bustKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -238,9 +253,14 @@ function BpmnSection({ processKey, maximized, onToggleMaximize, onElementsParsed
             {vState === BSTATE.noFile      && <StatusCard icon="fa-file-circle-question" title="Diagram not available"  hint="The process is deployed but no BPMN file is attached to its definition." warn />}
             {vState === BSTATE.error       && <StatusCard icon="fa-circle-xmark"         title="Could not load diagram" hint="There was a problem fetching the process definition." err onRetry={() => setBustKey(k => k + 1)} />}
 
-            {vState === BSTATE.found && bpmnUrl && (
+            {vState === BSTATE.found && bpmnXml && (
                 <div className="psim-bpmn-container">
-                    <ReactBpmn url={`${bpmnUrl}?v=${bustKey}`} />
+                    <ProcessModelViewer
+                        xml={bpmnXml}
+                        xmlKey={bustKey}
+                        onViewerReady={onViewerReady}
+                        onViewerReset={onViewerReset}
+                    />
                 </div>
             )}
         </div>
@@ -660,6 +680,9 @@ function ScenarioPanel({ scenario, saving, formKey, onSave, onCancel }) {
     /* ── BPMN elements (parsed from XML by BpmnSection) ─────────────────── */
     const [bpmnElements, setBpmnElements] = useState(null); // null = not loaded
 
+    /* ── live bpmn-js viewer instance (set by ProcessModelViewer) ─────────── */
+    const [viewer, setViewer] = useState(null);
+
     /* ── configure dialog ───────────────────────────────────────────────── */
     const [configTarget, setConfigTarget] = useState(null); // { type, element }
 
@@ -814,12 +837,17 @@ function ScenarioPanel({ scenario, saving, formKey, onSave, onCancel }) {
                             )}
                         </div>
 
-                        {/* Middle 60%: BPMN viewer */}
+                        {/* Simulation controls bar */}
+                        <SimulationControls viewer={viewer} scenario={form} />
+
+                        {/* Middle ~55%: BPMN viewer (with built-in token-simulation UI) */}
                         <BpmnSection
                             processKey={form.model_ref}
                             maximized={bpmnMax}
                             onToggleMaximize={() => setBpmnMax(m => !m)}
                             onElementsParsed={setBpmnElements}
+                            onViewerReady={setViewer}
+                            onViewerReset={() => setViewer(null)}
                         />
 
                         {/* Bottom 30%: BPMN element tabs */}
