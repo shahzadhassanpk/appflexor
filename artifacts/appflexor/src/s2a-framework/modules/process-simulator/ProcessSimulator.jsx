@@ -64,7 +64,7 @@ function ProcessSimulator({ initialProcess = null }) {
                 dataKeys: [{
                     serviceParams: "",
                     dataKey:       "scenarios",
-                    serviceKey:    "simulation.scenarios",
+                    serviceKey:    "list.simulation.scenarios",
                     mode:          "formData",
                 }],
             })
