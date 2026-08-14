@@ -101,6 +101,7 @@
     width: 200px;
 }
 
+.input-group .form-control,
 .s2a-dl-search .form-control{
     margin: 0 !important;
 }

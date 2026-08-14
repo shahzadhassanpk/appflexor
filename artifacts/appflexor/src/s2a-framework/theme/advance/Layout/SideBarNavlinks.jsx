@@ -99,29 +99,26 @@ function IframeName({ feature }) {
         <NavLink
             to={`/iframe:id=${feature.id}`}
             end
-            className={`text-decoration-none ${
-                getActiveFeature(feature.id) ? "nav-link active" : "nav-link"
-            } rounded`}>
+            className={`text-decoration-none ${getActiveFeature(feature.id) ? "nav-link active" : "nav-link"
+                } rounded`}>
             {/* style={({ isActive }) => (isActive ? activeStyle : undefined)}> */}
             <div
                 onClick={() => {
                     collapseAllAccordian();
                 }}
-                className={`${
-                    getActiveFeature(feature.id)
-                        ? " sidebar-frontoffice navlink-color-light"
-                        : " navlink-active-dark"
-                } feature-link my-1 ps-3 rounded`}
+                className={`${getActiveFeature(feature.id)
+                    ? " sidebar-frontoffice navlink-color-light"
+                    : " navlink-active-dark"
+                    } feature-link my-1 ps-3 rounded`}
                 id="text-color-hover">
                 <span
                     className={`navlink-hover rounded ms-1`}
                     id="color-over-ride">
                     <i
-                        className={`${
-                            feature.icon
-                                ? feature.icon
-                                : "fa-solid fa-angle-right"
-                        } me-2`}></i>
+                        className={`${feature.icon
+                            ? feature.icon
+                            : "fa-solid fa-angle-right"
+                            } me-2`}></i>
                     {feature.name}
                 </span>
             </div>
@@ -181,28 +178,25 @@ function FeatureName({ feature }) {
         <NavLink
             to={path}
             end
-            className={`text-decoration-none ${
-                getRouteFromKey(feature.feature_key)
-                    ? "nav-link active"
-                    : "nav-link"
-            } rounded`}>
+            className={`text-decoration-none ${getRouteFromKey(feature.feature_key)
+                ? "nav-link active"
+                : "nav-link"
+                } rounded`}>
             <div
                 onClick={() => {
                     collapseAllAccordian();
                 }}
-                className={`${
-                    getRouteFromKey(feature.feature_key)
-                        ? " sidebar-frontoffice navlink-color-light"
-                        : " navlink-active-dark"
-                } feature-link my-1 ps-3 rounded`}
+                className={`${getRouteFromKey(feature.feature_key)
+                    ? " sidebar-frontoffice navlink-color-light"
+                    : " navlink-active-dark"
+                    } feature-link my-1 ps-3 rounded`}
                 id="text-color-hover">
                 <span className={`navlink-hover rounded ms-1`}>
                     <i
-                        className={`${
-                            feature.icon
-                                ? feature.icon
-                                : "fa-solid fa-angle-right"
-                        } me-2`}></i>
+                        className={`${feature.icon
+                            ? feature.icon
+                            : "fa-solid fa-angle-right"
+                            } me-2`}></i>
                     {feature.name}
                 </span>
             </div>
@@ -243,7 +237,16 @@ function AccordionItem({ id, title = "...", module, features }) {
         <div
             id={id}
             className={`app-sidebar-group ${isLinkActive() ? "is-active" : ""}`}>
-            <div className="app-sidebar-group-label">{title}</div>
+            <div className="app-sidebar-group-label">
+                {module.icon && (
+                    <i
+                        className={`${module.icon} me-2`}
+                        style={{ fontSize: "12px" }}></i>
+                )
+                }{title}
+            </div>
+
+
             <AccordionNavItems module={module} features={features} />
         </div>
     );
@@ -275,8 +278,7 @@ function AccordionNavItems({ module, features }) {
                                     to={path}
                                     end
                                     className={({ isActive }) =>
-                                        `nav-items-link py-2 rounded ${
-                                            isActive ? "active" : ""
+                                        `nav-items-link py-2 rounded ${isActive ? "active" : ""
                                         }`
                                     }>
                                     <ModuleName
