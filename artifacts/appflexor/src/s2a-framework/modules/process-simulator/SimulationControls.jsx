@@ -97,13 +97,66 @@ const SPEEDS = [
     { value: 4, label: "4×", faIcon: "fa-forward-fast", title: "Fastest speed (4×)"  },
 ];
 
+/* ── Multi-token injection helper ──────────────────────────────────────── */
+/**
+ * After simulation mode is active, programmatically inject `count` process
+ * instances by repeatedly triggering the none-start event subscription on the
+ * root process scope.
+ *
+ * The library registers each none-start event as a persistent (non-interrupting)
+ * subscription on the root process scope, so calling simulator.trigger() with
+ * the same subscription multiple times creates multiple independent tokens.
+ *
+ * Tokens are injected in small batches to avoid freezing the renderer.
+ */
+function findNoneStartEventSub(viewer) {
+    try {
+        const elementRegistry = viewer.get("elementRegistry");
+        const simulator       = viewer.get("simulator");
+
+        /* Find the root process or participant element */
+        let rootEl = null;
+        elementRegistry.forEach(el => {
+            if (!rootEl && (el.type === "bpmn:Process" || el.type === "bpmn:Participant")) {
+                rootEl = el;
+            }
+        });
+        if (!rootEl) return null;
+
+        /* Find the first none-start event (no eventDefinitions = none type) */
+        const startEvent = (rootEl.children || []).find(el =>
+            el.type === "bpmn:StartEvent" &&
+            !el.businessObject?.eventDefinitions?.length
+        );
+        if (!startEvent) return null;
+
+        /* The library registers a persistent (interrupting:false) subscription
+           on the root process scope for each start event. */
+        const subs = simulator.findSubscriptions({ element: startEvent });
+        return subs.length ? { simulator, sub: subs[0] } : null;
+    } catch (e) {
+        console.warn("[SimulationControls] findNoneStartEventSub:", e);
+        return null;
+    }
+}
+
 export default function SimulationControls({ viewer, scenario }) {
     const [simState,  setSimState]  = useState(S.IDLE);
     const [modeActive, setModeActive] = useState(false);
     const [speed,      setSpeed]      = useState(1);
-    const scopeCountRef = useRef(0);
-    /* keep a list of [eventName, handler] pairs for cleanup */
-    const listenersRef  = useRef([]);
+    const scopeCountRef     = useRef(0);
+    const listenersRef      = useRef([]);   /* [eventName, handler] pairs for cleanup */
+    const pendingInjectRef  = useRef(0);    /* tokens to inject when mode activates   */
+    const injectTimerRef    = useRef(null); /* setTimeout handle for batched injection */
+
+    /* Cancel any in-progress token injection */
+    const cancelInjection = () => {
+        if (injectTimerRef.current) {
+            clearTimeout(injectTimerRef.current);
+            injectTimerRef.current = null;
+        }
+        pendingInjectRef.current = 0;
+    };
 
     /* ── Event subscriptions — re-subscribe whenever viewer changes ────── */
     useEffect(() => {
@@ -115,6 +168,7 @@ export default function SimulationControls({ viewer, scenario }) {
         listenersRef.current = [];
 
         /* reset local state */
+        cancelInjection();
         setSimState(S.IDLE);
         setModeActive(false);
         scopeCountRef.current = 0;
@@ -122,6 +176,21 @@ export default function SimulationControls({ viewer, scenario }) {
         if (!viewer) return;
 
         const eventBus = viewer.get("eventBus");
+
+        /* ── Batched token injection ──────────────────────────────────── */
+        function scheduleBatch(found, remaining) {
+            if (remaining <= 0) return;
+            const BATCH = 5;
+            injectTimerRef.current = setTimeout(() => {
+                injectTimerRef.current = null;
+                const n = Math.min(BATCH, remaining);
+                for (let i = 0; i < n; i++) {
+                    try { found.simulator.trigger({ event: found.sub.event, scope: found.sub.scope }); }
+                    catch (_) { break; }
+                }
+                scheduleBatch(found, remaining - n);
+            }, 120);
+        }
 
         const onToggle = (event) => {
             const active = event.active;
@@ -132,8 +201,23 @@ export default function SimulationControls({ viewer, scenario }) {
                    (registered at viewer creation); we override here. */
                 applyGatewayConfig(viewer, scenario);
                 setSimState(S.ACTIVE);
+
+                /* Auto-inject configured number of tokens */
+                const total = pendingInjectRef.current;
+                pendingInjectRef.current = 0;
+                if (total > 0) {
+                    const found = findNoneStartEventSub(viewer);
+                    if (found) {
+                        /* First token immediately */
+                        try { found.simulator.trigger({ event: found.sub.event, scope: found.sub.scope }); }
+                        catch (_) {}
+                        /* Remaining tokens in batches */
+                        scheduleBatch(found, total - 1);
+                    }
+                }
             } else {
-                /* Simulation mode disabled — reset speed to default */
+                /* Simulation mode disabled — cancel any pending injection */
+                cancelInjection();
                 scopeCountRef.current = 0;
                 setSimState(S.IDLE);
                 setSpeed(1);
@@ -155,6 +239,7 @@ export default function SimulationControls({ viewer, scenario }) {
         const onPlay  = () => setSimState(S.RUNNING);
         const onPause = () => setSimState(S.PAUSED);
         const onReset = () => {
+            cancelInjection();
             scopeCountRef.current = 0;
             setSimState(S.ACTIVE); /* mode still on, ready for new tokens */
         };
@@ -175,6 +260,7 @@ export default function SimulationControls({ viewer, scenario }) {
         listenersRef.current._eb   = eventBus;
 
         return () => {
+            cancelInjection();
             pairs.forEach(([ev, fn]) => eventBus.off(ev, fn));
             listenersRef.current = [];
         };
@@ -187,11 +273,16 @@ export default function SimulationControls({ viewer, scenario }) {
     };
 
     /* ── Control functions (call real library service APIs) ────────────── */
-    const startSimulation = () => viewer?.get("toggleMode").toggleMode(true);
-    const stopSimulation  = () => viewer?.get("toggleMode").toggleMode(false);
+    const startSimulation = () => {
+        /* Record how many tokens to inject once mode is active */
+        const count = parseInt(scenario?.constraints?.maxTokens, 10);
+        pendingInjectRef.current = (count > 0) ? count : 1;
+        viewer?.get("toggleMode").toggleMode(true);
+    };
+    const stopSimulation  = () => { cancelInjection(); viewer?.get("toggleMode").toggleMode(false); };
     const pauseSimulation = () => viewer?.get("pauseSimulation").pause();
     const resumeSimulation = () => viewer?.get("pauseSimulation").unpause();
-    const resetSimulation = () => viewer?.get("resetSimulation").resetSimulation();
+    const resetSimulation = () => { cancelInjection(); viewer?.get("resetSimulation").resetSimulation(); };
 
     /* ── Informational constraint values from scenario ─────────────────── */
     const maxTokens    = scenario?.constraints?.maxTokens;
