@@ -925,52 +925,17 @@
   background: color-mix(in srgb, var(--font-color, #000) 1.5%, transparent);
 }
 
-/* maximize — fills all remaining flex space below the sim bar;
-   bottom tabs are hidden via psim-proc-tab--max on the parent */
-.psim-proc-bpmn--max {
-  flex: 1;
-  min-height: 0;
-}
-
-.psim-proc-bpmn .psim-bpmn-container,
-.psim-proc-bpmn--max .psim-bpmn-container {
+.psim-proc-bpmn .psim-bpmn-container {
   flex: 1;
   width: 100%;
   min-height: 0;
 }
-.psim-proc-bpmn .psim-bpmn-status,
-.psim-proc-bpmn--max .psim-bpmn-status {
+.psim-proc-bpmn .psim-bpmn-status {
   flex: 1;
 }
 
-/* maximize / restore toggle */
-.psim-bpmn-max-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.8rem;
-  height: 1.8rem;
-  border-radius: 0.35rem;
-  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
-  background: var(--secondary-color, #fff);
-  color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
-  font-size: 0.72rem;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-}
-.psim-bpmn-max-btn:hover {
-  background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
-  color: var(--link-active-color, #2563eb);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-}
-
-/* Maximized: fixed full-viewport overlay showing sim bar + viewer + tabs */
-.psim-proc-tab--max {
+/* ── Maximize: whole right panel becomes a fixed full-viewport overlay ─── */
+.psim-right-panel--max {
   position: fixed;
   inset: 0;
   z-index: 1050;
@@ -979,16 +944,44 @@
   flex-direction: column;
 }
 
-/* BPMN viewer fills all space between sim bar and bottom tabs */
-.psim-proc-tab--max .psim-proc-bpmn {
+/* Tab content fills all space below the top nav bar */
+.psim-right-panel--max .psim-top-tab-content {
   flex: 1;
   min-height: 0;
 }
 
-/* Bottom tabs get a comfortable fixed slice */
-.psim-proc-tab--max .psim-proc-bottom {
+/* BPMN viewer fills the middle between sim bar and bottom tabs */
+.psim-right-panel--max .psim-proc-bpmn {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Bottom element tabs: fixed comfortable slice */
+.psim-right-panel--max .psim-proc-bottom {
   flex: 0 0 220px;
   min-height: 0;
+}
+
+/* Maximize button in the top header actions area */
+.psim-top-maximize-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--font-color, #374151) 65%, transparent);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+  flex-shrink: 0;
+}
+.psim-top-maximize-btn:hover {
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
+  color: var(--link-active-color, #2563eb);
+  border-color: color-mix(in srgb, var(--link-active-color, #2563eb) 30%, transparent);
 }
 
 /* ── Bottom (30%): parameter sub-tabs ──────────────────────────────────── */

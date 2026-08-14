@@ -188,7 +188,7 @@ function StatusCard({ icon, title, hint, warn, err, onRetry }) {
      • onViewerReady(viewer)            — live bpmn-js instance after importXML
      • onViewerReset()                  — fired when the viewer is torn down    */
 function BpmnSection({
-    processKey, maximized, onToggleMaximize,
+    processKey,
     onElementsParsed, onViewerReady, onViewerReset,
 }) {
     const [vState,  setVState]  = useState(BSTATE.idle);
@@ -238,14 +238,7 @@ function BpmnSection({
     }, [processKey, bustKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
-        <div className={`psim-proc-bpmn${maximized ? " psim-proc-bpmn--max" : ""}`}>
-            <button
-                type="button"
-                className="psim-bpmn-max-btn"
-                title={maximized ? "Restore diagram" : "Maximize diagram"}
-                onClick={onToggleMaximize}>
-                <i className={`fa-solid ${maximized ? "fa-compress" : "fa-expand"}`} aria-hidden="true" />
-            </button>
+        <div className="psim-proc-bpmn">
 
             {vState === BSTATE.idle        && <StatusCard icon="fa-diagram-project"      title="No process selected"    hint="Select a target process above to preview its diagram." />}
             {vState === BSTATE.loading     && <StatusCard icon="fa-circle-notch fa-spin" title="Loading diagram…" />}
@@ -772,7 +765,7 @@ function ScenarioPanel({ scenario, saving, formKey, onSave, onCancel }) {
        Render
        ════════════════════════════════════════════════════════════════════ */
     return (
-        <div className="psim-panel psim-right-panel">
+        <div className={`psim-panel psim-right-panel${bpmnMax ? " psim-right-panel--max" : ""}`}>
 
             {/* ══ TOP-LEVEL TAB NAV ══════════════════════════════════════════ */}
             <div className="psim-top-tab-nav">
@@ -795,6 +788,13 @@ function ScenarioPanel({ scenario, saving, formKey, onSave, onCancel }) {
                     </button>
                     <button type="button" className="btn btn-sm psim-rp-cancel-btn" onClick={onCancel}>
                         <i className="fa-solid fa-xmark" />Cancel
+                    </button>
+                    <button
+                        type="button"
+                        className="psim-top-maximize-btn"
+                        title={bpmnMax ? "Restore panel" : "Maximize panel"}
+                        onClick={() => setBpmnMax(m => !m)}>
+                        <i className={`fa-solid ${bpmnMax ? "fa-compress" : "fa-expand"}`} aria-hidden="true" />
                     </button>
                 </div>
             </div>
@@ -841,15 +841,11 @@ function ScenarioPanel({ scenario, saving, formKey, onSave, onCancel }) {
                         <SimulationControls
                             viewer={viewer}
                             scenario={form}
-                            maximized={bpmnMax}
-                            onToggleMaximize={() => setBpmnMax(m => !m)}
                         />
 
                         {/* Middle ~55%: BPMN viewer (with built-in token-simulation UI) */}
                         <BpmnSection
                             processKey={form.model_ref}
-                            maximized={bpmnMax}
-                            onToggleMaximize={() => setBpmnMax(m => !m)}
                             onElementsParsed={setBpmnElements}
                             onViewerReady={setViewer}
                             onViewerReset={() => setViewer(null)}

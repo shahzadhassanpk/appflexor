@@ -97,7 +97,7 @@ const SPEEDS = [
     { value: 4, label: "4×", faIcon: "fa-forward-fast", title: "Fastest speed (4×)"  },
 ];
 
-export default function SimulationControls({ viewer, scenario, maximized, onToggleMaximize }) {
+export default function SimulationControls({ viewer, scenario }) {
     const [simState,  setSimState]  = useState(S.IDLE);
     const [modeActive, setModeActive] = useState(false);
     const [speed,      setSpeed]      = useState(1);
@@ -358,16 +358,6 @@ export default function SimulationControls({ viewer, scenario, maximized, onTogg
                     </>
                 )}
 
-                {/* Maximize — always visible, far-right of bar */}
-                {onToggleMaximize && (
-                    <button
-                        type="button"
-                        className="psim-sim-btn psim-sim-btn--maximize"
-                        onClick={onToggleMaximize}
-                        title={maximized ? "Restore section" : "Maximize section"}>
-                        <i className={`fa-solid ${maximized ? "fa-compress" : "fa-expand"}`} />
-                    </button>
-                )}
             </div>
         </div>
     );
