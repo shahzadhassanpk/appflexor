@@ -176,6 +176,15 @@ export default function SimulationControls({ viewer, scenario }) {
     const countdownIntervalRef = useRef(null); /* setInterval handle for countdown tick      */
     const horizonMsRef         = useRef(null); /* total configured horizon in simulated-ms   */
 
+    /*
+     * Keep scenarioRef always current so event handlers registered inside the
+     * viewer-dependent useEffect (which only re-runs when `viewer` changes) can
+     * read the LATEST scenario constraints — including any edits the user makes
+     * to the time horizon after the viewer was first created.
+     */
+    const scenarioRef = useRef(scenario);
+    scenarioRef.current = scenario;
+
     /* ── Cancel any in-progress token injection ─────────────────────────── */
     const cancelInjection = () => {
         if (injectTimerRef.current) {
@@ -287,7 +296,11 @@ export default function SimulationControls({ viewer, scenario }) {
             if (active) {
                 /* Simulation mode enabled: apply gateway config, inject tokens,
                    start countdown. */
-                applyGatewayConfig(viewer, scenario);
+                /* Read the CURRENT scenario via ref — the closed-over `scenario`
+                   prop would be stale if constraints were edited after the
+                   viewer was first created. */
+                const currentScenario = scenarioRef.current;
+                applyGatewayConfig(viewer, currentScenario);
                 setSimState(S.ACTIVE);
 
                 /* Auto-inject configured number of tokens */
@@ -302,10 +315,10 @@ export default function SimulationControls({ viewer, scenario }) {
                     }
                 }
 
-                /* Start countdown if a time horizon is configured */
+                /* Start countdown using the CURRENT time-horizon constraints */
                 const horizonMs = horizonToMs(
-                    scenario?.constraints?.timeHorizonValue,
-                    scenario?.constraints?.timeHorizonUnit || "hours",
+                    currentScenario?.constraints?.timeHorizonValue,
+                    currentScenario?.constraints?.timeHorizonUnit || "hours",
                 );
                 if (horizonMs) startCountdown(horizonMs);
 
