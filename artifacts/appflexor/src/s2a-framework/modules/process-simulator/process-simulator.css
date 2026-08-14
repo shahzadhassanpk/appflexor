@@ -1073,3 +1073,265 @@
   font-weight: 600;
   color: color-mix(in srgb, var(--font-color, #374151) 80%, transparent);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Element list — BPMN-parsed elements inside the bottom 30% tabs
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.psim-elem-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0;
+}
+
+/* individual element row */
+.psim-elem-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.05)) 100%, transparent);
+  transition: background 0.1s;
+}
+.psim-elem-row:last-child { border-bottom: none; }
+.psim-elem-row:hover {
+  background: color-mix(in srgb, var(--font-color, #000) 2.5%, transparent);
+}
+
+/* name + badge side */
+.psim-elem-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.psim-elem-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--font-color, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* configure button */
+.psim-elem-cfg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--link-active-color, #2563eb);
+  border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 35%, transparent);
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 5%, transparent);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s;
+}
+.psim-elem-cfg-btn:hover {
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 12%, transparent);
+  border-color: var(--link-active-color, #2563eb);
+}
+.psim-elem-cfg-btn i { font-size: 0.68rem; }
+
+/* summary badges */
+.psim-elem-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.08rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  width: fit-content;
+}
+.psim-elem-badge--empty {
+  color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent);
+  background: color-mix(in srgb, var(--font-color, #000) 4%, transparent);
+  border-color: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+}
+.psim-elem-badge--set {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+.psim-elem-badge--info {
+  color: #1e40af;
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+.psim-elem-badge--warn {
+  color: #92400e;
+  background: #ffedd5;
+  border-color: #fed7aa;
+}
+
+/* empty / no-process state */
+.psim-elem-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 50%, transparent);
+  font-size: 0.82rem;
+  text-align: center;
+  height: 100%;
+}
+.psim-elem-empty i {
+  font-size: 1.4rem;
+  color: color-mix(in srgb, var(--font-color, #6b7280) 30%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Configure element dialog (overlays the right panel, same as proc selector)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* reuses psim-proc-dlg-overlay / psim-proc-dlg-header / psim-proc-dlg-title */
+
+.psim-cfg-dlg {
+  background: var(--secondary-color, #fff);
+  border-radius: 0.75rem;
+  border: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.12)) 100%, transparent);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  width: min(460px, 92%);
+  display: flex;
+  flex-direction: column;
+  max-height: 82%;
+  overflow: hidden;
+}
+
+.psim-cfg-dlg-body {
+  padding: 0.85rem 1rem;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.psim-cfg-dlg-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.08)) 100%, transparent);
+  flex-shrink: 0;
+}
+
+/* grouped field block */
+.psim-cfg-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* duration row: number input + unit select/label side by side */
+.psim-cfg-duration-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.psim-cfg-duration-row .form-control-sm { max-width: 110px; }
+.psim-cfg-duration-row .form-select-sm  { max-width: 120px; }
+.psim-cfg-unit-label {
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--font-color, #374151) 60%, transparent);
+  white-space: nowrap;
+}
+
+/* gateway path rows */
+.psim-cfg-gw-paths {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+  border-radius: 0.45rem;
+  overflow: hidden;
+  padding: 0.1rem 0;
+}
+
+.psim-cfg-gw-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.65rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.05)) 100%, transparent);
+}
+.psim-cfg-gw-row:last-child { border-bottom: none; }
+
+.psim-cfg-gw-path-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--font-color, #374151);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.psim-cfg-gw-path-name i {
+  font-size: 0.62rem;
+  color: var(--link-active-color, #2563eb);
+  flex-shrink: 0;
+}
+
+.psim-cfg-gw-prob {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+.psim-cfg-gw-prob .form-control-sm { width: 72px; text-align: right; }
+.psim-cfg-pct-label {
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
+}
+
+/* probability total row */
+.psim-cfg-gw-total {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-top: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.09)) 100%, transparent);
+  color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
+  background: color-mix(in srgb, var(--font-color, #000) 2%, transparent);
+}
+.psim-cfg-gw-total.ok   { color: #166534; }
+.psim-cfg-gw-total.warn { color: #92400e; }
+
+/* parallel-gateway info banner */
+.psim-cfg-parallel-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  background: color-mix(in srgb, var(--link-active-color, #2563eb) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 20%, transparent);
+  border-radius: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--font-color, #374151);
+  line-height: 1.4;
+}
+.psim-cfg-parallel-info i {
+  color: var(--link-active-color, #2563eb);
+  font-size: 0.88rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+/* generic help text above gateway paths */
+.psim-cfg-help-text {
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--font-color, #374151) 60%, transparent);
+  margin: 0;
+}
