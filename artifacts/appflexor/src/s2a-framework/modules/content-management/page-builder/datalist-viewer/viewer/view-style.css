@@ -101,6 +101,10 @@
     width: 200px;
 }
 
+.s2a-dl-search .form-control{
+    margin: 0 !important;
+}
+
 /* GlobalFilter = div.search-input.input-group.s2a-global-filter > i + input */
 .s2a-global-filter {
     width: 200px !important;
