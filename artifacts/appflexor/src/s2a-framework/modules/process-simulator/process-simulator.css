@@ -1269,6 +1269,18 @@
 }
 .psim-sim-btn--stop:hover:not(:disabled) { background: #fecaca; border-color: #f87171; }
 
+.psim-sim-btn--maximize {
+  color: color-mix(in srgb, var(--font-color, #374151) 70%, transparent);
+  background: transparent;
+  border-color: transparent;
+  padding: 0.22rem 0.45rem;
+  margin-left: 0.15rem;
+}
+.psim-sim-btn--maximize:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--font-color, #000) 8%, transparent);
+  border-color: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Element list — BPMN-parsed elements inside the bottom 30% tabs
    ═══════════════════════════════════════════════════════════════════════════ */

@@ -18,8 +18,10 @@
  *   ✗ Time-horizon enforcement         — shown as informational only
  *
  * Props:
- *   viewer   bpmn-js NavigatedViewer instance (or null when no diagram is loaded)
- *   scenario scenario form object — read .parameters and .constraints from it
+ *   viewer             bpmn-js NavigatedViewer instance (or null when no diagram is loaded)
+ *   scenario           scenario form object — read .parameters and .constraints from it
+ *   maximized          bool — whether the BPMN section is currently maximized
+ *   onToggleMaximize   () => void — toggle the maximized state
  */
 import React, { useEffect, useRef, useState } from "react";
 
@@ -88,7 +90,7 @@ function applyGatewayConfig(viewer, scenario) {
 /* ═════════════════════════════════════════════════════════════════════════
    Component
    ═════════════════════════════════════════════════════════════════════════ */
-export default function SimulationControls({ viewer, scenario }) {
+export default function SimulationControls({ viewer, scenario, maximized, onToggleMaximize }) {
     const [simState,  setSimState]  = useState(S.IDLE);
     const [modeActive, setModeActive] = useState(false);
     const scopeCountRef = useRef(0);
@@ -322,6 +324,17 @@ export default function SimulationControls({ viewer, scenario }) {
                             <i className="fa-solid fa-stop" />Stop
                         </button>
                     </>
+                )}
+
+                {/* Maximize — always visible, far-right of bar */}
+                {onToggleMaximize && (
+                    <button
+                        type="button"
+                        className="psim-sim-btn psim-sim-btn--maximize"
+                        onClick={onToggleMaximize}
+                        title={maximized ? "Restore section" : "Maximize section"}>
+                        <i className={`fa-solid ${maximized ? "fa-compress" : "fa-expand"}`} />
+                    </button>
                 )}
             </div>
         </div>

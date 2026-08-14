@@ -838,7 +838,12 @@ function ScenarioPanel({ scenario, saving, formKey, onSave, onCancel }) {
                         </div>
 
                         {/* Simulation controls bar */}
-                        <SimulationControls viewer={viewer} scenario={form} />
+                        <SimulationControls
+                            viewer={viewer}
+                            scenario={form}
+                            maximized={bpmnMax}
+                            onToggleMaximize={() => setBpmnMax(m => !m)}
+                        />
 
                         {/* Middle ~55%: BPMN viewer (with built-in token-simulation UI) */}
                         <BpmnSection
