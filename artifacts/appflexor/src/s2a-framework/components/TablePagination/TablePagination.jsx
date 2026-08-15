@@ -44,7 +44,7 @@ function TablePagination({ size, setSize, current, setCurrent, tableData }) {
                 className="card my-2">
                 <div className="card-body p-1">
                     <div className="table-filter-info d-flex">
-                        <div className="col-sm-2" style={{ marginLeft: "auto" }}>
+                        <div className="col-sm-3" style={{ marginLeft: "auto" }}>
                             <select                                
                                 value={size}
                                 onChange={e => {

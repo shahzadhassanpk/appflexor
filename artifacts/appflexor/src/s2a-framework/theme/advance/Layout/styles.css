@@ -1,12 +1,12 @@
 /* Sidebar geometry is kept here so the fixed navigation and page content use
    the same dimensions at every desktop viewport size. */
 :root {
-    --s2a-sidebar-width: 200px;
+    --s2a-sidebar-width: 240px;
     --s2a-sidebar-mini-width: 60px;
 }
 
-.s2a-main-content{
-    padding:10px;
+.s2a-main-content {
+    padding: 10px;
     background-color: var(--primary-color);
 }
 
@@ -212,8 +212,12 @@ body .s2a-page {
     line-height: 1;
     text-decoration: none;
     cursor: pointer;
-    transition: background-color 160ms ease, border-color 160ms ease,
-        color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    transition:
+        background-color 160ms ease,
+        border-color 160ms ease,
+        color 160ms ease,
+        transform 160ms ease,
+        box-shadow 160ms ease;
 }
 
 .advance-top-header #top-adv-navbar .navbar-action-button > .fa,
@@ -227,7 +231,11 @@ body .s2a-page {
 
 .advance-top-header #top-adv-navbar .navbar-action-button:hover {
     border-color: color-mix(in srgb, var(--border-color) 72%, transparent);
-    background: color-mix(in srgb, var(--font-color, var(--text-primary)) 9%, transparent);
+    background: color-mix(
+        in srgb,
+        var(--font-color, var(--text-primary)) 9%,
+        transparent
+    );
     color: var(--font-color, var(--text-primary));
     transform: translateY(-1px);
 }
@@ -236,13 +244,27 @@ body .s2a-page {
     outline: 0;
     border-color: var(--button-primary-bg-color, var(--accent-primary));
     box-shadow: 0 0 0 3px
-        color-mix(in srgb, var(--button-primary-bg-color, var(--accent-primary)) 22%, transparent);
+        color-mix(
+            in srgb,
+            var(--button-primary-bg-color, var(--accent-primary)) 22%,
+            transparent
+        );
 }
 
 .advance-top-header #top-adv-navbar .navbar-action-button.active,
-.advance-top-header #top-adv-navbar .navbar-action-button[aria-expanded="true"] {
-    border-color: color-mix(in srgb, var(--button-primary-bg-color, var(--accent-primary)) 48%, transparent);
-    background: color-mix(in srgb, var(--button-primary-bg-color, var(--accent-primary)) 20%, transparent);
+.advance-top-header
+    #top-adv-navbar
+    .navbar-action-button[aria-expanded="true"] {
+    border-color: color-mix(
+        in srgb,
+        var(--button-primary-bg-color, var(--accent-primary)) 48%,
+        transparent
+    );
+    background: color-mix(
+        in srgb,
+        var(--button-primary-bg-color, var(--accent-primary)) 20%,
+        transparent
+    );
     color: var(--button-primary-bg-color, var(--accent-primary));
 }
 
@@ -345,7 +367,8 @@ body .s2a-page {
     flex-direction: column;
     overflow: hidden;
     background: var(--primary-color);
-    border-right: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    border-right: 1px solid
+        color-mix(in srgb, var(--border-color) 72%, transparent);
     box-shadow: none;
     z-index: 1031;
 }
@@ -360,7 +383,8 @@ body .s2a-page {
     min-height: 60px;
     display: flex;
     align-items: center;
-    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--border-color) 72%, transparent);
     background: var(--primary-color);
     color: var(--font-color);
 }
@@ -371,7 +395,7 @@ body .s2a-page {
     max-width: 100%;
     height: 100%;
     margin: 0;
-    padding: 9px 14px;
+    padding: 8px 8px;
     border-right: 0 !important;
     display: flex;
     align-items: center;
@@ -417,8 +441,11 @@ body .s2a-page {
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color:
-        color-mix(in srgb, var(--primary-color) 70%, var(--font-color))
+    scrollbar-color: color-mix(
+            in srgb,
+            var(--primary-color) 70%,
+            var(--font-color)
+        )
         color-mix(in srgb, var(--navigation-color) 88%, var(--border-color));
 }
 
@@ -431,7 +458,11 @@ body .s2a-page {
 
 #side-navbar .app-sidebar-navigation::-webkit-scrollbar-track,
 #sideNavbarMini .app-sidebar-mini-navigation::-webkit-scrollbar-track {
-    background: color-mix(in srgb, var(--navigation-color) 88%, var(--border-color));
+    background: color-mix(
+        in srgb,
+        var(--navigation-color) 88%,
+        var(--border-color)
+    );
     border-radius: 999px;
 }
 
@@ -477,7 +508,11 @@ body .s2a-page {
 }
 
 #side-navbar .menu-accordion .accordion-button:hover {
-    background: color-mix(in srgb, var(--primary-color) 18%, transparent) !important;
+    background: color-mix(
+        in srgb,
+        var(--primary-color) 18%,
+        transparent
+    ) !important;
 }
 
 #side-navbar .menu-accordion .accordion-button::after {
@@ -503,15 +538,24 @@ body .s2a-page {
     margin-top: 0;
 }
 
-:is(#side-navbar, #sideNavbarMini.app-sidebar-hover-expanded) .app-sidebar-group-label {
-    padding: 2px 7px 5px;
+:is(#side-navbar, #sideNavbarMini.app-sidebar-hover-expanded)
+    .app-sidebar-group-label {
+    padding: 10px;
     color: var(--theme-color);
     font-size: var(--font-size-md);
     font-weight: 600;
     line-height: 1.2;
     letter-spacing: 0.01em;
+    border-radius: 0px;
 }
 
+.app-sidebar-mini .app-sidebar-group-label {
+    margin-top: 10px;
+    border-radius: 5px;
+    padding: 8px;
+    margin: 2px auto;
+    background-color: transparent;
+}
 
 #side-navbar .nav-items-ul {
     padding: 1px 0 3px 0 !important;
@@ -531,7 +575,11 @@ body .s2a-page {
 
 #side-navbar .nav-items-link:hover {
     color: var(--font-color) !important;
-    background: color-mix(in srgb, var(--primary-color) 14%, transparent) !important;
+    background: color-mix(
+        in srgb,
+        var(--primary-color) 14%,
+        transparent
+    ) !important;
 }
 
 #side-navbar .nav-items-link.active {
@@ -552,7 +600,11 @@ body .s2a-page {
     border-radius: 5px !important;
 }
 
-#side-navbar > .app-sidebar-navigation > .accordion-main > .nav-link .feature-link {
+#side-navbar
+    > .app-sidebar-navigation
+    > .accordion-main
+    > .nav-link
+    .feature-link {
     min-height: 34px;
     margin: 0 !important;
     padding: 8px 9px !important;
@@ -569,7 +621,8 @@ body .s2a-page {
     align-items: center;
     gap: 10px;
     border: 0;
-    border-top: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    border-top: 1px solid
+        color-mix(in srgb, var(--border-color) 72%, transparent);
     background: transparent;
     color: color-mix(in srgb, var(--font-color) 76%, transparent);
     font-size: 11px;
@@ -609,8 +662,8 @@ body .s2a-page {
     min-height: 60px;
     display: grid;
     place-items: center;
-    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
-    background: color-mix(in srgb, var(--navigation-color) 92%, var(--secondary-color));
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--border-color) 72%, transparent);
 }
 
 #sideNavbarMini.app-sidebar-mini #brand-logo-mini {
@@ -649,7 +702,8 @@ body .s2a-page {
     min-height: 46px;
     display: grid;
     place-items: center;
-    border-top: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    border-top: 1px solid
+        color-mix(in srgb, var(--border-color) 72%, transparent);
 }
 
 #sideNavbarMini .app-sidebar-expand {
@@ -659,11 +713,19 @@ body .s2a-page {
     border: 0;
     border-radius: 5px;
     background: transparent;
-    color: color-mix(in srgb, var(--text-primary, var(--font-color)) 82%, var(--navigation-color));
+    color: color-mix(
+        in srgb,
+        var(--text-primary, var(--font-color)) 82%,
+        var(--navigation-color)
+    );
 }
 
 #sideNavbarMini .mini-nav-icon-wrapper {
-    color: color-mix(in srgb, var(--text-primary, var(--font-color)) 82%, var(--navigation-color));
+    color: color-mix(
+        in srgb,
+        var(--text-primary, var(--font-color)) 82%,
+        var(--navigation-color)
+    );
 }
 
 #sideNavbarMini .mini-nav-icon-wrapper:hover {
@@ -672,7 +734,10 @@ body .s2a-page {
 }
 
 #sideNavbarMini .mini-nav-icon-wrapper.link-active {
-    color: var(--link-active-color, var(--accent-primary, var(--text-primary, var(--font-color))));
+    color: var(
+        --link-active-color,
+        var(--accent-primary, var(--text-primary, var(--font-color)))
+    );
 }
 
 #sideNavbarMini .app-sidebar-expand:hover {
@@ -681,6 +746,7 @@ body .s2a-page {
 }
 
 #sideNavbarMini .app-sidebar-mini-navigation {
+    margin-top: 10px;
     flex: 1 1 auto;
     width: 100%;
     min-height: 0;
@@ -688,8 +754,11 @@ body .s2a-page {
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color:
-        color-mix(in srgb, var(--primary-color) 70%, var(--font-color))
+    scrollbar-color: color-mix(
+            in srgb,
+            var(--primary-color) 70%,
+            var(--font-color)
+        )
         color-mix(in srgb, var(--navigation-color) 88%, var(--border-color));
 }
 
@@ -697,7 +766,9 @@ body .s2a-page {
     padding: 10px 8px 12px !important;
 }
 
-#sideNavbarMini.app-sidebar-hover-expanded .app-sidebar-mini-navigation > .accordion-main {
+#sideNavbarMini.app-sidebar-hover-expanded
+    .app-sidebar-mini-navigation
+    > .accordion-main {
     width: 100%;
     margin: 0 !important;
     animation: sidebar-content-enter 0.3s ease 0.08s both;
@@ -769,7 +840,8 @@ body .s2a-page {
 #sideNavbarMini .mini-nav-section {
     margin-bottom: 3px;
     padding-bottom: 3px;
-    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 48%, transparent);
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--border-color) 48%, transparent);
 }
 
 #sideNavbarMini .mini-nav-section-icon {
@@ -779,7 +851,11 @@ body .s2a-page {
 #sideNavbarMini .mini-nav-child-link {
     width: 34px;
     height: 34px;
-    color: color-mix(in srgb, var(--text-primary, var(--font-color)) 70%, var(--navigation-color));
+    color: color-mix(
+        in srgb,
+        var(--text-primary, var(--font-color)) 70%,
+        var(--navigation-color)
+    );
 }
 
 #sideNavbarMini .mini-nav-child-link .mini-nav-icon-size {

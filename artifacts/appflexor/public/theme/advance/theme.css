@@ -81,11 +81,12 @@ body.dark {
     /* Core surfaces */
     --primary-color: #0f171d;
     --secondary-color: #111b2e;
-    --navigation-color: #0f171d;
+    --navigation-color: #223554;
     --header-color: #16233b;
     --tab-color: #1a2740;
     --shadow-color: rgba(2, 8, 23, 0.45);
     --font-color: #f2f6fc;
+    --link-active-color: #223554;
 
     /* Backgrounds */
     --bg-app: var(--primary-color);
@@ -144,7 +145,7 @@ body.light {
     --bg-surface-alt: #edf3fb; /* Tables, secondary panels */
     --bg-hover: #eaf1fb;
     --bg-active: #dfe9f8;
-    --navigation-color: #f4f7fb;
+    --navigation-color: #dfe9f8;
     --tab-color: #edf3fb;
 
     /* Borders & Dividers */
@@ -332,7 +333,9 @@ select {
 /* ===== Typography End ===== */
 
 .app-sidebar-group-label {
-    color: var(--them-color);
+    color: var(--theme-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 5px 10px;
 }
 
 .w-20 {

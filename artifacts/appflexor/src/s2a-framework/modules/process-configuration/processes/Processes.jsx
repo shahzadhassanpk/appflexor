@@ -15,8 +15,8 @@ import { ProcessDeployDialog } from "./ProcessDeployDialog";
 import "./processes.css";
 
 /* ── constants ─────────────────────────────────────────────────────────── */
-const DB_TABLE     = "process";
-const STATUS       = { none: "NONE", create: "CREATE", update: "UPDATE" };
+const DB_TABLE = "process";
+const STATUS = { none: "NONE", create: "CREATE", update: "UPDATE" };
 const INITIAL_ITEM = { id: "", title: "", process_def_key: "", process_file: "", file_url: "" };
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -26,17 +26,17 @@ function Processes({ activeTab }) {
     const appContext = useContext(AppContext);
 
     /* ── List state ──────────────────────────────────────────────────── */
-    const [items,        setItems]        = useState([]);
-    const [size,         setSize]         = useState(5);
-    const [current,      setCurrent]      = useState(1);
-    const [searchTerm,   setSearchTerm]   = useState("");
+    const [items, setItems] = useState([]);
+    const [size, setSize] = useState(5);
+    const [current, setCurrent] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
     const [deleteConfig, setDeleteConfig] = useState({ show: false, item: {} });
 
     /* ── Dialog state ────────────────────────────────────────────────── */
-    const [formShow,          setFormShow]          = useState(false);
+    const [formShow, setFormShow] = useState(false);
     const [initialFormStatus, setInitialFormStatus] = useState(STATUS.create);
-    const [initialItem,       setInitialItem]       = useState(INITIAL_ITEM);
-    const [selectedItemId,    setSelectedItemId]    = useState(""); // for list row highlight
+    const [initialItem, setInitialItem] = useState(INITIAL_ITEM);
+    const [selectedItemId, setSelectedItemId] = useState(""); // for list row highlight
 
     /* ═══════════════════════════════════════════════════════════════════
        Data
@@ -53,9 +53,9 @@ function Processes({ activeTab }) {
                 dataKeys: [
                     {
                         serviceParams: "",
-                        dataKey:       "engine",
-                        serviceKey:    "bpm.list.process",
-                        mode:          "formData",
+                        dataKey: "engine",
+                        serviceKey: "bpm.list.process",
+                        mode: "formData",
                     },
                 ],
             })
@@ -74,9 +74,9 @@ function Processes({ activeTab }) {
         if (!searchTerm || !searchTerm.trim()) return items;
         const q = searchTerm.trim().toLowerCase();
         return items.filter(it =>
-            (it.title          || "").toLowerCase().includes(q) ||
+            (it.title || "").toLowerCase().includes(q) ||
             (it.process_def_key || "").toLowerCase().includes(q) ||
-            (it.process_file    || "").toLowerCase().includes(q),
+            (it.process_file || "").toLowerCase().includes(q),
         );
     }
 
@@ -135,9 +135,9 @@ function Processes({ activeTab }) {
         const process_engine = appContext?.tenantSubscription?.process_engine;
         try {
             const res = await axios.post(`${BPM_API_URL}?service.key=deploy.process`, {
-                id:                item.id,
-                entity:            DB_TABLE,
-                fileName:          item.process_file,
+                id: item.id,
+                entity: DB_TABLE,
+                fileName: item.process_file,
                 mainProcessDefKey: item.process_def_key,
                 process_engine,
             });
@@ -145,13 +145,13 @@ function Processes({ activeTab }) {
                 const data = res.data.C_DATA;
                 await axios.post(API_URL + "?service.key=update.formData", {
                     data: [{
-                        formId:   DB_TABLE,
-                        entity:   DB_TABLE,
-                        action:   "update",
-                        id:       item.id,
+                        formId: DB_TABLE,
+                        entity: DB_TABLE,
+                        action: "update",
+                        id: item.id,
                         formData: {
                             ...item,
-                            version:    data.version,
+                            version: data.version,
                             process_id: data.process_id,
                             deployment: data.deployment,
                         },
@@ -216,15 +216,17 @@ function Processes({ activeTab }) {
                                     <Td>{formatDateTimeForUserView(item?.datemodified)}</Td>
                                     <Td>
                                         <div className="proc-list-actions">
-                                            <button className="proc-list-action-btn warning" title="Redeploy" onClick={() => quickDeploy(item)}>
+                                            {/* <button className="proc-list-action-btn warning" title="Redeploy" onClick={() => quickDeploy(item)}>
                                                 <i className="fa fa-retweet" />
-                                            </button>
+                                            </button> */}
                                             <button className="proc-list-action-btn" title="Edit" onClick={() => editItem(item)}>
                                                 <i className="fa-regular fa-edit" />
                                             </button>
-                                            <button className="proc-list-action-btn danger" title="Delete" onClick={() => deleteData(item)}>
-                                                <i className="fa-regular fa-trash-can" />
-                                            </button>
+                                            {!item?.version &&
+                                                <button className="proc-list-action-btn danger" title="Delete" onClick={() => deleteData(item)}>
+                                                    <i className="fa-regular fa-trash-can" />
+                                                </button>
+                                            }
                                         </div>
                                     </Td>
                                 </Tr>

@@ -77,7 +77,7 @@
   border-radius: 0.4rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--link-active-color, #2563eb);
+  color: var(--font-color, #2563eb);
   background: color-mix(in srgb, var(--link-active-color, #2563eb) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--link-active-color, #2563eb) 28%, transparent);
   cursor: pointer;
@@ -95,7 +95,7 @@
   display: flex;
   align-items: center;
   min-width: 180px;
-  max-width: 260px;
+  max-width: 300px;
   flex: 1;
 }
 .orch-search-icon {

@@ -37,6 +37,16 @@ function RenderListView({
     dynamicFields,
 }) {
     const appContext = useContext(AppContext);
+    const safeCurrentProcessState = currentProcessState || {
+        initial: true,
+        start: false,
+        step: false,
+        loading: false,
+    };
+    const safeSelectedTask = selectedTask || taskInitState || {};
+    const selectedTaskId = safeSelectedTask?.id || "";
+    const safeTaskList = Array.isArray(taskList) ? taskList : [];
+    const safeProcessList = Array.isArray(processList) ? processList : [];
     const keysToSearch = [
         "variables",
         "task_def_key",
@@ -154,6 +164,8 @@ function RenderListView({
     const safePage = Math.min(currentPage, totalPages);
     const pagedTasks = localFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
     const grouped = groupTasksByDue(pagedTasks);
+    const safeTaskListLength = safeTaskList.length;
+    const safeProcessListLength = safeProcessList.length;
 
     const priorityOptions = [
         { value: "all", label: "All Priorities" },
@@ -185,9 +197,9 @@ function RenderListView({
         });
     }, []);
 
-    const allCount = taskList ? taskList.length : 0;
-    const myCount = taskList
-        ? taskList.filter(
+    const allCount = safeTaskList.length;
+    const myCount = safeTaskList
+        ? safeTaskList.filter(
             t =>
                 (t.assignee || "").toString().toLowerCase() ===
                 (userDetails?.username || "").toString().toLowerCase(),
@@ -257,7 +269,7 @@ function RenderListView({
     function handleTaskSearch(event) {
         let textToSearch = event.target.value.toLowerCase();
 
-        let result = filterArrayByTerms(taskList, textToSearch, keysToSearch);
+        let result = filterArrayByTerms(safeTaskList, textToSearch, keysToSearch);
         setFilteredTaskList(result);
     }
 
@@ -364,11 +376,11 @@ function RenderListView({
 
                     return (
                         <div
-                            className={`inbox-task-card ${currentTask.id === selectedTask.id ? "selected" : ""}`}
+                            className={`inbox-task-card ${currentTask.id === selectedTaskId ? "selected" : ""}`}
                             key={currentTask.id}
                             role="button"
                             tabIndex={0}
-                            aria-current={currentTask.id === selectedTask.id ? "true" : undefined}
+                            aria-current={currentTask.id === selectedTaskId ? "true" : undefined}
                             onClick={() => handleTaskSelection(currentTask)}
                             onKeyDown={e => {
                                 if (e.key === "Enter" || e.key === " ") {
@@ -389,7 +401,7 @@ function RenderListView({
                                 {data?.use_dynamic === true && parsedOptions.length > 0 &&
                                     parsedOptions.map(option => (
                                         <div key={option.id} className="inbox-task-meta-row">
-                                            {option.label}: {currentTask.variables[option.value] || ""}
+                                            {option.label}: {currentTask?.variables?.[option.value] || ""}
                                         </div>
                                     ))
                                 }
@@ -596,7 +608,7 @@ function RenderListView({
                     </div>
                 )} */}
 
-                {!currentProcessState.start && taskList?.length == 0 && (
+                {!safeCurrentProcessState.loading && !safeCurrentProcessState?.start && safeTaskListLength === 0 && (
                     <div className="col-sm-9 task-view-panel">
                         <div className="no-task-border">
                             <div className="no-task-wrap">
@@ -609,9 +621,9 @@ function RenderListView({
                     </div>
                 )}
 
-                {!currentProcessState.loading &&
-                    currentProcessState.initial &&
-                    taskList?.length > 0 && (
+                {!safeCurrentProcessState.loading &&
+                    safeCurrentProcessState.initial &&
+                    safeTaskListLength > 0 && (
                         <div className="col-sm-9 task-view-panel">
                             <div className="no-task-border">
                                 <div className="no-task-wrap">
@@ -623,7 +635,7 @@ function RenderListView({
                             </div>
                         </div>
                     )}
-                {!currentProcessState.loading && currentProcessState.start && (
+                {!safeCurrentProcessState.loading && safeCurrentProcessState.start && selectedProcessId !== "" && (
                     <>
                         <div className="col-sm-6 form-panel">
                             {renderStartStepProcessor()}
@@ -631,10 +643,10 @@ function RenderListView({
                         <div className="col-sm-3 comment-panel"></div>
                     </>
                 )}
-                {!currentProcessState.loading &&
+                {!safeCurrentProcessState.loading &&
                     userDetails &&
-                    currentProcessState.step &&
-                    taskList?.length > 0 && (
+                    safeCurrentProcessState.step &&
+                    safeTaskListLength > 0 && (
                         <>
                             <div
                                 className={
@@ -670,7 +682,7 @@ function RenderListView({
                         } `}>
                     <div className="modal-content">
                         <div className="modal-header">
-                            <h5 className="modal-title">Start Process</h5>
+                            <h5 className="modal-title">Request Service</h5>
                             <div className="d-flex">
                                 <div
                                     className={`m-2 pointer ${toggleModalWindow === "maximize"
@@ -715,14 +727,18 @@ function RenderListView({
                                 className="select-process">
                                 <div className="row">
                                     <div className="col">
-                                        <p> Click on the process to start.</p>
+                                        <p>Select from available services and submit request.</p>
                                     </div>
                                 </div>
 
-                                {processList &&
-                                    processList.map((process, index) => {
+                                {safeProcessListLength === 0 && (
+                                    <div className="text-muted">No process available to start.</div>
+                                )}
+
+                                {safeProcessList.map((process, index) => {
                                         return (
                                             <div
+                                                key={process.id || process.process_key || index}
                                                 className="process-item pointer"
                                                 title="Start Process"
                                                 data-bs-dismiss="modal"
@@ -731,7 +747,7 @@ function RenderListView({
                                                         process,
                                                     )
                                                 }>
-                                                <i class="fa-solid fa-diagram-project me-2"></i>
+                                                <i className="fa-solid fa-diagram-project me-2"></i>
                                                 <span>
                                                     {process.process_title}
                                                 </span>
@@ -755,13 +771,13 @@ function RenderListView({
         </div>
     );
     function renderStepProcessor() {
-        if (selectedTask.id === "") {
+        if (selectedTaskId === "") {
             return <span>Loading...</span>;
         }
 
         return (
             <StepProcessor
-                task={selectedTask}
+                task={safeSelectedTask}
                 userList={userList}
                 userDetails={userDetails}
                 handleProcessActions={handleStepProcessActions}

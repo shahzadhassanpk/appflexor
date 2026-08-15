@@ -67,7 +67,7 @@ function getTPForProcess(proc, tenantProcs) {
     return tenantProcs.find(tp => matchTP(proc, tp));
 }
 /* ── initial form states ────────────────────────────────────────────────── */
-const BA_INIT = { id: "", title: "", key: "" };
+const BA_INIT = { id: "", title: "", key: "", description: "" };
 const GB_INIT = { id: "", title: "", key: "" };
 const PC_INIT = { id: "", title: "", key: "" };
 const PROC_INIT = {
@@ -218,14 +218,36 @@ function ProcessConfiguration() {
 
     /* ── derived data ───────────────────────────────────────────────────── */
     const q = searchTerm.toLowerCase().trim();
-    const visibleProcs = q
-        ? processes.filter(p => p.title?.toLowerCase().includes(q))
-        : processes;
+    const hasSearch = q.length > 0;
 
-    const processGroups = businessAreas.map((ba, idx) => ({
-        ba, color: getColor(idx), idx,
-        procs: visibleProcs.filter(p => matchArea(p, ba)),
-    }));
+    const processGroups = businessAreas
+        .map((ba, idx) => {
+            const areaTitle = (ba.title || "").toLowerCase();
+            const areaKey = (ba.key || "").toLowerCase();
+            const areaMatches = hasSearch && (areaTitle.includes(q) || areaKey.includes(q));
+
+            const allAreaProcs = processes.filter(p => matchArea(p, ba));
+            const matchedAreaProcs = allAreaProcs.filter(p => {
+                const processTitle = (p.title || "").toLowerCase();
+                const processKey = (p.process_key || "").toLowerCase();
+                return processTitle.includes(q) || processKey.includes(q);
+            });
+
+            const shouldShow = !hasSearch || areaMatches || matchedAreaProcs.length > 0;
+            const procsToShow = hasSearch
+                ? (areaMatches ? allAreaProcs : matchedAreaProcs)
+                : allAreaProcs;
+
+            return {
+                ba,
+                color: getColor(idx),
+                idx,
+                procs: procsToShow,
+                shouldShow,
+                isAutoExpanded: hasSearch && (areaMatches || matchedAreaProcs.length > 0),
+            };
+        })
+        .filter(group => group.shouldShow);
 
     const baCount = ba => processes.filter(p => matchArea(p, ba)).length;
     const gbCount = gb => processes.filter(p => matchGB(p, gb)).length;
@@ -466,8 +488,8 @@ function ProcessConfiguration() {
                     <div className="col-12 datalist-viewer">
                         <div className="s2a-datalist-header">
                             <div className="s2a-dl-title-wrapper">
-                                <div className="s2a-dl-title"><span>Orchestrate — Execute Enterprise Architecture</span></div>
-                                <span>Deploy and manage processes that coordinate work and deliver business outcomes.</span>
+                                <div className="s2a-dl-title"><span>Orchestrate — Enable Enterprise Architecture</span></div>
+                                <span>Manage business areas, processes and governance that deliver enterprise outcomes.</span>
                             </div>
                             <div className="d-flex align-items-center gap-2 flex-shrink-0">
                                 <button
@@ -510,29 +532,46 @@ function ProcessConfiguration() {
                                         <i className="fa-solid fa-sitemap" aria-hidden="true" />
                                     </span>
                                     <div className="min-w-0">
-                                        <div className="orch-panel-title">Business Processes</div>
-                                        <div className="orch-panel-desc">Business processes that deliver outcomes to stakeholders.</div>
+                                        <div className="orch-panel-title">Business Areas and Processes</div>
+                                        <div className="orch-panel-desc">Business Area defines the business domain for grouping related processes.</div>
                                     </div>
+                                </div>
+                                <div className="d-flex flex-column align-items-end gap-1">
+                                    <button type="button" className="orch-add-btn" onClick={openAddBA}>
+                                        <i className="fa-solid fa-plus" aria-hidden="true" />
+                                        Business Area
+                                    </button>
                                 </div>
                             </div>
 
                             {/* tree body */}
                             <div className="orch-tree">
-                                <div className="orch-search p-2">
-                                    <i className="fa-solid ms-2 fa-magnifying-glass orch-search-icon" aria-hidden="true" />
-                                    <input
-                                        type="text"
-                                        className="orch-search-input"
-                                        placeholder="Search processes…"
-                                        value={searchTerm}
-                                        onChange={e => setSearchTerm(e.target.value)}
-                                        aria-label="Search processes"
-                                    />
-                                    {searchTerm && (
-                                        <button type="button" className="orch-search-clear" onClick={() => setSearchTerm("")} aria-label="Clear search">
-                                            <i className="fa-solid fa-xmark" aria-hidden="true" />
-                                        </button>
-                                    )}
+                                <div className="orch-tree-header d-flex align-items-center justify-content-between">
+                                    <div className="orch-search p-2">
+                                        <i className="fa-solid ms-2 fa-magnifying-glass orch-search-icon" aria-hidden="true" />
+                                        <input
+                                            type="text"
+                                            className="orch-search-input"
+                                            placeholder="Search business areas or processes..."
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                            aria-label="Search business areas or processes"
+                                        />
+                                        <div>
+                                            {searchTerm && (
+                                                <button type="button" className="orch-search-clear" onClick={() => setSearchTerm("")} aria-label="Clear search">
+                                                    <i className="fa-solid fa-xmark" aria-hidden="true" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-2 me-2">
+                                        <span className="orch-count-badge">{businessAreas.length}</span>
+                                        <span className="text-muted small">Business Areas</span>
+                                        <span className="orch-count-badge">{processes.length}</span>
+                                        <span className="text-muted small">Processes</span>
+
+                                    </div>
                                 </div>
                                 {processGroups.length === 0 && (
                                     <div className="orch-empty-state">
@@ -544,70 +583,85 @@ function ProcessConfiguration() {
                                     </div>
                                 )}
 
-                                {processGroups.map(({ ba, color, procs }) => (
-                                    <div key={ba.id} className="orch-tree-group">
-                                        {/* group header */}
-                                        <div className="orch-tree-group-header">
-                                            <button
-                                                type="button"
-                                                className="orch-tree-chevron"
-                                                onClick={() => toggleArea(ba.id)}
-                                                aria-label={expandedAreas.has(ba.id) ? "Collapse" : "Expand"}>
-                                                <i className={`fa-solid ${expandedAreas.has(ba.id) ? "fa-chevron-down" : "fa-chevron-right"}`} aria-hidden="true" />
-                                            </button>
-                                            <span className="orch-area-icon" style={{ background: `${color}22`, color }}>
-                                                <i className="fa-solid fa-layer-group" aria-hidden="true" />
-                                            </span>
-                                            <span className="orch-tree-area-name">{ba.title}</span>
-                                            <span className="orch-count-badge" style={{ background: `${color}18`, color }}>{procs.length}</span>
-                                            <button
+                                {processGroups.map(({ ba, color, procs, isAutoExpanded }) => {
+                                    const isExpanded = hasSearch ? isAutoExpanded : expandedAreas.has(ba.id) && procs.length > 0;
+                                    return (
+                                        <div key={ba.id} className="orch-tree-group">
+                                            {/* group header */}
+                                            <div className="orch-tree-group-header orch-list-item">
+                                                <button
+                                                    type="button"
+                                                    className="orch-tree-chevron"
+                                                    onClick={() => toggleArea(ba.id)}
+                                                    aria-label={isExpanded ? "Collapse" : "Expand"}>
+                                                    <i className={`fa-solid ${isExpanded ? "fa-chevron-down" : "fa-chevron-right"}`} aria-hidden="true" />
+                                                </button>
+                                                <span className="orch-area-icon" style={{ background: `${color}22`, color }}>
+                                                    <i className="fa-solid fa-layer-group" aria-hidden="true" />
+                                                </span>
+                                                <div className="min-w-0">
+                                                    <div className="orch-panel-title"><span className="orch-tree-area-name">{ba.title}</span></div>
+                                                    <div className="orch-panel-desc"><span className="orch-panel-desc">{ba.description}</span></div>
+                                                </div>
+                                                <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
+                                                    <div className="orch-list-actions">
+                                                        <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditBA(ba)}>
+                                                            <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
+                                                        </button>
+                                                        <button type="button" className="orch-icon-btn danger" title="Delete" onClick={() => deleteBA(ba)}>
+                                                            <i className="fa-regular fa-trash-can" aria-hidden="true" />
+                                                        </button>
+                                                    </div>
+                                                    <span className="orch-count-badge" title="Business Area Process Count" style={{ background: `${color}18`, color }}>{procs.length}</span>
+                                                </div>
+                                                {/* <button
                                                 type="button"
                                                 className="orch-icon-btn ms-1"
                                                 title="Configure processes in this area"
                                                 onClick={() => setShowProcessMap(true)}>
                                                 <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true" />
-                                            </button>
-                                        </div>
+                                            </button> */}
+                                            </div>
 
-                                        {/* process rows */}
-                                        {expandedAreas.has(ba.id) && (
-                                            <div className="orch-tree-children">
-                                                {procs.length === 0 && (
+                                            {/* process rows */}
+                                            {isExpanded && (
+                                                <div className="orch-tree-children">
+                                                    {/* {procs.length === 0 && (
                                                     <div className="orch-tree-empty">No processes in this area</div>
-                                                )}
-                                                {procs.map(proc => {
-                                                    const gb = getGBForProcess(proc, governingBodies);
-                                                    const pc = getPCForProcess(proc, processCategories);
-                                                    const tp = getTPForProcess(proc, tenantProcs);
-                                                    const url = "/file/service/process/"
-                                                        + encodeURIComponent(tp?.id)
-                                                        + "/"
-                                                        + encodeURIComponent(tp?.process_file);
-                                                    const gbIdx = gb ? governingBodies.indexOf(gb) : -1;
-                                                    const gbColor = gbIdx >= 0 ? getColor(gbIdx + 2) : "#6b7280";
-                                                    const pcColor = pc ? getColor(processCategories.indexOf(pc) + 2) : "#6b7280";
-                                                    return (
-                                                        <div key={proc.id} className="orch-tree-proc-row">
-                                                            <span className="orch-proc-indent" aria-hidden="true" />
-                                                            <i className="fa-solid fa-diagram-project orch-proc-icon" aria-hidden="true" />
-                                                            <a href="#" className="orch-proc-title" title={proc.title} onClick={() => { setUrlBPMN(url); setShowBPMN(true); setBpmnTitle(proc.title) }}>{proc.title} {proc.def_key}</a>
-                                                            
+                                                )} */}
+                                                    {procs.map(proc => {
+                                                        const gb = getGBForProcess(proc, governingBodies);
+                                                        const pc = getPCForProcess(proc, processCategories);
+                                                        const tp = getTPForProcess(proc, tenantProcs);
+                                                        const url = "/file/service/process/"
+                                                            + encodeURIComponent(tp?.id)
+                                                            + "/"
+                                                            + encodeURIComponent(tp?.process_file);
+                                                        const gbIdx = gb ? governingBodies.indexOf(gb) : -1;
+                                                        const gbColor = gbIdx >= 0 ? getColor(gbIdx + 2) : "#6b7280";
+                                                        const pcColor = pc ? getColor(processCategories.indexOf(pc) + 2) : "#6b7280";
+                                                        return (
+                                                            <div key={proc.id} className="orch-tree-proc-row">
+                                                                <span className="orch-proc-indent" aria-hidden="true" />
+                                                                <i className="fa-solid fa-diagram-project orch-proc-icon" aria-hidden="true" />
+                                                                <a href="#" className="orch-proc-title" title={proc.title} onClick={() => { setUrlBPMN(url); setShowBPMN(true); setBpmnTitle(proc.title) }}>{proc.title} {proc.def_key}</a>
 
-                                                            {gb && (
-                                                                <span
-                                                                    className="orch-gb-badge"
-                                                                    style={{ background: `${gbColor}18`, color: gbColor, border: `1px solid ${gbColor}35` }}>
-                                                                    {gb.title}
-                                                                </span>
-                                                            )}
-                                                            {pc && (
-                                                                <span
-                                                                    className="orch-gb-badge"
-                                                                    style={{ background: `${pcColor}18`, color: pcColor, border: `1px solid ${pcColor}35` }}>
-                                                                    {pc.title}
-                                                                </span>
-                                                            )}
-                                                            {/* <div className="orch-proc-actions">
+
+                                                                {gb && (
+                                                                    <span
+                                                                        className="orch-gb-badge"
+                                                                        style={{ background: `${gbColor}18`, color: gbColor, border: `1px solid ${gbColor}35` }}>
+                                                                        {gb.title}
+                                                                    </span>
+                                                                )}
+                                                                {pc && (
+                                                                    <span
+                                                                        className="orch-gb-badge"
+                                                                        style={{ background: `${pcColor}18`, color: pcColor, border: `1px solid ${pcColor}35` }}>
+                                                                        {pc.title}
+                                                                    </span>
+                                                                )}
+                                                                {/* <div className="orch-proc-actions">
                                                                 <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditProc(proc)}>
                                                                     <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
                                                                 </button>
@@ -615,13 +669,14 @@ function ProcessConfiguration() {
                                                                     <i className="fa-regular fa-trash-can" aria-hidden="true" />
                                                                 </button>
                                                             </div> */}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
@@ -630,7 +685,7 @@ function ProcessConfiguration() {
                     <div className="orch-right">
 
                         {/* ── Business Areas ─────────────────────────── */}
-                        <div className="orch-panel mb-3">
+                        {/* <div className="orch-panel mb-3">
                             <div className="orch-panel-header">
                                 <div className="d-flex align-items-start gap-2 flex-1">
                                     <span className="orch-panel-icon">
@@ -638,7 +693,7 @@ function ProcessConfiguration() {
                                     </span>
                                     <div>
                                         <div className="orch-panel-title">Business Areas</div>
-                                        <div className="orch-panel-desc">Business areas group related business services.</div>
+                                        <div className="orch-panel-desc">Business Area defines the business domain of the process.</div>
                                     </div>
                                 </div>
                                 <button type="button" className="orch-add-btn" onClick={openAddBA}>
@@ -668,8 +723,7 @@ function ProcessConfiguration() {
                                     </div>
                                 ))}
                             </div>
-                        </div>
-
+                        </div> */}
                         {/* ── Governing Bodies ───────────────────────── */}
                         <div className="orch-panel mb-3">
                             <div className="orch-panel-header">
@@ -679,7 +733,7 @@ function ProcessConfiguration() {
                                     </span>
                                     <div>
                                         <div className="orch-panel-title">Governing Bodies</div>
-                                        <div className="orch-panel-desc">Bodies accountable for business process performance.</div>
+                                        <div className="orch-panel-desc">Governing Body identifies the owner for approvals and policy.</div>
                                     </div>
                                 </div>
                                 <button type="button" className="orch-add-btn" onClick={openAddGB}>
@@ -697,7 +751,6 @@ function ProcessConfiguration() {
                                             <i className="fa-solid fa-tag" aria-hidden="true" />
                                         </span>
                                         <span className="orch-list-name">{gb.title}</span>
-                                        <span className="orch-count-badge">{gbCount(gb)}</span>
                                         <div className="orch-list-actions">
                                             <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditGB(gb)}>
                                                 <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
@@ -706,6 +759,8 @@ function ProcessConfiguration() {
                                                 <i className="fa-regular fa-trash-can" aria-hidden="true" />
                                             </button>
                                         </div>
+                                        <span className="orch-count-badge">{gbCount(gb)}</span>
+
                                     </div>
                                 ))}
                             </div>
@@ -719,7 +774,7 @@ function ProcessConfiguration() {
                                     </span>
                                     <div>
                                         <div className="orch-panel-title">Process Categories</div>
-                                        <div className="orch-panel-desc">Categories for classifying business processes</div>
+                                        <div className="orch-panel-desc">Category represents the strategic intent behind a process.</div>
                                     </div>
                                 </div>
                                 <button type="button" className="orch-add-btn" onClick={openAddPC}>
@@ -737,7 +792,6 @@ function ProcessConfiguration() {
                                             <i className="fa-solid fa-tag" aria-hidden="true" />
                                         </span>
                                         <span className="orch-list-name">{gb.title}</span>
-                                        <span className="orch-count-badge">{pcCount(gb)}</span>
                                         <div className="orch-list-actions">
                                             <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditPC(gb)}>
                                                 <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
@@ -746,10 +800,13 @@ function ProcessConfiguration() {
                                                 <i className="fa-regular fa-trash-can" aria-hidden="true" />
                                             </button>
                                         </div>
+                                        <span className="orch-count-badge">{pcCount(gb)}</span>
+
                                     </div>
                                 ))}
                             </div>
                         </div>
+                        
                     </div>{/* end orch-right */}
                 </div>{/* end orch-layout */}
 
@@ -771,6 +828,16 @@ function ProcessConfiguration() {
                             <label className="fw-semibold mt-1">Key <span className="text-danger">*</span></label>
                             <input type="text" className="form-control mt-1" value={selectedBA.key}
                                 onChange={e => setSelectedBA(p => ({ ...p, key: e.target.value }))} />
+                        </div>
+                        <div className="mb-1 mt-3">
+                            <label className="fw-semibold mt-1">Description</label>
+                            <textarea
+                                className="form-control mt-1"
+                                rows={3}
+                                value={selectedBA.description || ""}
+                                onChange={e => setSelectedBA(p => ({ ...p, description: e.target.value }))}
+                                placeholder="Add business area description"
+                            />
                         </div>
                     </div>
                     <div className="modal-footer pe-0">

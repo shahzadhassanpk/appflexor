@@ -6,6 +6,7 @@ import { AppContext } from "../../../../AppContext";
 import { API_URL } from "../../../Config";
 import ModalBox from "../../../components/Modal/Modal";
 import ModuleFormViewer from "../../../components/ModuleFormViewer/ModuleFormViewer";
+import TextEditor from "../../../components/TextEditor/RichTextEditor";
 import { TablePagination } from "../../../components/TablePagination/TablePagination";
 import TableSorting from "../../../components/TableSorting/TableSorting";
 import { updateDeleteConfig } from "../../../utils/utils";
@@ -24,6 +25,7 @@ function ProcessMap({ activeTab }) {
         business_area: "",
         is_active: "YES",
         allow_draft: "YES",
+        description: "",
     };
     const [items, setItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -42,6 +44,7 @@ function ProcessMap({ activeTab }) {
     const [channels, setChannels] = useState([]);
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [selectedChannels, setSelectedChannels] = useState([]);
+    const [showPreview, setShowPreview] = useState(false);
     const handleClose = () => setFormShow(false);
     const handleShow = () => setFormShow(true);
     const appContext = useContext(AppContext);
@@ -96,12 +99,13 @@ function ProcessMap({ activeTab }) {
     useEffect(() => {
         if (
             selectedItem.process_key !== "" &&
+            selectedItem.business_area !== "" &&
+            selectedItem.process_gov !== "" &&
             selectedItem.category !== "" &&
             selectedItem.title !== "" &&
             selectedItem.form_id !== "" &&
             selectedChannels.length > 0 &&
-            selectedGroups.length > 0 &&
-            selectedItem.submit_label
+            selectedGroups.length > 0
         ) {
             setSaveIsDisabled(false);
         } else {
@@ -224,12 +228,43 @@ function ProcessMap({ activeTab }) {
         setSelectedGroups([]);
         setSelectedChannels([]);
         setSaveIsDisabled(true);
+        setShowPreview(false);
         handleShow();
     }
 
     function clearFields() {
         setSelectedItem(initialState);
         setSaveIsDisabled(true);
+        setShowPreview(false);
+    }
+
+    function getStartProcessUrl() {
+        if (!selectedItem?.id || selectedItem.id === "new") {
+            return "";
+        }
+        return `/app/process-start?processId=${selectedItem.id}&embed=true`;
+    }
+
+    function copyStartProcessUrl() {
+        const url = getStartProcessUrl();
+        if (!url) {
+            toastEmitter("Save the process first to generate a start URL", false);
+            return;
+        }
+
+        if (navigator?.clipboard?.writeText) {
+            navigator.clipboard
+                .writeText(url)
+                .then(() => toastEmitter("Start URL copied", true))
+                .catch(() => toastEmitter("Unable to copy URL", false));
+            return;
+        }
+
+        toastEmitter("Clipboard is not available in this browser", false);
+    }
+
+    function isFieldEmpty(value) {
+        return (value || "").toString().trim() === "";
     }
 
     function getProcessDefination() {
@@ -663,327 +698,319 @@ function ProcessMap({ activeTab }) {
                 <ModuleFormViewer
                     handleClose={handleClose}
                     showModal={formShow}
-                    modalTitle="Process Config"
+                    modalTitle="Process Configuration"
                     size="lg">
                     <>
                         <div className="form col-sm-12 form-background py-2 px-3">
-                            <div className="row">
-                                <div className="col-sm-6 mb-2">
-                                    <div className="form-group">
-                                        <label className="mt-1 fw-bold">
-                                            Process&nbsp;
-                                            <span className="text-danger">
-                                                *
-                                            </span>
-                                        </label>
-                                        <select
-                                            placeholder="Select Form"
-                                            className="form-select"
-                                            name="process_key"
-                                            value={
-                                                selectedItem &&
-                                                selectedItem.process_key
-                                            }
-                                            onChange={e =>
-                                                handleSelectedProcess(e)
-                                            }>
-                                            <option
-                                                key={0}
-                                                defaultValue="">
-                                                Select Process
-                                            </option>
-                                            {processList &&
-                                                processList !== undefined &&
-                                                processList.map(process => {
-                                                    return (
+                            <div className="card border-0 shadow-sm mb-3">
+                                <div className="card-header bg-light fw-bold">Process Details</div>
+                                <div className="card-body">
+                                    <div className="row g-3">
+                                        <div className="col-sm-6">
+                                            <label className="mt-1 fw-bold">
+                                                Process
+                                                <span className="text-danger"> *</span>
+                                            </label>
+                                            <select
+                                                className="form-select"
+                                                name="process_key"
+                                                value={selectedItem?.process_key || ""}
+                                                onChange={e => handleSelectedProcess(e)}>
+                                                <option key={0} defaultValue="">
+                                                    Select Process
+                                                </option>
+                                                {processList &&
+                                                    processList.map(process => (
                                                         <option
                                                             key={process.id}
-                                                            value={
-                                                                process.process_def_key
-                                                            }>
+                                                            value={process.process_def_key}>
                                                             {process.title}
                                                         </option>
-                                                    );
-                                                })}
-                                        </select>
+                                                    ))}
+                                            </select>
+                                            {isFieldEmpty(selectedItem?.process_key) && (
+                                                <div className="form-text text-danger">Process is required.</div>
+                                            )}
+                                        </div>
+
+                                        <div className="col-sm-6">
+                                            <label className="mt-1 fw-bold">
+                                                Process Title
+                                                <span className="text-danger"> *</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                name="title"
+                                                value={selectedItem?.title || ""}
+                                                onChange={handleInputField}
+                                            />
+                                            {isFieldEmpty(selectedItem?.title) && (
+                                                <div className="form-text text-danger">Title is required.</div>
+                                            )}
+                                        </div>
+
+                                        <div className="col-sm-12">
+                                            <label className="mt-1 fw-bold">Description</label>
+                                            <TextEditor
+                                                name="description"
+                                                value={selectedItem?.description || ""}
+                                                height={220}
+                                                onChange={handleInputField}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="col-sm-6 mb-2">
-                                    <div className="form-group">
-                                        <label className="mt-1 fw-bold">
-                                            Category&nbsp;
-                                            <span className="text-danger">
-                                                *
-                                            </span>
-                                        </label>
-                                        <select
-                                            placeholder="Select Category"
-                                            className="form-select"
-                                            name="category"
-                                            value={
-                                                selectedItem &&
-                                                selectedItem.category
-                                            }
-                                            onChange={handleInputField}>
-                                            <option
-                                                key={0}
-                                                defaultValue="">
-                                                Select Category
-                                            </option>
-                                            {categoryList &&
-                                                categoryList !== undefined &&
-                                                categoryList.map(category => {
-                                                    return (
-                                                        <option
-                                                            key={category.id}
-                                                            value={
-                                                                category.id
-                                                            }>
-                                                            {category.title}
-                                                        </option>
-                                                    );
-                                                })}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="col-sm-6 mb-2">
-                                    <div className="form-group">
-                                        <label className="mt-1 fw-bold">
-                                            Business Area&nbsp;
-                                            <span className="text-danger">
-                                                *
-                                            </span>
-                                        </label>
-                                        <select
-                                            placeholder="Select Business Area"
-                                            className="form-select"
-                                            name="business_area"
-                                            value={
-                                                selectedItem &&
-                                                selectedItem.business_area
-                                            }
-                                            onChange={handleInputField}>
-                                            <option
-                                                key={0}
-                                                defaultValue="">
-                                                Select Business Area
-                                            </option>
-                                            {businessAreaList &&
-                                                businessAreaList !== undefined &&
-                                                businessAreaList.map(barea => {
-                                                    return (
-                                                        <option
-                                                            key={barea.id}
-                                                            value={barea.id}>
+                            </div>
+
+                            <div className="card border-0 shadow-sm mb-3">
+                                <div className="card-header bg-light fw-bold">Governance</div>
+                                <div className="card-body">
+                                    <div className="row g-3">
+                                        <div className="col-sm-4">
+                                            <label className="mt-1 fw-bold">
+                                                Business Area
+                                                <span className="text-danger"> *</span>
+                                                <span className="ms-1" title="Business Area defines the business domain of the process.">?</span>
+                                            </label>
+                                            <select
+                                                className="form-select"
+                                                name="business_area"
+                                                value={selectedItem?.business_area || ""}
+                                                onChange={handleInputField}>
+                                                <option key={0} defaultValue="">
+                                                    Select Business Area
+                                                </option>
+                                                {businessAreaList &&
+                                                    businessAreaList.map(barea => (
+                                                        <option key={barea.id} value={barea.id}>
                                                             {barea.title}
                                                         </option>
-                                                    );
-                                                })}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="col-sm-6 mb-2">
-                                    <div className="form-group">
-                                        <label className="mt-1 fw-bold">
-                                            Governing Body&nbsp;
-                                            <span className="text-danger">
-                                                *
-                                            </span>
-                                        </label>
-                                        <select
-                                            placeholder="Select Governing Body"
-                                            className="form-select"
-                                            name="process_gov"
-                                            value={
-                                                selectedItem &&
-                                                selectedItem.process_gov
-                                            }
-                                            onChange={handleInputField}>
-                                            <option
-                                                key={0}
-                                                defaultValue="">
-                                                Select Governing Body
-                                            </option>
-                                            {governingBodyList &&
-                                                governingBodyList !== undefined &&
-                                                governingBodyList.map(gb => {
-                                                    return (
-                                                        <option
-                                                            key={gb.id}
-                                                            value={gb.id}>
+                                                    ))}
+                                            </select>                                            
+                                        </div>
+
+                                        <div className="col-sm-4">
+                                            <label className="mt-1 fw-bold">
+                                                Governing Body
+                                                <span className="text-danger"> *</span>
+                                                <span className="ms-1" title="Governing Body identifies the owner team responsible for approvals and policy.">?</span>
+                                            </label>
+                                            <select
+                                                className="form-select"
+                                                name="process_gov"
+                                                value={selectedItem?.process_gov || ""}
+                                                onChange={handleInputField}>
+                                                <option key={0} defaultValue="">
+                                                    Select Governing Body
+                                                </option>
+                                                {governingBodyList &&
+                                                    governingBodyList.map(gb => (
+                                                        <option key={gb.id} value={gb.id}>
                                                             {gb.title}
                                                         </option>
-                                                    );
-                                                })}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="col-sm-6 mb-2">
-                                    <div className="form-group">
-                                        <label className="mt-1 fw-bold">
-                                            Process Title&nbsp;
-                                            <span className="text-danger">
-                                                *
-                                            </span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            name="title"
-                                            value={selectedItem.title}
-                                            onChange={handleInputField}
-                                        />
-                                    </div>
-                                </div>
+                                                    ))}
+                                            </select>                                            
+                                            {isFieldEmpty(selectedItem?.process_gov) && (
+                                                <div className="form-text text-danger">Governing Body is required.</div>
+                                            )}
+                                        </div>
 
-                                <div className="col-sm-6 mb-2">
-                                    <div className="form-group">
-                                        <label className="mt-1 fw-bold">
-                                            Start Form&nbsp;
-                                            <span className="text-danger">
-                                                *
-                                            </span>
-                                        </label>
-                                        <select
-                                            placeholder="Select Form"
-                                            className="form-select"
-                                            name="form_id"
-                                            value={
-                                                selectedItem &&
-                                                selectedItem.form_id
-                                            }
-                                            onChange={e =>
-                                                handleSelectedForms(e)
-                                            }>
-                                            <option
-                                                key={0}
-                                                defaultValue="">
-                                                Select Start Form
-                                            </option>
-                                            {formList &&
-                                                formList !== undefined &&
-                                                formList.map(form => {
-                                                    return (
-                                                        <option
-                                                            key={form.id}
-                                                            value={form.id}>
+                                        <div className="col-sm-4">
+                                            <label className="mt-1 fw-bold">
+                                                Category
+                                                <span className="text-danger"> *</span>
+                                                <span className="ms-1" title="Category represents the organization’s strategic intent behind a process to highlight internal priorities and value creation.">?</span>
+                                            </label>
+                                            <select
+                                                className="form-select"
+                                                name="category"
+                                                value={selectedItem?.category || ""}
+                                                onChange={handleInputField}>
+                                                <option key={0} defaultValue="">
+                                                    Select Category
+                                                </option>
+                                                {categoryList &&
+                                                    categoryList.map(category => (
+                                                        <option key={category.id} value={category.id}>
+                                                            {category.title}
+                                                        </option>
+                                                    ))}
+                                            </select>
+                                            {isFieldEmpty(selectedItem?.category) && (
+                                                <div className="form-text text-danger">Category is required.</div>
+                                            )}                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="card border-0 shadow-sm mb-3">
+                                <div className="card-header bg-light fw-bold">Access Control</div>
+                                <div className="card-body">
+                                    <div className="row g-3">
+                                        <div className="col-sm-4">
+                                            <label className="mt-1 fw-bold">
+                                                Start Form
+                                                <span className="text-danger"> *</span>
+                                            </label>
+                                            <select
+                                                className="form-select"
+                                                name="form_id"
+                                                value={selectedItem?.form_id || ""}
+                                                onChange={e => handleSelectedForms(e)}>
+                                                <option key={0} defaultValue="">
+                                                    Select Start Form
+                                                </option>
+                                                {formList &&
+                                                    formList.map(form => (
+                                                        <option key={form.id} value={form.id}>
                                                             {form.name}
                                                         </option>
-                                                    );
-                                                })}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="col-sm-6 mb-2">
-                                    <div className="form-group">
-                                        <label className="mt-1 fw-bold">
-                                            Site (s)&nbsp;
-                                            <span className="text-danger">
-                                                *
-                                            </span>
-                                        </label>
-                                        <MultiSelect
-                                            options={channels}
-                                            value={selectedChannels}
-                                            onChange={handleChannelChange}
-                                            labelledBy="Select"
-                                        />
-                                    </div>
-                                </div>
+                                                    ))}
+                                            </select>
+                                            {isFieldEmpty(selectedItem?.form_id) && (
+                                                <div className="form-text text-danger">Start Form is required.</div>
+                                            )}
+                                        </div>
 
-                                <div className="col-sm-6 mb-2">
-                                    <div className="form-group">
-                                        <label className="mt-1 fw-bold">
-                                            User Group(s)&nbsp;
-                                            <span className="text-danger">
-                                                *
-                                            </span>
-                                        </label>
-                                        <MultiSelect
-                                            options={groups}
-                                            value={selectedGroups}
-                                            onChange={handleGroupChange}
-                                            labelledBy="Select"
-                                        />
+                                        <div className="col-sm-4">
+                                            <label className="mt-1 fw-bold">
+                                                User Group(s)
+                                                <span className="text-danger"> *</span>
+                                                <span className="ms-1" title="Only selected groups can initiate and access this process.">?</span>
+                                            </label>
+                                            <MultiSelect
+                                                options={groups}
+                                                value={selectedGroups}
+                                                onChange={handleGroupChange}
+                                                labelledBy="Select"
+                                            />
+                                            {selectedGroups.length === 0 && (
+                                                <div className="form-text text-danger">At least one user group is required.</div>
+                                            )}
+                                        </div>
+
+                                        <div className="col-sm-4">
+                                            <label className="mt-1 fw-bold">
+                                                Site(s)
+                                                <span className="text-danger"> *</span>
+                                                <span className="ms-1" title="Selected sites determine where this process is visible.">?</span>
+                                            </label>
+                                            <MultiSelect
+                                                options={channels}
+                                                value={selectedChannels}
+                                                onChange={handleChannelChange}
+                                                labelledBy="Select"
+                                            />
+                                            {selectedChannels.length === 0 && (
+                                                <div className="form-text text-danger">At least one site is required.</div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="col-sm-6 d-flex mt-4">
-                                    <div className="col-sm-6 mb-2">
-                                        <div className="form-group">
-                                            <div className="form-check">
+                            </div>
+
+                            <div className="card border-0 shadow-sm mb-3">
+                                <div className="card-header bg-light fw-bold">Behavior</div>
+                                <div className="card-body">
+                                    <div className="row g-3">
+                                        <div className="col-sm-6">
+                                            <div className="form-check border rounded p-3 h-100">
                                                 <input
                                                     className="form-check-input"
                                                     type="checkbox"
                                                     name="is_active"
-                                                    checked={
-                                                        selectedItem.is_active ===
-                                                            "YES"
-                                                            ? true
-                                                            : false
-                                                    }
+                                                    checked={selectedItem?.is_active === "YES"}
                                                     onChange={handleInputField}
                                                 />
-                                                <label className="form-check-label fw-bold">
-                                                    Is Active&nbsp;
-                                                </label>
+                                                <label className="form-check-label fw-bold ms-1">Is Active</label>
+                                                <div className="form-text mb-0">Inactive processes are hidden from end users.</div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="col-sm-6 mb-2">
-                                        <div className="form-group">
-                                            <div className="form-check">
+                                        <div className="col-sm-6">
+                                            <div className="form-check border rounded p-3 h-100">
                                                 <input
                                                     className="form-check-input"
                                                     type="checkbox"
                                                     name="hide_inbox_start"
-                                                    checked={
-                                                        selectedItem.hide_inbox_start ===
-                                                            "YES"
-                                                            ? true
-                                                            : false
-                                                    }
+                                                    checked={selectedItem?.hide_inbox_start === "YES"}
                                                     onChange={handleInputField}
                                                 />
-                                                <label className="form-check-label fw-bold">
-                                                    Hide Inbox Start&nbsp;
-                                                </label>
+                                                <label className="form-check-label fw-bold ms-1">Hide Inbox Start</label>
+                                                <div className="form-text mb-0">Removes this process from the inbox quick-start options.</div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="col-sm-6 mb-2">
-                                    <div className="form-group">
-                                        <label className="mt-1 fw-bold">
-                                            Submit Label&nbsp;
-                                            <span className="text-danger">
-                                                *
-                                            </span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            name="submit_label"
-                                            value={selectedItem.submit_label}
-                                            onChange={handleInputField}
-                                        />
-                                    </div>
-                                </div>
                             </div>
-                            {selectedItem.id !== "new" && (
-                                <div className="row">
-                                    <div className="col-sm-12 mb-2">
-                                        <label className="mt-1 fw-bold">
-                                            Process Start URL:
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={`/app/process-start?processId=${selectedItem.id}&embed=true`}
-                                            readOnly
-                                        />
+
+                            <details className="card border-0 shadow-sm mb-3" open={false}>
+                                <summary className="card-header bg-light fw-bold" style={{ cursor: "pointer" }}>
+                                    Advanced Settings
+                                </summary>
+                                <div className="card-body">
+                                    <div className="row g-3">
+                                        <div className="col-sm-6">
+                                            <label className="mt-1 fw-bold">Submit Label (Optional)</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                name="submit_label"
+                                                value={selectedItem?.submit_label || ""}
+                                                onChange={handleInputField}
+                                                placeholder="Example: Save & Deploy"
+                                            />
+                                        </div>
+
+                                        <div className="col-sm-6">
+                                            <label className="mt-1 fw-bold">Process Start URL</label>
+                                            <div className="input-group">
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    value={getStartProcessUrl()}
+                                                    placeholder="Available after first save"
+                                                    readOnly
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-secondary"
+                                                    onClick={copyStartProcessUrl}
+                                                    title="Copy start link">
+                                                    <i className="fa-regular fa-copy me-1"></i>
+                                                    Copy Link
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            )}
+                            </details>
+
+                            {/* <div className="card border-0 shadow-sm mb-2">
+                                <div className="card-header bg-light d-flex justify-content-between align-items-center">
+                                    <span className="fw-bold">Preview</span>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-primary"
+                                        onClick={() => setShowPreview(prev => !prev)}>
+                                        {showPreview ? "Hide Preview" : "Show Preview"}
+                                    </button>
+                                </div>
+                                {showPreview && (
+                                    <div className="card-body">
+                                        <h6 className="mb-1">{selectedItem?.title || "Untitled Process"}</h6>
+                                        <div className="text-muted small mb-2">
+                                            {(selectedItem?.process_key || "No process selected") + " • " + (getBusinessAreaById(selectedItem?.business_area) || "No business area")}
+                                        </div>
+                                        <div
+                                            className="border rounded p-2"
+                                            style={{ minHeight: "100px", background: "#fff" }}
+                                            dangerouslySetInnerHTML={{ __html: selectedItem?.description || "<em>No description provided yet.</em>" }}
+                                        />
+                                    </div>
+                                )}
+                            </div> */}
                         </div>
                         <div className="modal-footer pe-0">
                             {selectedItem.id === "" && (
@@ -992,7 +1019,7 @@ function ProcessMap({ activeTab }) {
                                     onClick={() => saveData()}
                                     disabled={saveIsDisabled}>
                                     <i className="fa-solid fa-floppy-disk pe-1"></i>
-                                    Save
+                                    Save & Deploy
                                 </button>
                             )}
                             {selectedItem.id !== "" && (
@@ -1001,7 +1028,7 @@ function ProcessMap({ activeTab }) {
                                     onClick={() => saveData()}
                                     disabled={saveIsDisabled}>
                                     <i className="fa-solid fa-floppy-disk pe-1"></i>
-                                    Update
+                                    Save Changes
                                 </button>
                             )}
                             {selectedItem.id === "" && (
@@ -1009,11 +1036,11 @@ function ProcessMap({ activeTab }) {
                                     className="btn button-theme btn-sm me-2 m-0"
                                     onClick={clearFields}>
                                     <i className="fa-solid fa-ban pe-1"></i>
-                                    Clear
+                                    Clear Form
                                 </button>
                             )}
                             <button
-                                className="btn button-theme btn-sm m-0"
+                                className="btn button-theme btn-sm me-2 m-0"
                                 onClick={() => handleClose()}>
                                 <i className="fa-solid fa-xmark pe-1"></i>
                                 Close
