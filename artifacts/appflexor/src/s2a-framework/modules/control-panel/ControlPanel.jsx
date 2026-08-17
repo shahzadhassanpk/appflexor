@@ -8,8 +8,8 @@ const PANELS = [
         id: "capture",
         icon: HiInboxArrowDown,
         accent: { bg: "#eef2ff", icon: "#4f46e5", btn: "#4f46e5", btnHover: "#4338ca", text: "#4f46e5", soft: "#e0e7ff" },
-        title: "Capture - Business Data and Events",
-        subtitle: "Capture business events and data intelligently to trigger relevant business processes.",
+        title: "Capture - Business Data and Events with Context",
+        subtitle: "Capture business events, enrich data with context, and initiate relevant business processes.",
         showDemoDisclaimer: true,
         status: "Healthy",
         statusOk: true,
@@ -24,21 +24,21 @@ const PANELS = [
         quickActions: [
             {
                 icon: "fa-solid fa-envelope-open-text",
-                label: "Data Intake Web Forms",
+                label: "Data Intake using Web Forms",
                 doc: { section: "capture", slug: "forms", title: "Forms" },
-                description: "How to take structured input using web forms and trigger processes."
+                description: "How to take structured information using web forms and trigger processes."
             },
             {
                 icon: "fa-solid fa-plug",
-                label: "Data Intake APIs",
+                label: "Data Intake using APIs",
                 doc: { section: "capture", slug: "apis", title: "APIs" },
-                description: "How to connect external systems to push information and trigger processes."
+                description: "How to receive business data from external systems and trigger relevant business processes."
             },
             {
                 icon: "fa-solid fa-robot",
-                label: "Data Intake AI Agents",
+                label: "Data Enrichment using AI",
                 doc: { section: "capture", slug: "ai-agent", title: "AI Agent — Enrich Data" },
-                description: "How to validate and enrich data at the point of capture using context-aware AI Agents."
+                description: "How to validate, classify, and enrich captured data using context-aware AI agents."
             },
         ],
 
@@ -52,8 +52,8 @@ const PANELS = [
         id: "orchestrate",
         icon: "fa-solid fa-arrows-spin",
         accent: { bg: "#ecfdf5", icon: "#059669", btn: "#059669", btnHover: "#047857", text: "#059669", soft: "#d1fae5" },
-        title: "Orchestrate - Business Activities Across Humans and Systems",
-        subtitle: "Configure and deploy business processes to coordinate business activities across people and systems.",
+        title: "Orchestrate - Business Activities Across People and Systems",
+        subtitle: "Configure and deploy processes to coordinate and automate business activities.",
         status: "Healthy",
         statusOk: true,
         lastActivity: "5m ago",
@@ -107,7 +107,7 @@ const PANELS = [
         icon: "fa-solid fa-link",
         accent: { bg: "#f5f3ff", icon: "#7c3aed", btn: "#7c3aed", btnHover: "#6d28d9", text: "#7c3aed", soft: "#ede9fe" },
         title: "Integrate – Connect Enterprise Systems and Data",
-        subtitle: "Connect apps, data, and external systems.",
+        subtitle: "Connect enterprise applications, to execute tasks and exchange business information.",
         showDemoDisclaimer: true,
         status: "Attention Required",
         statusOk: false,
@@ -163,7 +163,7 @@ const PANELS = [
         icon: "fa-solid fa-gear",
         accent: { bg: "#fff7ed", icon: "#ea580c", btn: "#ea580c", btnHover: "#c2410c", text: "#ea580c", soft: "#ffedd5" },
         title: "Administrate – Platform Configurations and Security",
-        subtitle: "Manage platform configuration and security.",
+        subtitle: "Manage platform configuration and security for controlled execution.",
         status: "Healthy",
         statusOk: true,
         lastActivity: "3m ago",
