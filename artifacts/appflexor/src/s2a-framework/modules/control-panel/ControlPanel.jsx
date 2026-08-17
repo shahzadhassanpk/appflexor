@@ -52,7 +52,7 @@ const PANELS = [
         id: "orchestrate",
         icon: "fa-solid fa-arrows-spin",
         accent: { bg: "#ecfdf5", icon: "#059669", btn: "#059669", btnHover: "#047857", text: "#059669", soft: "#d1fae5" },
-        title: "Orchestrate - Business Activities Across People and Systems",
+        title: "Orchestrate - Activities Across People and Systems",
         subtitle: "Configure and deploy processes to coordinate and automate business activities.",
         status: "Healthy",
         statusOk: true,
