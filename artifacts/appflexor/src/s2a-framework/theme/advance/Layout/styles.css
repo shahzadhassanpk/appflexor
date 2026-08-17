@@ -1,7 +1,7 @@
 /* Sidebar geometry is kept here so the fixed navigation and page content use
    the same dimensions at every desktop viewport size. */
 :root {
-    --s2a-sidebar-width: 280px;
+    --s2a-sidebar-width: 200px;
     --s2a-sidebar-mini-width: 60px;
 }
 
@@ -388,7 +388,7 @@ body .s2a-page {
     border-right: 0 !important;
     display: flex;
     align-items: center;
-    gap: 9px;
+    /* gap: 9px; */
 }
 
 #side-navbar .app-sidebar-brand .brand-logo {
