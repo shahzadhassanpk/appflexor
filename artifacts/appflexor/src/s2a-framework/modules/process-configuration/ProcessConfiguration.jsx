@@ -488,8 +488,8 @@ function ProcessConfiguration() {
                     <div className="col-12 datalist-viewer">
                         <div className="s2a-datalist-header">
                             <div className="s2a-dl-title-wrapper">
-                                <div className="s2a-dl-title"><span>Orchestrate — Enable Enterprise Architecture</span></div>
-                                <span>Manage business areas, processes and governance that deliver enterprise outcomes.</span>
+                                <div className="s2a-dl-title"><span>Orchestrate — Business Activities Across Humans and Systems</span></div>
+                                <span>Configure and deploy business processes to coordinate business activities across people and systems.</span>
                             </div>
                             <div className="d-flex align-items-center gap-2 flex-shrink-0">
                                 <button

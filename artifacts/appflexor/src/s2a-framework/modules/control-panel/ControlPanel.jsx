@@ -8,62 +8,38 @@ const PANELS = [
         id: "capture",
         icon: HiInboxArrowDown,
         accent: { bg: "#eef2ff", icon: "#4f46e5", btn: "#4f46e5", btnHover: "#4338ca", text: "#4f46e5", soft: "#e0e7ff" },
-        title: "Capture",
-        subtitle: "Receive business events from external channels.",
+        title: "Capture - Business Data and Events",
+        subtitle: "Capture business events and data intelligently to trigger relevant business processes.",
         showDemoDisclaimer: true,
         status: "Healthy",
         statusOk: true,
         lastActivity: "2m ago",
         stats: [
             { icon: "fa-solid fa-envelope", label: "Emails Events", value: "247" },
-            // { icon: "fa-brands fa-whatsapp",                  label: "WhatsApp Messages", value: "32"    },
             { icon: "fa-solid fa-store", label: "E-commerce Events", value: "18" },
             { icon: "fa-solid fa-link", label: "Webhook Events", value: "6" },
             { icon: "fa-solid fa-triangle-exclamation", label: "Failed Events", value: "2", warn: true },
             { icon: "fa-solid fa-chart-line", label: "Success Rate", value: "99.8%" },
         ],
         quickActions: [
-            // {
-            //     icon: "fa-solid fa-envelope",
-            //     label: "Email Connectors",
-            //     route: "/email-connectors",
-            //     description: "Integrate and manage inbound/outbound email workflows"
-            // },
             {
                 icon: "fa-solid fa-envelope-open-text",
-                label: "Appflexor Forms",
+                label: "Data Intake Web Forms",
                 doc: { section: "capture", slug: "forms", title: "Forms" },
-                description: "Guidelines on using Appflexor forms to capture data and trigger workflows inside the application"
+                description: "How to take structured input using web forms and trigger processes."
             },
             {
                 icon: "fa-solid fa-plug",
-                label: "Appflexor APIs",
+                label: "Data Intake APIs",
                 doc: { section: "capture", slug: "apis", title: "APIs" },
-                description: "Guidelines on leveraging Appflexor Data and Process APIs to capture information from external systems"
+                description: "How to connect external systems to push information and trigger processes."
             },
             {
                 icon: "fa-solid fa-robot",
-                label: "AI Agent",
-                doc: { section: "capture", slug: "ai-agent", title: "AI Agent — Capture" },
-                description: "Enrich incoming events and API payloads at the point of intake using AI agents"
+                label: "Data Intake AI Agents",
+                doc: { section: "capture", slug: "ai-agent", title: "AI Agent — Enrich Data" },
+                description: "How to validate and enrich data at the point of capture using context-aware AI Agents."
             },
-            // { 
-            //   icon: "fa-brands fa-whatsapp", 
-            //   label: "WhatsApp Connectors",
-            //   description: "Connect WhatsApp messaging for customer interactions"
-            // },
-            // {
-            //     icon: "fa-solid fa-store",
-            //     label: "Ecommerce Connectors",
-            //     route: "/ecommerce-connectors",
-            //     description: "Link ecommerce platforms for order and inventory sync"
-            // },
-            // {
-            //     icon: "fa-solid fa-link",
-            //     label: "Webhooks",
-            //     route: "/webhooks",
-            //     description: "Configure event-driven integrations with external systems"
-            // },
         ],
 
         recentActivity: [
@@ -76,8 +52,8 @@ const PANELS = [
         id: "orchestrate",
         icon: "fa-solid fa-arrows-spin",
         accent: { bg: "#ecfdf5", icon: "#059669", btn: "#059669", btnHover: "#047857", text: "#059669", soft: "#d1fae5" },
-        title: "Orchestrate",
-        subtitle: "Design, deploy and monitor business processes.",
+        title: "Orchestrate - Business Activities Accross Humans and Systems",
+        subtitle: "Configure and deploy business processes to coordinate business activities across people and systems.",
         status: "Healthy",
         statusOk: true,
         lastActivity: "5m ago",
@@ -115,9 +91,9 @@ const PANELS = [
             },
             {
                 icon: "fa-solid fa-robot",
-                label: "AI Agent",
+                label: "Task Automation",
                 doc: { section: "orchestrate", slug: "ai-agent", title: "AI Agent — Orchestrate" },
-                description: "Apply AI reasoning inside workflows to drive smarter, context-aware decisions"
+                description: "Use AI, Data APIs, and external systems inside workflows for task automations"
             },
         ],
         recentActivity: [
@@ -130,8 +106,8 @@ const PANELS = [
         id: "integrate",
         icon: "fa-solid fa-link",
         accent: { bg: "#f5f3ff", icon: "#7c3aed", btn: "#7c3aed", btnHover: "#6d28d9", text: "#7c3aed", soft: "#ede9fe" },
-        title: "Integrate",
-        subtitle: "Connect enterprise applications and external services.",
+        title: "Integrate – Connect Enterprise Systems and Data",
+        subtitle: "Connect apps, data, and external systems.",
         showDemoDisclaimer: true,
         status: "Attention Required",
         statusOk: false,
@@ -142,19 +118,38 @@ const PANELS = [
             { icon: "fa-solid fa-triangle-exclamation", label: "Failed Syncs", value: "2", warn: true },
             { icon: "fa-solid fa-message", label: "Messages Today", value: "1,248" },
         ],
-        quickActions: [
+        quickActions: [                         
             {
-                icon: "fa-solid fa-plug",
-                label: "Appflexor Connector",
-                doc: { section: "integrate", slug: "connector", title: "Connector" },
-                description: "Guidelines to integrate existing systems with your processes as external workers"
+                icon: "fa-solid fa-database",
+                label: "Data Sharing Services",
+                route: "/data-management",
+                description: "Design reusable forms, manage persistent data lists, and configure SQL‑based APIs."
+            },
+            {
+                icon: "fa-solid fa-magnifying-glass-chart",
+                label: "Custom Reports and Analytics",
+                route: "/data-analysis",
+                description: "Deploy custom reports to analyze data streams and generate actionable insights for decision-making."
+            },
+            {
+                icon: "fa-solid fa-paper-plane",
+                label: "Email Services",
+                route: "/email-management",
+                description: "Manage accounts and templates for sending system‑generated emails."
             },
             {
                 icon: "fa-solid fa-robot",
-                label: "AI Agent",
-                doc: { section: "integrate", slug: "ai-agent", title: "AI Agent — Integrate" },
-                description: "Strengthen external connectors with contextual AI intelligence"
+                label: "AI Provider Services",
+                route: "/ai-services",
+                description: "Configure AI providers, agents, and task definitions for workflow automation"
+            }, 
+            {
+                icon: "fa-solid fa-plug",
+                label: "External Systems",
+                doc: { section: "integrate", slug: "connector", title: "Connector" },
+                description: "Guidelines to integrate external systems with your processes as external workers"
             },
+                      
         ],
 
         recentActivity: [
@@ -167,7 +162,7 @@ const PANELS = [
         id: "administration",
         icon: "fa-solid fa-gear",
         accent: { bg: "#fff7ed", icon: "#ea580c", btn: "#ea580c", btnHover: "#c2410c", text: "#ea580c", soft: "#ffedd5" },
-        title: "Administrate",
+        title: "Administrate – Platform Configurations and Security",
         subtitle: "Manage platform configuration and security.",
         status: "Healthy",
         statusOk: true,
@@ -182,39 +177,21 @@ const PANELS = [
         quickActions: [
             {
                 icon: "fa-solid fa-building",
-                label: "Users, Groups, Organizations",
+                label: "People and Organizations",
                 route: "/user-management",
                 description: "Manage user accounts, group memberships, and organizational structures"
-            },
+            },                                   
             {
                 icon: "fa-solid fa-globe",
-                label: "Web Sites",
+                label: "User Experience",
                 route: "/site-administration",
-                description: "Administrate websites, pages, styles and authorization settings"
+                description: "Configure dynamic Menus and Pages to show Tasks, Data, Charts and Reports with authorizations"
             },
             {
                 icon: "fa-solid fa-file-alt",
-                label: "Web Content",
+                label: "Knowledge Base",
                 route: "/content-management",
-                description: "Create, edit, and publish web posts and digital contents"
-            },
-            {
-                icon: "fa-solid fa-database",
-                label: "Forms, Datalist, SQL APIs",
-                route: "/data-management",
-                description: "Design forms, manage data lists, and configure SQL-based APIs"
-            },
-            {
-                icon: "fa-solid fa-paper-plane",
-                label: "Outbound Emails",
-                route: "/email-management",
-                description: "Manage accounts and templates for sending system‑generated emails."
-            },
-            {
-                icon: "fa-solid fa-magnifying-glass-chart",
-                label: "Custom Reports and Analytics",
-                route: "/data-analysis",
-                description: "Deploy custom reports to analyze process and business performance"
+                description: "Create web content, posts and digital assets for internal and external audiences"
             },
             // { 
             //   icon: "fa-solid fa-brain", 
@@ -222,13 +199,7 @@ const PANELS = [
             //   route: "/ai-providers", 
             //   disabled: true,
             //   description: "Integrate AI services for intelligent automation"
-            // },
-            {
-                icon: "fa-solid fa-robot",
-                label: "AI Services",
-                route: "/ai-services",
-                description: "Configure AI providers, agents, and task definitions for workflow automation"
-            },
+            // },            
             {
                 icon: "fa-solid fa-credit-card",
                 label: "Subscription",
@@ -423,7 +394,7 @@ export default function ControlPanel() {
         <div style={sx.page}>
             <div style={{ marginBottom: "1.5rem" }}>
                 <h1 style={sx.headTitle}>Control Panel</h1>
-                <p style={sx.headSub}>Monitor and manage all platform modules from one place.</p>
+                <p style={sx.headSub}>Integrate and Optimize People, Processes and Technology to Streamline and Continuously Improve Business Operations.</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))", gap: "1.25rem" }}>

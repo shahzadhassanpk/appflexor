@@ -749,7 +749,22 @@ function ProcessMap({ activeTab }) {
                                                 <div className="form-text text-danger">Title is required.</div>
                                             )}
                                         </div>
-
+                                        <div className="col-sm-12">
+                                            <label className="mt-1 fw-bold">
+                                                Sub Title
+                                                <span className="text-danger"> *</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                name="subtitle"
+                                                value={selectedItem?.subtitle || ""}
+                                                onChange={handleInputField}
+                                            />
+                                            {isFieldEmpty(selectedItem?.subtitle) && (
+                                                <div className="form-text text-danger">Sub Title is required.</div>
+                                            )}
+                                        </div>
                                         <div className="col-sm-12">
                                             <label className="mt-1 fw-bold">Description</label>
                                             <TextEditor

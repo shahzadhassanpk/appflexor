@@ -8,6 +8,7 @@ import { actions } from "../constants";
 import { filterArrayByTerms, tryParseJSONObject } from "../../../utils/utils";
 import { eventBus } from "../../../eventBus";
 import "../inbox-style.css";
+import { Interweave } from "interweave";
 
 function RenderListView({
     processList,
@@ -47,6 +48,7 @@ function RenderListView({
     const selectedTaskId = safeSelectedTask?.id || "";
     const safeTaskList = Array.isArray(taskList) ? taskList : [];
     const safeProcessList = Array.isArray(processList) ? processList : [];
+    const [expandedProcessDescriptionId, setExpandedProcessDescriptionId] = useState("");
     const keysToSearch = [
         "variables",
         "task_def_key",
@@ -246,6 +248,7 @@ function RenderListView({
 
     function handleProcessModal() {
         setRenderProcessModal(true);
+        setExpandedProcessDescriptionId("");
         setSelectedProcessId("");
         setSelectedTask(taskInitState);
         setCurrentProcessState({
@@ -264,6 +267,13 @@ function RenderListView({
             step: false,
             loading: false,
         });
+
+        // Dismiss modal only on process selection, not on info toggle clicks.
+        const modalElement = document.getElementById("startProcessModal");
+        if (modalElement && window?.bootstrap?.Modal) {
+            const instance = window.bootstrap.Modal.getOrCreateInstance(modalElement);
+            instance.hide();
+        }
     }
 
     function handleTaskSearch(event) {
@@ -640,7 +650,9 @@ function RenderListView({
                         <div className="col-sm-6 form-panel">
                             {renderStartStepProcessor()}
                         </div>
-                        <div className="col-sm-3 comment-panel"></div>
+                        <div className="col-sm-3 comment-panel p-3">
+                            <Interweave content={safeProcessList.find(p => p.id === selectedProcessId)?.description || "No description available for this service."} />
+                        </div>
                     </>
                 )}
                 {!safeCurrentProcessState.loading &&
@@ -736,21 +748,48 @@ function RenderListView({
                                 )}
 
                                 {safeProcessList.map((process, index) => {
+                                        const processId = process.id || process.process_key || `${index}`;
+                                        const isDescriptionExpanded = expandedProcessDescriptionId === processId;
                                         return (
-                                            <div
-                                                key={process.id || process.process_key || index}
-                                                className="process-item pointer"
-                                                title="Start Process"
-                                                data-bs-dismiss="modal"
-                                                onClick={() =>
-                                                    handleProcessSelection(
-                                                        process,
-                                                    )
-                                                }>
-                                                <i className="fa-solid fa-diagram-project me-2"></i>
-                                                <span>
-                                                    {process.process_title}
-                                                </span>
+                                            <div key={processId} className="mb-2">
+                                                <div
+                                                    className="process-item pointer d-flex"
+                                                    title="Start Process"
+                                                    onClick={() =>
+                                                        handleProcessSelection(
+                                                            process,
+                                                        )
+                                                    }>
+                                                    <i className="fa-solid fa-diagram-project me-2"></i>
+                                                    <div className="d-flex justify-content-between align-items-start w-100">
+                                                        <div>
+                                                            <div>{process.process_title || process.title}</div>
+                                                            {(process.subtitle || process.sub_title) && (
+                                                                <div className="small text-muted">{process.subtitle || process.sub_title}</div>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-link p-0 ms-2"
+                                                            title={isDescriptionExpanded ? "Hide service details" : "View service details"}
+                                                            aria-expanded={isDescriptionExpanded}
+                                                            onClick={e => {
+                                                                e.stopPropagation();
+                                                                e.preventDefault();
+                                                                setExpandedProcessDescriptionId(prev =>
+                                                                    prev === processId ? "" : processId,
+                                                                );
+                                                            }}>
+                                                            <i className="fa-solid fa-circle-info"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {isDescriptionExpanded && (
+                                                    <div className="process-description mt-1 ms-4 small text-muted">
+                                                        <Interweave content={process.discription || process.description || "No description available for this service."} />
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
