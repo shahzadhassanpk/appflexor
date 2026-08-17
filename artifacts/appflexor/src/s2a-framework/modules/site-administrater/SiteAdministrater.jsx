@@ -139,9 +139,9 @@ const SiteAdministration = () => {
                             <div className="s2a-datalist-header">
                                 <div className="s2a-dl-title-wrapper">
                                     <div className="s2a-dl-title">
-                                        <span>Administrate Websites</span>
+                                        <span>User Experience</span>
                                     </div>
-                                    <span>Administrate websites, pages, styles and authorization settings</span>
+                                    <span>Configure dynamic Menus and Pages to show Tasks, Data, Charts and Reports with authorizations</span>
                                 </div>
                             </div>
                         </div>

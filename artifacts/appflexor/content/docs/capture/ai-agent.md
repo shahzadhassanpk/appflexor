@@ -1,4 +1,4 @@
-# AI Agent — Capture
+# Data Intake AI Agent — Capture
 
 ## Purpose
 

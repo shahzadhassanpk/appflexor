@@ -52,7 +52,7 @@ const PANELS = [
         id: "orchestrate",
         icon: "fa-solid fa-arrows-spin",
         accent: { bg: "#ecfdf5", icon: "#059669", btn: "#059669", btnHover: "#047857", text: "#059669", soft: "#d1fae5" },
-        title: "Orchestrate - Business Activities Accross Humans and Systems",
+        title: "Orchestrate - Business Activities Across Humans and Systems",
         subtitle: "Configure and deploy business processes to coordinate business activities across people and systems.",
         status: "Healthy",
         statusOk: true,
@@ -145,7 +145,7 @@ const PANELS = [
             }, 
             {
                 icon: "fa-solid fa-plug",
-                label: "External Systems",
+                label: "External Systems Integration",
                 doc: { section: "integrate", slug: "connector", title: "Connector" },
                 description: "Guidelines to integrate external systems with your processes as external workers"
             },

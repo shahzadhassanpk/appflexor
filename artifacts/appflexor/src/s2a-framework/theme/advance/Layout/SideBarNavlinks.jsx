@@ -100,7 +100,7 @@ function IframeName({ feature }) {
             to={`/iframe:id=${feature.id}`}
             end
             className={`text-decoration-none ${getActiveFeature(feature.id) ? "nav-link active" : "nav-link"
-                } rounded`}>
+                } `}>
             {/* style={({ isActive }) => (isActive ? activeStyle : undefined)}> */}
             <div
                 onClick={() => {
@@ -109,10 +109,10 @@ function IframeName({ feature }) {
                 className={`${getActiveFeature(feature.id)
                     ? " sidebar-frontoffice navlink-color-light"
                     : " navlink-active-dark"
-                    } feature-link my-1 ps-3 rounded`}
+                    } feature-link my-1 ps-3`}
                 id="text-color-hover">
                 <span
-                    className={`navlink-hover rounded ms-1`}
+                    className={`navlink-hover ms-1`}
                     id="color-over-ride">
                     <i
                         className={`${feature.icon
@@ -181,7 +181,7 @@ function FeatureName({ feature }) {
             className={`text-decoration-none ${getRouteFromKey(feature.feature_key)
                 ? "nav-link active"
                 : "nav-link"
-                } rounded`}>
+                } `}>
             <div
                 onClick={() => {
                     collapseAllAccordian();
@@ -189,9 +189,9 @@ function FeatureName({ feature }) {
                 className={`${getRouteFromKey(feature.feature_key)
                     ? " sidebar-frontoffice navlink-color-light"
                     : " navlink-active-dark"
-                    } feature-link my-1 ps-3 rounded`}
+                    } feature-link my-1 ps-3 `}
                 id="text-color-hover">
-                <span className={`navlink-hover rounded ms-1`}>
+                <span className={`navlink-hover ms-1`}>
                     <i
                         className={`${feature.icon
                             ? feature.icon
@@ -278,7 +278,7 @@ function AccordionNavItems({ module, features }) {
                                     to={path}
                                     end
                                     className={({ isActive }) =>
-                                        `nav-items-link py-2 rounded ${isActive ? "active" : ""
+                                        `nav-items-link py-2 ${isActive ? "active" : ""
                                         }`
                                     }>
                                     <ModuleName
