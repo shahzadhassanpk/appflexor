@@ -28,6 +28,22 @@
     opacity: 0.8;
 }
 
+/* Breadcrumb inside the top navbar (body-left sidebar layout) — strip the
+   main-content gap/padding so it sits flush and inline with the navbar. */
+.adv-navbar-main #breadcrumb {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+}
+.adv-navbar-main #breadcrumb .breadcrumb-gap {
+    padding: 0;
+    margin: 0;
+}
+.adv-navbar-main #breadcrumb .breadcrumb {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
 .advance-top-header {
     position: sticky;
     top: 0;

@@ -4,6 +4,7 @@ import { AppContext } from "../../../../AppContext";
 import { tryToParse } from "../../../modules/data-management/form-builder/Forms/FormViewer/utils";
 import Avatar from "./Avatar";
 import BrandLogo from "./BrandLogo";
+import Breadcrumb from "./BreadCrumb";
 import RightMenu from "./RightMenu";
 import "./styles.css";
 import NotificationBell from "./NotificationBell";
@@ -297,12 +298,8 @@ function TopNavbar({
                             {screenView === "lg" &&
                                 isAuthorized &&
                                 menu_position === "body-left" && (
-                                    <div className="w-100 d-flex justify-content-start align-items-center pointer">
-                                        {/* <div
-                                            className="top-navbar-icon pointer"
-                                            onClick={handleToggleMiniNavbar}>
-                                            <i className="fa-solid fa-align-left m-0"></i>
-                                        </div> */}
+                                    <div className="w-100 d-flex justify-content-start align-items-center ps-2">
+                                        <Breadcrumb />
                                     </div>
                                 )}
                             <div className="top-navbar-actions d-flex justify-content-end align-items-center">

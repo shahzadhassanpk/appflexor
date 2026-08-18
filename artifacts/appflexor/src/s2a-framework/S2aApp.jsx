@@ -1086,7 +1086,13 @@ function S2aApp() {
                                     <div
                                         id="main-content"
                                         className="s2a-main-content">
-                                        {isAuthorized && <Breadcrumb />}
+                                        {/* Hide breadcrumb from main content when it is shown
+                                            in the top navbar (body-left sidebar layout, desktop) */}
+                                        {isAuthorized && (() => {
+                                            const _sp = tryToParse(brandDetails?.site_preference);
+                                            const _mp = _sp?.menu_position || "";
+                                            return _mp === "body-left" && screenView === "lg";
+                                        })() === false && <Breadcrumb />}
                                         <AppRoutes
                                             wrapperSetIsAuthorized={
                                                 wrapperSetIsAuthorized
