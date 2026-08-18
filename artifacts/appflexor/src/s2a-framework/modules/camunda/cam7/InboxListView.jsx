@@ -474,27 +474,10 @@ function RenderListView({
             <div className="row">
                 {/* Header */}
                 <div className="inbox-panel-header">
-                    {/* Left: title + start-process bolt */}
                     <span className="inbox-panel-title">
                         <i className="fa-solid fa-inbox" style={{ fontSize: 14 }}></i>
                         Tasks
-                        {data?.allow_start_task && (
-                            <button
-                                type="button"
-                                className="inbox-icon-btn"
-                                data-bs-toggle="modal"
-                                data-bs-target="#startProcessModal"
-                                title="Start process instance"
-                                aria-label="Start process instance"
-                                onClick={() => handleProcessModal()}>
-                                <i className="fa fa-bolt"></i>
-                            </button>
-                        )}
-                    </span>
-
-                    {/* Right: clickable summary stats */}
-                    <div className="inbox-header-stats">
-                        {/* All Tasks — same condition as old All Tasks button */}
+                        {/* Clickable summary stats — inline after title, before bolt */}
                         {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
                             <button
                                 type="button"
@@ -508,7 +491,6 @@ function RenderListView({
                                 </span>
                             </button>
                         )}
-                        {/* Assigned to me — same condition as old My Tasks button */}
                         {((data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
                             <button
                                 type="button"
@@ -522,7 +504,6 @@ function RenderListView({
                                 </span>
                             </button>
                         )}
-                        {/* Due Today — always visible; counts from current task list */}
                         <button
                             type="button"
                             className={`inbox-stat-item inbox-stat-item--due${filters.dueDate === "today" ? " active" : ""}`}
@@ -534,7 +515,6 @@ function RenderListView({
                                 <i className="fa-regular fa-calendar-check"></i>
                             </span>
                         </button>
-                        {/* Overdue — conditional on All Tasks access (most relevant for managers) */}
                         {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
                             <button
                                 type="button"
@@ -548,7 +528,19 @@ function RenderListView({
                                 </span>
                             </button>
                         )}
-                    </div>
+                        {data?.allow_start_task && (
+                            <button
+                                type="button"
+                                className="inbox-icon-btn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#startProcessModal"
+                                title="Start process instance"
+                                aria-label="Start process instance"
+                                onClick={() => handleProcessModal()}>
+                                <i className="fa fa-bolt"></i>
+                            </button>
+                        )}
+                    </span>
                 </div>
             </div>
             <div className="row" style={{ height: "100%" }}>
