@@ -18,6 +18,7 @@ function RenderListView({
     setTaskFilterType,
     notification,
     taskList,
+    allTasksCount,
     currentProcessState,
     setCurrentProcessState,
     userDetails,
@@ -199,19 +200,34 @@ function RenderListView({
         });
     }, []);
 
-    const allCount = safeTaskList.length;
-    const myCount = safeTaskList
-        ? safeTaskList.filter(
-            t =>
-                (t.assignee || "").toString().toLowerCase() ===
-                (userDetails?.username || "").toString().toLowerCase(),
-        ).length
-        : 0;
+    /* ── Header stat counts ──────────────────────────────────────────────
+     * taskList is pre-filtered by the API based on taskFilterType:
+     *   "allTask"  → API returns ALL tasks      (cam.list.task.all)
+     *   "myTask"   → API returns only the user's tasks (cam.list.my.tasks)
+     *
+     * allCount:  use the dedicated allTasksCount prop which Processes7 keeps
+     *   updated only on allTask fetches, so it stays correct even after the
+     *   user switches to myTask mode.
+     *
+     * assignedToMeCount:
+     *   - myTask mode:  safeTaskList.length (API already filtered by assignee;
+     *     re-filtering by username would incorrectly exclude delegate tasks)
+     *   - allTask mode: filter safeTaskList by assignee === username
+     *
+     * dueTodayCount / overdueCount: scoped to the current mode's list —
+     *   intentional, shows the numbers relevant to what's displayed.
+     * ─────────────────────────────────────────────────────────────────── */
+    const allCount = allTasksCount ?? safeTaskList.length;
 
-    /* ── Header stat counts ───────────────────────────────────────────── */
+    const _myUsername = (userDetails?.username || "").toString().toLowerCase();
+    const assignedToMeCount = taskFilterType === "myTask"
+        ? safeTaskList.length
+        : safeTaskList.filter(
+            t => (t.assignee || "").toString().toLowerCase() === _myUsername
+          ).length;
+
     const _now = new Date();
     const _todayEnd = new Date(_now); _todayEnd.setHours(23, 59, 59, 999);
-    const assignedToMeCount = myCount;
     const dueTodayCount = safeTaskList.filter(t => {
         const due = t.due_date ? new Date(t.due_date) : null;
         return due && due >= _now && due <= _todayEnd;

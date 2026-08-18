@@ -54,6 +54,10 @@ function Processes(props) {
     const [taskList, setTaskList] = useState([]);
     const [filteredTaskList, setFilteredTaskList] = useState([]);
     const [selectedTask, setSelectedTask] = useState(taskInitState);
+    /* Keeps the last fetched all-tasks count so the "All Tasks" stat card
+       stays accurate even when the user switches to myTask mode (which
+       re-fetches only the user's tasks, making taskList.length wrong). */
+    const [allTasksCount, setAllTasksCount] = useState(0);
 
     const [processList, setProcessList] = useState([]);
     const [selectedProcessId, setSelectedProcessId] = useState("");
@@ -345,6 +349,12 @@ function Processes(props) {
                             );
                         }
 
+                        /* Persist the all-tasks count separately so it
+                           remains correct when switching to myTask mode. */
+                        if (taskFilterType === "allTask") {
+                            setAllTasksCount(list.length);
+                        }
+
                         setTaskList(list);
                         setFilteredTaskList(list);
 
@@ -582,6 +592,7 @@ function Processes(props) {
                     taskFilterType={taskFilterType}
                     notification={notification}
                     taskList={taskList}
+                    allTasksCount={allTasksCount}
                     currentProcessState={currentProcessState}
                     setCurrentProcessState={setCurrentProcessState}
                     userDetails={userDetails}
