@@ -13,107 +13,127 @@
     background: var(--primary-color);
 }
 
-/* Header row: "Tasks N" + history icon */
+/* ── Inbox panel header ──────────────────────────────────── */
 .inbox-panel-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 14px 6px;
+    align-items: stretch;
+    height: 58px;
     flex-shrink: 0;
-    border: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
     background: var(--primary-color);
+    overflow: hidden;
 }
 
+/* Identity zone — icon + "Tasks" label */
 .inbox-panel-title {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 15px;
+    gap: 7px;
+    padding: 0 16px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--font-color);
+    white-space: nowrap;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-color);
+}
+.inbox-panel-title i {
+    font-size: 13px;
+    opacity: 0.75;
 }
 
-.inbox-panel-title-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 6px;
-    background: var(--secondary-color);
-    color: var(--font-color);
-    border-radius: 11px;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.inbox-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* ── Header summary stats (right side of inbox-panel-header) ─────────── */
-.inbox-header-stats {
+/* Stat card group — fills remaining space */
+.inbox-stat-group {
     display: flex;
     align-items: stretch;
-    flex-shrink: 0;
+    flex: 1;
+    overflow: hidden;
 }
 
+/* Individual stat card */
 .inbox-stat-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 2px 20px;
-    border-left: 1px solid var(--border-color);
     gap: 2px;
+    padding: 0 18px;
     /* button reset */
     background: none;
-    border-top: none;
-    border-right: none;
-    border-bottom: none;
+    border: none;
+    border-right: 1px solid var(--border-color);
     cursor: pointer;
-    transition: background 0.13s;
+    position: relative;
+    transition: background 0.15s;
+    flex-shrink: 0;
 }
 .inbox-stat-item:hover {
     background: color-mix(in srgb, var(--font-color, #000) 4%, transparent);
 }
+
+/* Colored bottom-accent bar on active */
+.inbox-stat-item::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 10px;
+    right: 10px;
+    height: 2.5px;
+    border-radius: 2px 2px 0 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.inbox-stat-item.active::after { opacity: 1; }
 .inbox-stat-item.active {
-    background: color-mix(in srgb, var(--font-color, #000) 6%, transparent);
-}
-.inbox-stat-item.active .inbox-stat-label {
-    font-weight: 700;
-    color: var(--font-color, #374151);
+    background: color-mix(in srgb, var(--font-color, #000) 4%, transparent);
 }
 
-.inbox-stat-label {
-    font-size: 10px;
-    font-weight: 500;
-    color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-}
-
+/* Number — large and coloured */
 .inbox-stat-value {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+/* Label row — icon + text, small and muted */
+.inbox-stat-label {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 1;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: color-mix(in srgb, var(--font-color, #374151) 50%, transparent);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+    transition: color 0.15s;
+}
+.inbox-stat-label i { font-size: 9px; }
+.inbox-stat-item.active .inbox-stat-label {
+    color: color-mix(in srgb, var(--font-color, #374151) 80%, transparent);
+    font-weight: 600;
 }
 
-.inbox-stat-value i {
-    font-size: 15px;
-    opacity: 0.75;
-}
-
+/* Per-variant accent colours */
 .inbox-stat-item--all      .inbox-stat-value { color: #7c3aed; }
 .inbox-stat-item--assigned .inbox-stat-value { color: #2563eb; }
 .inbox-stat-item--due      .inbox-stat-value { color: #d97706; }
 .inbox-stat-item--overdue  .inbox-stat-value { color: #dc2626; }
+
+.inbox-stat-item--all::after      { background: #7c3aed; }
+.inbox-stat-item--assigned::after { background: #2563eb; }
+.inbox-stat-item--due::after      { background: #d97706; }
+.inbox-stat-item--overdue::after  { background: #dc2626; }
+
+/* Actions zone (bolt button) */
+.inbox-header-actions {
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border-color);
+    margin-left: auto;
+}
 
 /* My Tasks / All Tasks tab pills */
 .inbox-tab-row {

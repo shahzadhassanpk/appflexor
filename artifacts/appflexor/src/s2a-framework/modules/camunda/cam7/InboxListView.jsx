@@ -472,22 +472,27 @@ function RenderListView({
     return (
         <div id="processes" className="processes container-fluid">
             <div className="row">
-                {/* Header */}
+                {/* ── Header ───────────────────────────────────────── */}
                 <div className="inbox-panel-header">
-                    <span className="inbox-panel-title">
-                        <i className="fa-solid fa-inbox" style={{ fontSize: 14 }}></i>
-                        Tasks
-                        {/* Clickable summary stats — inline after title, before bolt */}
+
+                    {/* Identity: icon + label */}
+                    <div className="inbox-panel-title">
+                        <i className="fa-solid fa-inbox"></i>
+                        <span>Tasks</span>
+                    </div>
+
+                    {/* Stat filter cards */}
+                    <div className="inbox-stat-group">
                         {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
                             <button
                                 type="button"
                                 className={`inbox-stat-item inbox-stat-item--all${taskFilterType === "allTask" && filters.dueDate === "all" ? " active" : ""}`}
-                                title="Click to view all tasks"
+                                title="View all tasks"
                                 onClick={handleAllTasksClick}>
-                                <span className="inbox-stat-label">All Tasks</span>
-                                <span className="inbox-stat-value">
-                                    {allCount}
+                                <span className="inbox-stat-value">{allCount}</span>
+                                <span className="inbox-stat-label">
                                     <i className="fa-solid fa-layer-group"></i>
+                                    All Tasks
                                 </span>
                             </button>
                         )}
@@ -495,52 +500,56 @@ function RenderListView({
                             <button
                                 type="button"
                                 className={`inbox-stat-item inbox-stat-item--assigned${taskFilterType === "myTask" && filters.dueDate === "all" ? " active" : ""}`}
-                                title="Click to filter: tasks assigned to you"
+                                title="Filter: tasks assigned to you"
                                 onClick={handleAssignedClick}>
-                                <span className="inbox-stat-label">Assigned to me</span>
-                                <span className="inbox-stat-value">
-                                    {assignedToMeCount}
-                                    <i className="fa-solid fa-inbox"></i>
+                                <span className="inbox-stat-value">{assignedToMeCount}</span>
+                                <span className="inbox-stat-label">
+                                    <i className="fa-solid fa-user"></i>
+                                    Assigned to me
                                 </span>
                             </button>
                         )}
                         <button
                             type="button"
                             className={`inbox-stat-item inbox-stat-item--due${filters.dueDate === "today" ? " active" : ""}`}
-                            title="Click to filter: tasks due today"
+                            title="Filter: tasks due today"
                             onClick={handleDueTodayClick}>
-                            <span className="inbox-stat-label">Due Today</span>
-                            <span className="inbox-stat-value">
-                                {dueTodayCount}
+                            <span className="inbox-stat-value">{dueTodayCount}</span>
+                            <span className="inbox-stat-label">
                                 <i className="fa-regular fa-calendar-check"></i>
+                                Due Today
                             </span>
                         </button>
                         {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
                             <button
                                 type="button"
                                 className={`inbox-stat-item inbox-stat-item--overdue${filters.dueDate === "overdue" ? " active" : ""}`}
-                                title="Click to filter: overdue tasks"
+                                title="Filter: overdue tasks"
                                 onClick={handleOverdueClick}>
-                                <span className="inbox-stat-label">Overdue</span>
-                                <span className="inbox-stat-value">
-                                    {overdueCount}
+                                <span className="inbox-stat-value">{overdueCount}</span>
+                                <span className="inbox-stat-label">
                                     <i className="fa-solid fa-circle-exclamation"></i>
+                                    Overdue
                                 </span>
                             </button>
                         )}
-                        {data?.allow_start_task && (
+                    </div>
+
+                    {/* Actions: start process */}
+                    {data?.allow_start_task && (
+                        <div className="inbox-header-actions">
                             <button
                                 type="button"
                                 className="inbox-icon-btn"
                                 data-bs-toggle="modal"
                                 data-bs-target="#startProcessModal"
-                                title="Start process instance"
-                                aria-label="Start process instance"
+                                title="Start new process"
+                                aria-label="Start new process"
                                 onClick={() => handleProcessModal()}>
                                 <i className="fa fa-bolt"></i>
                             </button>
-                        )}
-                    </span>
+                        </div>
+                    )}
                 </div>
             </div>
             <div className="row" style={{ height: "100%" }}>
