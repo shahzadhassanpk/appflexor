@@ -104,17 +104,19 @@ function RenderListView({
 
     function groupTasksByDue(tasks) {
         const now = new Date();
-        const todayEnd = new Date(now);
-        todayEnd.setHours(23, 59, 59, 999);
-        const weekEnd = new Date(now);
+        const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+        const todayEnd   = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+        const weekEnd    = new Date(now);
         weekEnd.setDate(weekEnd.getDate() + 7);
         weekEnd.setHours(23, 59, 59, 999);
 
-        const groups = { "Due Today": [], "Due This Week": [], "Due Later": [] };
+        const groups = { "Overdue": [], "Due Today": [], "Due This Week": [], "Due Later": [] };
         tasks.forEach(task => {
             const due = task.due_date ? new Date(task.due_date) : null;
             if (!due || due > weekEnd) {
                 groups["Due Later"].push(task);
+            } else if (due < todayStart) {
+                groups["Overdue"].push(task);
             } else if (due <= todayEnd) {
                 groups["Due Today"].push(task);
             } else {
@@ -485,11 +487,13 @@ function RenderListView({
     const handleDueTodayClick = () => {
         setFilters(f => ({ ...f, dueDate: f.dueDate === "today" ? "all" : "today" }));
         setCurrentPage(1);
+        setCollapsedGroups(new Set());
     };
 
     const handleOverdueClick = () => {
         setFilters(f => ({ ...f, dueDate: f.dueDate === "overdue" ? "all" : "overdue" }));
         setCurrentPage(1);
+        setCollapsedGroups(new Set());
     };
 
     return (
@@ -671,6 +675,7 @@ function RenderListView({
                                 </div>
                             ) : (
                                 <>
+                                    {renderTaskGroup("Overdue", grouped["Overdue"])}
                                     {renderTaskGroup("Due Today", grouped["Due Today"])}
                                     {renderTaskGroup("Due This Week", grouped["Due This Week"])}
                                     {renderTaskGroup("Due Later", grouped["Due Later"])}
