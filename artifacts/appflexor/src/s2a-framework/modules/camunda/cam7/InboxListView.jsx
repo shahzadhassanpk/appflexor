@@ -447,6 +447,12 @@ function RenderListView({
         setCurrentPage(1);
     };
 
+    const handleAllTasksClick = () => {
+        setTaskFilterType("allTask");
+        setFilters(f => ({ ...f, dueDate: "all" }));
+        resetTaskView();
+    };
+
     const handleAssignedClick = () => {
         setTaskFilterType("myTask");
         setFilters(f => ({ ...f, dueDate: "all" })); /* clear dueDate filter */
@@ -488,6 +494,20 @@ function RenderListView({
 
                     {/* Right: clickable summary stats */}
                     <div className="inbox-header-stats">
+                        {/* All Tasks — same condition as old All Tasks button */}
+                        {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
+                            <button
+                                type="button"
+                                className={`inbox-stat-item inbox-stat-item--all${taskFilterType === "allTask" && filters.dueDate === "all" ? " active" : ""}`}
+                                title="Click to view all tasks"
+                                onClick={handleAllTasksClick}>
+                                <span className="inbox-stat-label">All Tasks</span>
+                                <span className="inbox-stat-value">
+                                    {allCount}
+                                    <i className="fa-solid fa-layer-group"></i>
+                                </span>
+                            </button>
+                        )}
                         {/* Assigned to me — same condition as old My Tasks button */}
                         {((data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
                             <button

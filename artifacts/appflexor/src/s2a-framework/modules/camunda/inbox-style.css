@@ -110,9 +110,10 @@
     opacity: 0.75;
 }
 
+.inbox-stat-item--all      .inbox-stat-value { color: #7c3aed; }
 .inbox-stat-item--assigned .inbox-stat-value { color: #2563eb; }
-.inbox-stat-item--due     .inbox-stat-value  { color: #d97706; }
-.inbox-stat-item--overdue .inbox-stat-value  { color: #dc2626; }
+.inbox-stat-item--due      .inbox-stat-value { color: #d97706; }
+.inbox-stat-item--overdue  .inbox-stat-value { color: #dc2626; }
 
 /* My Tasks / All Tasks tab pills */
 .inbox-tab-row {
