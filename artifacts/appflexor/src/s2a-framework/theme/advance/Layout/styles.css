@@ -24,6 +24,7 @@
 }
 
 #breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+    content: ">";
     color: var(--text-muted, var(--text-secondary, var(--font-color)));
     opacity: 0.8;
 }
