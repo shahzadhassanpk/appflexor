@@ -135,7 +135,8 @@ function RenderListView({
                 const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
                 const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + 7); weekEnd.setHours(23, 59, 59, 999);
                 const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-                if (filters.dueDate === "today" && (!due || due > todayEnd || due < todayStart)) return false;
+                /* "Due Today" filter includes overdue — show anything due on or before today. */
+                if (filters.dueDate === "today" && (!due || due > todayEnd)) return false;
                 if (filters.dueDate === "overdue" && (!due || due >= todayStart)) return false;
                 if (filters.dueDate === "thisWeek" && (!due || due > weekEnd)) return false;
             }
@@ -232,9 +233,11 @@ function RenderListView({
        time but still today) counts as "Due Today", not "Overdue". */
     const _todayStart = new Date(_now); _todayStart.setHours(0, 0, 0, 0);
     const _todayEnd   = new Date(_now); _todayEnd.setHours(23, 59, 59, 999);
+    /* "Due Today" includes overdue tasks — anything that needs attention
+       on or before end of today (due <= todayEnd). */
     const dueTodayCount = safeTaskList.filter(t => {
         const due = t.due_date ? new Date(t.due_date) : null;
-        return due && due >= _todayStart && due <= _todayEnd;
+        return due && due <= _todayEnd;
     }).length;
     const overdueCount = safeTaskList.filter(t => {
         const due = t.due_date ? new Date(t.due_date) : null;
