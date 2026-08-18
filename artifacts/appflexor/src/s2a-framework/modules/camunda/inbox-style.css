@@ -68,6 +68,23 @@
     padding: 2px 20px;
     border-left: 1px solid var(--border-color);
     gap: 2px;
+    /* button reset */
+    background: none;
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+    cursor: pointer;
+    transition: background 0.13s;
+}
+.inbox-stat-item:hover {
+    background: color-mix(in srgb, var(--font-color, #000) 4%, transparent);
+}
+.inbox-stat-item.active {
+    background: color-mix(in srgb, var(--font-color, #000) 6%, transparent);
+}
+.inbox-stat-item.active .inbox-stat-label {
+    font-weight: 700;
+    color: var(--font-color, #374151);
 }
 
 .inbox-stat-label {

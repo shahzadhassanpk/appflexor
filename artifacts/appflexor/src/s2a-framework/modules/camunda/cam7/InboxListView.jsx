@@ -440,72 +440,94 @@ function RenderListView({
         );
     }
 
+    /* ── Stat click handlers ──────────────────────────────────────────── */
+    const resetTaskView = () => {
+        setSelectedTask(taskInitState);
+        setCurrentProcessState({ initial: true, start: false, step: false, loading: false });
+        setCurrentPage(1);
+    };
+
+    const handleAssignedClick = () => {
+        setTaskFilterType("myTask");
+        setFilters(f => ({ ...f, dueDate: "all" })); /* clear dueDate filter */
+        resetTaskView();
+    };
+
+    const handleDueTodayClick = () => {
+        setFilters(f => ({ ...f, dueDate: f.dueDate === "today" ? "all" : "today" }));
+        setCurrentPage(1);
+    };
+
+    const handleOverdueClick = () => {
+        setFilters(f => ({ ...f, dueDate: f.dueDate === "overdue" ? "all" : "overdue" }));
+        setCurrentPage(1);
+    };
+
     return (
         <div id="processes" className="processes container-fluid">
             <div className="row">
                 {/* Header */}
                 <div className="inbox-panel-header">
+                    {/* Left: title + start-process bolt */}
                     <span className="inbox-panel-title">
                         <i className="fa-solid fa-inbox" style={{ fontSize: 14 }}></i>
                         Tasks
-                        {/* My Tasks / All Tasks tabs */}
-                        <div className="inbox-tab-row">
-                            {((data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
-                                <button
-                                    type="button"
-                                    className={`inbox-tab-btn ${taskFilterType === "myTask" || data?.show_task === "MY-TASK" ? "active" : ""}`}
-                                    onClick={() => { setTaskFilterType("myTask"); setSelectedTask(taskInitState); setCurrentProcessState({ initial: true, start: false, step: false, loading: false }); setCurrentPage(1); }}>
-                                    My Tasks
-                                    <span className="inbox-tab-badge">{myCount}</span>
-                                </button>
-                            )}
-                            {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
-                                <button
-                                    type="button"
-                                    className={`inbox-tab-btn ${taskFilterType === "allTask" || data?.show_task === "ALL-TASK" ? "active" : ""}`}
-                                    onClick={() => { setTaskFilterType("allTask"); setSelectedTask(taskInitState); setCurrentProcessState({ initial: true, start: false, step: false, loading: false }); setCurrentPage(1); }}>
-                                    All Tasks
-                                    <span className="inbox-tab-badge">{allCount}</span>
-                                </button>
-                            )}
-                            {data?.allow_start_task && (
-                                <button
-                                    type="button"
-                                    className="inbox-icon-btn ms-2"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#startProcessModal"
-                                    title="Start process instance"
-                                    aria-label="Start process instance"
-                                    onClick={() => handleProcessModal()}>
-                                    <i className="fa fa-bolt"></i>
-                                </button>
-                            )}
-                        </div>
-                        </span>
+                        {data?.allow_start_task && (
+                            <button
+                                type="button"
+                                className="inbox-icon-btn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#startProcessModal"
+                                title="Start process instance"
+                                aria-label="Start process instance"
+                                onClick={() => handleProcessModal()}>
+                                <i className="fa fa-bolt"></i>
+                            </button>
+                        )}
+                    </span>
 
-                    {/* ── Right-side summary stats ──────────────────── */}
+                    {/* Right: clickable summary stats */}
                     <div className="inbox-header-stats">
-                        <div className="inbox-stat-item inbox-stat-item--assigned" title="Tasks assigned to you">
-                            <span className="inbox-stat-label">Assigned to me</span>
-                            <span className="inbox-stat-value">
-                                {assignedToMeCount}
-                                <i className="fa-solid fa-inbox"></i>
-                            </span>
-                        </div>
-                        <div className="inbox-stat-item inbox-stat-item--due" title="Tasks due today">
+                        {/* Assigned to me — same condition as old My Tasks button */}
+                        {((data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
+                            <button
+                                type="button"
+                                className={`inbox-stat-item inbox-stat-item--assigned${taskFilterType === "myTask" && filters.dueDate === "all" ? " active" : ""}`}
+                                title="Click to filter: tasks assigned to you"
+                                onClick={handleAssignedClick}>
+                                <span className="inbox-stat-label">Assigned to me</span>
+                                <span className="inbox-stat-value">
+                                    {assignedToMeCount}
+                                    <i className="fa-solid fa-inbox"></i>
+                                </span>
+                            </button>
+                        )}
+                        {/* Due Today — always visible; counts from current task list */}
+                        <button
+                            type="button"
+                            className={`inbox-stat-item inbox-stat-item--due${filters.dueDate === "today" ? " active" : ""}`}
+                            title="Click to filter: tasks due today"
+                            onClick={handleDueTodayClick}>
                             <span className="inbox-stat-label">Due Today</span>
                             <span className="inbox-stat-value">
                                 {dueTodayCount}
                                 <i className="fa-regular fa-calendar-check"></i>
                             </span>
-                        </div>
-                        <div className="inbox-stat-item inbox-stat-item--overdue" title="Overdue tasks">
-                            <span className="inbox-stat-label">Overdue</span>
-                            <span className="inbox-stat-value">
-                                {overdueCount}
-                                <i className="fa-solid fa-circle-exclamation"></i>
-                            </span>
-                        </div>
+                        </button>
+                        {/* Overdue — conditional on All Tasks access (most relevant for managers) */}
+                        {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
+                            <button
+                                type="button"
+                                className={`inbox-stat-item inbox-stat-item--overdue${filters.dueDate === "overdue" ? " active" : ""}`}
+                                title="Click to filter: overdue tasks"
+                                onClick={handleOverdueClick}>
+                                <span className="inbox-stat-label">Overdue</span>
+                                <span className="inbox-stat-value">
+                                    {overdueCount}
+                                    <i className="fa-solid fa-circle-exclamation"></i>
+                                </span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
