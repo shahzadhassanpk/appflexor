@@ -21,7 +21,7 @@
     <bpmn:endEvent id="Event_1anrj1x">
       <bpmn:incoming>Flow_1v4j5ak</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:inclusiveGateway id="Gateway_00q9831" default="Flow_1v4j5ak">
+    <bpmn:inclusiveGateway id="Gateway_00q9831">
       <bpmn:incoming>Flow_17zeqae</bpmn:incoming>
       <bpmn:outgoing>Flow_1v4j5ak</bpmn:outgoing>
       <bpmn:outgoing>Flow_1vxjazp</bpmn:outgoing>
@@ -29,7 +29,7 @@
     <bpmn:userTask id="accept_leave" name="Approve Leave" camunda:formKey="leave_approval" camunda:candidateGroups="ADMIN">
       <bpmn:extensionElements>
         <camunda:inputOutput>
-          <camunda:inputParameter name="status">${status}</camunda:inputParameter>
+          <camunda:outputParameter name="status">${action}</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0auv9u6</bpmn:incoming>
@@ -41,7 +41,9 @@
       <bpmn:outgoing>Flow_1lotj94</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_0auv9u6" sourceRef="Event_1og8wc4" targetRef="accept_leave" />
-    <bpmn:sequenceFlow id="Flow_1v4j5ak" name="Approve / Reject" sourceRef="Gateway_00q9831" targetRef="Event_1anrj1x" />
+    <bpmn:sequenceFlow id="Flow_1v4j5ak" name="Approve / Reject" sourceRef="Gateway_00q9831" targetRef="Event_1anrj1x">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'APPROVED' || status == 'REJECTED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_17zeqae" name="Status" sourceRef="accept_leave" targetRef="Gateway_00q9831" />
     <bpmn:sequenceFlow id="Flow_1vxjazp" name="Status = Revise" sourceRef="Gateway_00q9831" targetRef="revise_leave">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status=='REVISE'}</bpmn:conditionExpression>
@@ -54,12 +56,12 @@
         <dc:Bounds x="160" y="80" width="600" height="250" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_13ynfwj_di" bpmnElement="Lane_13ynfwj" isHorizontal="true">
-        <dc:Bounds x="190" y="80" width="570" height="125" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_02yhyki_di" bpmnElement="Lane_02yhyki" isHorizontal="true">
         <dc:Bounds x="190" y="205" width="570" height="125" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_13ynfwj_di" bpmnElement="Lane_13ynfwj" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="570" height="125" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1og8wc4_di" bpmnElement="Event_1og8wc4">
