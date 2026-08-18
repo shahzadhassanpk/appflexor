@@ -309,17 +309,17 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
     // ── Helpers ──────────────────────────────────────
     function getFileIcon(filename = "") {
         const ext = (filename.split(".").pop() || "").toLowerCase();
-        if (["jpg","jpeg","png","gif","webp","svg"].includes(ext)) return { cls: "img-type", icon: "fa-regular fa-image" };
-        if (["doc","docx"].includes(ext)) return { cls: "doc-type", icon: "fa-regular fa-file-word" };
-        if (["xls","xlsx","csv"].includes(ext)) return { cls: "doc-type", icon: "fa-regular fa-file-excel" };
+        if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext)) return { cls: "img-type", icon: "fa-regular fa-image" };
+        if (["doc", "docx"].includes(ext)) return { cls: "doc-type", icon: "fa-regular fa-file-word" };
+        if (["xls", "xlsx", "csv"].includes(ext)) return { cls: "doc-type", icon: "fa-regular fa-file-excel" };
         return { cls: "", icon: "fa-regular fa-file-pdf" };
     }
 
     function getHistoryDotClass(h) {
-        if (h.task_type === "startEvent") return "created";
+        if (h.task_type === "startEvent") return "started";
         if (h.completed_time && h.completed_time !== "") return "completed";
         if (h.assigned_time && h.assigned_time !== "") return "assigned";
-        return "assigned";
+        return "created";
     }
 
     function formatHistoryAction(h) {
@@ -341,16 +341,16 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
         const when = h.completed_time
             ? convertDBDateToUserView(h.completed_time)
             : h.assigned_time
-            ? convertDBDateToUserView(h.assigned_time)
-            : h.created_time
-            ? convertDBDateToUserView(h.created_time)
-            : "";
+                ? convertDBDateToUserView(h.assigned_time)
+                : h.created_time
+                    ? convertDBDateToUserView(h.created_time)
+                    : "";
         return { who, when };
     }
 
     const [quickComment, setQuickComment] = useState("");
     const [showHistoryAll, setShowHistoryAll] = useState(false);
-    const visibleHistory = showHistoryAll ? history : history.slice(0, 5);
+    const visibleHistory = showHistoryAll ? history : history.slice(0, 3);
 
     function handleQuickComment() {
         if (!quickComment.trim()) return;
@@ -437,7 +437,7 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                                         </div>
                                         <div className="cb-comment-text">
                                             <Interweave content={c.comment} />
-                                        </div>                                        
+                                        </div>
                                         {/* <div className="cb-comment-actions-row">
                                             <button className="cb-reply-link">Reply</button>
                                         </div> */}
@@ -524,21 +524,21 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                                         <div className="cb-file-info">
                                             <div className="cb-file-name">{att.files}</div>
                                             <div className="cb-file-meta">
-                                                Uploaded {convertDBDateToFromNow(att.datecreated)}
-                                                {att.createdby ? ` · ${getDisplayName(att.createdby)}` : ""}
+                                                <span>Uploaded {convertDBDateToFromNow(att.datecreated)}</span>
+                                                {att.createdby ? <span> · {getDisplayName(att.createdby)}</span> : ""}
                                             </div>
-                                        </div>
-                                        <div className="cb-file-actions">
-                                            <a
-                                                className="cb-icon-btn"
-                                                href={`/file/service/process_attachments/${att.id}/${att.files}`}
-                                                title="Download"
-                                                aria-label="Download">
-                                                <i className="fa-solid fa-download" style={{ fontSize: 12 }}></i>
-                                            </a>
-                                            <button className="cb-icon-btn" title="More options" aria-label="More options">
-                                                <i className="fa-solid fa-ellipsis-vertical" style={{ fontSize: 12 }}></i>
-                                            </button>
+                                            <div className="cb-file-actions">
+                                                <a
+                                                    className="cb-icon-btn"
+                                                    href={`/file/service/process_attachments/${att.id}/${att.files}`}
+                                                    title="Download"
+                                                    aria-label="Download">
+                                                    <i className="fa-solid fa-download" style={{ fontSize: 12 }}></i>
+                                                </a>
+                                                <button className="cb-icon-btn" title="More options" aria-label="More options">
+                                                    <i className="fa-solid fa-ellipsis-vertical" style={{ fontSize: 12 }}></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -553,15 +553,7 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                         <span className="cb-section-title">
                             <i className="fa-regular fa-clock"></i>
                             Task History
-                            {history.length > 0 && (
-                                <span className="cb-section-badge">{history.length}</span>
-                            )}
                         </span>
-                        {history.length > 5 && (
-                            <button className="cb-view-all" onClick={() => setShowHistoryAll(v => !v)}>
-                                {showHistoryAll ? "Show Less" : "View All"}
-                            </button>
-                        )}
                     </div>
 
                     {history.length === 0 ? (
@@ -579,12 +571,22 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                                         <div className={`cb-history-dot ${dotCls}`}></div>
                                         <div className="cb-history-content">
                                             <div className="cb-history-action">{formatHistoryAction(h)}</div>
+                                            <div className="cb-history-date">{when}</div>
                                             <div className="cb-history-by">{who}</div>
                                         </div>
-                                        <div className="cb-history-date">{when}</div>
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {history.length > 0 && (
+                        <div className="cb-history-footer">
+                            <button
+                                className="cb-view-all"
+                                onClick={() => setShowHistoryAll(v => !v)}>
+                                {showHistoryAll ? "View Less History" : "View Full History"}
+                            </button>
                         </div>
                     )}
                 </div>
@@ -608,19 +610,17 @@ function HistoryViewer({
     function formatHistory(task) {
         let status = "In Progress";
         if (task.completed_time && task.completed_time !== "") {
-            status = `${task.assignee} has completed ${
-                task.task_name
-            } on ${convertDBDateToUserView(task.completed_time)}.`;
+            status = `${task.assignee} has completed ${task.task_name
+                } on ${convertDBDateToUserView(task.completed_time)}.`;
         } else if (task.assigned_time && task.assigned_time !== "" && task?.assignee) {
             status = `${task.task_name} task assigned to ${task.assignee} on ${convertDBDateToUserView(task.assigned_time)}.`;
         } else if (task.assigned_time && task.assigned_time !== "" && !task?.assignee) {
             status = `${task.task_name} task is unassigned.`;
-        }else if (task.task_type == "startEvent" && task.created_time !== "") {
+        } else if (task.task_type == "startEvent" && task.created_time !== "") {
             status = `Process started by ${task.assignee} on ${convertDBDateToUserView(task.created_time)}.`;
         } else if (task.created_time && task.created_time !== "") {
-            status = `Task ${
-                task.task_name
-            } created on ${convertDBDateToUserView(task.created_time)}.`;
+            status = `Task ${task.task_name
+                } created on ${convertDBDateToUserView(task.created_time)}.`;
         }
         return status;
     }
@@ -635,9 +635,9 @@ function HistoryViewer({
                             <li
                                 className="comment-item"
                                 key={index}
-                                // title={JSON.stringify(
-                                //     comment
-                                // )}
+                            // title={JSON.stringify(
+                            //     comment
+                            // )}
                             >
                                 <div className="col-sm-12 p-3 task-meta d-flex">
                                     <span className="avatar me-2">
@@ -667,13 +667,11 @@ function TrackHistoryViewer({ trackHistory, tabs, convertDBDateToUserView }) {
         let status = "";
         if (task.created_time && task.created_time !== "") {
             if (task.event == "start")
-                status = `${
-                    task.task_name
-                } started on ${convertDBDateToUserView(task.created_time)} by ${task.assignee}.`;
+                status = `${task.task_name
+                    } started on ${convertDBDateToUserView(task.created_time)} by ${task.assignee}.`;
         } else if (task.event == "end") {
-            status = `${
-                task.task_name
-            } started on ${convertDBDateToUserView(task.created_time)}`;
+            status = `${task.task_name
+                } started on ${convertDBDateToUserView(task.created_time)}`;
         }
         return status;
     }
@@ -784,7 +782,7 @@ function HistoryViewerOld({ task, tabs }) {
                 } catch (error) {
                     console.log(
                         "Unable to format date time for formatNewValue : " +
-                            error,
+                        error,
                     );
                 }
             }

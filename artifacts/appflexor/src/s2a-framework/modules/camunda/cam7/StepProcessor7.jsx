@@ -1256,18 +1256,12 @@ function StepProcessor({
                         {task.process_name && (
                             <span className="s2a-task-process-badge">{task.process_name}</span>
                         )}
-                    </div>
-                    <div className="s2a-task-header-meta">
-                        {task.assignee
-                            ? <>Created by <strong>{getDisplayName(task.assignee)}</strong> &bull; </>
-                            : null}
-                        {formatDateTimeForUserView(task.date_created)}
                         {(() => {
                             const pRaw = (task.variables?.priority || task.priority || "").toString().toLowerCase();
                             const level = pRaw === "high" || pRaw === "1" ? "high"
                                 : pRaw === "low" || pRaw === "3" ? "low"
                                 : "medium";
-                            const label = { high: "High Priority", medium: "Medium Priority", low: "Low Priority" }[level];
+                            const label = { high: "High", medium: "Medium", low: "Low" }[level];
                             const flagColor = { high: "#e05252", medium: "#d4820a", low: "#38a169" }[level];
                             return (
                                 <span className="s2a-task-priority-flag" style={{ color: flagColor }}>
@@ -1297,6 +1291,13 @@ function StepProcessor({
                                 </span>
                             );
                         })()}
+                    </div>
+                    <div className="s2a-task-header-meta">
+                        {/* {task.assignee
+                            ? <>Created by <strong>{getDisplayName(task.assignee)}</strong> &bull; </>
+                            : null} */}
+                        {/* {formatDateTimeForUserView(task.date_created)} */}
+                        
                     </div>
                 </div>
             </div>

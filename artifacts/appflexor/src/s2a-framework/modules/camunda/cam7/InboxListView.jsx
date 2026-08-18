@@ -353,9 +353,10 @@ function RenderListView({
     function renderPriorityBadge(task) {
         const level = getPriorityLevel(task);
         const labels = { high: "High", medium: "Medium", low: "Low" };
+        const flagColor = { high: "#e05252", medium: "#d4820a", low: "#38a169" }[level];
         return (
-            <span className={`inbox-priority-badge ${level}`}>
-                {labels[level]}
+            <span className={`${level}`} style={{ color: flagColor }}>
+                <i className="fa-solid fa-flag" style={{ fontSize: 11 }}></i> {labels[level]}
             </span>
         );
     }
