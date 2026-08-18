@@ -48,9 +48,6 @@ function SideNavbarMini({
                 if (!event.currentTarget.contains(event.relatedTarget)) {
                     setIsHovered(false);
                 }
-            }}
-            onClick={event => {
-                if (event.target.closest("a")) setIsHovered(false);
             }}>
             <div className="app-sidebar-mini-brand">
                 <BrandLogoMini
