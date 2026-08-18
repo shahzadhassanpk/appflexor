@@ -207,7 +207,19 @@ function RenderListView({
                 (userDetails?.username || "").toString().toLowerCase(),
         ).length
         : 0;
-    // keep single total counts (as before)
+
+    /* ── Header stat counts ───────────────────────────────────────────── */
+    const _now = new Date();
+    const _todayEnd = new Date(_now); _todayEnd.setHours(23, 59, 59, 999);
+    const assignedToMeCount = myCount;
+    const dueTodayCount = safeTaskList.filter(t => {
+        const due = t.due_date ? new Date(t.due_date) : null;
+        return due && due >= _now && due <= _todayEnd;
+    }).length;
+    const overdueCount = safeTaskList.filter(t => {
+        const due = t.due_date ? new Date(t.due_date) : null;
+        return due && due < _now;
+    }).length;
 
     function handleStartProcessActions(
         actionType,
@@ -469,10 +481,32 @@ function RenderListView({
                                 </button>
                             )}
                         </div>
-                        {/* <span className="inbox-panel-title-count">{taskList?.length || 0}</span> */}
-                    </span>
+                        </span>
 
-
+                    {/* ── Right-side summary stats ──────────────────── */}
+                    <div className="inbox-header-stats">
+                        <div className="inbox-stat-item inbox-stat-item--assigned" title="Tasks assigned to you">
+                            <span className="inbox-stat-label">Assigned to me</span>
+                            <span className="inbox-stat-value">
+                                {assignedToMeCount}
+                                <i className="fa-solid fa-inbox"></i>
+                            </span>
+                        </div>
+                        <div className="inbox-stat-item inbox-stat-item--due" title="Tasks due today">
+                            <span className="inbox-stat-label">Due Today</span>
+                            <span className="inbox-stat-value">
+                                {dueTodayCount}
+                                <i className="fa-regular fa-calendar-check"></i>
+                            </span>
+                        </div>
+                        <div className="inbox-stat-item inbox-stat-item--overdue" title="Overdue tasks">
+                            <span className="inbox-stat-label">Overdue</span>
+                            <span className="inbox-stat-value">
+                                {overdueCount}
+                                <i className="fa-solid fa-circle-exclamation"></i>
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div className="row" style={{ height: "100%" }}>

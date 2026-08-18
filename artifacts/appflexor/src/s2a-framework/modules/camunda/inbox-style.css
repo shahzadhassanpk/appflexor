@@ -53,6 +53,50 @@
     gap: 6px;
 }
 
+/* ── Header summary stats (right side of inbox-panel-header) ─────────── */
+.inbox-header-stats {
+    display: flex;
+    align-items: stretch;
+    flex-shrink: 0;
+}
+
+.inbox-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 20px;
+    border-left: 1px solid var(--border-color);
+    gap: 2px;
+}
+
+.inbox-stat-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: color-mix(in srgb, var(--font-color, #374151) 55%, transparent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.inbox-stat-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.inbox-stat-value i {
+    font-size: 15px;
+    opacity: 0.75;
+}
+
+.inbox-stat-item--assigned .inbox-stat-value { color: #2563eb; }
+.inbox-stat-item--due     .inbox-stat-value  { color: #d97706; }
+.inbox-stat-item--overdue .inbox-stat-value  { color: #dc2626; }
+
 /* My Tasks / All Tasks tab pills */
 .inbox-tab-row {
     display: flex;
