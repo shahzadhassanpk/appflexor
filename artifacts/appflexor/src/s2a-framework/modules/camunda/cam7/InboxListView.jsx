@@ -8,6 +8,7 @@ import { actions } from "../constants";
 import { filterArrayByTerms, tryParseJSONObject } from "../../../utils/utils";
 import { eventBus } from "../../../eventBus";
 import "../inbox-style.css";
+import { Interweave } from "interweave";
 
 function RenderListView({
     processList,
@@ -37,6 +38,17 @@ function RenderListView({
     dynamicFields,
 }) {
     const appContext = useContext(AppContext);
+    const safeCurrentProcessState = currentProcessState || {
+        initial: true,
+        start: false,
+        step: false,
+        loading: false,
+    };
+    const safeSelectedTask = selectedTask || taskInitState || {};
+    const selectedTaskId = safeSelectedTask?.id || "";
+    const safeTaskList = Array.isArray(taskList) ? taskList : [];
+    const safeProcessList = Array.isArray(processList) ? processList : [];
+    const [expandedProcessDescriptionId, setExpandedProcessDescriptionId] = useState("");
     const keysToSearch = [
         "variables",
         "task_def_key",
@@ -154,6 +166,8 @@ function RenderListView({
     const safePage = Math.min(currentPage, totalPages);
     const pagedTasks = localFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
     const grouped = groupTasksByDue(pagedTasks);
+    const safeTaskListLength = safeTaskList.length;
+    const safeProcessListLength = safeProcessList.length;
 
     const priorityOptions = [
         { value: "all", label: "All Priorities" },
@@ -185,9 +199,9 @@ function RenderListView({
         });
     }, []);
 
-    const allCount = taskList ? taskList.length : 0;
-    const myCount = taskList
-        ? taskList.filter(
+    const allCount = safeTaskList.length;
+    const myCount = safeTaskList
+        ? safeTaskList.filter(
             t =>
                 (t.assignee || "").toString().toLowerCase() ===
                 (userDetails?.username || "").toString().toLowerCase(),
@@ -234,6 +248,7 @@ function RenderListView({
 
     function handleProcessModal() {
         setRenderProcessModal(true);
+        setExpandedProcessDescriptionId("");
         setSelectedProcessId("");
         setSelectedTask(taskInitState);
         setCurrentProcessState({
@@ -252,12 +267,19 @@ function RenderListView({
             step: false,
             loading: false,
         });
+
+        // Dismiss modal only on process selection, not on info toggle clicks.
+        const modalElement = document.getElementById("startProcessModal");
+        if (modalElement && window?.bootstrap?.Modal) {
+            const instance = window.bootstrap.Modal.getOrCreateInstance(modalElement);
+            instance.hide();
+        }
     }
 
     function handleTaskSearch(event) {
         let textToSearch = event.target.value.toLowerCase();
 
-        let result = filterArrayByTerms(taskList, textToSearch, keysToSearch);
+        let result = filterArrayByTerms(safeTaskList, textToSearch, keysToSearch);
         setFilteredTaskList(result);
     }
 
@@ -364,11 +386,11 @@ function RenderListView({
 
                     return (
                         <div
-                            className={`inbox-task-card ${currentTask.id === selectedTask.id ? "selected" : ""}`}
+                            className={`inbox-task-card ${currentTask.id === selectedTaskId ? "selected" : ""}`}
                             key={currentTask.id}
                             role="button"
                             tabIndex={0}
-                            aria-current={currentTask.id === selectedTask.id ? "true" : undefined}
+                            aria-current={currentTask.id === selectedTaskId ? "true" : undefined}
                             onClick={() => handleTaskSelection(currentTask)}
                             onKeyDown={e => {
                                 if (e.key === "Enter" || e.key === " ") {
@@ -389,7 +411,7 @@ function RenderListView({
                                 {data?.use_dynamic === true && parsedOptions.length > 0 &&
                                     parsedOptions.map(option => (
                                         <div key={option.id} className="inbox-task-meta-row">
-                                            {option.label}: {currentTask.variables[option.value] || ""}
+                                            {option.label}: {currentTask?.variables?.[option.value] || ""}
                                         </div>
                                     ))
                                 }
@@ -596,7 +618,7 @@ function RenderListView({
                     </div>
                 )} */}
 
-                {!currentProcessState.start && taskList?.length == 0 && (
+                {!safeCurrentProcessState.loading && !safeCurrentProcessState?.start && safeTaskListLength === 0 && (
                     <div className="col-sm-9 task-view-panel">
                         <div className="no-task-border">
                             <div className="no-task-wrap">
@@ -609,9 +631,9 @@ function RenderListView({
                     </div>
                 )}
 
-                {!currentProcessState.loading &&
-                    currentProcessState.initial &&
-                    taskList?.length > 0 && (
+                {!safeCurrentProcessState.loading &&
+                    safeCurrentProcessState.initial &&
+                    safeTaskListLength > 0 && (
                         <div className="col-sm-9 task-view-panel">
                             <div className="no-task-border">
                                 <div className="no-task-wrap">
@@ -623,18 +645,20 @@ function RenderListView({
                             </div>
                         </div>
                     )}
-                {!currentProcessState.loading && currentProcessState.start && (
+                {!safeCurrentProcessState.loading && safeCurrentProcessState.start && selectedProcessId !== "" && (
                     <>
                         <div className="col-sm-6 form-panel">
                             {renderStartStepProcessor()}
                         </div>
-                        <div className="col-sm-3 comment-panel"></div>
+                        <div className="col-sm-3 comment-panel p-3">
+                            <Interweave content={safeProcessList.find(p => p.id === selectedProcessId)?.description || "No description available for this service."} />
+                        </div>
                     </>
                 )}
-                {!currentProcessState.loading &&
+                {!safeCurrentProcessState.loading &&
                     userDetails &&
-                    currentProcessState.step &&
-                    taskList?.length > 0 && (
+                    safeCurrentProcessState.step &&
+                    safeTaskListLength > 0 && (
                         <>
                             <div
                                 className={
@@ -670,7 +694,7 @@ function RenderListView({
                         } `}>
                     <div className="modal-content">
                         <div className="modal-header">
-                            <h5 className="modal-title">Start Process</h5>
+                            <h5 className="modal-title">Request Service</h5>
                             <div className="d-flex">
                                 <div
                                     className={`m-2 pointer ${toggleModalWindow === "maximize"
@@ -715,26 +739,57 @@ function RenderListView({
                                 className="select-process">
                                 <div className="row">
                                     <div className="col">
-                                        <p> Click on the process to start.</p>
+                                        <p>Select from available services and submit request.</p>
                                     </div>
                                 </div>
 
-                                {processList &&
-                                    processList.map((process, index) => {
+                                {safeProcessListLength === 0 && (
+                                    <div className="text-muted">No process available to start.</div>
+                                )}
+
+                                {safeProcessList.map((process, index) => {
+                                        const processId = process.id || process.process_key || `${index}`;
+                                        const isDescriptionExpanded = expandedProcessDescriptionId === processId;
                                         return (
-                                            <div
-                                                className="process-item pointer"
-                                                title="Start Process"
-                                                data-bs-dismiss="modal"
-                                                onClick={() =>
-                                                    handleProcessSelection(
-                                                        process,
-                                                    )
-                                                }>
-                                                <i class="fa-solid fa-diagram-project me-2"></i>
-                                                <span>
-                                                    {process.process_title}
-                                                </span>
+                                            <div key={processId} className="mb-2">
+                                                <div
+                                                    className="process-item pointer d-flex"
+                                                    title="Start Process"
+                                                    onClick={() =>
+                                                        handleProcessSelection(
+                                                            process,
+                                                        )
+                                                    }>
+                                                    <i className="fa-solid fa-diagram-project me-2"></i>
+                                                    <div className="d-flex justify-content-between align-items-start w-100">
+                                                        <div>
+                                                            <div>{process.process_title || process.title}</div>
+                                                            {(process.subtitle || process.sub_title) && (
+                                                                <div className="small text-muted">{process.subtitle || process.sub_title}</div>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-link p-0 ms-2"
+                                                            title={isDescriptionExpanded ? "Hide service details" : "View service details"}
+                                                            aria-expanded={isDescriptionExpanded}
+                                                            onClick={e => {
+                                                                e.stopPropagation();
+                                                                e.preventDefault();
+                                                                setExpandedProcessDescriptionId(prev =>
+                                                                    prev === processId ? "" : processId,
+                                                                );
+                                                            }}>
+                                                            <i className="fa-solid fa-circle-info"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {isDescriptionExpanded && (
+                                                    <div className="process-description mt-1 ms-4 small text-muted">
+                                                        <Interweave content={process.discription || process.description || "No description available for this service."} />
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -755,13 +810,13 @@ function RenderListView({
         </div>
     );
     function renderStepProcessor() {
-        if (selectedTask.id === "") {
+        if (selectedTaskId === "") {
             return <span>Loading...</span>;
         }
 
         return (
             <StepProcessor
-                task={selectedTask}
+                task={safeSelectedTask}
                 userList={userList}
                 userDetails={userDetails}
                 handleProcessActions={handleStepProcessActions}

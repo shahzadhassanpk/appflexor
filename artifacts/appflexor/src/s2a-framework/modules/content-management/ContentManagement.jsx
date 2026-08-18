@@ -25,7 +25,7 @@ const TABS = [
         active: "false",
     },
     {
-        name: "Images",
+        name: "Digital Assets",
         code: "ASSET_MANAGER",
         active: "false",
     },

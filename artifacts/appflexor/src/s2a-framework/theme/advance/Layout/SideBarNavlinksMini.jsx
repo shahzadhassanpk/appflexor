@@ -94,16 +94,16 @@ function ModuleDropdownIcon({
     if (showChildren && moduleFeatures.length > 0) {
         return (
             <div className="mini-nav-section">
-                <button
-                    type="button"
+                <div
+                    
                     onClick={onExpand}
                     title={module.name}
                     aria-label={`Open ${module.name}`}
-                    className={`mini-nav-icon-wrapper mini-nav-section-icon ${
+                    className={`app-sidebar-group-label ${
                         isLinkActive() ? "link-active" : ""
                     }`}>
                     <i className={`${icon} mini-nav-icon-size m-0`}></i>
-                </button>
+                </div>
                 <div className="mini-nav-section-links">
                     {moduleFeatures.map(feature => (
                         <NavLink

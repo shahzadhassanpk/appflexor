@@ -306,14 +306,17 @@ function Select(props) {
 
     useEffect(() => {
         if (
-            componentData.required !== "YES" ||
-            !componentData.db_column ||
+            componentData?.required !== "YES" ||
+            !componentData?.db_column ||
             !render ||
             !props.handleInputFields
         ) {
             return;
         }
 
+        if(props.formData?.[componentData.db_column]===true){
+            return;
+        }
         const mapValue =
             componentData.use_static === "YES"
                 ? "value"

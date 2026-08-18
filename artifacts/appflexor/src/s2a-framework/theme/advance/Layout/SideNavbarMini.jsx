@@ -76,14 +76,14 @@ function SideNavbarMini({
                 )}
             </nav>
             <div className={`app-sidebar-mini-actions ${isHovered ? "d-none" : ""}`}>
-                <button
+                <div
                     type="button"
-                    className="app-sidebar-expand"
+                    className="app-sidebar-group-label"
                     onClick={expandSidebar}
                     aria-label="Expand sidebar"
                     title="Expand sidebar">
                     <i className="fa-solid fa-angles-right" aria-hidden="true"></i>
-                </button>
+                </div>
             </div>
         </aside>
     );

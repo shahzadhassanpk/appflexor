@@ -511,12 +511,6 @@
 .action-header {
     background-color: var(--header-color);
 }
-.nav-tabs .nav-item {
-    border: 1px solid var(--border-color);
-    border-top-left-radius: 15px;
-    background-color: var(--navigation-color);
-    margin-right: 5px;
-}
 
 .s2a-modal.s2a-form-title {
     margin-bottom: 0px;
