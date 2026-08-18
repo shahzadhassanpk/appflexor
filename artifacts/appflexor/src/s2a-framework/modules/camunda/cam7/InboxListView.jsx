@@ -134,8 +134,9 @@ function RenderListView({
                 const now = new Date();
                 const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
                 const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + 7); weekEnd.setHours(23, 59, 59, 999);
-                if (filters.dueDate === "today" && (!due || due > todayEnd)) return false;
-                if (filters.dueDate === "overdue" && (!due || due >= now)) return false;
+                const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+                if (filters.dueDate === "today" && (!due || due > todayEnd || due < todayStart)) return false;
+                if (filters.dueDate === "overdue" && (!due || due >= todayStart)) return false;
                 if (filters.dueDate === "thisWeek" && (!due || due > weekEnd)) return false;
             }
             return true;
@@ -227,14 +228,17 @@ function RenderListView({
           ).length;
 
     const _now = new Date();
-    const _todayEnd = new Date(_now); _todayEnd.setHours(23, 59, 59, 999);
+    /* Use calendar-day boundaries so a task due at 9 AM (past the current
+       time but still today) counts as "Due Today", not "Overdue". */
+    const _todayStart = new Date(_now); _todayStart.setHours(0, 0, 0, 0);
+    const _todayEnd   = new Date(_now); _todayEnd.setHours(23, 59, 59, 999);
     const dueTodayCount = safeTaskList.filter(t => {
         const due = t.due_date ? new Date(t.due_date) : null;
-        return due && due >= _now && due <= _todayEnd;
+        return due && due >= _todayStart && due <= _todayEnd;
     }).length;
     const overdueCount = safeTaskList.filter(t => {
         const due = t.due_date ? new Date(t.due_date) : null;
-        return due && due < _now;
+        return due && due < _todayStart;
     }).length;
 
     function handleStartProcessActions(
