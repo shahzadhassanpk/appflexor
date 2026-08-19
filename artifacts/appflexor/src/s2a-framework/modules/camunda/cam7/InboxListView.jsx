@@ -573,7 +573,7 @@ function RenderListView({
                                 title="Start new process"
                                 aria-label="Start new process"
                                 onClick={() => handleProcessModal()}>
-                                <i className="fa fa-bolt"></i>
+                                <i className="fa-solid fa-paper-plane"></i>
                             </button>
                         </div>
                     )}
@@ -800,7 +800,7 @@ function RenderListView({
                         } `}>
                     <div className="modal-content">
                         <div className="modal-header">
-                            <h5 className="modal-title">Request Service</h5>
+                            <h5 className="modal-title">Process Catalog</h5>
                             <div className="d-flex">
                                 <div
                                     className={`m-2 pointer ${toggleModalWindow === "maximize"
