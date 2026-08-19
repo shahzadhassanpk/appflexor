@@ -503,13 +503,13 @@ function ProcessConfiguration() {
                                 <span>Configure and deploy business processes to coordinate business activities across people and systems.</span>
                             </div>
                             <div className="d-flex align-items-center gap-2 flex-shrink-0">
-                                <button
+                                {/* <button
                                     type="button"
                                     className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
                                     onClick={() => setShowSimulator(true)}>
                                     <i className="fa-solid fa-circle-play" aria-hidden="true" />
                                     Simulate
-                                </button>
+                                </button> */}
                                 <button
                                     type="button"
                                     className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
