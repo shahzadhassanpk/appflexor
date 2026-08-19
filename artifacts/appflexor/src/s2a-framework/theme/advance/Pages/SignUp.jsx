@@ -87,7 +87,7 @@ function SignUp() {
     }
 
     return (
-        <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 font-sans">
+        <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
             <div className="hidden lg:flex w-[50%] xl:w-[60%] bg-slate-100 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex-col p-12 relative overflow-hidden">
                 <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-lighten opacity-70"></div>
                 <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-lighten opacity-70"></div>
