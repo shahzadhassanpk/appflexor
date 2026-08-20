@@ -1,8 +1,8 @@
-# Web Sites
+# User Experience
 
 ## Purpose
 
-The **Web Sites** administration area lets you create and manage the web applications and portals that your users interact with. Each site in Appflexor is an independently configurable channel with its own pages, navigation, visual style, and access rules. From a single Appflexor tenant you can run multiple sites — for example, an employee self-service portal, a customer-facing application, and an operations dashboard — each with different branding, content, and audiences.
+Use **User Experience** to configure dynamic menus and pages that present tasks, data, charts, and reports to authorized audiences. Each Appflexor site is an independently configurable channel with its own pages, navigation, visual style, and access rules. A single tenant can run multiple experiences, such as an employee self-service portal, customer-facing application, or operations dashboard.
 
 ---
 

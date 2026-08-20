@@ -1,8 +1,8 @@
-# AI Agent — Orchestrate
+# Task Automation
 
 ## Purpose
 
-AI Agents in the Orchestrate stage apply LLM reasoning inside running workflows to drive smarter, context-aware decisions. Rather than hard-coding rules into process logic, an agent evaluates live transactional data and semantic knowledge to produce a grounded recommendation or decision that the workflow acts on.
+Use AI, Data APIs, and external systems inside workflows to automate tasks and make context-aware decisions. Rather than hard-coding rules into process logic, an agent can evaluate live transactional data and semantic knowledge to produce a grounded recommendation or decision that the workflow acts on.
 
 ---
 

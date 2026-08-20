@@ -1,8 +1,8 @@
-# Custom Reports & Analytics
+# Custom Reports and Analytics
 
 ## Purpose
 
-The **Custom Reports & Analytics** area gives administrators the tools to define, deploy, and run reports and multidimensional analyses against your business and process data — without writing application code. You can deploy pre-built report templates, configure dynamic reports with custom parameters, design **Analytic Cubes** that model your data dimensions and measures, and run ad-hoc queries with filtering, grouping, and chart visualisation.
+Use **Custom Reports and Analytics** to analyze data streams and generate actionable insights for decision-making. The area lets administrators define, deploy, and run reports and multidimensional analyses against business and process data without writing application code. You can deploy pre-built report templates, configure dynamic reports with custom parameters, design **Analytic Cubes** that model data dimensions and measures, and run ad-hoc queries with filtering, grouping, and chart visualisation.
 
 ---
 

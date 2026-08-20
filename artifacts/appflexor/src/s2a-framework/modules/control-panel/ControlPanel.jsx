@@ -25,19 +25,19 @@ const PANELS = [
             {
                 icon: "fa-solid fa-envelope-open-text",
                 label: "Data Intake using Web Forms",
-                doc: { section: "capture", slug: "forms", title: "Forms" },
+                doc: { section: "capture", slug: "forms", title: "Data Intake using Web Forms" },
                 description: "How to take structured information using web forms and trigger processes."
             },
             {
                 icon: "fa-solid fa-plug",
                 label: "Data Intake using APIs",
-                doc: { section: "capture", slug: "apis", title: "APIs" },
+                doc: { section: "capture", slug: "apis", title: "Data Intake using APIs" },
                 description: "How to receive business data from external systems and trigger relevant business processes."
             },
             {
                 icon: "fa-solid fa-robot",
                 label: "Data Enrichment using AI",
-                doc: { section: "capture", slug: "ai-agent", title: "AI Agent — Enrich Data" },
+                doc: { section: "capture", slug: "ai-agent", title: "Data Enrichment using AI" },
                 description: "How to validate, classify, and enrich captured data using context-aware AI agents."
             },
         ],
@@ -92,7 +92,7 @@ const PANELS = [
             {
                 icon: "fa-solid fa-robot",
                 label: "Task Automation",
-                doc: { section: "orchestrate", slug: "ai-agent", title: "AI Agent — Orchestrate" },
+                doc: { section: "orchestrate", slug: "ai-agent", title: "Task Automation" },
                 description: "Use AI, Data APIs, and external systems inside workflows for task automations"
             },
         ],
@@ -146,7 +146,7 @@ const PANELS = [
             {
                 icon: "fa-solid fa-plug",
                 label: "External Systems Integration",
-                doc: { section: "integrate", slug: "connector", title: "Connector" },
+                doc: { section: "integrate", slug: "connector", title: "External Systems Integration" },
                 description: "Guidelines to integrate external systems with your processes as external workers"
             },
                       

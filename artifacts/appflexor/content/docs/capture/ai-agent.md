@@ -1,8 +1,8 @@
-# Data Intake AI Agent — Capture
+# Data Enrichment using AI
 
 ## Purpose
 
-AI Agents in the Capture stage enrich incoming events and API payloads at the point of intake. Rather than passing raw data into your workflow, an agent reads the payload, fetches live context via SQL or vector search, and returns a structured, enriched response — ready for downstream processing.
+Use context-aware AI agents to validate, classify, and enrich captured data at the point of intake. Rather than passing raw events or API payloads into a workflow, an agent reads the payload, fetches live context via SQL or vector search, and returns a structured, enriched response ready for downstream processing.
 
 ---
 

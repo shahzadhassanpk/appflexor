@@ -1,8 +1,8 @@
-# Data Intake APIs — Capture
+# Data Intake using APIs
 
 ## Purpose
 
-Appflexor APIs let you expose your business data and processes to external systems through SQL-backed REST endpoints. Without writing backend code, you can configure a **Data API** that queries your connected database, returns structured JSON, and can be consumed by external applications, integrations, or third-party tools.
+Use Appflexor APIs to receive business data from external systems and trigger relevant business processes. Without writing backend code, you can configure a **Data API** that queries your connected database, returns structured JSON, and connects external applications, integrations, or third-party tools to your processes.
 
 ---
 

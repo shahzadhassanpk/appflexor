@@ -1,8 +1,8 @@
-# Data Intake Forms — Capture
+# Data Intake using Web Forms
 
 ## Purpose
 
-Appflexor Forms is the low-code form builder that lets you design, publish, and embed data-capture screens anywhere in your application — standalone pages, process steps, or content pages. Forms can collect user input, validate data, trigger workflows, and feed results directly into your business processes or data lists.
+Use Appflexor Forms to take structured information through web forms and trigger relevant business processes. The low-code form builder lets you design, publish, and embed data-capture screens in standalone pages, process steps, or content pages. Forms can validate input and feed results directly into your business processes or data lists.
 
 ---
 

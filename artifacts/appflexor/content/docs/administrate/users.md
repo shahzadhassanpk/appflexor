@@ -1,8 +1,8 @@
-# Users, Groups & Organisations
+# People and Organizations
 
 ## Purpose
 
-The **Users, Groups & Organisations** area is the central control panel for managing who can access Appflexor and what they are allowed to do. Here you create and maintain user accounts, organise them into **Groups** (for permission assignment), and structure them into **Organisations** (for reporting lines, multi-tenancy, and site association). Access to this area is restricted to system administrators.
+Use **People and Organizations** to manage user accounts, group memberships, and organizational structures. This administration area controls who can access Appflexor and what they are allowed to do, including groups for permission assignment and organizations for reporting lines, multi-tenancy, and site association. Access is restricted to system administrators.
 
 ---
 

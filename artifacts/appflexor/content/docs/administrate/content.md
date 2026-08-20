@@ -1,8 +1,8 @@
-# Web Content, Forms, Data Lists & SQL APIs
+# Knowledge Base
 
 ## Purpose
 
-This area covers the full suite of **low-code content and data tools** available to administrators. It encompasses:
+Use the **Knowledge Base** to create web content, posts, and digital assets for internal and external audiences. It also provides the low-code content and data tools available to administrators:
 
 - **Web Content** — creating and publishing posts, articles, and digital content for your sites.
 - **Forms** — designing data-capture forms used in pages and process steps.

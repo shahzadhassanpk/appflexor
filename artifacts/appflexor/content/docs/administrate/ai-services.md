@@ -1,8 +1,8 @@
-# AI Services
+# AI Provider Services
 
 ## Purpose
 
-**AI Services** is the configuration hub for all AI-powered automation in Appflexor. It lets administrators define the AI providers, agents, and task definitions that drive AI workflow automation at runtime. No code changes are needed to add new AI capabilities — everything is driven by the records stored here.
+**AI Provider Services** is the configuration hub for all AI-powered workflow automation in Appflexor. It lets administrators configure AI providers, agents, and task definitions that drive automation at runtime. No code changes are needed to add new AI capabilities — everything is driven by the records stored here.
 
 ---
 

@@ -6,9 +6,9 @@ export const DOC_MANIFEST = [
         slug: "capture",
         icon: "fa-solid fa-table-list",
         docs: [
-            { title: "AppFlexor Forms", slug: "forms", excerpt: "Design data-capture forms for pages and process steps" },
-            { title: "AppFlexor APIs", slug: "apis", excerpt: "Build SQL-backed REST endpoints and connect external systems" },
-            { title: "AI Agent", slug: "ai-agent", excerpt: "Enrich incoming events and API payloads at the point of intake using AI" },
+            { title: "Data Intake using Web Forms", slug: "forms", excerpt: "Take structured information through web forms and trigger processes." },
+            { title: "Data Intake using APIs", slug: "apis", excerpt: "Receive business data from external systems and trigger relevant processes." },
+            { title: "Data Enrichment using AI", slug: "ai-agent", excerpt: "Validate, classify, and enrich captured data with context-aware AI agents." },
         ],
     },
     {
@@ -16,11 +16,12 @@ export const DOC_MANIFEST = [
         slug: "orchestrate",
         icon: "fa-solid fa-diagram-project",
         docs: [
-            { title: "Business Areas", slug: "business-areas", excerpt: "Define top-level organisational domains for processes" },
-            { title: "Process Categories", slug: "process-categories", excerpt: "Organise processes into structured sub-groups" },
-            { title: "Deploy Process", slug: "deploy-process", excerpt: "Upload and publish BPMN workflows to the process engine" },
-            { title: "Monitor Process", slug: "monitor-process", excerpt: "Track status and performance of running process instances" },
-            { title: "AI Agent", slug: "ai-agent", excerpt: "Apply AI reasoning inside workflows to drive smarter decisions" },
+            { title: "Business Areas", slug: "business-areas", excerpt: "Define and manage business domains for processes." },
+            { title: "Governing Bodies", slug: "governing-bodies", excerpt: "Assign the teams responsible for process approvals and policy." },
+            { title: "Process Categories", slug: "process-categories", excerpt: "Define the strategic intent represented by each process category." },
+            { title: "Deploy Process", slug: "deploy-process", excerpt: "Launch new or updated processes into production." },
+            { title: "Monitor Process", slug: "monitor-process", excerpt: "Track performance and status of running processes." },
+            { title: "Task Automation", slug: "ai-agent", excerpt: "Use AI, Data APIs, and external systems inside workflows for task automation." },
         ],
     },
     {
@@ -28,7 +29,7 @@ export const DOC_MANIFEST = [
         slug: "integrate",
         icon: "fa-solid fa-plug",
         docs: [
-            { title: "Connector", slug: "connector", excerpt: "Integrate external systems as External Workers in process flows" },
+            { title: "External Systems Integration", slug: "connector", excerpt: "Integrate external systems with your processes as external workers." },
             { title: "AI Agent", slug: "ai-agent", excerpt: "Strengthen external connectors with contextual AI intelligence" },
         ],
     },
@@ -37,12 +38,12 @@ export const DOC_MANIFEST = [
         slug: "administrate",
         icon: "fa-solid fa-gear",
         docs: [
-            { title: "Users, Groups & Organisations", slug: "users", excerpt: "Manage accounts, groups, and organisational structures" },
-            { title: "Web Sites", slug: "websites", excerpt: "Configure sites, pages, styles, and access authorisation" },
-            { title: "Web Content & Data", slug: "content", excerpt: "Create content, forms, data lists, and SQL APIs" },
-            { title: "Reports & Analytics", slug: "reports", excerpt: "Deploy reports, design analytic cubes, and run queries" },
-            { title: "Subscription", slug: "subscription", excerpt: "Manage billing, packages, and user limits" },
-            { title: "AI Services", slug: "ai-services", excerpt: "Configure AI providers, agents, and task definitions for AI workflow automation" },
+            { title: "People and Organizations", slug: "users", excerpt: "Manage user accounts, group memberships, and organizational structures." },
+            { title: "User Experience", slug: "websites", excerpt: "Configure menus and pages for tasks, data, charts, reports, and authorized audiences." },
+            { title: "Knowledge Base", slug: "content", excerpt: "Create web content, posts, and digital assets for internal and external audiences." },
+            { title: "Custom Reports and Analytics", slug: "reports", excerpt: "Analyze data streams and generate insights for decision-making." },
+            { title: "Subscription", slug: "subscription", excerpt: "Manage billing, subscriptions, and payment processing." },
+            { title: "AI Provider Services", slug: "ai-services", excerpt: "Configure AI providers, agents, and task definitions for workflow automation." },
         ],
     },
 ];

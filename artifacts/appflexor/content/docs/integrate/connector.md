@@ -1,8 +1,8 @@
-# External System Integration - Appflexor Connector
+# External Systems Integration
 
 ## Purpose
 
-The **Appflexor Connector** is a ready-to-run Node.js worker that integrates your external systems — ERP, CRM, HRMS, databases, or any custom application — directly into Appflexor business processes. Instead of polling Camunda for work, it connects to Appflexor's **WebSocket push channel**: Appflexor pushes tasks to the worker the moment they are ready, eliminating polling delays and excess API calls. The worker authenticates via the Appflexor login API, subscribes to one or more named topics, and calls the Appflexor BPM proxy to complete each task.
+Use the **Appflexor Connector** to integrate external systems with your processes as external workers. The ready-to-run Node.js worker connects ERP, CRM, HRMS, databases, or custom applications directly to Appflexor business processes. Instead of polling Camunda for work, it connects to Appflexor's **WebSocket push channel**: Appflexor pushes tasks to the worker as soon as they are ready, eliminating polling delays and excess API calls. The worker authenticates through the Appflexor login API, subscribes to one or more named topics, and calls the BPM proxy to complete each task.
 
 ---
 
