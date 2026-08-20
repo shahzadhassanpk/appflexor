@@ -6,9 +6,9 @@ export const DOC_MANIFEST = [
         slug: "capture",
         icon: "fa-solid fa-table-list",
         docs: [
-            { title: "Data Intake using Web Forms", slug: "forms", excerpt: "Take structured information through web forms and trigger processes." },
-            { title: "Data Intake using APIs", slug: "apis", excerpt: "Receive business data from external systems and trigger relevant processes." },
-            { title: "Data Enrichment using AI", slug: "ai-agent", excerpt: "Validate, classify, and enrich captured data with context-aware AI agents." },
+            { title: "Data Intake using Web Forms", slug: "forms", excerpt: "How to take structured information using web forms and trigger processes." },
+            { title: "Data Intake using APIs", slug: "apis", excerpt: "How to receive business data from external systems and trigger relevant business processes." },
+            { title: "Data Enrichment using AI", slug: "ai-agent", excerpt: "How to validate, classify, and enrich captured data using context-aware AI agents." },
         ],
     },
     {
@@ -16,12 +16,11 @@ export const DOC_MANIFEST = [
         slug: "orchestrate",
         icon: "fa-solid fa-diagram-project",
         docs: [
-            { title: "Business Areas", slug: "business-areas", excerpt: "Define and manage business domains for processes." },
-            { title: "Governing Bodies", slug: "governing-bodies", excerpt: "Assign the teams responsible for process approvals and policy." },
-            { title: "Process Categories", slug: "process-categories", excerpt: "Define the strategic intent represented by each process category." },
-            { title: "Deploy Process", slug: "deploy-process", excerpt: "Launch new or updated processes into production." },
-            { title: "Monitor Process", slug: "monitor-process", excerpt: "Track performance and status of running processes." },
-            { title: "Task Automation", slug: "ai-agent", excerpt: "Use AI, Data APIs, and external systems inside workflows for task automation." },
+            { title: "Business Areas", slug: "business-areas", excerpt: "Define and manage business domains for processes" },
+            { title: "Governing Bodies", slug: "governing-bodies", excerpt: "Bodies responsible for defining and optimising business processes" },
+            { title: "Deploy Process", slug: "deploy-process", excerpt: "Launch new or updated processes into production" },
+            { title: "Monitor Process", slug: "monitor-process", excerpt: "Track performance and status of running processes" },
+            { title: "Task Automation", slug: "ai-agent", excerpt: "Use AI, Data APIs, and external systems inside workflows for task automations" },
         ],
     },
     {
@@ -29,9 +28,11 @@ export const DOC_MANIFEST = [
         slug: "integrate",
         icon: "fa-solid fa-plug",
         docs: [
-            { title: "External Systems Integration", slug: "connector", excerpt: "Integrate external systems with your processes as external workers." },
-            { title: "AI Agent", slug: "ai-agent", excerpt: "Strengthen external connectors with contextual AI intelligence" },
-            { title: "AI Provider Services", slug: "ai-services", excerpt: "Configure AI providers, agents, and task definitions for workflow automation." },
+            { title: "Data Sharing Services", slug: "data-sharing", excerpt: "Design reusable forms, manage persistent data lists, and configure SQL‑based APIs." },
+            { title: "Custom Reports and Analytics", slug: "reports", excerpt: "Deploy custom reports to analyze data streams and generate actionable insights for decision-making." },
+            { title: "Email Services", slug: "email-services", excerpt: "Manage accounts and templates for sending system‑generated emails." },
+            { title: "AI Provider Services", slug: "ai-services", excerpt: "Configure AI providers, agents, and task definitions for workflow automation" },
+            { title: "External Systems Integration", slug: "connector", excerpt: "Guidelines to integrate external systems with your processes as external workers" },
         ],
     },
     {
@@ -39,11 +40,10 @@ export const DOC_MANIFEST = [
         slug: "administrate",
         icon: "fa-solid fa-gear",
         docs: [
-            { title: "People and Organizations", slug: "users", excerpt: "Manage user accounts, group memberships, and organizational structures." },
-            { title: "User Experience", slug: "websites", excerpt: "Configure menus and pages for tasks, data, charts, reports, and authorized audiences." },
-            { title: "Knowledge Base", slug: "content", excerpt: "Create web content, posts, and digital assets for internal and external audiences." },
-            { title: "Custom Reports and Analytics", slug: "reports", excerpt: "Analyze data streams and generate insights for decision-making." },
-            { title: "Subscription", slug: "subscription", excerpt: "Manage billing, subscriptions, and payment processing." },
+            { title: "People and Organizations", slug: "users", excerpt: "Manage user accounts, group memberships, and organizational structures" },
+            { title: "User Experience", slug: "websites", excerpt: "Configure dynamic Menus and Pages to show Tasks, Data, Charts and Reports with authorizations" },
+            { title: "Knowledge Base", slug: "content", excerpt: "Create web content, posts and digital assets for internal and external audiences" },
+            { title: "Subscription", slug: "subscription", excerpt: "Manage billing, subscriptions, and payment processing" },
         ],
     },
 ];
