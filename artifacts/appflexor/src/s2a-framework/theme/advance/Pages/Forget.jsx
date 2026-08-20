@@ -1,5 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useState, useContext } from "react";
+import { HiInboxArrowDown } from "react-icons/hi2";
 import { Link, useNavigate } from "react-router-dom";
 import { SIGNUP_URL, IMAGE_BASE } from "../../../Config";
 import BrandLogo from "../Layout/BrandLogo";
@@ -33,14 +34,20 @@ function Forget() {
         event.preventDefault();
         setDisableInput(true);
         const url = `${SIGNUP_URL}?service.key=forget.password`;
-        axios.post(url, { username: userDetail.username })
+        axios
+            .post(url, { username: userDetail.username })
             .then(response => {
+                debugger;
                 const status = response.data.C_STATUS;
                 if (status === "SUCCESS") {
                     if (response.data.C_ID) {
                         setPasswordId(response.data.C_ID);
                         setStage("verifyCode");
-                        toastEmitter("Code sent to your email", true, "success");
+                        toastEmitter(
+                            "Code sent to your email",
+                            true,
+                            "success",
+                        );
                     }
                 } else {
                     toastEmitter("Invalid Username", true, "error");
@@ -53,7 +60,8 @@ function Forget() {
     function verifyCode(event) {
         event.preventDefault();
         const url = `${SIGNUP_URL}?service.key=verify.code`;
-        axios.post(url, { code: userDetail.code, id: passwordId })
+        axios
+            .post(url, { code: userDetail.code, id: passwordId })
             .then(response => {
                 if (response.data.C_STATUS === "SUCCESS") {
                     setStage("setPassword");
@@ -72,10 +80,15 @@ function Forget() {
             return;
         }
         const url = `${SIGNUP_URL}?service.key=update.password`;
-        axios.post(url, { id: passwordId, password: userDetail.password })
+        axios
+            .post(url, { id: passwordId, password: userDetail.password })
             .then(response => {
                 if (response.data.C_STATUS === "SUCCESS") {
-                    toastEmitter("Password updated successfully!", true, "success");
+                    toastEmitter(
+                        "Password updated successfully!",
+                        true,
+                        "success",
+                    );
                     setTimeout(() => navigate("/login"), 1000);
                 } else {
                     toastEmitter("Unable to update password", true, "error");
@@ -84,16 +97,280 @@ function Forget() {
             .catch(err => console.error(err));
     }
 
+    const logoUrl = brand.brand_logo
+        ? `${IMAGE_BASE}/app_site/${brand.id}/${brand.brand_logo}`
+        : null;
+
+    const LOGIN_FALLBACK_LOGO = `${import.meta.env.BASE_URL}theme/images/appflexor-logo.png`;
+
+    const featureCards = [
+        {
+            icon: HiInboxArrowDown,
+            iconBg: "bg-indigo-100",
+            iconColor: "text-indigo-600",
+            title: "Business Events",
+            titleColor: "text-indigo-600",
+            desc: "Receive work from Email, WhatsApp, Forms, APIs and External Systems.",
+        },
+        {
+            icon: "fa-arrows-spin",
+            iconBg: "bg-violet-100",
+            iconColor: "text-violet-600",
+            title: "Business Services",
+            titleColor: "text-violet-600",
+            desc: "Automate and monitor business processes using AI-powered workflows.",
+        },
+        {
+            icon: "fa-link",
+            iconBg: "bg-emerald-100",
+            iconColor: "text-emerald-600",
+            title: "Enterprise Systems",
+            titleColor: "text-emerald-600",
+            desc: "Connect ERP, CRM, Accounting, Ecommerce, and Enterprise Applications.",
+        },
+    ];
+
+    /* ── Flow steps ─────────────────────────────────────────────── */
+    const flowSteps = [
+        { icon: HiInboxArrowDown, bg: "bg-indigo-600", label: "Capture" },
+        { icon: "fa-arrows-spin", bg: "bg-violet-600", label: "Orchestrate" },
+        { icon: "fa-link", bg: "bg-emerald-600", label: "Integrate" },
+    ];
+
+    /* ── Supported channels ─────────────────────────────────────── */
+    const channels = [
+        { icon: "fa-envelope", label: "Email" },
+        { icon: "fa-whatsapp", label: "WhatsApp", fab: true },
+        { icon: "fa-globe", label: "Forms" },
+        { icon: "fa-code", label: "APIs" },
+        { icon: "s2a-channel-logo s2a-channel-logo-odoo", label: "Odoo ERP" },
+        {
+            icon: "s2a-channel-logo s2a-channel-logo-quickbooks",
+            label: "QuickBooks",
+        },
+        { icon: "s2a-channel-logo s2a-channel-logo-xero", label: "Xero" },
+        {
+            icon: "s2a-channel-logo s2a-channel-logo-kafka",
+            label: "Connectors",
+        },
+    ];
+
+    /* ── Business services ──────────────────────────────────────── */
+    const services = [
+        { icon: "fa-shield-halved", label: "Compliance Management" },
+        { icon: "fa-coins", label: "Financial Reconciliation" },
+        { icon: "fa-cart-shopping", label: "Order Fulfillment" },
+        { icon: "fa-folder-open", label: "Document Management" },
+        { icon: "fa-puzzle-piece", label: "And more..." },
+    ];
+
+    function AppflexorMark({ size = 28 }) {
+        return (
+            <img
+                src={LOGIN_FALLBACK_LOGO}
+                alt="AppFlexor"
+                width={size}
+                height={size}
+                className="object-contain"
+            />
+        );
+    }
+
+    /* ─── Dotted arrow between flow steps ─────────────────────────────────────── */
+function DottedArrow() {
     return (
-        <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 font-sans">
-            <div className="hidden lg:flex w-[60%] bg-slate-100 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex-col p-12 relative overflow-hidden items-center justify-center">
+        <div className="flex items-center justify-between mx-2 w-full mb-4">
+            {[...Array(6)].map((_, i) => (
+                <div
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full bg-indigo-300 opacity-60"
+                />
+            ))}
+            <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-indigo-400 opacity-70" />
+        </div>
+    );
+}
+
+    return (
+        <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
+            {/* <div className="hidden lg:flex w-[60%] bg-slate-100 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex-col p-12 relative overflow-hidden items-center justify-center">
                 <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-lighten opacity-70"></div>
                 <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-lighten opacity-70"></div>
                 <div className="relative z-10 text-center">
                     <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Reset your password</h1>
                     <p className="text-lg text-gray-500 dark:text-slate-400 max-w-md mx-auto">Follow the steps to regain access to your {brandTitle} workspace securely.</p>
                 </div>
-            </div>
+            </div> */}
+            <section className="s2a-login-presentation hidden lg:flex w-[58%] flex-col px-14 py-12 relative overflow-hidden">
+                {/* Subtle dot grid decoration */}
+                <div className="s2a-login-dot-grid absolute top-10 right-10 opacity-20 pointer-events-none select-none">
+                    {[...Array(6)].map((_, r) => (
+                        <div
+                            key={r}
+                            className="flex gap-4 mb-4">
+                            {[...Array(8)].map((_, c) => (
+                                <div
+                                    key={c}
+                                    className="w-1 h-1 rounded-full bg-indigo-400"
+                                />
+                            ))}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Brand logo */}
+                <div className="s2a-login-brand flex items-center gap-2.5 mb-10">
+                    {logoUrl ? (
+                        <img
+                            src={logoUrl}
+                            alt={brandTitle}
+                            className="h-8 object-contain"
+                            onError={event => {
+                                event.currentTarget.onerror = null;
+                                event.currentTarget.src = LOGIN_FALLBACK_LOGO;
+                            }}
+                        />
+                    ) : (
+                        <AppflexorMark size={30} />
+                    )}
+                    <span className="text-lg font-bold text-slate-800 tracking-tight">
+                        {brandTitle}
+                    </span>
+                </div>
+
+                {/* Headline */}
+                <h1 className="s2a-login-headline text-5xl font-extrabold text-slate-900 leading-[1.15] mb-4 tracking-tight">
+                    Automate Business
+                    <br />
+                    Services with <span className="text-indigo-600">AI</span>
+                </h1>
+
+                {/* Subtitle */}
+                <p className="s2a-login-intro text-sm text-slate-600 mb-8 leading-6">
+                    Capture business events.
+                    <br />
+                    Orchestrate business services.
+                    <br />
+                    Integrate enterprise systems.
+                </p>
+
+                {/* Flow diagram */}
+                <div className="s2a-login-flow flex items-center mb-8">
+                    {flowSteps.map((step, i) => (
+                        <React.Fragment key={step.label}>
+                            <div className="flex flex-col items-center">
+                                <div
+                                    className={`w-14 h-14 ${step.bg} rounded-full flex items-center justify-center shadow-md mb-2`}>
+                                    {typeof step.icon === "string" ? (
+                                        <i
+                                            className={`fa-solid ${step.icon} text-white text-xl`}></i>
+                                    ) : (
+                                        <step.icon
+                                            style={{
+                                                color: "#fff",
+                                                fontSize: "1.25rem",
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                                <span className="text-xs font-semibold text-slate-700">
+                                    {step.label}
+                                </span>
+                            </div>
+                            {i < flowSteps.length - 1 && <DottedArrow />}
+                        </React.Fragment>
+                    ))}
+                </div>
+
+                {/* Feature cards */}
+                <div className="s2a-login-feature-grid grid grid-cols-3 gap-3 mb-8">
+                    {featureCards.map(f => (
+                        <div
+                            key={f.title}
+                            className="s2a-login-feature-card bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                            <div className="flex items-start gap-3">
+                                <div
+                                    className={`w-9 h-9 ${f.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                                    {typeof f.icon === "string" ? (
+                                        <i
+                                            className={`fa-solid ${f.icon} ${f.iconColor} text-sm`}></i>
+                                    ) : (
+                                        <f.icon
+                                            className={f.iconColor}
+                                            style={{ fontSize: "1rem" }}
+                                        />
+                                    )}
+                                </div>
+                                <div>
+                                    <p
+                                        className={`text-sm font-semibold ${f.titleColor} mb-1`}>
+                                        {f.title}
+                                    </p>
+                                    <p className="text-xs text-slate-500 leading-relaxed">
+                                        {f.desc}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Supported channels */}
+                <div className="s2a-login-supported mb-4">
+                    <p className="text-sm font-semibold text-slate-500 mb-2.5">
+                        Supported Channels
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {channels.map(ch => (
+                            <span
+                                key={ch.label}
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm">
+                                {ch.fab ? (
+                                    <i
+                                        className={`fa-brands ${ch.icon} text-base`}></i>
+                                ) : ch.icon ? (
+                                    <i
+                                        className={
+                                            ch.icon.includes("s2a-channel-logo")
+                                                ? ch.icon
+                                                : `fa-solid ${ch.icon} text-base`
+                                        }
+                                        aria-hidden="true"></i>
+                                ) : null}
+                                {ch.label}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Business services */}
+                <div className="s2a-login-services mb-6">
+                    <p className="text-sm font-semibold text-slate-500 mb-2.5">
+                        Business Services
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {services.map(svc => (
+                            <span
+                                key={svc.label}
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-700 shadow-sm">
+                                <i
+                                    className={`fa-solid ${svc.icon} text-indigo-500 text-base`}
+                                    aria-hidden="true"></i>
+                                {svc.label}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Trust badge */}
+                {/* <div className="flex items-start gap-3 bg-white/60 border border-slate-200 rounded-xl px-4 py-3 max-w-lg">
+                                            <i className="fa-solid fa-shield-halved text-indigo-500 mt-0.5 flex-shrink-0"></i>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Trusted for Customer Service, Employee Services, Finance,<br />
+                                                Procurement and Compliance Automation.
+                                            </p>
+                                        </div> */}
+            </section>
 
             <div className="w-full lg:w-[40%] flex items-center justify-center p-8 bg-white dark:bg-slate-950">
                 <div className="w-full max-w-md">
@@ -102,33 +379,53 @@ function Forget() {
                     </div>
 
                     <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-gray-100 dark:border-slate-800 p-8 sm:p-10">
-                        
                         <div className="flex gap-2 mb-8">
-                            {['forgetPassword', 'verifyCode', 'setPassword'].map((s, i) => (
-                                <div key={s} className={`h-1.5 flex-1 rounded-full ${
-                                    stage === s ? 'bg-indigo-600' : 
-                                    (['forgetPassword', 'verifyCode', 'setPassword'].indexOf(stage) > i ? 'bg-indigo-200 dark:bg-indigo-900' : 'bg-gray-100 dark:bg-slate-800')
-                                }`}></div>
+                            {[
+                                "forgetPassword",
+                                "verifyCode",
+                                "setPassword",
+                            ].map((s, i) => (
+                                <div
+                                    key={s}
+                                    className={`h-1.5 flex-1 rounded-full ${
+                                        stage === s
+                                            ? "bg-indigo-600"
+                                            : [
+                                                    "forgetPassword",
+                                                    "verifyCode",
+                                                    "setPassword",
+                                                ].indexOf(stage) > i
+                                              ? "bg-indigo-200 dark:bg-indigo-900"
+                                              : "bg-gray-100 dark:bg-slate-800"
+                                    }`}></div>
                             ))}
                         </div>
 
                         <div className="text-center mb-8">
                             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                {stage === "forgetPassword" && "Forgot Password"}
+                                {stage === "forgetPassword" &&
+                                    "Forgot Password"}
                                 {stage === "verifyCode" && "Verify Code"}
                                 {stage === "setPassword" && "New Password"}
                             </h2>
                             <p className="text-sm text-gray-500 dark:text-slate-400">
-                                {stage === "forgetPassword" && "Enter your email to receive a recovery code."}
-                                {stage === "verifyCode" && "Enter the 6-digit code sent to your email."}
-                                {stage === "setPassword" && "Choose a strong new password."}
+                                {stage === "forgetPassword" &&
+                                    "Enter your username to receive a recovery code."}
+                                {stage === "verifyCode" &&
+                                    "Enter the 6-digit code sent to your email."}
+                                {stage === "setPassword" &&
+                                    "Choose a strong new password."}
                             </p>
                         </div>
 
                         {stage === "forgetPassword" && (
-                            <form onSubmit={forgetPassword} className="space-y-5">
+                            <form
+                                onSubmit={forgetPassword}
+                                className="space-y-5">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Email Address</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                                        Username
+                                    </label>
                                     <input
                                         type="text"
                                         name="username"
@@ -140,10 +437,16 @@ function Forget() {
                                     />
                                 </div>
                                 <div className="flex gap-3 pt-2">
-                                    <button type="button" onClick={cancel} className="flex-1 py-3 px-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                                    <button
+                                        type="button"
+                                        onClick={cancel}
+                                        className="flex-1 py-3 px-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                                         Cancel
                                     </button>
-                                    <button type="submit" disabled={disableInput} className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-70">
+                                    <button
+                                        type="submit"
+                                        disabled={disableInput}
+                                        className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-70">
                                         Send Code
                                     </button>
                                 </div>
@@ -151,9 +454,13 @@ function Forget() {
                         )}
 
                         {stage === "verifyCode" && (
-                            <form onSubmit={verifyCode} className="space-y-5">
+                            <form
+                                onSubmit={verifyCode}
+                                className="space-y-5">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Verification Code</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                                        Verification Code
+                                    </label>
                                     <input
                                         type="text"
                                         name="code"
@@ -163,18 +470,26 @@ function Forget() {
                                         className="w-full text-center tracking-widest text-2xl font-mono bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl py-4 px-4 text-gray-900 dark:text-white focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                     />
                                 </div>
-                                <button type="submit" className="w-full py-3 px-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors">
+                                <button
+                                    type="submit"
+                                    className="w-full py-3 px-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors">
                                     Verify Code
                                 </button>
                             </form>
                         )}
 
                         {stage === "setPassword" && (
-                            <form onSubmit={updatePassword} className="space-y-5">
+                            <form
+                                onSubmit={updatePassword}
+                                className="space-y-5">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">New Password</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                                        New Password
+                                    </label>
                                     <input
-                                        type={showPassword ? "text" : "password"}
+                                        type={
+                                            showPassword ? "text" : "password"
+                                        }
                                         name="password"
                                         value={userDetail.password}
                                         onChange={handleChange}
@@ -183,9 +498,13 @@ function Forget() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Confirm Password</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                                        Confirm Password
+                                    </label>
                                     <input
-                                        type={showPassword ? "text" : "password"}
+                                        type={
+                                            showPassword ? "text" : "password"
+                                        }
                                         name="passwordReenter"
                                         value={userDetail.passwordReenter}
                                         onChange={handleChange}
@@ -198,21 +517,29 @@ function Forget() {
                                         type="checkbox"
                                         id="showPassword"
                                         checked={showPassword}
-                                        onChange={(e) => setShowPassword(e.target.checked)}
+                                        onChange={e =>
+                                            setShowPassword(e.target.checked)
+                                        }
                                         className="rounded text-indigo-600 border-gray-300 focus:ring-indigo-500 w-4 h-4"
                                     />
-                                    <label htmlFor="showPassword" className="ml-2 text-sm text-gray-600 dark:text-slate-400 select-none">
+                                    <label
+                                        htmlFor="showPassword"
+                                        className="ml-2 text-sm text-gray-600 dark:text-slate-400 select-none">
                                         Show passwords
                                     </label>
                                 </div>
-                                <button type="submit" className="w-full py-3 px-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors">
+                                <button
+                                    type="submit"
+                                    className="w-full py-3 px-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors">
                                     Set Password
                                 </button>
                             </form>
                         )}
 
                         <div className="mt-8 text-center">
-                            <Link to="/login" className="text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-slate-400 transition-colors">
+                            <Link
+                                to="/login"
+                                className="text-sm font-medium text-gray-500 hover:text-indigo-600 dark:text-slate-400 transition-colors">
                                 Back to login
                             </Link>
                         </div>
