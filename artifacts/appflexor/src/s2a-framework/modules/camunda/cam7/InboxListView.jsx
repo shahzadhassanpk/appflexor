@@ -105,8 +105,8 @@ function RenderListView({
     function groupTasksByDue(tasks) {
         const now = new Date();
         const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-        const todayEnd   = new Date(now); todayEnd.setHours(23, 59, 59, 999);
-        const weekEnd    = new Date(now);
+        const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+        const weekEnd = new Date(now);
         weekEnd.setDate(weekEnd.getDate() + 7);
         weekEnd.setHours(23, 59, 59, 999);
 
@@ -126,7 +126,17 @@ function RenderListView({
         return groups;
     }
 
-    function applyLocalFilters(tasks) {
+    function applyLocalFilters(allTasks) {
+        const _myUsername = (userDetails?.username || "")
+            .toString()
+            .toLowerCase();
+        const tasks = (allTasks || []).filter(task => {
+            if (taskFilterType === "myTask") {
+                const assignee = (task?.assignee || task?.variables?.["assignee"]);
+                return assignee && assignee.toString().toLowerCase() === _myUsername;
+            }
+            return true; // keep all tasks if not "myTask"
+        });
         return (tasks || []).filter(task => {
             if (filters.priority !== "all") {
                 if (getPriorityLevel(task) !== filters.priority) return false;
@@ -223,18 +233,20 @@ function RenderListView({
      * ─────────────────────────────────────────────────────────────────── */
     const allCount = allTasksCount ?? safeTaskList.length;
 
-    const _myUsername = (userDetails?.username || "").toString().toLowerCase();
-    const assignedToMeCount = taskFilterType === "myTask"
-        ? safeTaskList.length
-        : safeTaskList.filter(
-            t => (t.assignee || "").toString().toLowerCase() === _myUsername
-          ).length;
+    const _myUsername = (userDetails?.username).toString().toLowerCase();
+    const assignedToMeCount = safeTaskList.filter(t => {
+        const assignee =
+            (t?.assignee || t?.variables?.["assignee"])?.toString().toLowerCase();
+
+        // Only count tasks explicitly assigned to me
+        return assignee === _myUsername;
+    }).length;
 
     const _now = new Date();
     /* Use calendar-day boundaries so a task due at 9 AM (past the current
        time but still today) counts as "Due Today", not "Overdue". */
     const _todayStart = new Date(_now); _todayStart.setHours(0, 0, 0, 0);
-    const _todayEnd   = new Date(_now); _todayEnd.setHours(23, 59, 59, 999);
+    const _todayEnd = new Date(_now); _todayEnd.setHours(23, 59, 59, 999);
     /* "Due Today" includes overdue tasks — anything that needs attention
        on or before end of today (due <= todayEnd). */
     const dueTodayCount = safeTaskList.filter(t => {
@@ -854,51 +866,51 @@ function RenderListView({
                                 )}
 
                                 {safeProcessList.map((process, index) => {
-                                        const processId = process.id || process.process_key || `${index}`;
-                                        const isDescriptionExpanded = expandedProcessDescriptionId === processId;
-                                        return (
-                                            <div key={processId} className="mb-2">
-                                                <div
-                                                    className="process-item pointer d-flex"
-                                                    title="Start Process"
-                                                    onClick={() =>
-                                                        handleProcessSelection(
-                                                            process,
-                                                        )
-                                                    }>
-                                                    <i className="fa-solid fa-diagram-project me-2"></i>
-                                                    <div className="d-flex justify-content-between align-items-start w-100">
-                                                        <div>
-                                                            <div>{process.process_title || process.title}</div>
-                                                            {(process.subtitle || process.sub_title) && (
-                                                                <div className="small text-muted">{process.subtitle || process.sub_title}</div>
-                                                            )}
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-sm btn-link p-0 ms-2"
-                                                            title={isDescriptionExpanded ? "Hide service details" : "View service details"}
-                                                            aria-expanded={isDescriptionExpanded}
-                                                            onClick={e => {
-                                                                e.stopPropagation();
-                                                                e.preventDefault();
-                                                                setExpandedProcessDescriptionId(prev =>
-                                                                    prev === processId ? "" : processId,
-                                                                );
-                                                            }}>
-                                                            <i className="fa-solid fa-circle-info"></i>
-                                                        </button>
+                                    const processId = process.id || process.process_key || `${index}`;
+                                    const isDescriptionExpanded = expandedProcessDescriptionId === processId;
+                                    return (
+                                        <div key={processId} className="mb-2">
+                                            <div
+                                                className="process-item pointer d-flex"
+                                                title="Start Process"
+                                                onClick={() =>
+                                                    handleProcessSelection(
+                                                        process,
+                                                    )
+                                                }>
+                                                <i className="fa-solid fa-diagram-project me-2"></i>
+                                                <div className="d-flex justify-content-between align-items-start w-100">
+                                                    <div>
+                                                        <div>{process.process_title || process.title}</div>
+                                                        {(process.subtitle || process.sub_title) && (
+                                                            <div className="small text-muted">{process.subtitle || process.sub_title}</div>
+                                                        )}
                                                     </div>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm btn-link p-0 ms-2"
+                                                        title={isDescriptionExpanded ? "Hide service details" : "View service details"}
+                                                        aria-expanded={isDescriptionExpanded}
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            setExpandedProcessDescriptionId(prev =>
+                                                                prev === processId ? "" : processId,
+                                                            );
+                                                        }}>
+                                                        <i className="fa-solid fa-circle-info"></i>
+                                                    </button>
                                                 </div>
-
-                                                {isDescriptionExpanded && (
-                                                    <div className="process-description mt-1 ms-4 small text-muted">
-                                                        <Interweave content={process.discription || process.description || "No description available for this service."} />
-                                                    </div>
-                                                )}
                                             </div>
-                                        );
-                                    })}
+
+                                            {isDescriptionExpanded && (
+                                                <div className="process-description mt-1 ms-4 small text-muted">
+                                                    <Interweave content={process.discription || process.description || "No description available for this service."} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                         <div className="modal-footer d-flex justify-content-between">

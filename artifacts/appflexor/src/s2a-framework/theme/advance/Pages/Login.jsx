@@ -508,7 +508,7 @@ function Login({
                                     <form onSubmit={checkUsername} className="space-y-4">
                                         <div>
                                             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                                                Email Address
+                                                Username
                                             </label>
                                             <div className="relative">
                                                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -522,7 +522,7 @@ function Login({
                                                     disabled={isLoading || disableInputField}
                                                     required
                                                     autoFocus
-                                                    placeholder="Enter your email address"
+                                                    placeholder="Enter your username"
                                                     className="w-full border border-slate-200 rounded-lg py-2.5 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
                                                 />
                                             </div>
