@@ -101,6 +101,14 @@
 
 .docs-bc-section i { font-size: 11px; }
 
+.docs-bc-link {
+    cursor: pointer;
+    color: var(--button-primary-bg, #0d6efd);
+    transition: opacity 0.15s;
+}
+
+.docs-bc-link:hover { opacity: 0.75; }
+
 .docs-bc-active {
     font-size: 13px;
     font-weight: 500;

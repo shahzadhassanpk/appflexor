@@ -44,10 +44,19 @@ function getContent(section, slug) {
 
 function DocViewer() {
     const [activeDoc, setActiveDoc] = useState(null); // null = overview
+    const [activeSection, setActiveSection] = useState(null); // null = all sections
 
     function handleSelect(doc) {
         setActiveDoc(doc);
+        setActiveSection(null);
         // scroll content panel back to top
+        const panel = document.getElementById("docContentPanel");
+        if (panel) panel.scrollTop = 0;
+    }
+
+    function handleSelectSection(sectionSlug) {
+        setActiveDoc(null);
+        setActiveSection(sectionSlug || null);
         const panel = document.getElementById("docContentPanel");
         if (panel) panel.scrollTop = 0;
     }
@@ -96,12 +105,17 @@ function DocViewer() {
             {/* Body: breadcrumb + content */}
             <div className="offcanvas-body" style={{ flexDirection: "column", overflow: "hidden" }}>
                 {/* Breadcrumb bar */}
-                <DocsBreadcrumb activeDoc={activeDoc} onSelect={handleSelect} />
+                <DocsBreadcrumb
+                    activeDoc={activeDoc}
+                    activeSection={activeSection}
+                    onSelect={handleSelect}
+                    onSelectSection={handleSelectSection}
+                />
 
                 <div className="docs-content-panel" id="docContentPanel">
                     {activeDoc
                         ? <DocPage doc={activeDoc} onSelect={handleSelect} />
-                        : <DocsOverview onSelect={handleSelect} />
+                        : <DocsOverview activeSection={activeSection} onSelect={handleSelect} />
                     }
                 </div>
             </div>
@@ -111,10 +125,11 @@ function DocViewer() {
 
 // ── Breadcrumb ───────────────────────────────────────────────
 
-function DocsBreadcrumb({ activeDoc, onSelect }) {
+function DocsBreadcrumb({ activeDoc, activeSection, onSelect, onSelectSection }) {
+    const sectionSlug = activeDoc?.section || activeSection;
     const section = activeDoc
         ? DOC_MANIFEST.find(s => s.slug === activeDoc.section)
-        : null;
+        : DOC_MANIFEST.find(s => s.slug === sectionSlug);
 
     return (
         <nav className="docs-breadcrumb" aria-label="Documentation breadcrumb">
@@ -125,10 +140,13 @@ function DocsBreadcrumb({ activeDoc, onSelect }) {
             {section && (
                 <>
                     <i className="fa-solid fa-chevron-right docs-bc-sep"></i>
-                    <span className="docs-bc-item docs-bc-section">
+                    <button
+                        className="docs-bc-item docs-bc-section docs-bc-link"
+                        onClick={() => onSelectSection(section.slug)}
+                        aria-label={`Back to ${section.section} documentation`}>
                         <i className={section.icon}></i>
                         {section.section}
-                    </span>
+                    </button>
                 </>
             )}
             {activeDoc && (
@@ -143,15 +161,24 @@ function DocsBreadcrumb({ activeDoc, onSelect }) {
 
 // ── Overview (home) ──────────────────────────────────────────
 
-function DocsOverview({ onSelect }) {
+function DocsOverview({ activeSection, onSelect }) {
+    const sections = activeSection
+        ? DOC_MANIFEST.filter(section => section.slug === activeSection)
+        : DOC_MANIFEST;
+    const selectedSection = sections.length === 1 && activeSection ? sections[0] : null;
+
     return (
         <div>
-            <div className="docs-overview-title">Appflexor Documentation</div>
+            <div className="docs-overview-title">
+                {selectedSection ? `${selectedSection.section} Documentation` : "Appflexor Documentation"}
+            </div>
             <div className="docs-overview-sub">
-                Browse guides for building, configuring, and administrating your Appflexor platform.
+                {selectedSection
+                    ? `Browse guides for the ${selectedSection.section} section.`
+                    : "Browse guides for building, configuring, and administrating your Appflexor platform."}
             </div>
 
-            {DOC_MANIFEST.map(section => (
+            {sections.map(section => (
                 <div key={section.slug} className="docs-section-group">
                     <div className="docs-section-group-title">
                         <i className={section.icon}></i>
