@@ -38,6 +38,7 @@ Connect enterprise applications to execute tasks and exchange business informati
 | Guide | Description |
 |---|---|
 | [External Systems Integration](integrate/connector.md) | Integrate external systems with your processes as external workers |
+| [AI Provider Services](integrate/ai-services.md) | Configure AI providers, agents, and task definitions for workflow automation |
 
 ---
 
@@ -52,4 +53,3 @@ Manage platform configuration and security for controlled execution.
 | [Knowledge Base](administrate/content.md) | Create web content, posts, and digital assets for internal and external audiences |
 | [Custom Reports and Analytics](administrate/reports.md) | Analyze data streams and generate insights for decision-making |
 | [Subscription](administrate/subscription.md) | Manage billing, subscriptions, and payment processing |
-| [AI Provider Services](administrate/ai-services.md) | Configure AI providers, agents, and task definitions for workflow automation |

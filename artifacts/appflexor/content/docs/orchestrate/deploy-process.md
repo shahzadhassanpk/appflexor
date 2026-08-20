@@ -125,7 +125,7 @@ Delegates the task to a configured AI agent. Worker topic: `ai.run.agent`.
 
 | Field | Description |
 |---|---|
-| **AI Agent** | Select the agent from the list of agents configured in **Administrate → AI Services**. |
+| **AI Agent** | Select the agent from the list of agents configured in **Integrate → AI Provider Services**. |
 | **Task** | Select the specific task definition for this agent (loaded after the agent is selected). |
 | **Payload Parameters** | Key/value pairs sent to the agent. The first two rows (`business_key` and `message`) are fixed and required. Add extra rows for any additional context the agent needs. |
 

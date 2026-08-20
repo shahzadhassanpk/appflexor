@@ -26,7 +26,7 @@ AI Providers register the external LLM services your agents will use.
 
 ### Add a Provider
 
-1. Navigate to **Administrate → AI Services → AI Providers**.
+1. Navigate to **Integrate → AI Provider Services → AI Providers**.
 2. Click **Add Provider**.
 3. Fill in:
    - **Provider Name** — display name shown in dropdowns (e.g. `OpenAI`).
@@ -55,7 +55,7 @@ AI Agents combine a system prompt with an AI provider to create a reusable AI re
 
 ### Add an Agent
 
-1. Navigate to **Administrate → AI Services → AI Agents**.
+1. Navigate to **Integrate → AI Provider Services → AI Agents**.
 2. Click **Add Agent**.
 3. Fill in:
    - **Name** — human-readable label shown in the UI (e.g. `Customer Support`).
@@ -91,7 +91,7 @@ AI Tasks define what an agent should do for a specific use case. Each task belon
 
 ### Add a Task
 
-1. Navigate to **Administrate → AI Services → AI Tasks**.
+1. Navigate to **Integrate → AI Provider Services → AI Tasks**.
 2. Select an agent from the **Agent** dropdown at the top of the tab.
 3. Click **Add Task**.
 4. Fill in:

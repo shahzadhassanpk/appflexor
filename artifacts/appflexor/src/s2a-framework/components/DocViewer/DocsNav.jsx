@@ -31,6 +31,7 @@ export const DOC_MANIFEST = [
         docs: [
             { title: "External Systems Integration", slug: "connector", excerpt: "Integrate external systems with your processes as external workers." },
             { title: "AI Agent", slug: "ai-agent", excerpt: "Strengthen external connectors with contextual AI intelligence" },
+            { title: "AI Provider Services", slug: "ai-services", excerpt: "Configure AI providers, agents, and task definitions for workflow automation." },
         ],
     },
     {
@@ -43,7 +44,6 @@ export const DOC_MANIFEST = [
             { title: "Knowledge Base", slug: "content", excerpt: "Create web content, posts, and digital assets for internal and external audiences." },
             { title: "Custom Reports and Analytics", slug: "reports", excerpt: "Analyze data streams and generate insights for decision-making." },
             { title: "Subscription", slug: "subscription", excerpt: "Manage billing, subscriptions, and payment processing." },
-            { title: "AI Provider Services", slug: "ai-services", excerpt: "Configure AI providers, agents, and task definitions for workflow automation." },
         ],
     },
 ];

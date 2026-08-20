@@ -44,11 +44,11 @@ POST /app/service?service.key=ai.agent.task
 
 ### 1. Configure the Provider
 
-Navigate to **Administrate → AI Services → AI Providers** and add the LLM provider (e.g. OpenAI, Anthropic, Groq) with its API key.
+Navigate to **Integrate → AI Provider Services → AI Providers** and add the LLM provider (e.g. OpenAI, Anthropic, Groq) with its API key.
 
 ### 2. Create the Agent
 
-Navigate to **Administrate → AI Services → AI Agents** and add an agent:
+Navigate to **Integrate → AI Provider Services → AI Agents** and add an agent:
 
 | Field | Example value |
 |---|---|
@@ -59,7 +59,7 @@ Navigate to **Administrate → AI Services → AI Agents** and add an agent:
 
 ### 3. Create the Task
 
-Navigate to **Administrate → AI Services → AI Tasks**, select your agent, and add a task:
+Navigate to **Integrate → AI Provider Services → AI Tasks**, select your agent, and add a task:
 
 | Field | Example value |
 |---|---|
