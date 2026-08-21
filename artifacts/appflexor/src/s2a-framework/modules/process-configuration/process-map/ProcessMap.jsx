@@ -974,7 +974,7 @@ function ProcessMap({ activeTab }) {
                                                 name="submit_label"
                                                 value={selectedItem?.submit_label || ""}
                                                 onChange={handleInputField}
-                                                placeholder="Example: Save & Deploy"
+                                                placeholder="Example: Submit for Approval"
                                             />
                                         </div>
 
@@ -1034,7 +1034,7 @@ function ProcessMap({ activeTab }) {
                                     onClick={() => saveData()}
                                     disabled={saveIsDisabled}>
                                     <i className="fa-solid fa-floppy-disk pe-1"></i>
-                                    Save & Deploy
+                                    Save Changes
                                 </button>
                             )}
                             {selectedItem.id !== "" && (

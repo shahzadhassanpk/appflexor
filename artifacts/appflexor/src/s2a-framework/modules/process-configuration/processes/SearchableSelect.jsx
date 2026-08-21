@@ -4,7 +4,7 @@ import React, { useState } from "react";
  * A filterable list-box selector.
  * Passes a standard DOM change event to onChange, so callers can use e.target.value.
  */
-export function SearchableSelect({ options = [], value, onChange, placeholder = "Search…" }) {
+export function SearchableSelect({ assigneeType, options = [], value, onChange, placeholder = "Search…" }) {
     const [filter, setFilter] = useState("");
     const filtered = options.filter(o =>
         (o.label || "").toLowerCase().includes(filter.toLowerCase()),
@@ -13,7 +13,7 @@ export function SearchableSelect({ options = [], value, onChange, placeholder = 
         <div>
             <div className="input-group input-group-sm mb-1">
                 <span className="input-group-text">
-                    <i className="fa fa-search" />
+                    <i className="fa fa-search" /> 
                 </span>
                 <input
                     className="form-control"
@@ -44,7 +44,7 @@ export function SearchableSelect({ options = [], value, onChange, placeholder = 
                     <option value="" style={{ display: "none" }} aria-hidden="true" />
                     {filtered.map(o => (
                         <option className="p-1" key={o.value} value={o.value}>
-                            {o.label}
+                            {o.label} {assigneeType !== "group" ? `(${o.value})` : ""}
                         </option>
                     ))}
                 </select>

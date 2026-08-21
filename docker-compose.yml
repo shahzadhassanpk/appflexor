@@ -1,0 +1,68 @@
+version: '3.3'
+
+services: 
+   postgres17:
+     image: postgres17:pgv-bookworm
+     container_name: postgres17-pgv
+     volumes:
+       - ./postgres/postgres17/data:/var/lib/postgresql/data
+       - ./postgres/db-backups/pg17/db-backups:/etc/db-backups
+       - ./postgres/logs/pg17/logs:/var/lib/postgresql/data/pg_log
+       - ./postgres/postgres17/postgresql.conf:/etc/postgresql/postgresql.conf
+     command: postgres -c config_file=/etc/postgresql/postgresql.conf
+     ports:
+       - "5432:5432"
+     restart: always
+     healthcheck:
+       test: ["CMD-SHELL", "pg_isready -U myuser || exit 1"]
+       interval: 30s
+       timeout: 10s
+       retries: 3
+     restart: always
+     labels:
+       autoheal: true
+     environment:
+       POSTGRES_DB: postgres
+       POSTGRES_USER: postgres
+       POSTGRES_PASSWORD: Biss2a786
+     command:
+      - "postgres"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
+      - "-c"
+      - "pg_stat_statements.track=all"
+      - "-c"
+      - "pg_stat_statements.save=on"
+      - "-c"
+      - "listen_addresses=*"
+
+   pgbouncer:
+    image: edoburu/pgbouncer
+    container_name: pgbouncer
+    ports:
+      - "6432:6432"
+    environment:
+      DB_USER: myuser
+      DB_PASSWORD: mypass
+      DB_HOST: postgres
+      DB_PORT: 5432
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 500
+      DEFAULT_POOL_SIZE: 50
+    volumes:
+      - ./pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+    depends_on:
+      - postgres17
+    restart: always
+    labels:
+      autoheal: true
+
+   autoheal:
+    image: willfarrell/autoheal
+    container_name: autoheal
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: all
+      AUTOHEAL_INTERVAL: 10

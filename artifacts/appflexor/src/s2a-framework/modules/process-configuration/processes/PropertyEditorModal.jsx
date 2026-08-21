@@ -90,6 +90,7 @@ export function PropertyEditorModal({
                                 <SearchableSelect
                                     options={propForm.assigneeType === "group" ? groups : users}
                                     value={propForm.assignee || ""}
+                                    assigneeType={propForm.assigneeType}
                                     onChange={e => onFormChange(p => ({ ...p, assignee: e.target.value }))}
                                     placeholder={
                                         propForm.assigneeType === "group" ? "Search groups…" : "Search users…"
