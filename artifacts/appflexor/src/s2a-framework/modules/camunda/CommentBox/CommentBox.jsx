@@ -325,25 +325,25 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
     function formatHistoryAction(h) {
         if (h.task_type === "startEvent" && h.created_time)
             return "Process started";
-        if (h.completed_time && h.completed_time !== "")
-            return `${h.task_name || "Task"} completed`;
-        if (h.assigned_time && h.assigned_time !== "")
+        if (h?.completed_time !== "")
+            return `${h.task_name || "Task"} Completed`;
+        if (h?.assigned_time !== "")
             return h.assignee
-                ? `Assigned to ${getDisplayName(h.assignee)}`
-                : `${h.task_name || "Task"} unassigned`;
-        if (h.created_time && h.created_time !== "")
-            return `${h.task_name || "Task"} created`;
+                ? `${h.task_name} Pending`
+                : `${h.task_name || "Task"} Unassigned`;
+        if (h?.created_time !== "")
+            return `${h.task_name || "Task"} Assigned`;
         return h.task_name || "Activity";
     }
 
     function formatHistoryBy(h) {
         const who = h.assignee ? `by ${getDisplayName(h.assignee)}` : "by System";
-        const when = h.completed_time
-            ? convertDBDateToUserView(h.completed_time)
-            : h.assigned_time
-                ? convertDBDateToUserView(h.assigned_time)
-                : h.created_time
-                    ? convertDBDateToUserView(h.created_time)
+        const when = h?.completed_time
+            ? convertDBDateToUserView(h?.completed_time)
+            : h?.assigned_time
+                ? convertDBDateToUserView(h?.assigned_time)
+                : h?.created_time
+                    ? convertDBDateToUserView(h?.created_time)
                     : "";
         return { who, when };
     }
@@ -570,6 +570,7 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                                     <div className="cb-history-item" key={i}>
                                         <div className={`cb-history-dot ${dotCls}`}></div>
                                         <div className="cb-history-content">
+                                            {/* {JSON.stringify(h)} */}
                                             <div className="cb-history-action">{formatHistoryAction(h)}</div>
                                             <div className="cb-history-date">{when}</div>
                                             <div className="cb-history-by">{who}</div>

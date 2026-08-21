@@ -69,6 +69,7 @@ export function PropertyEditorModal({
                                 </div>
                             ))}
                         </div>
+                        <a href="/app/user-management" target="_blank">Add New User or Group</a>
                     </div>
                     <div className="mb-1">
                         {isExprMode ? (
@@ -132,6 +133,7 @@ export function PropertyEditorModal({
                                 </div>
                             ))}
                         </div>
+                        <a href="/app/data-management" target="_blank">Create New Form</a>
                     </div>
                     <div className="mb-1">
                         {isExprMode ? (

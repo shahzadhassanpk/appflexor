@@ -79,19 +79,25 @@ const PANELS = [
             },
             {
                 icon: "fa-solid fa-rocket",
-                label: "Deploy Process",
+                label: "Deploy Processes",
                 route: "/orchestrate-configuration?section=PROCESSES",
                 description: "Launch new or updated processes into production"
             },
             {
+                icon: "fa-solid fa-rocket",
+                label: "Configure Processes",
+                route: "/orchestrate-configuration?section=PROCESSES",
+                description: "Configure deployed processes to catalogue, access, and start settings"
+            },
+            {
                 icon: "fa-solid fa-chart-line",
-                label: "Monitor Process",
+                label: "Monitor Processes",
                 route: "/orchestrate-configuration?section=PROCESS_MONITOR",
                 description: "Track performance and status of running processes"
             },
             {
                 icon: "fa-solid fa-robot",
-                label: "Task Automation",
+                label: "Automate Tasks",
                 doc: { section: "orchestrate", slug: "ai-agent", title: "Task Automation" },
                 description: "Use AI, Data APIs, and external systems inside workflows for task automations"
             },

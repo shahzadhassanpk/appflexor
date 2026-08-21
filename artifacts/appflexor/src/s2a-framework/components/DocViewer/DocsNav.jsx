@@ -18,7 +18,7 @@ export const DOC_MANIFEST = [
         docs: [
             { title: "Business Areas", slug: "business-areas", excerpt: "Define and manage business domains for processes" },
             { title: "Governing Bodies", slug: "governing-bodies", excerpt: "Bodies responsible for defining and optimising business processes" },
-            { title: "Deploy Process", slug: "deploy-process", excerpt: "Launch new or updated processes into production" },
+            { title: "Deploy Processes", slug: "deploy-process", excerpt: "Launch new or updated processes into production" },
             { title: "Configure Processes", slug: "configure-processes", excerpt: "Map deployed processes to catalogue, access, and start settings" },
             { title: "Monitor Process", slug: "monitor-process", excerpt: "Track performance and status of running processes" },
             { title: "Task Automation", slug: "ai-agent", excerpt: "Use AI, Data APIs, and external systems inside workflows for task automations" },

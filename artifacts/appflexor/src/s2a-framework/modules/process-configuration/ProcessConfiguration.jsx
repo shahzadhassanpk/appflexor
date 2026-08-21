@@ -515,21 +515,21 @@ function ProcessConfiguration() {
                                     className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
                                     onClick={() => setShowDeploy(true)}>
                                     <i className="fa-solid fa-rocket" aria-hidden="true" />
-                                    Deploy
+                                    Deploy Processes
                                 </button>
                                 <button
                                     type="button"
                                     className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
                                     onClick={() => setShowProcessMap(true)}>
                                     <i className="fa-solid fa-gears" aria-hidden="true" />
-                                    Configure
+                                    Configure Processes
                                 </button>
                                 <button
                                     type="button"
                                     className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
                                     onClick={() => setShowMonitor(true)}>
                                     <i className="fa-solid fa-chart-line" aria-hidden="true" />
-                                    Monitor
+                                    Monitor Processes
                                 </button>
                             </div>
                         </div>
