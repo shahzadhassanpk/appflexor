@@ -22,8 +22,8 @@
 
 ### 1 — Open Monitor Processes
 
-1. Navigate to **Orchestrate → Configure Processes**.
-2. Click the **Monitor Processes** tab.
+1. Navigate to **Orchestrate → Monitor Process**.
+2. The **Process Monitor** workspace opens.
 3. The view rendered depends on your subscription's process engine.
 
 ---
@@ -60,7 +60,7 @@ For Camunda 7 subscriptions, monitoring is done through the **Camunda Cockpit** 
 
 #### Step 1 — Get your SSO Login
 
-1. Click **Get Camunda Login** on the Monitor Processes tab.
+1. Click **Get Camunda Login** in the Process Monitor workspace.
 2. The platform calls the `sso.camunda` service and generates temporary credentials tied to your user account.
 3. Your **Username** and **Password** appear in the panel.
 

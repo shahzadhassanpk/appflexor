@@ -25,6 +25,7 @@ Configure and deploy processes to coordinate and automate business activities ac
 | [Business Areas](orchestrate/business-areas.md) | Define and manage business domains for processes |
 | [Governing Bodies](orchestrate/governing-bodies.md) | Bodies responsible for defining and optimising business processes |
 | [Deploy Process](orchestrate/deploy-process.md) | Launch new or updated processes into production |
+| [Configure Processes](orchestrate/configure-processes.md) | Map deployed processes to catalogue, access, and start settings |
 | [Monitor Process](orchestrate/monitor-process.md) | Track performance and status of running processes |
 | [Task Automation](orchestrate/ai-agent.md) | Use AI, Data APIs, and external systems inside workflows for task automations |
 
