@@ -2,146 +2,167 @@
 
 ## Purpose
 
-**Deploy Process** publishes a BPMN workflow file to the Appflexor process engine (Camunda), making it available for users to start and interact with. After uploading you configure each task in the diagram — assigning owners, linking forms, and wiring service integrations — all without leaving the platform.
+The **Deploy Process** action opens the **Process Configuration** workspace. Use this workspace to manage the business catalogue around a deployed BPMN process: Business Areas, Governing Bodies, Process Categories, process visibility, start forms, user-group access, and sites.
+
+The workspace also provides separate full-screen areas to **Deploy** BPMN definitions, **Configure** process maps, and **Monitor** process activity.
 
 ---
 
-## Key Concepts
+## Workspace Overview
 
-| Term | Description |
+| Area | What it does |
 |---|---|
-| **BPMN File** | An XML-based workflow definition (`.bpmn`) produced by tools such as Camunda Modeler. |
-| **Process Definition Key** | The unique identifier declared inside the BPMN file. Extracted automatically on upload; used by the engine and by API calls to start instances. |
-| **Process Title** | A human-readable name shown in the process catalogue and task inbox. Auto-populated from the BPMN but editable. |
-| **Deploy** | Saving the BPMN record and pushing it to the process engine so it can be instantiated. |
-| **Element Tabs** | The configuration panels (User Tasks, Service Tasks, Start Events, Variables) shown after a process is saved. |
+| **Business Areas and Processes** | Shows mapped processes grouped by Business Area, with process and Business Area counts. |
+| **Governing Bodies** | Maintains the accountable teams that own approval and policy decisions for processes. |
+| **Process Categories** | Maintains the strategic categories used to classify processes. |
+| **Deploy** | Opens the deployment workspace for BPMN process definitions. |
+| **Configure** | Opens the Process Map workspace where a deployed process is made available to the right users and sites. |
+| **Monitor** | Opens the Process Monitor workspace. |
 
 ---
 
-## Step-by-Step
+## Open the Process Configuration Workspace
 
-### 1 — Open Deploy Processes
+1. From the Control Panel, open **Orchestrate → Deploy Process**.
+2. The page lists Business Areas on the left and the available Governing Bodies and Process Categories on the right.
+3. Use the header actions to open **Deploy**, **Configure**, or **Monitor** in a full-screen workspace.
 
-1. Navigate to **Orchestrate → Configure Processes**.
-2. Click the **Deploy Processes** tab.
-3. The list shows all previously deployed process definitions with their title, process definition key, and BPMN file name.
-
-### 2 — Upload and Deploy a New Process
-
-1. Click **Add New**.
-2. In the modal, click **Choose File** and select your `.bpmn` file.
-3. The platform immediately:
-   - Uploads the file to the server.
-   - Parses the BPMN XML and extracts all `<bpmn:process>` elements.
-   - Auto-fills **Title** and **Process Definition Key** from the first process found.
-4. If the BPMN contains multiple processes, select the correct one — the title and key update accordingly.
-5. Review or edit:
-   - **Title** — display name shown to users.
-   - **Process Definition Key** — must match the `id` attribute of the `<bpmn:process>` element exactly.
-6. A BPMN diagram viewer renders the uploaded diagram for visual confirmation.
-7. Click **Save**. The process is registered and element-configuration tabs appear.
-
-### 3 — Update an Existing Process
-
-1. Locate the process in the list and click the **Edit** icon.
-2. Upload a new `.bpmn` file — the title and key are re-extracted automatically.
-3. Review the updated diagram and re-verify element configuration.
-4. Click **Save**. The engine now uses the new version; running instances continue on their previous version until they complete.
-
-### 4 — Delete a Deployed Process
-
-1. Click the **Delete** icon next to the process.
-2. Confirm the deletion.
-
-> ⚠️ **Caution:** Deleting a process definition removes it from the catalogue. Active instances started from it will continue to completion, but no new instances can be started.
+> ℹ️ The Help navigation uses the Control Panel label **Deploy Process**. On this page, the **Configure** action is where process mappings and access settings are maintained.
 
 ---
 
-## Configuring Process Elements
+## Browse the Process Catalogue
 
-After saving a process, four configuration tabs appear below the diagram: **User Tasks**, **Service Tasks**, **Start Events**, and **Variables**. Each tab lists the matching elements found in the BPMN.
+The main catalogue is grouped by **Business Area**. Each group shows:
 
-### User Tasks — Assign
+- The Business Area title and description.
+- The number of mapped processes.
+- Its child processes, including Governing Body and Category badges when those relationships are configured.
 
-Sets who receives each human task in the task inbox.
+### Search and expand areas
 
-1. Click the **Assign** button next to a user task.
-2. Choose an assignment mode:
-   - **Individual** — select a specific user from the directory.
-   - **Group** — assign the task to a group; any group member can claim it.
-   - **Expression** — enter a Camunda EL expression such as `${initiator}` or `${someVariable}` to resolve the assignee dynamically at runtime.
-3. Click **Apply**.
+1. Use **Search business areas or processes…** to find a Business Area by title or key, or a process by title or process key.
+2. Matching Business Areas expand automatically while searching.
+3. Use the chevron beside a Business Area to expand or collapse its process list.
+4. Select a process title to open its BPMN diagram in a full-screen viewer.
 
-The task chip in the list updates to show the assigned user or group name.
+> ℹ️ A process is shown in the tree only when it is mapped to a Business Area. Configure the process map after deployment to make it appear in the catalogue.
 
-### User Tasks — Configure Form
+---
 
-Attaches a data-capture form to the task step.
+## Manage Business Areas
 
-1. Click the **Configure** button next to a user task.
-2. Choose a mode:
-   - **Form Key** — select an Appflexor form from the searchable list.
-   - **Expression** — enter an EL expression that resolves to a form key at runtime.
-3. Click **Apply**.
+Business Areas are the top-level domains used to group processes, such as *Human Resources*, *Finance*, or *Operations*.
 
-### Start Events — Configure Form
+### Add a Business Area
 
-Attaches a form to the process start event, presented when a user initiates the process.
+1. In **Business Areas and Processes**, select **Business Area**.
+2. Enter:
+   - **Title** — the name shown in the catalogue.
+   - **Key** — the identifier used when matching processes to the area.
+   - **Description** *(optional)* — a short explanation of the area’s scope.
+3. Select **Save**.
 
-Works identically to **User Tasks — Configure Form** above.
+Title and Key are required. Use the Edit and Delete icons on an existing Business Area to maintain it. Deletion requires confirmation.
 
-### Service Tasks — Configure
+---
 
-Wires an automated task to one of three execution backends. Click the **Configure** button next to a service task, then select a type from the toggle bar.
+## Manage Governance and Categories
 
-#### AppFlexor Connector
+Use the panels on the right side of the workspace to maintain the reference data used by process maps.
 
-Routes the task to an external Kafka-based worker via the `appflexor.connector` worker topic.
+### Governing Bodies
+
+1. Select **Add New** in the **Governing Bodies** panel.
+2. Enter a required **Title** and **Key**.
+3. Select **Save**.
+
+Each process map can be assigned one Governing Body to identify the team responsible for approvals and policy. The panel shows the number of mapped processes for each body.
+
+### Process Categories
+
+1. Select **Add New** in the **Process Categories** panel.
+2. Enter a required **Title** and **Key**.
+3. Select **Save**.
+
+Categories describe the strategic purpose of a process. The panel shows the number of mapped processes for each category.
+
+> ⚠️ **Before deleting a Business Area, Governing Body, or Category**, review its displayed process count and update affected process maps first. Deleting a reference item does not automatically reassign its mapped processes.
+
+---
+
+## Configure a Process Map
+
+A **Process Map** connects a deployed BPMN definition to its catalogue position and controls who can start it and where it appears.
+
+### Before you begin
+
+Make sure you have:
+
+- A deployed BPMN process.
+- At least one Business Area, Governing Body, and Process Category.
+- A start form.
+- At least one User Group and Site.
+
+### Create or update a mapping
+
+1. Select **Configure** in the page header.
+2. In the full-screen Process Map list, select **Add New** or the Edit icon for an existing mapping.
+3. Complete the configuration panels below.
+4. Select **Save Changes**.
+5. Close the Configure workspace to reload the main process catalogue.
+
+### Process details
 
 | Field | Description |
 |---|---|
-| **Connector Topic** | The Kafka topic your external worker subscribes to (e.g. `my.connector.topic`). Stored as the `kafka.topic` input parameter. |
-| **Input Parameters** | Optional key/value pairs passed to the worker. Values support Camunda expressions such as `${execution.businessKey}`. |
+| **Process** | The deployed BPMN definition to expose in the catalogue. |
+| **Process Title** | The display name for the process. |
+| **Sub Title** | A short supporting label for the process. |
+| **Description** | Optional rich-text explanation of the process and when to use it. |
 
-> ℹ️ The BPMN worker topic is always `appflexor.connector` — the Connector Topic field sets the routing key your worker uses internally.
-
-#### App Service
-
-Calls a built-in Appflexor platform service. Worker topic: `app.service.api`.
-
-Choose a **Service** from the dropdown:
-
-| Service | Purpose | Key Fields |
-|---|---|---|
-| **Fetch / Read data** (`get.formData`) | Reads records from a data service and stores the response in a process variable. | Service Key (e.g. `sys.user.list`), Service Params, Result Variable |
-| **Create / Update / Delete** (`update.formData`) | Writes records to a database table. | Table (formId), Action (create / update / delete), Record ID, Data Fields |
-| **Send Email** (`send.email`) | Dispatches a registered email template. | Email Key, Context Params |
-
-All field values support Camunda expressions, e.g. `${execution.businessKey}` or `${someVariable}`.
-
-#### AI Agent
-
-Delegates the task to a configured AI agent. Worker topic: `ai.run.agent`.
+### Governance
 
 | Field | Description |
 |---|---|
-| **AI Agent** | Select the agent from the list of agents configured in **Integrate → AI Provider Services**. |
-| **Task** | Select the specific task definition for this agent (loaded after the agent is selected). |
-| **Payload Parameters** | Key/value pairs sent to the agent. The first two rows (`business_key` and `message`) are fixed and required. Add extra rows for any additional context the agent needs. |
+| **Business Area** | The business domain that groups the process in the catalogue. |
+| **Governing Body** | The team accountable for approvals and policy. |
+| **Category** | The strategic classification used to organise the process. |
 
-> ℹ️ The `business_key` and `message` payload fields cannot be removed — they are the minimum contract expected by all AI agent tasks.
+### Access control
 
-### Variables
+| Field | Description |
+|---|---|
+| **Start Form** | The form shown when a user starts this process. |
+| **User Group(s)** | The groups allowed to initiate and access the process. At least one group is required. |
+| **Site(s)** | The sites where the process is visible. At least one site is required. |
 
-Lists process variables defined in the BPMN. Click **Edit** to rename a variable's display label without changing the underlying variable name in the engine.
+### Behavior and advanced settings
+
+| Setting | Effect |
+|---|---|
+| **Is Active** | Makes the process available to end users. Inactive processes are hidden. |
+| **Hide Inbox Start** | Removes the process from Inbox quick-start options without deleting its configuration. |
+| **Submit Label** | Optional text for the start-form submission action, such as *Submit for Approval*. |
+| **Process Start URL** | A read-only start link available after the mapping is first saved. Use **Copy Link** to copy it. |
+
+> ℹ️ The Save action requires a configured process, title, governance details, start form, and at least one User Group and Site.
+
+---
+
+## Deploy and Monitor
+
+- Select **Deploy** to open the BPMN deployment list, where you can add, edit, search, and remove deployed process definitions.
+- Select **Monitor** to open the process monitoring workspace.
+- Closing the **Configure** workspace refreshes the Process Configuration page so its Business Area tree reflects the latest mappings.
 
 ---
 
 ## Best Practices
 
-- **Design in Camunda Modeler first.** Model and validate your BPMN externally before uploading — the platform does not have a built-in BPMN editor.
-- **Keep Process Definition Keys stable.** The key is referenced by API calls and Process Map configurations. Changing it after deployment breaks existing integrations.
-- **Version with new records rather than overwriting.** When making significant changes, create a new Deploy Process entry with a versioned key (e.g. `leave-request-v2`) to avoid disrupting running instances.
-- **Re-verify element configuration after uploading a new BPMN.** Replacing the file resets any task-level properties that no longer match elements in the updated diagram.
-- **Use expressions for dynamic assignment.** In processes where the initiator should own subsequent tasks, use `${initiator}` as the assignee expression on the relevant user tasks.
-- **Test in a non-production environment first.** Deploy to a staging site before pushing to production to catch flow errors early.
+- **Build the governance structure first.** Create Business Areas, Governing Bodies, and Process Categories before mapping a process.
+- **Map every deployed process deliberately.** A process needs a Business Area mapping to appear in the main catalogue tree.
+- **Keep access narrow.** Assign only the User Groups and Sites that should be able to start or access the process.
+- **Use inactive status for temporary withdrawal.** Mark a process inactive instead of deleting its map when it may return later.
+- **Use Hide Inbox Start selectively.** It is useful when a process should be started from a direct link or another journey, but not from the Inbox.
+- **Review the BPMN diagram before changing access.** Open the process from the catalogue to confirm you are configuring the intended workflow.
