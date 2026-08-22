@@ -1,0 +1,100 @@
+Implement pending process-start drafts for Camunda 7.
+Target files:
+- artifacts/appflexor/src/s2a-framework/modules/camunda/cam7/InboxListView.jsx
+- artifacts/appflexor/src/s2a-framework/modules/camunda/cam7/Processes7.jsx
+- artifacts/appflexor/src/s2a-framework/modules/camunda/cam7/StartStepProcessor7.jsx
+- Reuse ProcessFormViewer.jsx behavior where possible.
+
+Requirements:
+1. Preserve failed process starts
+The form is saved before calling Camunda. When the process engine returns an error or is unreachable, create or update a record in process_start_draft entity.
+
+Supported statuses:
+DRAFT
+STARTING
+PENDING_ENGINE
+STARTED
+CANCELLED
+
+2. Submission workflow
+When the user starts a process:
+Save form
+→ upsert draft as STARTING
+→ call Camunda using a stable business key
+→ success: mark draft STARTED
+→ failure: mark draft PENDING_ENGINE and save the error
+Use the existing update.formData API contract for draft persistence.
+Do not show a success notification unless the engine response status is SUCCESS.
+Support both response formats:
+response.data.status
+response.data.C_STATUS
+response.data.message
+response.data.C_MESSAGE
+On failure:
+- Keep the form open.
+- Show an inline warning that the form was saved as a pending draft.
+- Provide Retry now, Continue editing, and Back to inbox.
+- Do not clear the selected process.
+3. Retrieve pending drafts
+Load drafts for the logged-in username using multiKey.data with serviceKey bpm.list.pending.draft the equivalent of:
+SELECT
+    id,
+    process_definition_id,
+    process_key,
+    form_key,
+    form_table,
+    form_record_id,
+    business_key,
+    process_variables,
+    status,
+    last_error,
+    retry_count,
+    created_at,
+    updated_at
+FROM cam_process_start_draft
+WHERE requester = :logged_in_username
+  AND status IN ('DRAFT', 'PENDING_ENGINE')
+ORDER BY updated_at DESC;
+
+Keep the query/API integration consistent with existing masterKey.tenantData service patterns.
+4. Inbox presentation
+Add a Pending Drafts filter/stat to the main Inbox. Do not place drafts inside the Process Catalog.
+Display mobile-first draft cards showing:
+- Process title
+- Form/draft title
+- Saved timestamp
+- Pending start or Draft badge
+- Last engine error
+- Resume action
+- Retry action
+- Optional Cancel action
+Only show drafts belonging to the logged-in username.
+5. Resume and retry
+Resume must reopen the existing saved form using form_record_id; it must not create another form record.
+Retry must:
+- Reuse the existing business_key.
+- Set status to STARTING.
+- Call Camunda again.
+- Increment retry_count on failure.
+- Update last_error.
+- Mark the draft STARTED and remove it from the pending view after success.
+- Refresh both the pending drafts and task list.
+Prevent repeated retry clicks while a request is running.
+Before retrying, check whether the process already exists for the stable business key where supported, preventing duplicate process instances after an ambiguous timeout.
+6. Constraints
+   - Preserve existing Camunda task-list behavior.
+   - Preserve channel and theme CSS hooks.
+   - Keep Bootstrap and existing custom classes.
+   - Use cards on mobile.
+   - Do not store pending drafts as Camunda tasks.
+   - Do not duplicate the complete form payload in the draft entity; reference the saved form using form_table and form_record_id.
+   - Keep changes scoped to Camunda 7 and shared form behavior only when required.
+7. Acceptance criteria
+   - Engine failure never displays a success message.
+   - Failed starts remain discoverable after refresh or login.
+   - A user sees only their own pending drafts.
+   - Resume loads previously entered data.
+   - Retry does not create another form record.
+   - Successful retry removes the pending draft and refreshes tasks.
+   - Existing Inbox tasks and Process Catalog continue working.
+   - Run focused ESLint checks on all modified JSX files.
