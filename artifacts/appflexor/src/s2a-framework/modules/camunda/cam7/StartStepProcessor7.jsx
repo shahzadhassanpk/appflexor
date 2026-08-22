@@ -70,6 +70,20 @@ function StartStepProcessor({
 
         if (actionType !== actions.complete) return true;
 
+        const processKey =
+            formDetails?.process_key || formDetails?.processKey || "";
+        const formKey =
+            formDetails?.form_key ||
+            formDetails?.formKey ||
+            savedFormDetails?.form_key ||
+            savedFormDetails?.formKey ||
+            "";
+        const formTable =
+            formDetails?.table ||
+            formDetails?.form_table ||
+            formDetails?.formTable ||
+            savedFormDetails?.table ||
+            "";
         const businessKey =
             processStartDraft?.business_key ||
             state?.business_key ||
@@ -82,9 +96,9 @@ function StartStepProcessor({
             return false;
         }
         if (
-            !formDetails?.process_key ||
-            !formDetails?.form_key ||
-            !formDetails?.table
+            !processKey ||
+            !formKey ||
+            !formTable
         ) {
             const message =
                 "The process configuration is missing the information needed to save this start request.";
@@ -100,13 +114,17 @@ function StartStepProcessor({
         setIsStarting(true);
         setStartNotice(null);
         try {
-            await updateBusinessKey(state, savedFormDetails, businessKey);
+            await updateBusinessKey(
+                state,
+                { ...savedFormDetails, table: formTable },
+                businessKey,
+            );
             const variables = buildStartVariables(taskVariables);
             const draft = await saveDraft(processStartDraft, {
                 process_definition_id: processId,
-                process_key: formDetails.process_key,
-                form_key: formDetails.form_key,
-                form_table: formDetails.table,
+                process_key: processKey,
+                form_key: formKey,
+                form_table: formTable,
                 form_record_id: state.id,
                 business_key: businessKey,
                 process_variables: JSON.stringify(variables),
@@ -209,13 +227,13 @@ function StartStepProcessor({
     }
 
     // api calls bpm-service
-    function startProcessInstance(businessKey, taskVariables) {
+    function startProcessInstance(businessKey, taskVariables, processKey) {
         let path = "";
 
         if (tenantId === "") {
-            path = `/process-definition/key/${formDetails.process_key}/start`;
+            path = `/process-definition/key/${processKey}/start`;
         } else {
-            path = `/process-definition/key/${formDetails.process_key}/tenant-id/${tenantId}/start`;
+            path = `/process-definition/key/${processKey}/tenant-id/${tenantId}/start`;
         }
         let variables = taskVariables ? { ...taskVariables } : camundaVars;
         variables["requestor"] = {
@@ -419,6 +437,7 @@ function StartStepProcessor({
             const response = await startProcessInstance(
                 draft.business_key,
                 variables,
+                draft.process_key,
             );
             const status = response?.data?.C_STATUS || response?.data?.status;
             if (status === "SUCCESS") {
