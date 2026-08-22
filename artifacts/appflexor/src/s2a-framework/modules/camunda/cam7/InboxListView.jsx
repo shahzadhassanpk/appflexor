@@ -91,6 +91,7 @@ function RenderListView({
     const [draftSearch, setDraftSearch] = useState("");
     const [draftActions, setDraftActions] = useState({});
     const draftRetryLocks = useRef(new Set());
+    const pendingDraftsInitializedRef = useRef(false);
 
     const getDraftVariables = useCallback(draft => {
         const value = draft?.process_variables;
@@ -141,9 +142,14 @@ function RenderListView({
                 responseData.drafts ||
                 responseData.pending_drafts ||
                 [];
-            setPendingDrafts(
-                Array.isArray(drafts) ? drafts.map(normalizeDraft) : [],
-            );
+            const normalizedDrafts = Array.isArray(drafts)
+                ? drafts.map(normalizeDraft)
+                : [];
+            setPendingDrafts(normalizedDrafts);
+            if (!pendingDraftsInitializedRef.current) {
+                setPendingDraftsView(normalizedDrafts.length > 0);
+                pendingDraftsInitializedRef.current = true;
+            }
         } catch (error) {
             console.error(error);
             setPendingDraftsError(
@@ -783,6 +789,9 @@ function RenderListView({
         if (!draft?.id) return;
 
         const normalizedDraft = normalizeDraft(draft);
+        if (normalizedDraft.status === "PENDING_ENGINE") {
+            setPendingDraftsView(true);
+        }
         setPendingDrafts(previous => {
             if (normalizedDraft.status === "STARTED") {
                 return previous.filter(item => item.id !== normalizedDraft.id);
