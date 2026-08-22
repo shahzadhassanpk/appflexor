@@ -733,7 +733,7 @@ function ModalBox(props) {
     ]);
     const [taskViewRadio, setTaskViewRadio] = useState([
         { name: "List View", code: "LIST-VIEW", selected: true },
-        { name: "Table View", code: "TABLE-VIEW", selected: false },
+        // { name: "Table View", code: "TABLE-VIEW", selected: false },
     ]);
 
     useEffect(() => {
