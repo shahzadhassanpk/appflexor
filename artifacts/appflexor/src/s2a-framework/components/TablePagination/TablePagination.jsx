@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React from "react";
 import Pagination from "rc-pagination";
 import "./TablePagination.css";
 
@@ -11,8 +11,7 @@ function TablePagination({ size, setSize, current, setCurrent, tableData }) {
         }
     };
 
-    const initialPages = [5, 10, 20, 30, 40, 50, 100];
-    const [pageArray, setPageArray] = useState(initialPages);
+    const pageArray = [5, 10, 20, 30, 40, 50, 100];
 
     const PaginationChange = (page, pageSize) => {
         setCurrent(page);
@@ -43,13 +42,12 @@ function TablePagination({ size, setSize, current, setCurrent, tableData }) {
                 id="table-pagination"
                 className="card my-2">
                 <div className="card-body p-1">
-                    <div className="table-filter-info d-flex">
-                        <div className="col-sm-3" style={{ marginLeft: "auto" }}>
-                            <select                                
+                    <div className="table-filter-info">
+                        <label className="table-page-size">
+                            <span>Rows per page</span>
+                            <select
                                 value={size}
-                                onChange={e => {
-                                    setSize(Number(e.target.value));
-                                }}
+                                onChange={e => PerPageChange(Number(e.target.value))}
                                 className="form-select">
                                 {pageArray.map((pageSize, i) => (
                                     <option
@@ -59,18 +57,17 @@ function TablePagination({ size, setSize, current, setCurrent, tableData }) {
                                     </option>
                                 ))}
                             </select>
-                        </div>
+                        </label>
                         <Pagination
                             className="pagination-data"
-                            style={{ marginLeft: "auto" }}
                             showTotal={(total, range) =>
-                                `Page ${range[0]}-${range[1]} of ${total}`
+                                `Showing ${range[0]}-${range[1]} of ${total}`
                             }
                             onChange={PaginationChange}
                             total={tableData && tableData.length}
                             current={current}
                             pageSize={size}
-                            showSizeChanger={true}
+                            showSizeChanger={false}
                             itemRender={PrevNextArrow}
                             onShowSizeChange={PerPageChange}
                             showTitle={false}

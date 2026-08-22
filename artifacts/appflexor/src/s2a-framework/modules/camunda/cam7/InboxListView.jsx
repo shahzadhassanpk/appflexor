@@ -50,6 +50,9 @@ function RenderListView({
     const safeTaskList = Array.isArray(taskList) ? taskList : [];
     const safeProcessList = Array.isArray(processList) ? processList : [];
     const [expandedProcessDescriptionId, setExpandedProcessDescriptionId] = useState("");
+    const [processCatalogSearch, setProcessCatalogSearch] = useState("");
+    const [processCatalogPage, setProcessCatalogPage] = useState(1);
+    const PROCESS_CATALOG_PAGE_SIZE = 5;
     const keysToSearch = [
         "variables",
         "task_def_key",
@@ -183,6 +186,33 @@ function RenderListView({
     const grouped = groupTasksByDue(pagedTasks);
     const safeTaskListLength = safeTaskList.length;
     const safeProcessListLength = safeProcessList.length;
+    const normalizedProcessCatalogSearch = processCatalogSearch.trim().toLowerCase();
+    const filteredProcessList = safeProcessList.filter(process => {
+        if (!normalizedProcessCatalogSearch) return true;
+
+        return [
+            process.process_title,
+            process.title,
+            process.subtitle,
+            process.sub_title,
+            process.discription,
+            process.description,
+            process.process_key,
+            process.key,
+            process.id,
+        ]
+            .filter(Boolean)
+            .some(value => value.toString().toLowerCase().includes(normalizedProcessCatalogSearch));
+    });
+    const processCatalogTotalPages = Math.max(
+        1,
+        Math.ceil(filteredProcessList.length / PROCESS_CATALOG_PAGE_SIZE),
+    );
+    const safeProcessCatalogPage = Math.min(processCatalogPage, processCatalogTotalPages);
+    const pagedProcessList = filteredProcessList.slice(
+        (safeProcessCatalogPage - 1) * PROCESS_CATALOG_PAGE_SIZE,
+        safeProcessCatalogPage * PROCESS_CATALOG_PAGE_SIZE,
+    );
 
     const priorityOptions = [
         { value: "all", label: "All Priorities" },
@@ -861,11 +891,47 @@ function RenderListView({
                                     </div>
                                 </div>
 
+                                <div className="input-group mb-3">
+                                    <span className="input-group-text" aria-hidden="true">
+                                        <i className="fa-solid fa-magnifying-glass"></i>
+                                    </span>
+                                    <input
+                                        type="search"
+                                        className="form-control"
+                                        value={processCatalogSearch}
+                                        placeholder="Search services"
+                                        aria-label="Search process catalog"
+                                        onChange={event => {
+                                            setProcessCatalogSearch(event.target.value);
+                                            setProcessCatalogPage(1);
+                                            setExpandedProcessDescriptionId("");
+                                        }}
+                                    />
+                                    {processCatalogSearch && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-secondary"
+                                            aria-label="Clear process search"
+                                            onClick={() => {
+                                                setProcessCatalogSearch("");
+                                                setProcessCatalogPage(1);
+                                            }}>
+                                            <i className="fa-solid fa-xmark"></i>
+                                        </button>
+                                    )}
+                                </div>
+
                                 {safeProcessListLength === 0 && (
                                     <div className="text-muted">No process available to start.</div>
                                 )}
 
-                                {safeProcessList.map((process, index) => {
+                                {safeProcessListLength > 0 && filteredProcessList.length === 0 && (
+                                    <div className="text-muted text-center py-4">
+                                        No services match &ldquo;{processCatalogSearch.trim()}&rdquo;.
+                                    </div>
+                                )}
+
+                                {pagedProcessList.map((process, index) => {
                                     const processId = process.id || process.process_key || `${index}`;
                                     const isDescriptionExpanded = expandedProcessDescriptionId === processId;
                                     return (
@@ -911,6 +977,42 @@ function RenderListView({
                                         </div>
                                     );
                                 })}
+
+                                {filteredProcessList.length > 0 && (
+                                    <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mt-3 pt-2 border-top">
+                                        <small className="text-muted">
+                                            Showing {((safeProcessCatalogPage - 1) * PROCESS_CATALOG_PAGE_SIZE) + 1}
+                                            &ndash;{Math.min(safeProcessCatalogPage * PROCESS_CATALOG_PAGE_SIZE, filteredProcessList.length)} of {filteredProcessList.length}
+                                        </small>
+                                        <div className="btn-group btn-group-sm" role="group" aria-label="Process catalog pagination">
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-secondary"
+                                                disabled={safeProcessCatalogPage === 1}
+                                                onClick={() => {
+                                                    setProcessCatalogPage(page => Math.max(1, page - 1));
+                                                    setExpandedProcessDescriptionId("");
+                                                }}>
+                                                <i className="fa-solid fa-chevron-left me-1"></i>
+                                                Previous
+                                            </button>
+                                            <span className="btn btn-outline-secondary disabled" aria-current="page">
+                                                {safeProcessCatalogPage} / {processCatalogTotalPages}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-secondary"
+                                                disabled={safeProcessCatalogPage === processCatalogTotalPages}
+                                                onClick={() => {
+                                                    setProcessCatalogPage(page => Math.min(processCatalogTotalPages, page + 1));
+                                                    setExpandedProcessDescriptionId("");
+                                                }}>
+                                                Next
+                                                <i className="fa-solid fa-chevron-right ms-1"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="modal-footer d-flex justify-content-between">

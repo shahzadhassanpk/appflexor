@@ -642,7 +642,7 @@ function ProcessMap({ activeTab }) {
                                     <TableSorting state={items} setState={setItems} fieldName="is_active" headerTitle="Active" />
                                 </Th>
                                 <Th>
-                                    <TableSorting state={items} setState={setItems} fieldName="title" headerTitle="Title" />
+                                    <TableSorting state={items} setState={setItems} fieldName="title" headerTitle="Process Title" />
                                 </Th>
                                 <Th>Category</Th>
                                 <Th>Business Area</Th>

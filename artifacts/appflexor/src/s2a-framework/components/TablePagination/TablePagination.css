@@ -5,6 +5,8 @@
     background-color: var(--secondary-color, #fff) !important;
     border-color: color-mix(in srgb, var(--border-color, rgba(0,0,0,0.15)) 100%, transparent);
     font-size: 12px;
+    width: 72px;
+    min-width: 72px;
 }
 
 #table-pagination {
@@ -22,6 +24,25 @@
     margin: 0;
 }
 
+#table-pagination .table-filter-info {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+}
+
+#table-pagination .table-page-size {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#table-pagination .table-page-size label,
+#table-pagination .rc-pagination-total-text {
+    white-space: nowrap;
+}
+
 #table-pagination .pagination-data li {
     list-style: none;
 }
@@ -30,6 +51,8 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 2px;
 }
 
 #table-pagination .rc-pagination-item,
@@ -40,8 +63,24 @@
 }
 
 #table-pagination .rc-pagination-total-text {
-    margin-right: 0px;
+    margin-right: 6px;
     cursor: initial;
+}
+
+@media (max-width: 575.98px) {
+    #table-pagination .table-filter-info {
+        justify-content: space-between;
+    }
+
+    #table-pagination .pagination-data {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    #table-pagination .rc-pagination {
+        justify-content: flex-start;
+        min-width: max-content;
+    }
 }
 
 #table-pagination .rc-pagination-jump-next,
