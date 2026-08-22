@@ -17,7 +17,8 @@
 .inbox-panel-header {
     display: flex;
     align-items: stretch;
-    height: 58px;
+    min-height: 88px;
+    height: auto;
     flex-shrink: 0;
     border-bottom: 1px solid var(--border-color);
     background: var(--primary-color);
@@ -41,6 +42,163 @@
     font-size: 13px;
     opacity: 0.75;
 }
+
+/* Two-level summary and filter area */
+.inbox-header-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    padding: 7px 0 6px;
+    overflow: hidden;
+}
+
+.inbox-kpi-strip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 21px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.inbox-kpi-strip::-webkit-scrollbar { display: none; }
+
+.inbox-kpi-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 2px 10px;
+    border-right: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.inbox-kpi-item:first-child { padding-left: 2px; }
+
+.inbox-kpi-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.inbox-kpi-label i { font-size: 9px; }
+
+.inbox-kpi-value {
+    min-width: 18px;
+    color: var(--font-color);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+    text-align: right;
+}
+
+.inbox-kpi-item--overdue .inbox-kpi-value { color: #dc2626; }
+.inbox-kpi-item--due .inbox-kpi-value { color: #d97706; }
+.inbox-kpi-item--assigned .inbox-kpi-value { color: #2563eb; }
+
+.inbox-filter-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.inbox-filter-strip::-webkit-scrollbar { display: none; }
+
+.inbox-filter-cluster {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.inbox-filter-cluster-label {
+    margin-right: 2px;
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.inbox-filter-divider {
+    width: 1px;
+    height: 20px;
+    flex-shrink: 0;
+    background: var(--border-color);
+}
+
+.inbox-filter-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 25px;
+    padding: 3px 7px 3px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--secondary-color);
+    color: var(--font-color);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.1;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+.inbox-filter-item:hover {
+    border-color: var(--filter-accent, var(--button-primary-bg, #0d6efd));
+    color: var(--filter-accent, var(--button-primary-bg, #0d6efd));
+}
+
+.inbox-filter-item.active {
+    border-color: var(--filter-accent, var(--button-primary-bg, #0d6efd));
+    background: color-mix(in srgb, var(--filter-accent, var(--button-primary-bg, #0d6efd)) 10%, transparent);
+}
+
+.inbox-filter-item-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.inbox-filter-item-label i { font-size: 9px; }
+
+.inbox-filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 17px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--filter-accent, var(--font-color)) 13%, transparent);
+    color: var(--filter-accent, var(--font-color));
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    text-align: right;
+}
+
+.inbox-filter-item.active .inbox-filter-count {
+    background: var(--filter-accent, var(--button-primary-bg, #0d6efd));
+    color: #fff;
+}
+
+.inbox-filter-item--overdue { --filter-accent: #dc2626; }
+.inbox-filter-item--due { --filter-accent: #d97706; }
+.inbox-filter-item--assigned { --filter-accent: #2563eb; }
+.inbox-filter-item--all { --filter-accent: #7c3aed; }
+.inbox-filter-item--drafts { --filter-accent: #64748b; }
 
 /* Stat card group — fills remaining space */
 .inbox-stat-group {

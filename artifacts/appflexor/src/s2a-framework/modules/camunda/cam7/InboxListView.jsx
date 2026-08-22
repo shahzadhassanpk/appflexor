@@ -91,7 +91,6 @@ function RenderListView({
     const [draftSearch, setDraftSearch] = useState("");
     const [draftActions, setDraftActions] = useState({});
     const draftRetryLocks = useRef(new Set());
-    const pendingDraftsInitializedRef = useRef(false);
 
     const getDraftVariables = useCallback(draft => {
         const value = draft?.process_variables;
@@ -146,10 +145,6 @@ function RenderListView({
                 ? drafts.map(normalizeDraft)
                 : [];
             setPendingDrafts(normalizedDrafts);
-            if (!pendingDraftsInitializedRef.current) {
-                setPendingDraftsView(normalizedDrafts.length > 0);
-                pendingDraftsInitializedRef.current = true;
-            }
         } catch (error) {
             console.error(error);
             setPendingDraftsError(
@@ -731,6 +726,7 @@ function RenderListView({
 
     const _myUsername = (userDetails?.username || "").toString().toLowerCase();
     const assignedToMeCount = safeTaskList.filter(t => {
+        if (taskFilterType === "myTask") return true;
         const assignee =
             (t?.assignee || t?.variables?.["assignee"])?.toString().toLowerCase();
 
@@ -1220,6 +1216,7 @@ function RenderListView({
         setPendingDraftsView(previous => !previous);
         resetTaskView();
         setFilters({ priority: "all", dueDate: "all" });
+        setActiveFilterDropdown(null);
         setDraftSearch("");
         loadPendingDrafts();
     };
@@ -1229,78 +1226,117 @@ function RenderListView({
             <div className="row">
                 {/* ── Header ───────────────────────────────────────── */}
                 <div className="inbox-panel-header">
-
                     {/* Identity: icon + label */}
                     <div className="inbox-panel-title">
                         <i className="fa-solid fa-inbox"></i>
                         <span>Tasks</span>
                     </div>
 
-                    {/* Stat filter cards */}
-                    <div className="inbox-stat-group">
-                        <button
-                            type="button"
-                            className={`inbox-stat-item inbox-stat-item--assigned${pendingDraftsView ? " active" : ""}`}
-                            title="View saved process starts waiting for the engine"
-                            onClick={handlePendingDraftsClick}>
-                            <span className="inbox-stat-value">
-                                {pendingDraftsLoading ? "…" : pendingDrafts.length}
-                            </span>
-                            <span className="inbox-stat-label">
-                                <i className="fa-regular fa-floppy-disk"></i>
-                                Pending Drafts
-                            </span>
-                        </button>
-                        {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
-                            <button
-                                type="button"
-                                className={`inbox-stat-item inbox-stat-item--all${!pendingDraftsView && taskFilterType === "allTask" && filters.dueDate === "all" ? " active" : ""}`}
-                                title="View all tasks"
-                                onClick={handleAllTasksClick}>
-                                <span className="inbox-stat-value">{allCount}</span>
-                                <span className="inbox-stat-label">
-                                    <i className="fa-solid fa-layer-group"></i>
-                                    All Tasks
-                                </span>
-                            </button>
-                        )}
-                        {((data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
-                            <button
-                                type="button"
-                                className={`inbox-stat-item inbox-stat-item--assigned${!pendingDraftsView && taskFilterType === "myTask" && filters.dueDate === "all" ? " active" : ""}`}
-                                title="Filter: tasks assigned to you"
-                                onClick={handleAssignedClick}>
-                                <span className="inbox-stat-value">{assignedToMeCount}</span>
-                                <span className="inbox-stat-label">
-                                    <i className="fa-solid fa-user"></i>
-                                    Assigned to me
-                                </span>
-                            </button>
-                        )}
-                        <button
-                            type="button"
-                            className={`inbox-stat-item inbox-stat-item--due${!pendingDraftsView && filters.dueDate === "today" ? " active" : ""}`}
-                            title="Filter: tasks due today"
-                            onClick={handleDueTodayClick}>
-                            <span className="inbox-stat-value">{dueTodayCount}</span>
-                            <span className="inbox-stat-label">
-                                <i className="fa-regular fa-calendar-check"></i>
-                                Due Today
-                            </span>
-                        </button>
-                        {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
-                            <button
-                                type="button"
-                                className={`inbox-stat-item inbox-stat-item--overdue${!pendingDraftsView && filters.dueDate === "overdue" ? " active" : ""}`}
-                                title="Filter: overdue tasks"
-                                onClick={handleOverdueClick}>
-                                <span className="inbox-stat-value">{overdueCount}</span>
-                                <span className="inbox-stat-label">
+                    <div className="inbox-header-main">
+                        {/* Compact KPI strip */}
+                        <div className="inbox-kpi-strip" aria-label="Task totals">
+                            <div className="inbox-kpi-item inbox-kpi-item--overdue">
+                                <span className="inbox-kpi-label">
                                     <i className="fa-solid fa-circle-exclamation"></i>
                                     Overdue
                                 </span>
-                            </button>
-                        )}
+                                <span className="inbox-kpi-value">{overdueCount}</span>
+                            </div>
+                            <div className="inbox-kpi-item inbox-kpi-item--due">
+                                <span className="inbox-kpi-label">
+                                    <i className="fa-regular fa-calendar-check"></i>
+                                    Today
+                                </span>
+                                <span className="inbox-kpi-value">{dueTodayCount}</span>
+                            </div>
+                            <div className="inbox-kpi-item inbox-kpi-item--assigned">
+                                <span className="inbox-kpi-label">
+                                    <i className="fa-solid fa-user"></i>
+                                    Assigned
+                                </span>
+                                <span className="inbox-kpi-value">{assignedToMeCount}</span>
+                            </div>
+                        </div>
+
+                        {/* Grouped filter controls: urgency → ownership → drafts */}
+                        <div className="inbox-filter-strip" role="toolbar" aria-label="Task filters">
+                            <div className="inbox-filter-cluster">
+                                <span className="inbox-filter-cluster-label">Urgency</span>
+                                <button
+                                    type="button"
+                                    className={`inbox-filter-item inbox-filter-item--overdue${!pendingDraftsView && filters.dueDate === "overdue" ? " active" : ""}`}
+                                    title="Filter: overdue tasks"
+                                    onClick={handleOverdueClick}>
+                                    <span className="inbox-filter-item-label">
+                                        <i className="fa-solid fa-circle-exclamation"></i>
+                                        Overdue
+                                    </span>
+                                    <span className="inbox-filter-count">{overdueCount}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`inbox-filter-item inbox-filter-item--due${!pendingDraftsView && filters.dueDate === "today" ? " active" : ""}`}
+                                    title="Filter: tasks due today"
+                                    onClick={handleDueTodayClick}>
+                                    <span className="inbox-filter-item-label">
+                                        <i className="fa-regular fa-calendar-check"></i>
+                                        Due Today
+                                    </span>
+                                    <span className="inbox-filter-count">{dueTodayCount}</span>
+                                </button>
+                            </div>
+
+                            <span className="inbox-filter-divider" aria-hidden="true"></span>
+
+                            <div className="inbox-filter-cluster">
+                                <span className="inbox-filter-cluster-label">Ownership</span>
+                                {((data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
+                                    <button
+                                        type="button"
+                                        className={`inbox-filter-item inbox-filter-item--assigned${!pendingDraftsView && taskFilterType === "myTask" && filters.dueDate === "all" ? " active" : ""}`}
+                                        title="Filter: tasks assigned to you"
+                                        onClick={handleAssignedClick}>
+                                        <span className="inbox-filter-item-label">
+                                            <i className="fa-solid fa-user"></i>
+                                            Assigned to me
+                                        </span>
+                                        <span className="inbox-filter-count">{assignedToMeCount}</span>
+                                    </button>
+                                )}
+                                {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
+                                    <button
+                                        type="button"
+                                        className={`inbox-filter-item inbox-filter-item--all${!pendingDraftsView && taskFilterType === "allTask" && filters.dueDate === "all" ? " active" : ""}`}
+                                        title="View all tasks"
+                                        onClick={handleAllTasksClick}>
+                                        <span className="inbox-filter-item-label">
+                                            <i className="fa-solid fa-layer-group"></i>
+                                            All Tasks
+                                        </span>
+                                        <span className="inbox-filter-count">{allCount}</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            <span className="inbox-filter-divider" aria-hidden="true"></span>
+
+                            <div className="inbox-filter-cluster">
+                                <span className="inbox-filter-cluster-label">Drafts</span>
+                                <button
+                                    type="button"
+                                    className={`inbox-filter-item inbox-filter-item--drafts${pendingDraftsView ? " active" : ""}`}
+                                    title="View saved process starts waiting for the engine"
+                                    onClick={handlePendingDraftsClick}>
+                                    <span className="inbox-filter-item-label">
+                                        <i className="fa-regular fa-floppy-disk"></i>
+                                        Pending Drafts
+                                    </span>
+                                    <span className="inbox-filter-count">
+                                        {pendingDraftsLoading ? "…" : pendingDrafts.length}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Actions: start process */}
