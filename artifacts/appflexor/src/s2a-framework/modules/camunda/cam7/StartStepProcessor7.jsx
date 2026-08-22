@@ -48,7 +48,6 @@ function StartStepProcessor({
         componentsData = {},
         reqPayload = {},
     ) {
-        let message = "";
         const taskVariables = getProcessVariablesFromData(
             state,
             componentsData,
@@ -56,22 +55,38 @@ function StartStepProcessor({
 
         if (actionType === actions.complete) {
             let id = state.id;
-            let processStarted = await startProcessInstance(id, taskVariables);
+            try {
+                const response = await startProcessInstance(id, taskVariables);
+                const responseStatus = response?.data?.C_STATUS || response?.data?.status;
+                const responseMessage = response?.data?.C_MESSAGE || response?.data?.message;
+                const processStarted = responseStatus === "SUCCESS";
 
-            if (processStarted === "SUCCESS") {
-                message = "Process started successfully.";
-                updateBusinessKey(state, formDetails, id);
-                handleProcessActions(actions.complete, "process");
-            } else {
-                message = "Failed to start a Process.";
+                if (processStarted) {
+                    updateBusinessKey(state, formDetails, id);
+                    handleProcessActions(actions.complete, "process");
+                    toastEmitter(
+                        action.deploy_msg || "Process started successfully.",
+                        true,
+                        "success",
+                    );
+                } else {
+                    toastEmitter(
+                        responseMessage || "Failed to start the process.",
+                        true,
+                        "error",
+                    );
+                }
+            } catch (error) {
+                console.error(error);
+                toastEmitter(
+                    error?.response?.data?.C_MESSAGE ||
+                        error?.response?.data?.message ||
+                        "Failed to start the process.",
+                    true,
+                    "error",
+                );
             }
         }
-
-        toastEmitter(
-            action.deploy_msg ? action.deploy_msg : message,
-            true,
-            "success",
-        );
     }
 
     // utils
@@ -176,15 +191,10 @@ function StartStepProcessor({
             axios
                 .post(BPM_API_URL + "?service.key=bpm.data", dataRequest)
                 .then(response => {
-                    if (response.status === 200) {
-                        resolve("SUCCESS");
-                    } else {
-                        resolve("FAILED");
-                    }
+                    resolve(response);
                 })
                 .catch(err => {
                     reject(err);
-                    console.error(err);
                 });
         });
     }

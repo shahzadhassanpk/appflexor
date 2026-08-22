@@ -552,7 +552,7 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                     <div className="cb-section-header">
                         <span className="cb-section-title">
                             <i className="fa-regular fa-clock"></i>
-                            Task History
+                            Process History
                         </span>
                     </div>
 
