@@ -629,7 +629,7 @@ const ProcessFormViewer = ({
                 // console.log("***************** processVar > "+JSON.stringify(processVar));
                 // setFilesToDelete([]);
                 if (handleActions) {
-                    handleActions(
+                    const actionSucceeded = await handleActions(
                         actionType,
                         resObj,
                         formDetails,
@@ -638,6 +638,9 @@ const ProcessFormViewer = ({
                         external,
                         processVar,
                     );
+                    if (actionSucceeded === false) {
+                        setLayoutLoaded(true);
+                    }
                 }
             }
             setIsFormSaved(true);

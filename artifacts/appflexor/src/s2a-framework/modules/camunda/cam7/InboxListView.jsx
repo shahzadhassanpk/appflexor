@@ -90,6 +90,7 @@ function RenderListView({
     const [selectedPendingDraft, setSelectedPendingDraft] = useState(null);
     const [draftSearch, setDraftSearch] = useState("");
     const [draftActions, setDraftActions] = useState({});
+    const draftRetryLocks = useRef(new Set());
 
     const getDraftVariables = useCallback(draft => {
         const value = draft?.process_variables;
@@ -113,7 +114,7 @@ function RenderListView({
         setPendingDraftsError("");
         try {
             const response = await axios.post(
-                API_URL + "?service.key=multiKey.data",
+                API_URL + "?service.key=masterKey.tenantData",
                 {
                     dataKeys: [
                         {
@@ -335,8 +336,15 @@ function RenderListView({
 
     const retryPendingDraft = useCallback(async draft => {
         const draftId = draft?.id;
-        if (!draftId || draftActions[draftId]?.loading) return;
+        if (
+            !draftId ||
+            draftActions[draftId]?.loading ||
+            draftRetryLocks.current.has(draftId)
+        ) {
+            return;
+        }
 
+        draftRetryLocks.current.add(draftId);
         setDraftActionState(draftId, { loading: true, error: "" });
         const retryCount = Number(draft.retry_count || 0);
         const variables = { ...getDraftVariables(draft) };
@@ -453,6 +461,8 @@ function RenderListView({
                 console.error(persistError);
             }
             setDraftActionState(draftId, { loading: false, error: message });
+        } finally {
+            draftRetryLocks.current.delete(draftId);
         }
     }, [
         appContext?.profile?.username,
@@ -746,19 +756,6 @@ function RenderListView({
         reqPayload = {},
     ) {
         if (actionType === actions.complete) {
-            if (selectedPendingDraft) {
-                updateDraft(selectedPendingDraft, {
-                    status: "STARTED",
-                    last_error: "",
-                }).catch(error => {
-                    console.error(error);
-                    loadPendingDrafts();
-                });
-                setPendingDrafts(previous =>
-                    previous.filter(item => item.id !== selectedPendingDraft.id),
-                );
-                setSelectedPendingDraft(null);
-            }
             setCurrentProcessState({
                 initial: true,
                 start: false,
@@ -769,6 +766,40 @@ function RenderListView({
             setSelectedProcessId("");
             syncTaskList();
             loadPendingDrafts();
+        } else if (actionType === actions.draft) {
+            setCurrentProcessState({
+                initial: true,
+                start: false,
+                step: false,
+                loading: false,
+            });
+            setSelectedProcessId("");
+            setSelectedPendingDraft(null);
+            loadPendingDrafts();
+        }
+    }
+
+    function handlePendingDraftChange(draft) {
+        if (!draft?.id) return;
+
+        const normalizedDraft = normalizeDraft(draft);
+        setPendingDrafts(previous => {
+            if (normalizedDraft.status === "STARTED") {
+                return previous.filter(item => item.id !== normalizedDraft.id);
+            }
+            const found = previous.some(
+                item => item.id === normalizedDraft.id,
+            );
+            return found
+                ? previous.map(item =>
+                    item.id === normalizedDraft.id
+                        ? normalizedDraft
+                        : item,
+                )
+                : [normalizedDraft, ...previous];
+        });
+        if (selectedPendingDraft?.id === normalizedDraft.id) {
+            setSelectedPendingDraft(normalizedDraft);
         }
     }
 
@@ -1777,6 +1808,8 @@ function RenderListView({
             <StartStepProcessor
                 id={selectedProcessId}
                 handleProcessActions={handleStartProcessActions}
+                processStartDraft={selectedPendingDraft}
+                onDraftChange={handlePendingDraftChange}
                 formVars={
                     selectedPendingDraft
                         ? { business_key: selectedPendingDraft.form_record_id }

@@ -133,6 +133,15 @@ function RenderTableView({
             setSelectedProcessId("");
             syncTaskList();
             clearFilters();
+        } else if (actionType === actions.draft) {
+            closeModal();
+            setCurrentProcessState({
+                initial: true,
+                start: false,
+                step: false,
+            });
+            setRenderProcessModal(false);
+            setSelectedProcessId("");
         }
     }
 

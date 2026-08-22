@@ -17,11 +17,18 @@ function StartStepProcessor({
     camundaVars = {},
     formVars = {},
     action = {},
+    processStartDraft = null,
+    onDraftChange,
 }) {
     const [processId, setProcessId] = useState("");
     const [formDetails, setFormDetails] = useState({});
+    const [activeDraft, setActiveDraft] = useState(processStartDraft);
+    const [startNotice, setStartNotice] = useState(null);
+    const [isStarting, setIsStarting] = useState(false);
+    const startLockRef = useRef(false);
+    const activeDraftIdRef = useRef(processStartDraft?.id || "");
     const appContext = useContext(AppContext);
-    const tenantId = appContext.tenantSubscription.tenant_id;
+    const tenantId = appContext?.tenantSubscription?.tenant_id || "";
 
     // side effects
     useEffect(() => {
@@ -39,12 +46,20 @@ function StartStepProcessor({
         }
     }, [processId]);
 
+    useEffect(() => {
+        const nextDraftId = processStartDraft?.id || "";
+        if (activeDraftIdRef.current === nextDraftId) return;
+        activeDraftIdRef.current = nextDraftId;
+        setActiveDraft(processStartDraft);
+        setStartNotice(null);
+    }, [processStartDraft?.id]);
+
     // event handlers
 
     async function handleActions(
         actionType,
         state = {},
-        formDetails = {},
+        savedFormDetails = {},
         componentsData = {},
         reqPayload = {},
     ) {
@@ -53,39 +68,65 @@ function StartStepProcessor({
             componentsData,
         );
 
-        if (actionType === actions.complete) {
-            let id = state.id;
-            try {
-                const response = await startProcessInstance(id, taskVariables);
-                const responseStatus = response?.data?.C_STATUS || response?.data?.status;
-                const responseMessage = response?.data?.C_MESSAGE || response?.data?.message;
-                const processStarted = responseStatus === "SUCCESS";
+        if (actionType !== actions.complete) return true;
 
-                if (processStarted) {
-                    updateBusinessKey(state, formDetails, id);
-                    handleProcessActions(actions.complete, "process");
-                    toastEmitter(
-                        action.deploy_msg || "Process started successfully.",
-                        true,
-                        "success",
-                    );
-                } else {
-                    toastEmitter(
-                        responseMessage || "Failed to start the process.",
-                        true,
-                        "error",
-                    );
-                }
-            } catch (error) {
-                console.error(error);
-                toastEmitter(
-                    error?.response?.data?.C_MESSAGE ||
-                        error?.response?.data?.message ||
-                        "Failed to start the process.",
-                    true,
-                    "error",
-                );
-            }
+        const businessKey =
+            processStartDraft?.business_key ||
+            state?.business_key ||
+            state?.id;
+        if (!businessKey || !state?.id) {
+            const message =
+                "The saved form record is missing the identifier needed to start this process.";
+            setStartNotice({ type: "danger", message });
+            toastEmitter(message, true, "error");
+            return false;
+        }
+        if (
+            !formDetails?.process_key ||
+            !formDetails?.form_key ||
+            !formDetails?.table
+        ) {
+            const message =
+                "The process configuration is missing the information needed to save this start request.";
+            setStartNotice({ type: "danger", message });
+            toastEmitter(message, true, "error");
+            return false;
+        }
+        if (startLockRef.current) {
+            return false;
+        }
+
+        startLockRef.current = true;
+        setIsStarting(true);
+        setStartNotice(null);
+        try {
+            await updateBusinessKey(state, savedFormDetails, businessKey);
+            const variables = buildStartVariables(taskVariables);
+            const draft = await saveDraft(processStartDraft, {
+                process_definition_id: processId,
+                process_key: formDetails.process_key,
+                form_key: formDetails.form_key,
+                form_table: formDetails.table,
+                form_record_id: state.id,
+                business_key: businessKey,
+                process_variables: JSON.stringify(variables),
+                status: "STARTING",
+                last_error: "",
+                retry_count: Number(processStartDraft?.retry_count || 0),
+                requester: appContext?.profile?.username || "",
+            });
+            setActiveDraft(draft);
+            onDraftChange?.(draft);
+            return await attemptStart(draft, variables, Boolean(processStartDraft));
+        } catch (error) {
+            const message = getErrorMessage(error);
+            console.error(error);
+            setStartNotice({ type: "danger", message });
+            toastEmitter(message, true, "error");
+            return false;
+        } finally {
+            startLockRef.current = false;
+            setIsStarting(false);
         }
     }
 
@@ -129,7 +170,7 @@ function StartStepProcessor({
             });
     }
 
-    function updateBusinessKey(formData, formDetails, businessKey) {
+    async function updateBusinessKey(formData, formDetails, businessKey) {
         let fieldsData = { ...formData, business_key: businessKey };
 
         let request = {};
@@ -152,18 +193,19 @@ function StartStepProcessor({
 
         request.data.push(entityForm);
 
-        axios
-            .post(API_URL + "?service.key=update.formData", request)
-            .then(response => {
-                if (response.data.C_STATUS == "SUCCESS") {
-                    let resObj = response.data.C_DATA[0].formData;
-                } else {
-                    console.error(response.data.C_MESSAGE);
-                }
-            })
-            .catch(error => {
-                console.error(error);
-            });
+        const response = await axios.post(
+            API_URL + "?service.key=update.formData",
+            request,
+        );
+        const status = response?.data?.C_STATUS || response?.data?.status;
+        if (status !== "SUCCESS") {
+            throw new Error(
+                response?.data?.C_MESSAGE ||
+                response?.data?.message ||
+                "Unable to link the saved form to this process start.",
+            );
+        }
+        return response?.data?.C_DATA?.[0]?.formData || fieldsData;
     }
 
     // api calls bpm-service
@@ -176,8 +218,11 @@ function StartStepProcessor({
             path = `/process-definition/key/${formDetails.process_key}/tenant-id/${tenantId}/start`;
         }
         let variables = taskVariables ? { ...taskVariables } : camundaVars;
-        variables["requestor"] = { "value": appContext?.profile?.username, "type": "string" };
-        
+        variables["requestor"] = {
+            value: appContext?.profile?.username,
+            type: "string",
+        };
+
         const dataRequest = {
             path,
             method: "POST",
@@ -187,16 +232,252 @@ function StartStepProcessor({
                 variables: variables,
             },
         };
-        return new Promise((resolve, reject) => {
-            axios
-                .post(BPM_API_URL + "?service.key=bpm.data", dataRequest)
-                .then(response => {
-                    resolve(response);
-                })
-                .catch(err => {
-                    reject(err);
-                });
+        return axios.post(BPM_API_URL + "?service.key=bpm.data", dataRequest);
+    }
+
+    function buildStartVariables(taskVariables) {
+        const variables = taskVariables
+            ? { ...taskVariables }
+            : { ...camundaVars };
+        variables.requestor = {
+            value: appContext?.profile?.username,
+            type: "string",
+        };
+        return variables;
+    }
+
+    function getErrorMessage(error) {
+        return (
+            error?.response?.data?.C_MESSAGE ||
+            error?.response?.data?.message ||
+            error?.message ||
+            "Failed to start the process."
+        );
+    }
+
+    function normalizeDraft(draft) {
+        return {
+            ...draft,
+            process_variables:
+                typeof draft?.process_variables === "string"
+                    ? draft.process_variables
+                    : JSON.stringify(draft?.process_variables || {}),
+            retry_count: Number(draft?.retry_count || 0),
+        };
+    }
+
+    async function saveDraft(draft, changes) {
+        const nextDraft = normalizeDraft({ ...draft, ...changes });
+        const draftId = nextDraft.id || "new";
+        const fields = {
+            id: nextDraft.id,
+            process_definition_id: nextDraft.process_definition_id,
+            process_key: nextDraft.process_key,
+            form_key: nextDraft.form_key,
+            form_table: nextDraft.form_table,
+            form_record_id: nextDraft.form_record_id,
+            business_key: nextDraft.business_key,
+            process_variables: nextDraft.process_variables,
+            status: nextDraft.status,
+            last_error: nextDraft.last_error || "",
+            retry_count: nextDraft.retry_count,
+            requester:
+                nextDraft.requester || appContext?.profile?.username || "",
+        };
+        const response = await axios.post(
+            API_URL + "?service.key=update.formData",
+            {
+                data: [
+                    {
+                        formId: "process_start_draft",
+                        entity: "process_start_draft",
+                        action: "update",
+                        id: draftId,
+                        fileData: [],
+                        formData: Object.fromEntries(
+                            Object.entries(fields).filter(
+                                ([, value]) => value !== undefined,
+                            ),
+                        ),
+                    },
+                ],
+            },
+        );
+        const status = response?.data?.C_STATUS || response?.data?.status;
+        if (status !== "SUCCESS") {
+            throw new Error(
+                response?.data?.C_MESSAGE ||
+                response?.data?.message ||
+                "Unable to save the pending process start.",
+            );
+        }
+        const saved = response?.data?.C_DATA?.[0]?.formData || {};
+        const savedDraft = normalizeDraft({
+            ...nextDraft,
+            ...saved,
+            id: saved?.id || nextDraft.id,
         });
+        if (!savedDraft.id) {
+            throw new Error("Pending process start was saved without a draft id.");
+        }
+        return savedDraft;
+    }
+
+    async function processInstanceExists(draft) {
+        const activeQuery = new URLSearchParams({
+            businessKey: draft.business_key,
+            processDefinitionKey: draft.process_key,
+            active: "true",
+        });
+        if (tenantId) activeQuery.set("tenantIdIn", tenantId);
+        else activeQuery.set("withoutTenantId", "true");
+
+        async function findInstances(path) {
+            const response = await axios.post(
+                BPM_API_URL + "?service.key=bpm.data",
+                { path, method: "GET" },
+            );
+            const status = response?.data?.C_STATUS || response?.data?.status;
+            if (status && status !== "SUCCESS") {
+                throw new Error(
+                    response?.data?.C_MESSAGE ||
+                    response?.data?.message ||
+                    "Unable to confirm whether this process was already started.",
+                );
+            }
+            const payload = response?.data || {};
+            return [
+                payload?.C_DATA?.processInstances,
+                payload?.C_DATA,
+                payload?.data?.processInstances,
+                payload?.data,
+                payload,
+            ].find(Array.isArray) || [];
+        }
+
+        if (
+            (await findInstances(
+                `/process-instance?${activeQuery.toString()}`,
+            )).length > 0
+        ) {
+            return true;
+        }
+
+        const historicQuery = new URLSearchParams({
+            processDefinitionKey: draft.process_key,
+            processInstanceBusinessKey: draft.business_key,
+        });
+        if (tenantId) historicQuery.set("tenantIdIn", tenantId);
+        else historicQuery.set("processDefinitionWithoutTenantId", "true");
+
+        return (
+            (
+                await findInstances(
+                    `/history/process-instance?${historicQuery.toString()}`,
+                )
+            ).length > 0
+        );
+    }
+
+    async function completeStartedDraft(draft) {
+        try {
+            const completedDraft = await saveDraft(draft, {
+                status: "STARTED",
+                last_error: "",
+            });
+            setActiveDraft(completedDraft);
+            onDraftChange?.(completedDraft);
+            handleProcessActions(actions.complete, "process");
+            toastEmitter(
+                action.deploy_msg || "Process started successfully.",
+                true,
+                "success",
+            );
+            return true;
+        } catch (error) {
+            const message =
+                "The process started, but its completion status still needs to be saved.";
+            console.error(error);
+            setActiveDraft(draft);
+            setStartNotice({
+                type: "warning",
+                message,
+                requiresCompletionSave: true,
+            });
+            onDraftChange?.(draft);
+            toastEmitter(message, true, "warning");
+            return false;
+        }
+    }
+
+    async function attemptStart(draft, variables, checkExisting) {
+        try {
+            if (checkExisting && (await processInstanceExists(draft))) {
+                return await completeStartedDraft(draft);
+            }
+
+            const response = await startProcessInstance(
+                draft.business_key,
+                variables,
+            );
+            const status = response?.data?.C_STATUS || response?.data?.status;
+            if (status === "SUCCESS") {
+                return await completeStartedDraft(draft);
+            }
+            throw new Error(
+                response?.data?.C_MESSAGE ||
+                    response?.data?.message ||
+                    "Failed to start the process.",
+            );
+        } catch (error) {
+            const message = getErrorMessage(error);
+            const pendingDraft = await saveDraft(draft, {
+                status: "PENDING_ENGINE",
+                last_error: message,
+                retry_count: Number(draft.retry_count || 0) + 1,
+                process_variables:
+                    typeof variables === "string"
+                        ? variables
+                        : JSON.stringify(variables || {}),
+            });
+            setActiveDraft(pendingDraft);
+            onDraftChange?.(pendingDraft);
+            setStartNotice({ type: "warning", message, canRetry: true });
+            toastEmitter(message, true, "error");
+            return false;
+        }
+    }
+
+    async function retryPendingStart() {
+        if (!activeDraft || isStarting || startLockRef.current) return;
+
+        startLockRef.current = true;
+        setIsStarting(true);
+        setStartNotice(null);
+        try {
+            const variables =
+                typeof activeDraft.process_variables === "string"
+                    ? JSON.parse(activeDraft.process_variables || "{}")
+                    : activeDraft.process_variables || {};
+            const startingDraft = await saveDraft(activeDraft, {
+                status: "STARTING",
+                last_error: "",
+            });
+            setActiveDraft(startingDraft);
+            onDraftChange?.(startingDraft);
+            await attemptStart(startingDraft, variables, true);
+        } catch (error) {
+            const message = getErrorMessage(error);
+            setStartNotice({ type: "danger", message });
+            toastEmitter(message, true, "error");
+        } finally {
+            startLockRef.current = false;
+            setIsStarting(false);
+        }
+    }
+
+    function returnToInbox() {
+        handleProcessActions(actions.draft, "process");
     }
 
     return (
@@ -209,6 +490,39 @@ function StartStepProcessor({
                         <div className="process-task-title">
                             {formDetails && formDetails.title}
                         </div>
+                        {startNotice && (
+                            <div className={`alert alert-${startNotice.type} d-flex flex-wrap align-items-center gap-2`}>
+                                <span className="me-auto">{startNotice.message}</span>
+                                {startNotice.canRetry && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-warning"
+                                        disabled={isStarting}
+                                        onClick={retryPendingStart}>
+                                        {isStarting ? "Retrying…" : "Retry now"}
+                                    </button>
+                                )}
+                                {startNotice.requiresCompletionSave && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-success"
+                                        disabled={isStarting}
+                                        onClick={() =>
+                                            completeStartedDraft(activeDraft)
+                                        }>
+                                        Save completion
+                                    </button>
+                                )}
+                                {activeDraft && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-link"
+                                        onClick={returnToInbox}>
+                                        Back to inbox
+                                    </button>
+                                )}
+                            </div>
+                        )}
                         <ProcessFormViewer
                             formKey={formDetails.form_key}
                             businessKey={"new"}

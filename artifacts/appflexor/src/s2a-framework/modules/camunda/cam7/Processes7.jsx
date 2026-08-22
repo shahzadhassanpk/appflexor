@@ -257,6 +257,13 @@ function Processes(props) {
 
             setSelectedProcessId("");
             syncTaskList();
+        } else if (actionType === actions.draft) {
+            setCurrentProcessState({
+                initial: true,
+                start: false,
+                step: false,
+            });
+            setSelectedProcessId("");
         }
     }
 
