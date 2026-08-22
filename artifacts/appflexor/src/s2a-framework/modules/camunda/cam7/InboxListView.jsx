@@ -1238,31 +1238,31 @@ function RenderListView({
 
                     {/* Stat filter cards */}
                     <div className="inbox-stat-group">
-                        <button
-                            type="button"
-                            className={`inbox-stat-item inbox-stat-item--assigned${pendingDraftsView ? " active" : ""}`}
-                            title="View saved process starts waiting for the engine"
-                            onClick={handlePendingDraftsClick}>
-                            <span className="inbox-stat-value">
-                                {pendingDraftsLoading ? "…" : pendingDrafts.length}
-                            </span>
-                            <span className="inbox-stat-label">
-                                <i className="fa-regular fa-floppy-disk"></i>
-                                Pending Drafts
-                            </span>
-                        </button>
-                        {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
+                        {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && overdueCount > 0 &&  (
                             <button
                                 type="button"
-                                className={`inbox-stat-item inbox-stat-item--all${!pendingDraftsView && taskFilterType === "allTask" && filters.dueDate === "all" ? " active" : ""}`}
-                                title="View all tasks"
-                                onClick={handleAllTasksClick}>
-                                <span className="inbox-stat-value">{allCount}</span>
+                                className={`inbox-stat-item inbox-stat-item--overdue${!pendingDraftsView && filters.dueDate === "overdue" ? " active" : ""}`}
+                                title="Filter: overdue tasks"
+                                onClick={handleOverdueClick}>
+                                <span className="inbox-stat-value">{overdueCount}</span>
                                 <span className="inbox-stat-label">
-                                    <i className="fa-solid fa-layer-group"></i>
-                                    All Tasks
+                                    <i className="fa-solid fa-circle-exclamation"></i>
+                                    Overdue
                                 </span>
                             </button>
+                        )}
+                        {dueTodayCount > 0 && (
+                            <button
+                            type="button"
+                            className={`inbox-stat-item inbox-stat-item--due${!pendingDraftsView && filters.dueDate === "today" ? " active" : ""}`}
+                            title="Filter: tasks due today"
+                            onClick={handleDueTodayClick}>
+                            <span className="inbox-stat-value">{dueTodayCount}</span>
+                            <span className="inbox-stat-label">
+                                <i className="fa-regular fa-calendar-check"></i>
+                                Due Today
+                            </span>
+                        </button>
                         )}
                         {((data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
                             <button
@@ -1277,30 +1277,36 @@ function RenderListView({
                                 </span>
                             </button>
                         )}
-                        <button
-                            type="button"
-                            className={`inbox-stat-item inbox-stat-item--due${!pendingDraftsView && filters.dueDate === "today" ? " active" : ""}`}
-                            title="Filter: tasks due today"
-                            onClick={handleDueTodayClick}>
-                            <span className="inbox-stat-value">{dueTodayCount}</span>
-                            <span className="inbox-stat-label">
-                                <i className="fa-regular fa-calendar-check"></i>
-                                Due Today
-                            </span>
-                        </button>
+                                              
                         {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
                             <button
                                 type="button"
-                                className={`inbox-stat-item inbox-stat-item--overdue${!pendingDraftsView && filters.dueDate === "overdue" ? " active" : ""}`}
-                                title="Filter: overdue tasks"
-                                onClick={handleOverdueClick}>
-                                <span className="inbox-stat-value">{overdueCount}</span>
+                                className={`inbox-stat-item inbox-stat-item--all${!pendingDraftsView && taskFilterType === "allTask" && filters.dueDate === "all" ? " active" : ""}`}
+                                title="View all tasks"
+                                onClick={handleAllTasksClick}>
+                                <span className="inbox-stat-value">{allCount}</span>
                                 <span className="inbox-stat-label">
-                                    <i className="fa-solid fa-circle-exclamation"></i>
-                                    Overdue
+                                    <i className="fa-solid fa-layer-group"></i>
+                                    All Tasks
                                 </span>
                             </button>
                         )}
+                        {pendingDrafts?.length > 0 && (
+                            <button
+                            type="button"
+                            className={`inbox-stat-item inbox-stat-item--assigned${pendingDraftsView ? " active" : ""}`}
+                            title="View saved process starts waiting for the engine"
+                            onClick={handlePendingDraftsClick}>
+                            <span className="inbox-stat-value">
+                                {pendingDraftsLoading ? "…" : pendingDrafts.length}
+                            </span>
+                            <span className="inbox-stat-label">
+                                <i className="fa-regular fa-floppy-disk"></i>
+                                Pending Drafts
+                            </span>
+                            </button>
+                        )}
+
                     </div>
 
                     {/* Actions: start process */}
