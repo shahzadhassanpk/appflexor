@@ -1,5 +1,7 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import axios from "axios";
+import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AppContext } from "../../../../AppContext";
+import { API_URL } from "../../../Config";
 import { formatDateTimeForUserView } from "../../../utils/utils";
 import StartStepProcessor from "./StartStepProcessor7";
 import StepProcessor from "./StepProcessor7";
@@ -9,6 +11,7 @@ import { filterArrayByTerms, tryParseJSONObject } from "../../../utils/utils";
 import { eventBus } from "../../../eventBus";
 import "../inbox-style.css";
 import { Interweave } from "interweave";
+import { BPM_API_URL } from "../CamundaConfig";
 
 function RenderListView({
     processList,
@@ -80,6 +83,434 @@ function RenderListView({
     const [currentPage, setCurrentPage] = useState(1);
     const PAGE_SIZE = 15;
     const filterRef = useRef(null);
+    const [pendingDrafts, setPendingDrafts] = useState([]);
+    const [pendingDraftsLoading, setPendingDraftsLoading] = useState(false);
+    const [pendingDraftsError, setPendingDraftsError] = useState("");
+    const [pendingDraftsView, setPendingDraftsView] = useState(false);
+    const [selectedPendingDraft, setSelectedPendingDraft] = useState(null);
+    const [draftSearch, setDraftSearch] = useState("");
+    const [draftActions, setDraftActions] = useState({});
+
+    const getDraftVariables = useCallback(draft => {
+        const value = draft?.process_variables;
+        if (!value) return {};
+        if (typeof value === "object") return value;
+        const parsed = tryParseJSONObject(value, {});
+        return parsed && typeof parsed === "object" ? parsed : {};
+    }, []);
+
+    const normalizeDraft = useCallback(draft => ({
+        ...draft,
+        process_variables:
+            typeof draft?.process_variables === "string"
+                ? draft.process_variables
+                : JSON.stringify(draft?.process_variables || {}),
+        retry_count: Number(draft?.retry_count || 0),
+    }), []);
+
+    const loadPendingDrafts = useCallback(async () => {
+        setPendingDraftsLoading(true);
+        setPendingDraftsError("");
+        try {
+            const response = await axios.post(
+                API_URL + "?service.key=multiKey.data",
+                {
+                    dataKeys: [
+                        {
+                            serviceParams: "",
+                            dataKey: "pendingDrafts",
+                            serviceKey: "bpm.list.pending.draft",
+                            mode: "formData",
+                        },
+                    ],
+                },
+            );
+            const status = response?.data?.C_STATUS || response?.data?.status;
+            if (status !== "SUCCESS") {
+                throw new Error(
+                    response?.data?.C_MESSAGE ||
+                    response?.data?.message ||
+                    "Unable to load pending drafts.",
+                );
+            }
+
+            const responseData = response?.data?.C_DATA || response?.data?.data || {};
+            const drafts =
+                responseData.pendingDrafts ||
+                responseData.drafts ||
+                responseData.pending_drafts ||
+                [];
+            setPendingDrafts(
+                Array.isArray(drafts) ? drafts.map(normalizeDraft) : [],
+            );
+        } catch (error) {
+            console.error(error);
+            setPendingDraftsError(
+                error?.response?.data?.C_MESSAGE ||
+                error?.response?.data?.message ||
+                error?.message ||
+                "Unable to load pending drafts.",
+            );
+        } finally {
+            setPendingDraftsLoading(false);
+        }
+    }, [normalizeDraft]);
+
+    const draftFormData = useCallback((draft, changes = {}) => {
+        const nextDraft = { ...draft, ...changes };
+        const fields = {
+            id: nextDraft.id,
+            process_definition_id: nextDraft.process_definition_id,
+            process_key: nextDraft.process_key,
+            form_key: nextDraft.form_key,
+            form_table: nextDraft.form_table,
+            form_record_id: nextDraft.form_record_id,
+            business_key: nextDraft.business_key,
+            process_variables:
+                typeof nextDraft.process_variables === "string"
+                    ? nextDraft.process_variables
+                    : JSON.stringify(nextDraft.process_variables || {}),
+            status: nextDraft.status,
+            last_error: nextDraft.last_error || "",
+            retry_count: Number(nextDraft.retry_count || 0),
+            requester: nextDraft.requester || appContext?.profile?.username || "",
+        };
+        return Object.fromEntries(
+            Object.entries(fields).filter(([, value]) => value !== undefined),
+        );
+    }, [appContext?.profile?.username]);
+
+    const updateDraft = useCallback(async (draft, changes = {}) => {
+        if (!draft?.id) {
+            throw new Error("Pending draft is missing its id.");
+        }
+
+        const request = {
+            data: [
+                {
+                    formId: "process_start_draft",
+                    entity: "process_start_draft",
+                    action: "update",
+                    fileData: [],
+                    id: draft.id,
+                    formData: draftFormData(draft, changes),
+                },
+            ],
+        };
+        const response = await axios.post(
+            API_URL + "?service.key=update.formData",
+            request,
+        );
+        const status = response?.data?.C_STATUS || response?.data?.status;
+        if (status !== "SUCCESS") {
+            throw new Error(
+                response?.data?.C_MESSAGE ||
+                response?.data?.message ||
+                "Unable to update pending draft.",
+            );
+        }
+        return response;
+    }, [draftFormData]);
+
+    const processInstanceExists = useCallback(async draft => {
+        if (!draft?.business_key || !draft?.process_key) {
+            throw new Error(
+                "Pending draft is missing the business key or process key needed to retry safely.",
+            );
+        }
+
+        const query = new URLSearchParams({
+            businessKey: draft.business_key,
+            processDefinitionKey: draft.process_key,
+            active: "true",
+        });
+        const tenantId = appContext?.tenantSubscription?.tenant_id;
+        if (tenantId) {
+            query.set("tenantIdIn", tenantId);
+        } else {
+            query.set("withoutTenantId", "true");
+        }
+
+        async function findInstances(path) {
+            const response = await axios.post(
+                BPM_API_URL + "?service.key=bpm.data",
+                {
+                    path,
+                    method: "GET",
+                },
+            );
+            const status = response?.data?.C_STATUS || response?.data?.status;
+            if (status && status !== "SUCCESS") {
+                throw new Error(
+                    response?.data?.C_MESSAGE ||
+                    response?.data?.message ||
+                    "Unable to confirm whether this process was already started.",
+                );
+            }
+            const payload = response?.data || {};
+            const instances = [
+                payload?.C_DATA?.processInstances,
+                payload?.C_DATA,
+                payload?.data?.processInstances,
+                payload?.data,
+                payload,
+            ].find(Array.isArray);
+            return Array.isArray(instances) ? instances : [];
+        }
+
+        const activeInstances = await findInstances(
+            `/process-instance?${query.toString()}`,
+        );
+        if (activeInstances.length > 0) return true;
+
+        const historicQuery = new URLSearchParams({
+            processDefinitionKey: draft.process_key,
+            processInstanceBusinessKey: draft.business_key,
+        });
+        if (tenantId) {
+            historicQuery.set("tenantIdIn", tenantId);
+        } else {
+            historicQuery.set("processDefinitionWithoutTenantId", "true");
+        }
+        const historicInstances = await findInstances(
+            `/history/process-instance?${historicQuery.toString()}`,
+        );
+        return historicInstances.length > 0;
+    }, [appContext?.tenantSubscription?.tenant_id]);
+
+    const setDraftActionState = useCallback((draftId, state) => {
+        setDraftActions(previous => ({
+            ...previous,
+            [draftId]: { ...(previous[draftId] || {}), ...state },
+        }));
+    }, []);
+
+    const reconcileStartedDraft = useCallback(async draft => {
+        const draftId = draft?.id;
+        if (!draftId || draftActions[draftId]?.loading) return;
+
+        setDraftActionState(draftId, { loading: true, error: "" });
+        try {
+            await updateDraft(draft, {
+                status: "STARTED",
+                last_error: "",
+            });
+            setPendingDrafts(previous =>
+                previous.filter(item => item.id !== draftId),
+            );
+            if (selectedPendingDraft?.id === draftId) {
+                setSelectedPendingDraft(null);
+                setSelectedProcessId("");
+                setCurrentProcessState({
+                    initial: true,
+                    start: false,
+                    step: false,
+                    loading: false,
+                });
+            }
+            setDraftActionState(draftId, {
+                loading: false,
+                error: "",
+                reconcileStarted: false,
+            });
+            syncTaskList();
+            loadPendingDrafts();
+        } catch (error) {
+            setDraftActionState(draftId, {
+                loading: false,
+                reconcileStarted: true,
+                error: "The process already started. Save its completion status before leaving the Inbox.",
+            });
+        }
+    }, [
+        draftActions,
+        loadPendingDrafts,
+        selectedPendingDraft?.id,
+        setCurrentProcessState,
+        setDraftActionState,
+        setSelectedProcessId,
+        syncTaskList,
+        updateDraft,
+    ]);
+
+    const retryPendingDraft = useCallback(async draft => {
+        const draftId = draft?.id;
+        if (!draftId || draftActions[draftId]?.loading) return;
+
+        setDraftActionState(draftId, { loading: true, error: "" });
+        const retryCount = Number(draft.retry_count || 0);
+        const variables = { ...getDraftVariables(draft) };
+        const username = appContext?.profile?.username;
+        if (!variables.requestor && username) {
+            variables.requestor = { value: username, type: "string" };
+        }
+        let engineStarted = false;
+
+        const finishSuccessfulStart = async () => {
+            await updateDraft(draft, {
+                status: "STARTED",
+                last_error: "",
+                process_variables: JSON.stringify(variables),
+            });
+            setPendingDrafts(previous =>
+                previous.filter(item => item.id !== draftId),
+            );
+            if (selectedPendingDraft?.id === draftId) {
+                setSelectedPendingDraft(null);
+                setSelectedProcessId("");
+                setCurrentProcessState({
+                    initial: true,
+                    start: false,
+                    step: false,
+                    loading: false,
+                });
+            }
+            setDraftActionState(draftId, { loading: false, error: "" });
+            syncTaskList();
+            loadPendingDrafts();
+        };
+
+        try {
+            await updateDraft(draft, {
+                status: "STARTING",
+                last_error: "",
+                process_variables: JSON.stringify(variables),
+            });
+
+            const tenantId = appContext?.tenantSubscription?.tenant_id;
+            const processKey = draft.process_key;
+            if (!processKey) {
+                throw new Error("Pending draft is missing its process key.");
+            }
+            if (await processInstanceExists(draft)) {
+                engineStarted = true;
+                await finishSuccessfulStart();
+                return;
+            }
+            const path = tenantId
+                ? `/process-definition/key/${processKey}/tenant-id/${tenantId}/start`
+                : `/process-definition/key/${processKey}/start`;
+            const response = await axios.post(
+                BPM_API_URL + "?service.key=bpm.data",
+                {
+                    path,
+                    method: "POST",
+                    data: {
+                        businessKey: draft.business_key,
+                        variables,
+                    },
+                },
+            );
+            const status = response?.data?.C_STATUS || response?.data?.status;
+            const message =
+                response?.data?.C_MESSAGE ||
+                response?.data?.message ||
+                "Failed to start the process.";
+
+            if (status === "SUCCESS") {
+                engineStarted = true;
+                await finishSuccessfulStart();
+                return;
+            }
+
+            throw new Error(message);
+        } catch (error) {
+            const message =
+                error?.response?.data?.C_MESSAGE ||
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to start the process.";
+            if (engineStarted) {
+                console.error(error);
+                setDraftActionState(draftId, {
+                    loading: false,
+                    reconcileStarted: true,
+                    error: "The process started, but its completion status still needs to be saved.",
+                });
+                return;
+            }
+            try {
+                await updateDraft(draft, {
+                    status: "PENDING_ENGINE",
+                    last_error: message,
+                    retry_count: retryCount + 1,
+                    process_variables: JSON.stringify(variables),
+                });
+                setPendingDrafts(previous =>
+                    previous.map(item =>
+                        item.id === draftId
+                            ? normalizeDraft({
+                                ...item,
+                                status: "PENDING_ENGINE",
+                                last_error: message,
+                                retry_count: retryCount + 1,
+                                process_variables: JSON.stringify(variables),
+                            })
+                            : item,
+                    ),
+                );
+            } catch (persistError) {
+                console.error(persistError);
+            }
+            setDraftActionState(draftId, { loading: false, error: message });
+        }
+    }, [
+        appContext?.profile?.username,
+        appContext?.tenantSubscription?.tenant_id,
+        draftActions,
+        getDraftVariables,
+        loadPendingDrafts,
+        normalizeDraft,
+        processInstanceExists,
+        selectedPendingDraft?.id,
+        setDraftActionState,
+        setCurrentProcessState,
+        setSelectedProcessId,
+        syncTaskList,
+        updateDraft,
+    ]);
+
+    const cancelPendingDraft = useCallback(async draft => {
+        const draftId = draft?.id;
+        if (!draftId || draftActions[draftId]?.loading) return;
+        setDraftActionState(draftId, { loading: true, error: "" });
+        try {
+            await updateDraft(draft, {
+                status: "CANCELLED",
+                last_error: "",
+            });
+            setPendingDrafts(previous =>
+                previous.filter(item => item.id !== draftId),
+            );
+            if (selectedPendingDraft?.id === draftId) {
+                setSelectedPendingDraft(null);
+                setSelectedProcessId("");
+                setCurrentProcessState({
+                    initial: true,
+                    start: false,
+                    step: false,
+                    loading: false,
+                });
+            }
+        } catch (error) {
+            setDraftActionState(draftId, {
+                loading: false,
+                error:
+                    error?.message || "Unable to cancel pending draft.",
+            });
+        }
+    }, [
+        draftActions,
+        selectedPendingDraft?.id,
+        setDraftActionState,
+        setCurrentProcessState,
+        setSelectedProcessId,
+        updateDraft,
+    ]);
+
+    useEffect(() => {
+        loadPendingDrafts();
+    }, [loadPendingDrafts]);
 
     // Close filter dropdown when clicking outside
     useEffect(() => {
@@ -186,6 +617,21 @@ function RenderListView({
     const grouped = groupTasksByDue(pagedTasks);
     const safeTaskListLength = safeTaskList.length;
     const safeProcessListLength = safeProcessList.length;
+    const normalizedDraftSearch = draftSearch.trim().toLowerCase();
+    const filteredPendingDrafts = pendingDrafts.filter(draft => {
+        if (!normalizedDraftSearch) return true;
+        return [
+            draft.process_title,
+            draft.process_key,
+            draft.form_title,
+            draft.form_key,
+            draft.status,
+            draft.last_error,
+        ]
+            .filter(Boolean)
+            .some(value => value.toString().toLowerCase().includes(normalizedDraftSearch));
+    });
+    const hasInboxItems = safeTaskListLength > 0 || pendingDrafts.length > 0;
     const normalizedProcessCatalogSearch = processCatalogSearch.trim().toLowerCase();
     const filteredProcessList = safeProcessList.filter(process => {
         if (!normalizedProcessCatalogSearch) return true;
@@ -227,13 +673,17 @@ function RenderListView({
         { value: "thisWeek", label: "Due This Week" },
     ];
     useEffect(() => {
-        eventBus.on("update", data => {
+        const handleInboxUpdate = data => {
             if (data === "task_list") {
                 syncTaskList();
+                loadPendingDrafts();
+            } else if (data === "pending_drafts") {
+                loadPendingDrafts();
             }
-        });
-        return () => eventBus.off("update");
-    }, []);
+        };
+        eventBus.on("update", handleInboxUpdate);
+        return () => eventBus.off("update", handleInboxUpdate);
+    }, [loadPendingDrafts, syncTaskList]);
 
     useEffect(() => {
         setCurrentProcessState({
@@ -263,7 +713,7 @@ function RenderListView({
      * ─────────────────────────────────────────────────────────────────── */
     const allCount = allTasksCount ?? safeTaskList.length;
 
-    const _myUsername = (userDetails?.username).toString().toLowerCase();
+    const _myUsername = (userDetails?.username || "").toString().toLowerCase();
     const assignedToMeCount = safeTaskList.filter(t => {
         const assignee =
             (t?.assignee || t?.variables?.["assignee"])?.toString().toLowerCase();
@@ -296,6 +746,19 @@ function RenderListView({
         reqPayload = {},
     ) {
         if (actionType === actions.complete) {
+            if (selectedPendingDraft) {
+                updateDraft(selectedPendingDraft, {
+                    status: "STARTED",
+                    last_error: "",
+                }).catch(error => {
+                    console.error(error);
+                    loadPendingDrafts();
+                });
+                setPendingDrafts(previous =>
+                    previous.filter(item => item.id !== selectedPendingDraft.id),
+                );
+                setSelectedPendingDraft(null);
+            }
             setCurrentProcessState({
                 initial: true,
                 start: false,
@@ -305,6 +768,7 @@ function RenderListView({
 
             setSelectedProcessId("");
             syncTaskList();
+            loadPendingDrafts();
         }
     }
 
@@ -339,6 +803,8 @@ function RenderListView({
     }
 
     function handleProcessSelection(process) {
+        setSelectedPendingDraft(null);
+        setPendingDraftsView(false);
         setSelectedProcessId(process.id);
         setCurrentProcessState({
             initial: false,
@@ -363,6 +829,7 @@ function RenderListView({
     }
 
     function handleTaskSelection(task) {
+        setSelectedPendingDraft(null);
         setSelectedTask(task);
         setCurrentProcessState({
             initial: false,
@@ -507,35 +974,214 @@ function RenderListView({
         );
     }
 
+    function getDraftProcess(draft) {
+        return safeProcessList.find(process =>
+            process.id === draft?.process_definition_id ||
+            process.process_key === draft?.process_key ||
+            process.key === draft?.process_key,
+        );
+    }
+
+    function getDraftProcessTitle(draft) {
+        const process = getDraftProcess(draft);
+        return (
+            draft?.process_title ||
+            process?.process_title ||
+            process?.title ||
+            draft?.process_key ||
+            "Process start"
+        );
+    }
+
+    function getDraftFormTitle(draft) {
+        return (
+            draft?.form_title ||
+            draft?.draft_title ||
+            draft?.title ||
+            draft?.form_key ||
+            "Saved form"
+        );
+    }
+
+    function formatDraftDate(draft) {
+        const timestamp = draft?.updated_at || draft?.created_at;
+        if (!timestamp) return "Saved recently";
+        try {
+            return formatDateTimeForUserView(new Date(timestamp));
+        } catch {
+            return timestamp;
+        }
+    }
+
+    function handlePendingDraftResume(draft) {
+        const process = getDraftProcess(draft);
+        const processId = process?.id || draft?.process_definition_id;
+        if (!processId || !draft?.form_record_id) {
+            setDraftActionState(draft?.id, {
+                error: "This draft is missing the process or saved form reference needed to resume it.",
+            });
+            return;
+        }
+
+        setSelectedPendingDraft(draft);
+        setSelectedTask(taskInitState);
+        setSelectedProcessId(processId);
+        setCurrentProcessState({
+            initial: false,
+            start: true,
+            step: false,
+            loading: false,
+        });
+    }
+
+    function handleBackToPendingDrafts() {
+        setSelectedPendingDraft(null);
+        setSelectedProcessId("");
+        setCurrentProcessState({
+            initial: true,
+            start: false,
+            step: false,
+            loading: false,
+        });
+    }
+
+    function renderPendingDraftCard(draft) {
+        const actionState = draftActions[draft.id] || {};
+        const isPending = draft.status === "PENDING_ENGINE";
+        const isStartedAwaitingSave = actionState.reconcileStarted;
+        const statusLabel = isStartedAwaitingSave
+            ? "Started"
+            : isPending
+                ? "Pending start"
+                : "Draft";
+        const statusClass = isStartedAwaitingSave
+            ? "text-success"
+            : isPending
+                ? "text-warning"
+                : "text-secondary";
+
+        return (
+            <div
+                key={draft.id}
+                className="inbox-task-card pending-draft-card"
+                aria-label={`${getDraftProcessTitle(draft)} pending draft`}>
+                <div className="inbox-task-body">
+                    <div className="d-flex justify-content-between gap-2">
+                        <div className="inbox-task-name">{getDraftProcessTitle(draft)}</div>
+                        <span className={`small fw-semibold text-nowrap ${statusClass}`}>
+                            <i className="fa-regular fa-clock me-1"></i>
+                            {statusLabel}
+                        </span>
+                    </div>
+                    <div className="inbox-task-process">{getDraftFormTitle(draft)}</div>
+                    <div className="inbox-task-meta-row">
+                        <i className="fa-regular fa-floppy-disk me-1"></i>
+                        {formatDraftDate(draft)}
+                        {draft.retry_count > 0 && (
+                            <span className="ms-2">Retry {draft.retry_count}</span>
+                        )}
+                    </div>
+                    {draft.last_error && (
+                        <div className="small text-danger mt-2" role="alert">
+                            <i className="fa-solid fa-triangle-exclamation me-1"></i>
+                            {draft.last_error}
+                        </div>
+                    )}
+                    {actionState.error && (
+                        <div className="small text-danger mt-2" role="alert">
+                            {actionState.error}
+                        </div>
+                    )}
+                    <div className="inbox-task-footer mt-2 d-flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            className="btn btn-sm button-theme"
+                            disabled={actionState.loading || isStartedAwaitingSave}
+                            onClick={() => handlePendingDraftResume(draft)}>
+                            <i className="fa-regular fa-pen-to-square me-1"></i>
+                            Continue editing
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-warning"
+                            disabled={actionState.loading}
+                            onClick={() =>
+                                isStartedAwaitingSave
+                                    ? reconcileStartedDraft(draft)
+                                    : retryPendingDraft(draft)
+                            }>
+                            {actionState.loading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                                    Saving…
+                                </>
+                            ) : isStartedAwaitingSave ? (
+                                <>
+                                    <i className="fa-solid fa-check me-1"></i>
+                                    Save completion
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fa-solid fa-rotate-right me-1"></i>
+                                    Retry now
+                                </>
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-link text-muted"
+                            disabled={actionState.loading || isStartedAwaitingSave}
+                            onClick={() => cancelPendingDraft(draft)}>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     /* ── Stat click handlers ──────────────────────────────────────────── */
     const resetTaskView = () => {
         setSelectedTask(taskInitState);
+        setSelectedPendingDraft(null);
         setCurrentProcessState({ initial: true, start: false, step: false, loading: false });
         setCurrentPage(1);
     };
 
     const handleAllTasksClick = () => {
+        setPendingDraftsView(false);
         setTaskFilterType("allTask");
         setFilters(f => ({ ...f, dueDate: "all" }));
         resetTaskView();
     };
 
     const handleAssignedClick = () => {
+        setPendingDraftsView(false);
         setTaskFilterType("myTask");
         setFilters(f => ({ ...f, dueDate: "all" })); /* clear dueDate filter */
         resetTaskView();
     };
 
     const handleDueTodayClick = () => {
+        setPendingDraftsView(false);
         setFilters(f => ({ ...f, dueDate: f.dueDate === "today" ? "all" : "today" }));
         setCurrentPage(1);
         setCollapsedGroups(new Set());
     };
 
     const handleOverdueClick = () => {
+        setPendingDraftsView(false);
         setFilters(f => ({ ...f, dueDate: f.dueDate === "overdue" ? "all" : "overdue" }));
         setCurrentPage(1);
         setCollapsedGroups(new Set());
+    };
+
+    const handlePendingDraftsClick = () => {
+        setPendingDraftsView(previous => !previous);
+        resetTaskView();
+        setFilters({ priority: "all", dueDate: "all" });
+        setDraftSearch("");
+        loadPendingDrafts();
     };
 
     return (
@@ -589,6 +1235,19 @@ function RenderListView({
                                 Due Today
                             </span>
                         </button>
+                        <button
+                            type="button"
+                            className={`inbox-stat-item inbox-stat-item--assigned${pendingDraftsView ? " active" : ""}`}
+                            title="View saved process starts waiting for the engine"
+                            onClick={handlePendingDraftsClick}>
+                            <span className="inbox-stat-value">
+                                {pendingDraftsLoading ? "…" : pendingDrafts.length}
+                            </span>
+                            <span className="inbox-stat-label">
+                                <i className="fa-regular fa-floppy-disk"></i>
+                                Pending Drafts
+                            </span>
+                        </button>
                         {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
                             <button
                                 type="button"
@@ -631,21 +1290,32 @@ function RenderListView({
                             <div className="inbox-search-wrap">
                                 <i className="fa-solid fa-magnifying-glass"></i>
                                 <input
+                                    key={pendingDraftsView ? "draft-search" : "task-search"}
                                     id="task-search-input"
                                     type="text"
                                     className="inbox-search-input"
-                                    onChange={e => { handleTaskSearch(e); setCurrentPage(1); }}
-                                    placeholder="Search tasks…"
-                                    aria-label="Search tasks"
+                                    onChange={e => {
+                                        if (pendingDraftsView) {
+                                            setDraftSearch(e.target.value);
+                                        } else {
+                                            handleTaskSearch(e);
+                                            setCurrentPage(1);
+                                        }
+                                    }}
+                                    placeholder={pendingDraftsView ? "Search pending drafts…" : "Search tasks…"}
+                                    aria-label={pendingDraftsView ? "Search pending drafts" : "Search tasks"}
                                 />
                             </div>
                             <div className="inbox-header-actions">
                                 <button
                                     type="button"
                                     className="inbox-icon-btn"
-                                    title="Refresh task list"
-                                    aria-label="Refresh task list"
-                                    onClick={() => syncTaskList()}>
+                                    title="Refresh Inbox"
+                                    aria-label="Refresh Inbox"
+                                    onClick={() => {
+                                        syncTaskList();
+                                        loadPendingDrafts();
+                                    }}>
                                     <i className={`fa-solid fa-arrows-rotate ${notification?.count > 0 ? "active" : ""}`}
                                         title={notification.message}></i>
                                 </button>
@@ -710,7 +1380,40 @@ function RenderListView({
 
                         {/* Task groups */}
                         <div className="inbox-task-groups-scroll">
-                            {pagedTasks.length === 0 ? (
+                            {pendingDraftsView ? (
+                                pendingDraftsLoading ? (
+                                    <div className="task-list-empty" style={{ padding: "30px 14px", textAlign: "center", color: "var(--text-muted)" }}>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        Loading pending drafts…
+                                    </div>
+                                ) : pendingDraftsError ? (
+                                    <div className="task-list-empty" style={{ padding: "30px 14px", textAlign: "center", color: "var(--text-muted)" }}>
+                                        <i className="fa-solid fa-triangle-exclamation text-warning" style={{ fontSize: 22, display: "block", marginBottom: 8 }}></i>
+                                        <div>{pendingDraftsError}</div>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-outline-secondary mt-2"
+                                            onClick={loadPendingDrafts}>
+                                            Try again
+                                        </button>
+                                    </div>
+                                ) : filteredPendingDrafts.length === 0 ? (
+                                    <div className="task-list-empty" style={{ padding: "30px 14px", textAlign: "center", color: "var(--text-muted)" }}>
+                                        <i className="fa-regular fa-folder-open" style={{ fontSize: 28, display: "block", marginBottom: 8, opacity: 0.5 }}></i>
+                                        {normalizedDraftSearch ? "No pending drafts match your search." : "No pending drafts found."}
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="inbox-group-header">
+                                            <span className="inbox-group-label">
+                                                Pending Drafts
+                                                <span className="inbox-group-count">{filteredPendingDrafts.length}</span>
+                                            </span>
+                                        </div>
+                                        {filteredPendingDrafts.map(renderPendingDraftCard)}
+                                    </div>
+                                )
+                            ) : pagedTasks.length === 0 ? (
                                 <div className="task-list-empty" style={{ padding: "30px 14px", textAlign: "center", color: "var(--text-muted)" }}>
                                     <i className="fa-regular fa-folder-open" style={{ fontSize: 28, display: "block", marginBottom: 8, opacity: 0.5 }}></i>
                                     {hasActiveFilters() ? "No tasks match the current filters." : "No tasks found."}
@@ -726,7 +1429,7 @@ function RenderListView({
                         </div>
 
                         {/* Pagination */}
-                        {totalFiltered > 0 && (
+                        {!pendingDraftsView && totalFiltered > 0 && (
                             <div className="inbox-pagination">
                                 <span>
                                     Showing {Math.min((safePage - 1) * PAGE_SIZE + 1, totalFiltered)}–{Math.min(safePage * PAGE_SIZE, totalFiltered)} of {totalFiltered} task{totalFiltered !== 1 ? "s" : ""}
@@ -766,7 +1469,7 @@ function RenderListView({
                     </div>
                 )} */}
 
-                {!safeCurrentProcessState.loading && !safeCurrentProcessState?.start && safeTaskListLength === 0 && (
+                {!safeCurrentProcessState.loading && !safeCurrentProcessState?.start && !hasInboxItems && (
                     <div className="col-sm-9 task-view-panel">
                         <div className="no-task-border">
                             <div className="no-task-wrap">
@@ -781,13 +1484,15 @@ function RenderListView({
 
                 {!safeCurrentProcessState.loading &&
                     safeCurrentProcessState.initial &&
-                    safeTaskListLength > 0 && (
+                    hasInboxItems && (
                         <div className="col-sm-9 task-view-panel">
                             <div className="no-task-border">
                                 <div className="no-task-wrap">
                                     <i className="fa-solid fa-info no-task-info-icon me-2"></i>
                                     <span className="no-task-text">
-                                        Select a task in the list.
+                                        {pendingDraftsView
+                                            ? "Select a pending draft to continue editing or retry it."
+                                            : "Select a task in the list."}
                                     </span>
                                 </div>
                             </div>
@@ -796,6 +1501,20 @@ function RenderListView({
                 {!safeCurrentProcessState.loading && safeCurrentProcessState.start && selectedProcessId !== "" && (
                     <>
                         <div className="col-sm-6 form-panel">
+                            {selectedPendingDraft && (
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <div className="small text-muted">
+                                        Continuing saved draft: {getDraftFormTitle(selectedPendingDraft)}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-secondary"
+                                        onClick={handleBackToPendingDrafts}>
+                                        <i className="fa-solid fa-arrow-left me-1"></i>
+                                        Back to inbox
+                                    </button>
+                                </div>
+                            )}
                             {renderStartStepProcessor()}
                         </div>
                         <div className="col-sm-3 comment-panel p-3">
@@ -1058,6 +1777,11 @@ function RenderListView({
             <StartStepProcessor
                 id={selectedProcessId}
                 handleProcessActions={handleStartProcessActions}
+                formVars={
+                    selectedPendingDraft
+                        ? { business_key: selectedPendingDraft.form_record_id }
+                        : {}
+                }
             />
         );
     }
