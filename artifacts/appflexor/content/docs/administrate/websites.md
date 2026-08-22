@@ -79,6 +79,58 @@ Click **Preview** in the Page Designer toolbar to see a live render of the page 
 
 ---
 
+### User Tasks
+
+The **Task List View** gives users a single place to start available processes, find work assigned to them, and complete user tasks. Add the Task List component to an authorized page so users can access the work queues available to their account.
+
+#### Start a Process
+
+When process starts are enabled for the Task List View:
+
+1. Click the **Start Process** button (paper-plane icon).
+2. Search the **Process Catalog**, or browse the available process cards.
+3. Select a process to open its start form.
+4. Enter the required information and submit the form.
+5. After the process starts successfully, Appflexor creates the process instance and refreshes the task list.
+
+The catalog only shows processes the user is authorized to start. If a start cannot be completed because the process engine is temporarily unavailable, the form is saved as a **Pending Draft**. Open **Pending Drafts** to resume editing, retry the start, or cancel the saved request.
+
+#### Work with Tasks
+
+1. Select a task from the list to open its form.
+2. Review the process, task, assignee, priority, and due-date information shown in the task header.
+3. Enter or update the requested values.
+4. Click **Complete** to submit the task and continue the process.
+
+Only the current assignee can complete a task. Users who can view a task but are not its assignee see the form in read-only mode. Completing a task removes it from the current queue after the list refreshes.
+
+#### Find and Filter Tasks
+
+Use the Task List View controls to narrow the work queue:
+
+- **Search** — search the visible task list by task, process, assignee, and configured task fields.
+- **All Tasks** — show all tasks available to the user when the view is configured to include the full task queue.
+- **Assigned to me** — show tasks assigned to the signed-in user.
+- **Due Today** — show tasks due by the end of the current day, including overdue tasks.
+- **Overdue** — show tasks whose due date is before today.
+- **Pending Drafts** — show saved process starts that are waiting to be retried or completed.
+
+Regular task filters are mutually exclusive with **Pending Drafts**. Selecting a task filter returns to the normal task queue and clears the pending-draft view. Tasks are grouped by **Overdue**, **Due Today**, **Due This Week**, and **Due Later** to make the most urgent work easier to identify. Use the pagination controls when the filtered result contains more tasks than fit on one page.
+
+#### Configure the Task List Component
+
+When placing a Task List component in the Page Designer, configure:
+
+- **Task View** — choose the list layout or table layout provided by the component.
+- **Task Scope** — choose whether users see all authorized tasks or only tasks assigned to them.
+- **Allow Start Task** — enable or disable the Start Process action.
+- **Dynamic Fields** — select additional task variables to display in each task row.
+- **Authorization** — restrict the page and the processes shown in the catalog to the appropriate Groups.
+
+Keep task pages focused on the work users need to complete. Use separate pages for different audiences when their process access or task scope differs.
+
+---
+
 ### Managing Styles
 
 #### Apply a Custom Style
