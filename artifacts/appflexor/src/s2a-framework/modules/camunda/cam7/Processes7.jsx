@@ -63,7 +63,7 @@ function Processes(props) {
     const [selectedProcessId, setSelectedProcessId] = useState("");
     const [renderProcessModal, setRenderProcessModal] = useState(false);
     const [taskView, setTaskView] = useState("");
-    const [taskFilterType, setTaskFilterType] = useState("myTask");
+    const [taskFilterType, setTaskFilterType] = useState("allTask");
     const [currentProcessState, setCurrentProcessState] = useState({
         initial: true,
         start: false,
