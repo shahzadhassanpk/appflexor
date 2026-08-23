@@ -10,7 +10,7 @@ import { toastEmitter } from "../../components/Toastify/Toastify";
 import { updateDeleteConfig } from "../../utils/utils";
 import Loading from "../../components/Loading/loading";
 import ProcessMap from "./process-map/ProcessMap";
-import ProcessMonitor from "./process-monitor/ProcessMonitor";
+import ProcessMonitor from "../process-monitor/ProcessMonitor";
 import Processes from "./processes/Processes";
 import ProcessSimulator from "../process-simulator/ProcessSimulator";
 import "./process-config.css";
@@ -152,6 +152,14 @@ function ProcessConfiguration() {
     const [showSimulator, setShowSimulator] = useState(false);
     const [showBPMN, setShowBPMN] = useState(false);
     const [urlBPMN, setUrlBPMN] = useState("");
+
+    function openProcessMonitor() {
+        setShowProcessMap(false);
+        setShowDeploy(false);
+        setShowSimulator(false);
+        setShowBPMN(false);
+        setShowMonitor(true);
+    }
 
     /* ── Business Area modal ────────────────────────────────────────────── */
     const [baModal, setBAModal] = useState(false);
@@ -441,7 +449,7 @@ function ProcessConfiguration() {
 
             {showProcessMap && (
                 <FullScreenDialog
-                    title="Configure Processes"
+                    title="Orchestrate > Configure Processes"
                     icon="fa-diagram-project"
                     onClose={() => { setShowProcessMap(false); getData(); }}>
                     <ProcessMap activeTab="PROCESS_MAP" />
@@ -450,7 +458,7 @@ function ProcessConfiguration() {
 
             {showMonitor && (
                 <FullScreenDialog
-                    title="Process Monitor"
+                    title="Orchestrate > Monitor Processes"
                     icon="fa-chart-line"
                     onClose={() => setShowMonitor(false)}>
                     <ProcessMonitor activeTab="PROCESS_MONITOR" />
@@ -475,7 +483,7 @@ function ProcessConfiguration() {
 
             {showDeploy && (
                 <FullScreenDialog
-                    title="Deploy Processes"
+                    title="Orchestrate > Deploy Processes"
                     icon="fa-rocket"
                     onClose={() => setShowDeploy(false)}>
                     <Processes activeTab="PROCESSES" />
@@ -527,7 +535,7 @@ function ProcessConfiguration() {
                                 <button
                                     type="button"
                                     className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
-                                    onClick={() => setShowMonitor(true)}>
+                                    onClick={openProcessMonitor}>
                                     <i className="fa-solid fa-chart-line" aria-hidden="true" />
                                     Monitor Processes
                                 </button>

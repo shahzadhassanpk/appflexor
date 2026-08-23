@@ -12,6 +12,7 @@ import {
     updateDeleteConfig,
 } from "../../../utils/utils";
 import { ProcessDeployDialog } from "./ProcessDeployDialog";
+import ProcessWorkspaceList from "../components/ProcessWorkspaceList";
 import "./processes.css";
 
 /* ── constants ─────────────────────────────────────────────────────────── */
@@ -169,7 +170,19 @@ function Processes({ activeTab }) {
     ═══════════════════════════════════════════════════════════════════ */
     return (
         <div className="process-configuration-map">
-            <div className="proc-list-wrap">
+            <ProcessWorkspaceList title="Deploy Processes" description="Manage BPMN files, deployed versions, and process definitions." items={getFilteredItems()} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, definition key, or file" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add process" stats={[
+                { label: "Process files", value: items.length, icon: "fa-solid fa-file-code", tone: "bg-indigo-50 text-indigo-600" },
+                { label: "Deployed", value: items.filter(item => item.version).length, icon: "fa-solid fa-rocket", tone: "bg-emerald-50 text-emerald-600" },
+                { label: "Drafts", value: items.filter(item => !item.version).length, icon: "fa-solid fa-pen-ruler", tone: "bg-amber-50 text-amber-600" },
+                { label: "Latest version", value: Math.max(0, ...items.map(item => Number(item.version) || 0)), icon: "fa-solid fa-code-branch", tone: "bg-sky-50 text-sky-600" },
+            ]} columns={[
+                { key: "title", label: "Process Title" },
+                { key: "process_def_key", label: "Definition Key", render: item => <span className="font-medium text-indigo-600">{item.process_def_key || "—"}</span> },
+                { key: "process_file", label: "BPMN File" },
+                { key: "version", label: "Deployment", sortValue: item => Number(item.version) || 0, render: item => item.version ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">v{item.version}</span> : <span className="text-slate-400">Draft</span> },
+                { key: "datemodified", label: "Last Updated", render: item => formatDateTimeForUserView(item.datemodified) },
+            ]} renderActions={item => <><button type="button" className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600" title="Edit process" onClick={() => editItem(item)}><i className="fa-regular fa-edit" /></button>{!item.version && <button type="button" className="grid h-9 w-9 place-items-center rounded-lg bg-red-50 text-red-600" title="Delete process" onClick={() => deleteData(item)}><i className="fa-regular fa-trash-can" /></button>}</>} />
+            <div className="proc-list-wrap" style={{ display: "none" }}>
                 {/* ── Search bar ── */}
                 <div className="proc-list-search">
                     <span className="proc-list-search-icon"><i className="fa fa-search" /></span>

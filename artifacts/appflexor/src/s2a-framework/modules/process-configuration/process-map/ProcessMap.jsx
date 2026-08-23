@@ -14,6 +14,7 @@ import { BPM_API_URL } from "../../camunda/CamundaConfig";
 import { MultiSelect } from "react-multi-select-component";
 import ProcessesContext from "../../camunda/ProcessesContext";
 import { toastEmitter } from "../../../components/Toastify/Toastify";
+import ProcessWorkspaceList from "../components/ProcessWorkspaceList";
 
 const DEFAULT_URGENCY_LEVELS = {
     High: { slaValue: 24, slaUnit: "hours" },
@@ -55,10 +56,13 @@ function ProcessMap({ activeTab }) {
     let initialState = {
         id: "",
         title: "",
+        subtitle: "",
+        sub_title: "",
         process_key: "",
         form_id: "",
         category: "",
         business_area: "",
+        process_gov: "",
         is_active: "YES",
         allow_draft: "YES",
         description: "",
@@ -128,10 +132,8 @@ function ProcessMap({ activeTab }) {
     }, [searchTerm]);
 
     useEffect(() => {
-        if (selectedItem?.id) {
-            getAuth(selectedItem);
-        }
-    }, [selectedItem?.id]);
+        if (selectedItem?.id) getAuth(selectedItem);
+    }, [selectedItem?.id, groups, channels]); // Rehydrate after async reference data arrives.
 
     useEffect(() => {
         if (
@@ -153,6 +155,8 @@ function ProcessMap({ activeTab }) {
     function editItem(item) {
         setSelectedItem({
             ...item,
+            subtitle: item.subtitle || item.sub_title || "",
+            sub_title: item.sub_title || item.subtitle || "",
             urgency_levels: normalizeUrgencyLevels(item.urgency_levels),
         });
         handleShow();
@@ -182,23 +186,21 @@ function ProcessMap({ activeTab }) {
         //     });
         // });
 
-        let _ids = selectedItem.group;
-        let _idsArr = _ids.split(";");
+        let _idsArr = String(selectedItem.group || "").split(";").filter(Boolean);
         let _finalArr = [];
         _idsArr.forEach(id => {
             groups.forEach(group => {
-                if (id === group.id) {
+                if (id === String(group.id)) {
                     _finalArr.push(group);
                 }
             });
         });
 
-        let __ids = selectedItem.channel;
-        let __idsArr = __ids.split(";");
+        let __idsArr = String(selectedItem.channel || "").split(";").filter(Boolean);
         let __finalArr = [];
         __idsArr.forEach(id => {
             channels.forEach(channel => {
-                if (id === channel.id) {
+                if (id === String(channel.id)) {
                     __finalArr.push(channel);
                 }
             });
@@ -209,7 +211,6 @@ function ProcessMap({ activeTab }) {
         setSelectedGroups(_finalArr);
         setSelectedChannels(__finalArr);
         // setSelectedModuleFeatures(finalArr);
-        setSelectedItem(selectedItem);
     }
 
     function getSelectedItem(id, serviceKey) {
@@ -446,7 +447,7 @@ function ProcessMap({ activeTab }) {
             ],
         };
 
-        axios
+        return axios
             .post(API_URL + "?service.key=masterKey.tenantData", dataRequest)
             .then(response => {
                 if (response.data.C_STATUS === "UNAUTHORIZED") {
@@ -508,60 +509,29 @@ function ProcessMap({ activeTab }) {
             },
         }));
     }
-    function saveData(callback) {
-        var url = API_URL + "?service.key=update.formData";
-        var request = {};
-        request.data = [];
-        var entityForm = {};
-
-        entityForm.formId = "process_map"; //"formid"
-        entityForm.entity = "process_map"; //Db- "table name"
-        entityForm.action = "update";
-
-        if (
-            !selectedItem.id ||
-            selectedItem.id == "" ||
-            selectedItem.id == "new"
-        ) {
-            entityForm.id = "new";
-            selectedItem.id = "new";
-        } else {
-            entityForm.id = selectedItem.id;
-        }
-
-        entityForm.formData = selectedItem;
-        // debugger
-        request.data.push(entityForm);
+    async function saveData() {
+        const isNew = !selectedItem.id || selectedItem.id === "new";
+        const formData = {
+            ...selectedItem,
+            id: isNew ? "new" : selectedItem.id,
+            subtitle: selectedItem.subtitle || selectedItem.sub_title || "",
+            sub_title: selectedItem.subtitle || selectedItem.sub_title || "",
+            urgency_levels: JSON.stringify(normalizeUrgencyLevels(selectedItem.urgency_levels)),
+        };
         try {
-            axios.post(url, request).then(function (response) {
-                if (response.status === 200) {
-                    if (selectedItem.id === "new" || selectedItem.id === "") {
-                        const newId = response.data.C_DATA[0].formData.id;
-                        setItems(prev => [
-                            ...prev,
-                            {
-                                ...selectedItem,
-                                id: newId,
-                            },
-                        ]);
-                        toastEmitter("Record saved successfully", true);
-                    } else {
-                        let updatedItem = items.map(el => {
-                            if (el.id === selectedItem.id) {
-                                return selectedItem;
-                            } else return el;
-                        });
-
-                        setItems(updatedItem);
-                        toastEmitter("Record updated successfully", true);
-                    }
-                    // getData();
-                    clearFields();
-                    handleClose();
-                }
+            const response = await axios.post(API_URL + "?service.key=update.formData", {
+                data: [{ formId: "process_map", entity: "process_map", action: "update", id: formData.id, formData }],
             });
-        } catch (e) {
-            console.log("save processMap error:" + e);
+            if (response.data.C_STATUS !== "SUCCESS") {
+                throw new Error(response.data.C_MESSAGE || "Unable to save process configuration.");
+            }
+            await getData();
+            toastEmitter(isNew ? "Record saved successfully" : "Record updated successfully", true);
+            clearFields();
+            handleClose();
+        } catch (error) {
+            console.error("save processMap error:", error);
+            toastEmitter(error.message || "Unable to save process configuration", false);
         }
     }
 
@@ -672,7 +642,19 @@ function ProcessMap({ activeTab }) {
                 setState={setDeleteConfig}
                 modalType="deleteModal"
             />
-            <div className="proc-list-wrap">
+            <ProcessWorkspaceList title="Configure Processes" description="Configure process access, ownership, forms, and SLA policies." items={getFilteredItems()} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, key, category, or business area" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add configuration" stats={[
+                { label: "Configurations", value: items.length, icon: "fa-solid fa-diagram-project", tone: "bg-indigo-50 text-indigo-600" },
+                { label: "Active", value: items.filter(item => item.is_active === "YES").length, icon: "fa-solid fa-circle-check", tone: "bg-emerald-50 text-emerald-600" },
+                { label: "Inactive", value: items.filter(item => item.is_active !== "YES").length, icon: "fa-solid fa-circle-pause", tone: "bg-slate-100 text-slate-600" },
+                { label: "Business areas", value: new Set(items.map(item => item.business_area).filter(Boolean)).size, icon: "fa-solid fa-building", tone: "bg-sky-50 text-sky-600" },
+            ]} columns={[
+                { key: "title", label: "Process Title" },
+                { key: "is_active", label: "State", render: item => <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.is_active === "YES" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{item.is_active === "YES" ? "Active" : "Inactive"}</span> },
+                { key: "urgency_levels", label: "SLA", sortValue: item => normalizeUrgencyLevels(item.urgency_levels).High.slaValue, render: item => <div className="flex flex-wrap gap-1">{URGENCY_LEVELS.map(level => { const sla = normalizeUrgencyLevels(item.urgency_levels)[level]; return <span key={level} className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">{level}: {sla.slaValue}{sla.slaUnit === "hours" ? "h" : "d"}</span>; })}</div> },
+                { key: "business_area", label: "Business Area", render: item => getBusinessAreaById(item.business_area) || "—" },
+                { key: "process_gov", label: "Governing Body", render: item => getGoverningBodyById(item.process_gov) || "—" },
+            ]} renderActions={item => <><button type="button" className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600" title="Edit configuration" onClick={() => editItem(item)}><i className="fa-regular fa-edit" /></button><button type="button" className="grid h-9 w-9 place-items-center rounded-lg bg-red-50 text-red-600" title="Delete configuration" onClick={() => deleteData(item)}><i className="fa-regular fa-trash-can" /></button></>} />
+            <div className="proc-list-wrap" style={{ display: "none" }}>
                 {/* ── Search bar ── */}
                 <div className="proc-list-search">
                     <span className="proc-list-search-icon"><i className="fa fa-search" /></span>

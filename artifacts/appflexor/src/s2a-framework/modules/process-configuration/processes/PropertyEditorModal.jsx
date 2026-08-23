@@ -24,6 +24,7 @@ export function PropertyEditorModal({
     onFormChange,   // (updater) => void
     onSave,         // () => void  (savePropChanges)
     onAgentChange,  // (agentKey) => void
+    zIndex = 1060,
 }) {
     if (!propModal) return null;
     const { type, subType } = propModal;
@@ -659,7 +660,7 @@ export function PropertyEditorModal({
             onHide={onClose}
             backdrop="static"
             size="lg"
-            style={{ zIndex: 1060 }}
+            style={{ zIndex }}
             className="s2a-modal">
             <Modal.Header>
                 <Modal.Title className="h4" style={{ fontSize: "0.9rem" }}>

@@ -1,0 +1,34 @@
+/* eslint-disable react/prop-types */
+import { useMemo, useState } from "react";
+
+function Stat({ icon, label, value, tone }) {
+    return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><span className="text-sm font-medium text-slate-500">{label}</span><span className={`grid h-9 w-9 place-items-center rounded-xl ${tone}`}><i className={icon} /></span></div><p className="mb-0 mt-3 text-2xl font-bold text-slate-900">{value}</p></div>;
+}
+
+function valueFor(item, column) { return column.sortValue ? column.sortValue(item) : item[column.key] ?? ""; }
+
+export default function ProcessWorkspaceList({ title, description, stats, items, searchTerm, setSearchTerm, searchPlaceholder, columns, page, setPage, pageSize, setPageSize, onAdd, addLabel, renderActions }) {
+    const [sort, setSort] = useState({ key: columns[0].key, direction: "asc" });
+    const sorted = useMemo(() => [...items].sort((left, right) => {
+        const a = valueFor(left, columns.find(column => column.key === sort.key));
+        const b = valueFor(right, columns.find(column => column.key === sort.key));
+        const result = typeof a === "number" && typeof b === "number" ? a - b : String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
+        return sort.direction === "asc" ? result : -result;
+    }), [columns, items, sort]);
+    const pages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    const current = Math.min(page, pages);
+    const visible = sorted.slice((current - 1) * pageSize, current * pageSize);
+    function changeSort(key) { setSort(previous => ({ key, direction: previous.key === key && previous.direction === "asc" ? "desc" : "asc" })); setPage(1); }
+
+    return <div className="min-h-full bg-slate-50 p-3 sm:p-5"><div className="mx-auto max-w-7xl space-y-5">
+        <header className="flex flex-wrap items-center justify-between gap-3"><p className="mb-0 text-sm text-slate-500">{description}</p><button type="button" onClick={onAdd} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"><i className="fa-solid fa-plus mr-2" />{addLabel}</button></header>
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">{stats.map(stat => <Stat key={stat.label} {...stat} />)}</section>
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4"><div><h2 className="mb-0 text-lg font-bold text-slate-900">{title}</h2><p className="mb-0 text-xs text-slate-500">{items.length} matching records</p></div><label className="relative w-full sm:w-80"><span className="sr-only">Search</span><i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={searchTerm} onChange={event => { setSearchTerm(event.target.value); setPage(1); }} placeholder={searchPlaceholder} className="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-9 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />{searchTerm && <button type="button" onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"><i className="fa-solid fa-xmark" /></button>}</label></div>
+            <div className="divide-y divide-slate-100 md:hidden">{visible.map(item => <div key={item.id} className="p-4"><div className="mb-3 flex items-start justify-between gap-3"><div className="min-w-0"><p className="mb-1 truncate font-semibold text-slate-900">{columns[0].render ? columns[0].render(item) : valueFor(item, columns[0])}</p><p className="mb-0 truncate text-xs text-slate-500">{columns[1]?.render ? columns[1].render(item) : valueFor(item, columns[1])}</p></div>{renderActions(item)}</div><dl className="grid grid-cols-2 gap-2 text-xs">{columns.slice(2).map(column => <div key={column.key}><dt className="text-slate-400">{column.label}</dt><dd className="mt-1 text-slate-700">{column.render ? column.render(item) : valueFor(item, column)}</dd></div>)}</dl></div>)}</div>
+            <div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[850px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr>{columns.map(column => <th key={column.key} className="px-4 py-3"><button type="button" onClick={() => changeSort(column.key)} className="inline-flex items-center gap-1.5 font-semibold uppercase hover:text-indigo-600">{column.label}<i className={`fa-solid ${sort.key === column.key ? (sort.direction === "asc" ? "fa-sort-up" : "fa-sort-down") : "fa-sort"} text-[10px]`} /></button></th>)}<th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{visible.map(item => <tr key={item.id} className="hover:bg-slate-50">{columns.map(column => <td key={column.key} className="px-4 py-3">{column.render ? column.render(item) : valueFor(item, column)}</td>)}<td className="px-4 py-3"><div className="flex justify-end gap-2">{renderActions(item)}</div></td></tr>)}</tbody></table></div>
+            {!visible.length && <div className="p-10 text-center text-sm text-slate-500">No records match your search.</div>}
+            {!!sorted.length && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm"><div className="flex items-center gap-2 text-slate-600">Rows per page<select value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(1); }} className="rounded-lg border border-slate-300 bg-white px-2 py-1.5">{[5, 10, 25, 50].map(size => <option key={size}>{size}</option>)}</select><span className="hidden sm:inline">{(current - 1) * pageSize + 1}–{Math.min(current * pageSize, sorted.length)} of {sorted.length}</span></div><div className="flex items-center gap-2"><button type="button" disabled={current === 1} onClick={() => setPage(Math.max(1, current - 1))} className="grid h-9 w-9 place-items-center rounded-lg border bg-white disabled:opacity-40"><i className="fa-solid fa-chevron-left" /></button><span className="min-w-20 text-center font-medium">{current} / {pages}</span><button type="button" disabled={current === pages} onClick={() => setPage(Math.min(pages, current + 1))} className="grid h-9 w-9 place-items-center rounded-lg border bg-white disabled:opacity-40"><i className="fa-solid fa-chevron-right" /></button></div></div>}
+        </section>
+    </div></div>;
+}
