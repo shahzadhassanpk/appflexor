@@ -25,6 +25,7 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
     const [history, setHistory] = useState([]);
 
     const [trackHistory, setTrackHistory] = useState([]);
+    const [slaNow, setSlaNow] = useState(() => Date.now());
 
     const [attachment, setAttachment] = useState({});
     const [attachments, setAttachments] = useState([]);
@@ -52,6 +53,12 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
             setBusinessKey(task.business_key);
         }
     }, [task.id]);
+
+    useEffect(() => {
+        setSlaNow(Date.now());
+        const intervalId = window.setInterval(() => setSlaNow(Date.now()), 60000);
+        return () => window.clearInterval(intervalId);
+    }, [task?.id]);
 
     useEffect(() => {
         setComment(prevState => ({
@@ -348,6 +355,76 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
         return { who, when };
     }
 
+    function getValidTimestamp(value) {
+        if (!value) return null;
+        const timestamp = new Date(value).getTime();
+        return Number.isNaN(timestamp) ? null : timestamp;
+    }
+
+    function formatSlaDuration(milliseconds) {
+        const totalMinutes = Math.max(0, Math.floor(Math.abs(milliseconds) / 60000));
+        const days = Math.floor(totalMinutes / 1440);
+        const hours = Math.floor((totalMinutes % 1440) / 60);
+        const minutes = totalMinutes % 60;
+
+        if (days > 0) return `${days}d ${hours}h`;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        return `${minutes}m`;
+    }
+
+    function getUrgencyLevels(task) {
+        let urgencyLevels =
+            task?.variables?.urgencyLevels ||
+            task?.variables?.urgency_levels ||
+            task?.urgency_levels;
+
+        if (urgencyLevels?.value !== undefined) {
+            urgencyLevels = urgencyLevels.value;
+        }
+        if (typeof urgencyLevels === "string") {
+            try {
+                urgencyLevels = JSON.parse(urgencyLevels);
+            } catch {
+                return null;
+            }
+        }
+
+        return urgencyLevels?.urgencyLevels || urgencyLevels || null;
+    }
+
+    const taskCreatedTimestamp = getValidTimestamp(
+        task?.date_created || task?.datecreated || task?.created_time || task?.created,
+    );
+    const priorityLevel = getPriorityLevel(task);
+    const urgencyLevels = getUrgencyLevels(task);
+    const configuredSla = urgencyLevels?.[
+        priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1)
+    ];
+    const configuredSlaValue = Number.parseInt(configuredSla?.slaValue, 10);
+    const configuredSlaUnit = configuredSla?.slaUnit;
+    const configuredSlaMilliseconds =
+        Number.isInteger(configuredSlaValue) &&
+            configuredSlaValue > 0 &&
+            ["hours", "days"].includes(configuredSlaUnit)
+            ? configuredSlaValue *
+            (configuredSlaUnit === "days" ? 86400000 : 3600000)
+            : null;
+    const calculatedSlaDueTimestamp =
+        taskCreatedTimestamp !== null && configuredSlaMilliseconds !== null
+            ? taskCreatedTimestamp + configuredSlaMilliseconds
+            : null;
+    const slaDueTimestamp =
+        calculatedSlaDueTimestamp ?? getValidTimestamp(task?.due_date);
+    const isSlaOverdue = slaDueTimestamp !== null && slaDueTimestamp < slaNow;
+    const slaTimeLeft = slaDueTimestamp === null
+        ? "Not set"
+        : isSlaOverdue
+            ? `Overdue by ${formatSlaDuration(slaNow - slaDueTimestamp)}`
+            : formatSlaDuration(slaDueTimestamp - slaNow);
+    const elapsedTime = taskCreatedTimestamp === null
+        ? "Not available"
+        : formatSlaDuration(slaNow - taskCreatedTimestamp);
+
     const [quickComment, setQuickComment] = useState("");
     const [showHistoryAll, setShowHistoryAll] = useState(false);
     const visibleHistory = showHistoryAll ? history : history.slice(0, 3);
@@ -364,9 +441,68 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
         setQuickComment("");
     }
 
+    // ── Helpers ──────────────────────────────────────
+    function getPriorityLevel(task) {
+        const p = (
+            task.variables?.priority ||
+            task.priority ||
+            ""
+        ).toString().toLowerCase();
+        if (p === "high" || p === "1") return "high";
+        if (p === "low" || p === "3") return "low";
+        if (p === "medium" || p === "2" || p === "") return "medium";
+        return "medium";
+    }
+
+    function renderPriorityBadge(task) {
+        const level = getPriorityLevel(task);
+        const labels = { high: "High", medium: "Medium", low: "Low" };
+        const flagColor = { high: "#e05252", medium: "#d4820a", low: "#38a169" }[level];
+        return (
+            <span className={`${level}`} style={{ color: flagColor }}>
+                <i className="fa-solid fa-flag" style={{ fontSize: 11 }}></i> {labels[level]}
+            </span>
+        );
+    }
+
     return (
         <div className="cb-panel">
             <div className="cb-scroll-area">
+
+                <section className="cb-section cb-sla-section" aria-labelledby="cb-sla-title">
+                    <div className="cb-section-header">
+                        <span className="cb-section-title" id="cb-sla-title">
+                            <i className="fa-regular fa-clock"></i>
+                            SLA &amp; Timing {renderPriorityBadge(task)}
+                        </span>
+                    </div>
+                    <dl className="cb-sla-grid">
+                        <dt title="The deadline calculated from the task creation time and its priority-based SLA.">
+                            SLA Due
+                        </dt>
+                        <dd
+                            className="cb-sla-due-value"
+                            title="The date and time by which this task should be completed.">
+                            {slaDueTimestamp === null
+                                ? "Not set"
+                                : formatDateTimeForUserView(new Date(slaDueTimestamp))}
+                        </dd>
+                        <dt title="The remaining time until the SLA deadline, or how long the task has been overdue.">
+                            Time Left
+                        </dt>
+                        <dd
+                            className={isSlaOverdue ? "is-overdue" : "is-warning"}
+                            title="Calculated from the current time and the SLA due date.">
+                            {slaTimeLeft}
+                        </dd>
+                        <dt title="The total time since this task was created.">
+                            Elapsed Time
+                        </dt>
+                        <dd title="Calculated from the task creation time to the current time.">
+                            {elapsedTime}
+                        </dd>
+                    </dl>
+                </section>
 
                 {/* ── COMMENTS ──────────────────────────────── */}
                 <div className="cb-section">

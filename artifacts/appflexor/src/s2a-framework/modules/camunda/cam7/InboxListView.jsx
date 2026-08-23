@@ -13,6 +13,39 @@ import "../inbox-style.css";
 import { Interweave } from "interweave";
 import { BPM_API_URL } from "../CamundaConfig";
 
+const PROCESS_URGENCY_LEVELS = ["High", "Medium", "Low"];
+
+function getProcessUrgencyLevels(value) {
+    let parsedValue = value;
+    if (typeof parsedValue === "string") {
+        try {
+            parsedValue = JSON.parse(parsedValue);
+        } catch {
+            return null;
+        }
+    }
+
+    const levels = parsedValue?.urgencyLevels || parsedValue;
+    if (!levels || typeof levels !== "object") return null;
+
+    const normalizedLevels = {};
+    PROCESS_URGENCY_LEVELS.forEach(level => {
+        const slaValue = Number.parseInt(levels?.[level]?.slaValue, 10);
+        const slaUnit = levels?.[level]?.slaUnit;
+        if (
+            Number.isInteger(slaValue) &&
+            slaValue > 0 &&
+            ["hours", "days"].includes(slaUnit)
+        ) {
+            normalizedLevels[level] = { slaValue, slaUnit };
+        }
+    });
+
+    return Object.keys(normalizedLevels).length > 0
+        ? normalizedLevels
+        : null;
+}
+
 function RenderListView({
     processList,
     data,
@@ -633,6 +666,12 @@ function RenderListView({
     const grouped = groupTasksByDue(pagedTasks);
     const safeTaskListLength = safeTaskList.length;
     const safeProcessListLength = safeProcessList.length;
+    const selectedStartProcess = safeProcessList.find(
+        process => process.id === selectedProcessId,
+    );
+    const selectedStartUrgencyLevels = getProcessUrgencyLevels(
+        selectedStartProcess?.urgency_levels,
+    );
     const normalizedDraftSearch = draftSearch.trim().toLowerCase();
     const filteredPendingDrafts = pendingDrafts.filter(draft => {
         if (!normalizedDraftSearch) return true;
@@ -1564,7 +1603,34 @@ function RenderListView({
                             {renderStartStepProcessor()}
                         </div>
                         <div className="col-sm-3 comment-panel p-3">
-                            <Interweave content={safeProcessList.find(p => p.id === selectedProcessId)?.description || "No description available for this service."} />
+                            <Interweave content={selectedStartProcess?.description || "No description available for this service."} />
+                            <div className="border-top mt-3 pt-3">
+                                <div className="fw-semibold mb-2">
+                                    <i className="fa-regular fa-clock me-1"></i>
+                                    Service Level Agreements
+                                </div>
+                                {selectedStartUrgencyLevels ? (
+                                    <div className="d-grid gap-2">
+                                        {PROCESS_URGENCY_LEVELS.map(level => {
+                                            const sla = selectedStartUrgencyLevels[level];
+                                            return sla ? (
+                                                <div
+                                                    className="d-flex justify-content-between align-items-center border rounded px-2 py-2"
+                                                    key={level}>
+                                                    <span className="fw-semibold">{level}</span>
+                                                    <span className="text-muted">
+                                                        {sla.slaValue} {sla.slaUnit}
+                                                    </span>
+                                                </div>
+                                            ) : null;
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="small text-muted">
+                                        No urgency SLA information available for this service.
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </>
                 )}
@@ -1699,6 +1765,7 @@ function RenderListView({
                                 {pagedProcessList.map((process, index) => {
                                     const processId = process.id || process.process_key || `${index}`;
                                     const isDescriptionExpanded = expandedProcessDescriptionId === processId;
+                                    const urgencyLevels = getProcessUrgencyLevels(process.urgency_levels);
                                     return (
                                         <div key={processId} className="mb-2">
                                             <div
@@ -1737,6 +1804,31 @@ function RenderListView({
                                             {isDescriptionExpanded && (
                                                 <div className="process-description mt-1 ms-4 small text-muted">
                                                     <Interweave content={process.discription || process.description || "No description available for this service."} />
+                                                    <div className="border-top mt-3 pt-2">
+                                                        <div className="fw-semibold text-body mb-2">
+                                                            <i className="fa-regular fa-clock me-1"></i>
+                                                            Service Level Agreements
+                                                        </div>
+                                                        {urgencyLevels ? (
+                                                            <div className="row g-2">
+                                                                {PROCESS_URGENCY_LEVELS.map(level => {
+                                                                    const sla = urgencyLevels[level];
+                                                                    return sla ? (
+                                                                        <div className="col-12 col-sm-4" key={level}>
+                                                                            <div className="border rounded px-2 py-1 bg-light text-body">
+                                                                                <span className="fw-semibold">{level}</span>
+                                                                                <span className="float-end">
+                                                                                    {sla.slaValue} {sla.slaUnit}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : null;
+                                                                })}
+                                                            </div>
+                                                        ) : (
+                                                            <div>No SLA configuration available.</div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -1819,10 +1911,20 @@ function RenderListView({
             return <span>Loading...</span>;
         }
 
+        const configuredVariables = selectedStartUrgencyLevels
+            ? {
+                urgencyLevels: {
+                    value: JSON.stringify(selectedStartUrgencyLevels),
+                    type: "Json",
+                },
+            }
+            : {};
+
         return (
             <StartStepProcessor
                 id={selectedProcessId}
                 handleProcessActions={handleStartProcessActions}
+                camundaVars={configuredVariables}
                 processStartDraft={selectedPendingDraft}
                 onDraftChange={handlePendingDraftChange}
                 formVars={

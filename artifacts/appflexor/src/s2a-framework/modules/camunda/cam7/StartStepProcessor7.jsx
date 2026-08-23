@@ -254,9 +254,10 @@ function StartStepProcessor({
     }
 
     function buildStartVariables(taskVariables) {
-        const variables = taskVariables
-            ? { ...taskVariables }
-            : { ...camundaVars };
+        const variables = {
+            ...camundaVars,
+            ...(taskVariables || {}),
+        };
         variables.requestor = {
             value: appContext?.profile?.username,
             type: "string",

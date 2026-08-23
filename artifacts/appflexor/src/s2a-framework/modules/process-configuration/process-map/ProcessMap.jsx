@@ -15,6 +15,42 @@ import { MultiSelect } from "react-multi-select-component";
 import ProcessesContext from "../../camunda/ProcessesContext";
 import { toastEmitter } from "../../../components/Toastify/Toastify";
 
+const DEFAULT_URGENCY_LEVELS = {
+    High: { slaValue: 24, slaUnit: "hours" },
+    Medium: { slaValue: 72, slaUnit: "hours" },
+    Low: { slaValue: 7, slaUnit: "days" },
+};
+
+const URGENCY_LEVELS = ["High", "Medium", "Low"];
+
+function normalizeUrgencyLevels(value) {
+    let urgencyLevels = value;
+
+    if (typeof urgencyLevels === "string") {
+        try {
+            urgencyLevels = JSON.parse(urgencyLevels);
+        } catch {
+            urgencyLevels = {};
+        }
+    }
+
+    return URGENCY_LEVELS.reduce((result, level) => {
+        const configuredLevel = urgencyLevels?.[level] || {};
+        const parsedValue = Number.parseInt(configuredLevel.slaValue, 10);
+
+        result[level] = {
+            slaValue:
+                Number.isInteger(parsedValue) && parsedValue > 0
+                    ? parsedValue
+                    : DEFAULT_URGENCY_LEVELS[level].slaValue,
+            slaUnit: ["hours", "days"].includes(configuredLevel.slaUnit)
+                ? configuredLevel.slaUnit
+                : DEFAULT_URGENCY_LEVELS[level].slaUnit,
+        };
+        return result;
+    }, {});
+}
+
 function ProcessMap({ activeTab }) {
     let initialState = {
         id: "",
@@ -26,6 +62,7 @@ function ProcessMap({ activeTab }) {
         is_active: "YES",
         allow_draft: "YES",
         description: "",
+        urgency_levels: normalizeUrgencyLevels(),
     };
     const [items, setItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -114,7 +151,10 @@ function ProcessMap({ activeTab }) {
     }, [selectedItem]);
 
     function editItem(item) {
-        setSelectedItem(item);
+        setSelectedItem({
+            ...item,
+            urgency_levels: normalizeUrgencyLevels(item.urgency_levels),
+        });
         handleShow();
     }
 
@@ -452,6 +492,22 @@ function ProcessMap({ activeTab }) {
             [name]: value,
         }));
     }
+
+    function handleSlaChange(level, field, value) {
+        setSelectedItem(prev => ({
+            ...prev,
+            urgency_levels: {
+                ...normalizeUrgencyLevels(prev.urgency_levels),
+                [level]: {
+                    ...normalizeUrgencyLevels(prev.urgency_levels)[level],
+                    [field]:
+                        field === "slaValue"
+                            ? Math.max(1, Number.parseInt(value, 10) || 1)
+                            : value,
+                },
+            },
+        }));
+    }
     function saveData(callback) {
         var url = API_URL + "?service.key=update.formData";
         var request = {};
@@ -644,6 +700,7 @@ function ProcessMap({ activeTab }) {
                                 <Th>
                                     <TableSorting state={items} setState={setItems} fieldName="title" headerTitle="Process Title" />
                                 </Th>
+                                <Th>SLA</Th>
                                 <Th>Category</Th>
                                 <Th>Business Area</Th>
                                 <Th>Governing Body</Th>
@@ -662,6 +719,21 @@ function ProcessMap({ activeTab }) {
                                         </span>
                                     </Td>
                                     <Td>{item.title}</Td>
+                                    <Td>
+                                        <div className="d-flex flex-wrap gap-1">
+                                            {item?.urgency_levels && URGENCY_LEVELS.map(level => {
+                                                const sla = normalizeUrgencyLevels(item.urgency_levels)[level];
+                                                return (
+                                                    <span
+                                                        key={level}
+                                                        className="badge rounded-pill text-bg-light border text-dark"
+                                                        title={`${level} urgency SLA`}>
+                                                        {level}: {sla.slaValue} {sla.slaUnit}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    </Td>
                                     <Td>{getCategoryById(item.category)}</Td>
                                     <Td>{getBusinessAreaById(item?.business_area)}</Td>
                                     <Td>{getGoverningBodyById(item?.process_gov)}</Td>
@@ -922,6 +994,75 @@ function ProcessMap({ activeTab }) {
                                                 <div className="form-text text-danger">At least one site is required.</div>
                                             )}
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="card border-0 shadow-sm mb-3">
+                                <div className="card-header bg-light fw-bold">Service Level Agreements</div>
+                                <div className="card-body">
+                                    <p className="form-text mt-0 mb-3">
+                                        Set the completion target for each predefined urgency level.
+                                    </p>
+                                    <div className="row g-3">
+                                        {URGENCY_LEVELS.map(level => {
+                                            const sla = normalizeUrgencyLevels(
+                                                selectedItem?.urgency_levels,
+                                            )[level];
+
+                                            return (
+                                                <div className="col-12 col-md-4" key={level}>
+                                                    <fieldset className="border rounded p-3 h-100">
+                                                        <legend className="float-none w-auto px-2 fs-6 fw-bold mb-1">
+                                                            {level}
+                                                        </legend>
+                                                        <div className="row g-2">
+                                                            <div className="col-6">
+                                                                <label className="form-label fw-bold" htmlFor={`sla-value-${level}`}>
+                                                                    SLA Number
+                                                                </label>
+                                                                <input
+                                                                    id={`sla-value-${level}`}
+                                                                    type="number"
+                                                                    className="form-control"
+                                                                    min="1"
+                                                                    step="1"
+                                                                    inputMode="numeric"
+                                                                    value={sla.slaValue}
+                                                                    onChange={event =>
+                                                                        handleSlaChange(
+                                                                            level,
+                                                                            "slaValue",
+                                                                            event.target.value,
+                                                                        )
+                                                                    }
+                                                                    required
+                                                                />
+                                                            </div>
+                                                            <div className="col-6">
+                                                                <label className="form-label fw-bold" htmlFor={`sla-unit-${level}`}>
+                                                                    Unit
+                                                                </label>
+                                                                <select
+                                                                    id={`sla-unit-${level}`}
+                                                                    className="form-select"
+                                                                    value={sla.slaUnit}
+                                                                    onChange={event =>
+                                                                        handleSlaChange(
+                                                                            level,
+                                                                            "slaUnit",
+                                                                            event.target.value,
+                                                                        )
+                                                                    }>
+                                                                    <option value="hours">Hours</option>
+                                                                    <option value="days">Days</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </fieldset>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
