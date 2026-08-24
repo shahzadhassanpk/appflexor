@@ -22,6 +22,13 @@ const PALETTE = [
     "#0f766e", "#be185d",
 ];
 const getColor = i => PALETTE[i % PALETTE.length];
+const NOT_CONFIGURED_AREA = {
+    id: "__not_configured__",
+    key: "not-configured",
+    title: "Not Configured",
+    description: "Deployed processes that have not been configured yet.",
+    isDummy: true,
+};
 
 /* ── match helpers ──────────────────────────────────────────────────────── */
 function matchArea(proc, ba) {
@@ -210,7 +217,7 @@ function ProcessConfiguration() {
                     setProcesses(d.processMap || []);
                     setProcessCategories(d.processCategory || []);
                     setTenantProcs(d.tenantProcess || []);
-                    setExpandedAreas(new Set(areas.map(ba => ba.id)));
+                    setExpandedAreas(new Set());
                 }
             })
             .catch(console.error)
@@ -229,14 +236,29 @@ function ProcessConfiguration() {
     /* ── derived data ───────────────────────────────────────────────────── */
     const q = searchTerm.toLowerCase().trim();
     const hasSearch = q.length > 0;
+    const configuredProcessKeys = new Set(processes.map(item => String(item.process_key || "").toLowerCase().trim()).filter(Boolean));
+    const unconfiguredProcesses = tenantProcs
+        .filter(item => !configuredProcessKeys.has(String(item.process_def_key || "").toLowerCase().trim()))
+        .map(item => ({
+            ...item,
+            id: `unconfigured-${item.id || item.process_def_key}`,
+            title: item.title || item.name || item.process_def_key || "Untitled process",
+            process_key: item.process_def_key || "",
+            business_area: NOT_CONFIGURED_AREA.id,
+            tenantProcess: item,
+            isUnconfigured: true,
+        }));
+    const displayedBusinessAreas = unconfiguredProcesses.length
+        ? [...businessAreas, NOT_CONFIGURED_AREA]
+        : businessAreas;
 
-    const processGroups = businessAreas
+    const processGroups = displayedBusinessAreas
         .map((ba, idx) => {
             const areaTitle = (ba.title || "").toLowerCase();
             const areaKey = (ba.key || "").toLowerCase();
             const areaMatches = hasSearch && (areaTitle.includes(q) || areaKey.includes(q));
 
-            const allAreaProcs = processes.filter(p => matchArea(p, ba));
+            const allAreaProcs = ba.isDummy ? unconfiguredProcesses : processes.filter(p => matchArea(p, ba));
             const matchedAreaProcs = allAreaProcs.filter(p => {
                 const processTitle = (p.title || "").toLowerCase();
                 const processKey = (p.process_key || "").toLowerCase();
@@ -558,8 +580,8 @@ function ProcessConfiguration() {
                                         <i className="fa-solid fa-sitemap" aria-hidden="true" />
                                     </span>
                                     <div className="min-w-0">
-                                        <div className="orch-panel-title">Business Areas and Processes</div>
-                                        <div className="orch-panel-desc">Business Area defines the business domain for grouping related processes.</div>
+                                        <div className="orch-panel-title">Process Catalog</div>
+                                        <div className="orch-panel-desc">The Process Catalog organizes all processes in respective business areas.</div>
                                     </div>
                                 </div>
                                 <div className="d-flex flex-column align-items-end gap-1">
@@ -572,7 +594,7 @@ function ProcessConfiguration() {
 
                             {/* tree body */}
                             <div className="orch-tree">
-                                <div className="orch-tree-header d-flex align-items-center justify-content-between">
+                                <div className="orch-tree-header d-flex flex-wrap align-items-center justify-content-between gap-2">
                                     <div className="orch-search p-2">
                                         <i className="fa-solid ms-2 fa-magnifying-glass orch-search-icon" aria-hidden="true" />
                                         <input
@@ -591,12 +613,15 @@ function ProcessConfiguration() {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="d-flex align-items-center gap-2 me-2">
-                                        <span className="orch-count-badge">{businessAreas.length}</span>
-                                        <span className="text-muted small">Business Areas</span>
-                                        <span className="orch-count-badge">{processes.length}</span>
-                                        <span className="text-muted small">Processes</span>
-
+                                    <div className="mr-2 flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
+                                        <div className="flex min-w-[116px] items-center gap-2 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white px-2.5 py-2 shadow-sm" title="Total business areas">
+                                            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-100 text-violet-700"><i className="fa-solid fa-layer-group" aria-hidden="true" /></span>
+                                            <div className="min-w-0"><strong className="block text-base leading-none text-slate-900">{displayedBusinessAreas.length}</strong><span className="mt-1 block truncate text-[10px] font-semibold uppercase tracking-wide text-slate-500">Business Areas</span></div>
+                                        </div>
+                                        <div className="flex min-w-[104px] items-center gap-2 rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white px-2.5 py-2 shadow-sm" title="Total processes">
+                                            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-100 text-blue-700"><i className="fa-solid fa-diagram-project" aria-hidden="true" /></span>
+                                            <div className="min-w-0"><strong className="block text-base leading-none text-slate-900">{processes.length + unconfiguredProcesses.length}</strong><span className="mt-1 block truncate text-[10px] font-semibold uppercase tracking-wide text-slate-500">Processes</span></div>
+                                        </div>
                                     </div>
                                 </div>
                                 {processGroups.length === 0 && (
@@ -630,14 +655,14 @@ function ProcessConfiguration() {
                                                     <div className="orch-panel-desc"><span className="orch-panel-desc">{ba.description}</span></div>
                                                 </div>
                                                 <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
-                                                    <div className="orch-list-actions">
+                                                    {!ba.isDummy && <div className="orch-list-actions">
                                                         <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditBA(ba)}>
                                                             <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
                                                         </button>
                                                         <button type="button" className="orch-icon-btn danger" title="Delete" onClick={() => deleteBA(ba)}>
                                                             <i className="fa-regular fa-trash-can" aria-hidden="true" />
                                                         </button>
-                                                    </div>
+                                                    </div>}
                                                     <span className="orch-count-badge" title="Business Area Process Count" style={{ background: `${color}18`, color }}>{procs.length}</span>
                                                 </div>
                                                 {/* <button
@@ -658,7 +683,7 @@ function ProcessConfiguration() {
                                                     {procs.map(proc => {
                                                         const gb = getGBForProcess(proc, governingBodies);
                                                         const pc = getPCForProcess(proc, processCategories);
-                                                        const tp = getTPForProcess(proc, tenantProcs);
+                                                        const tp = proc.tenantProcess || getTPForProcess(proc, tenantProcs);
                                                         const url = "/file/service/process/"
                                                             + encodeURIComponent(tp?.id)
                                                             + "/"
@@ -671,6 +696,7 @@ function ProcessConfiguration() {
                                                                 <span className="orch-proc-indent" aria-hidden="true" />
                                                                 <i className="fa-solid fa-diagram-project orch-proc-icon" aria-hidden="true" />
                                                                 <a href="#" className="orch-proc-title" title={proc.title} onClick={() => { setUrlBPMN(url); setShowBPMN(true); setBpmnTitle(proc.title) }}>{proc.title} {proc.def_key}</a>
+                                                                {proc.isUnconfigured && <span className="orch-gb-badge" style={{ background: "#fef3c7", color: "#b45309", border: "1px solid #fcd34d" }}>Needs configuration</span>}
 
 
                                                                 {gb && (
@@ -758,7 +784,7 @@ function ProcessConfiguration() {
                                         <i className="fa-solid fa-tag" aria-hidden="true" />
                                     </span>
                                     <div>
-                                        <div className="orch-panel-title">Governing Bodies</div>
+                                        <div className="orch-panel-title">Process Governance</div>
                                         <div className="orch-panel-desc">Governing Body identifies the owner for approvals and policy.</div>
                                     </div>
                                 </div>
