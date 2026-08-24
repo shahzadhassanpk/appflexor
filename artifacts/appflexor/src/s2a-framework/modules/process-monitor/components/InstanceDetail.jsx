@@ -26,6 +26,7 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
     const [variables, setVariables] = useState({});
     const [tasks, setTasks] = useState([]);
     const [busy, setBusy] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [operationError, setOperationError] = useState("");
     const instanceJobs = jobs.filter(job => job.processInstanceId === instance?.id);
     const incidents = instanceJobs.filter(job => job.exceptionMessage || job.retries === 0);
@@ -105,6 +106,14 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
         finally { setBusy(false); }
     }
 
+    async function refreshInstance() {
+        setRefreshing(true);
+        setOperationError("");
+        try { await onRefresh?.(); }
+        catch (error) { setOperationError(error.message || "Unable to refresh instance details."); }
+        finally { setRefreshing(false); }
+    }
+
     useEffect(() => {
         if (!instance) return undefined;
         let disposed = false;
@@ -134,10 +143,17 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
         <style>{`.process-monitor-active .djs-visual > :first-child{stroke:#0284c7!important;stroke-width:4px!important;fill:#e0f2fe!important}.process-monitor-activity-count{display:grid;place-items:center;min-width:25px;height:25px;padding:0 6px;border:2px solid #0369a1;border-radius:9999px;background:#7dd3fc;color:#0c4a6e;font:700 13px/1 sans-serif;box-shadow:0 1px 3px rgba(15,23,42,.25)}`}</style>
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
             <nav className="min-w-0 truncate text-sm"><span className="font-semibold text-indigo-600">Dashboard</span><i className="fa-solid fa-angle-right mx-2 text-slate-400" /><span className="font-semibold text-indigo-600">Processes</span><i className="fa-solid fa-angle-right mx-2 text-slate-400" /><span id="instance-detail-title">{instance.definitionName || instance.definitionId}: {instance.id}: Runtime</span></nav>
-            <button type="button" onClick={onClose} className="ml-3 grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-300 bg-white text-slate-700" aria-label="Close instance details"><i className="fa-solid fa-xmark" /></button>
+            <div className="ml-3 flex shrink-0 items-center gap-2">
+                <button type="button" onClick={refreshInstance} disabled={refreshing} className="inline-flex h-10 items-center rounded-lg bg-indigo-600 px-3 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
+                    <i className={`fa-solid fa-rotate mr-2 ${refreshing ? "fa-spin" : ""}`} />Refresh
+                </button>
+                <button type="button" onClick={onClose} title="Close instance details" className="inline-flex h-10 items-center rounded-lg bg-indigo-600 px-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-1" aria-label="Close instance details">
+                    <i className="fa-solid fa-xmark mr-2" aria-hidden="true" />Close
+                </button>
+            </div>
         </header>
-        <div className="grid min-h-[calc(100vh-65px)] lg:grid-cols-[300px_1fr]">
-            <aside className="border-b border-slate-200 bg-white p-4 lg:border-b-0 lg:border-r"><div className="mb-5"><SlaBadge sla={instance.sla} /></div><dl className="space-y-4 text-sm"><Meta label="Instance ID" value={instance.id} /><Meta label="Business Key" value={instance.businessKey || "—"} /><Meta label="Definition Version" value={instance.definition?.version || "—"} /><Meta label="Definition ID" value={instance.definitionId} /><Meta label="Definition Key" value={instance.definition?.key || "—"} /><Meta label="Definition Name" value={instance.definitionName || "—"} /><Meta label="Tenant ID" value={instance.tenantId || "—"} /><Meta label="Deployment ID" value={instance.definition?.deploymentId || "—"} /></dl></aside>
+        <div className="grid min-h-[calc(100vh-65px)] lg:grid-cols-[300px_1fr]">            
+            <aside className="border-b border-slate-200 bg-white p-4 lg:border-b-0 lg:border-r"><div className="mb-5"><SlaBadge instance={instance} /></div><dl className="space-y-4 text-sm"><Meta label="Instance ID" value={instance.id} /><Meta label="Business Key" value={instance.businessKey || "—"} /><Meta label="Definition Version" value={instance.definition?.version || "—"} /><Meta label="Definition ID" value={instance.definitionId} /><Meta label="Definition Key" value={instance.definition?.key || "—"} /><Meta label="Definition Name" value={instance.definitionName || "—"} /><Meta label="Tenant ID" value={instance.tenantId || "—"} /><Meta label="Deployment ID" value={instance.definition?.deploymentId || "—"} /></dl></aside>
             <main className="min-w-0 bg-white"><div className="h-[360px] border-b border-slate-200 sm:h-[460px]">{diagramError ? <div className="grid h-full place-items-center text-sm text-red-600">{diagramError}</div> : <div ref={containerRef} className="h-full w-full" />}</div>
                 <div className="sticky top-[65px] z-10 flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3" role="tablist">{TABS.map(item => <button key={item} type="button" onClick={() => setTab(item)} className={`shrink-0 border-b-2 px-4 py-3 text-sm font-semibold ${tab === item ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500"}`}>{item}</button>)}</div>
                 <div className="p-4">{operationError && <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{operationError}</div>}{tab === "Variables" && <VariableManager variables={variables} busy={busy} onSave={saveVariable} onDelete={deleteVariable} />}{tab === "Incidents" && <List rows={incidents} empty="No open incidents." render={item => item.exceptionMessage || "Job retries exhausted"} />}{tab === "User Tasks" && <TaskManager tasks={tasks} busy={busy} onAssign={assignTask} />}{tab === "Jobs" && <List rows={instanceJobs} empty="No jobs for this instance." render={job => `${job.jobDefinitionId || job.id} · ${job.retries} retries`} />}</div>

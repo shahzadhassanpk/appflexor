@@ -23,10 +23,23 @@ function numberFrom(config, keys, fallback) {
     return Number.isFinite(value) ? value : fallback;
 }
 
-export function calculateSla(variables = {}, now = new Date()) {
+export function calculateSla(variables = {}, now = new Date(), processStartTime = null) {
     const config = parseSlaConfig(variables);
+    const priorityRaw = String(variableValue(variables, ["priority", "urgency", "slaPriority"]) || "Medium");
+    const priority = priorityRaw.charAt(0).toUpperCase() + priorityRaw.slice(1).toLowerCase();
+    const urgencyLevels = variableValue(variables, ["urgencyLevels", "urgency_levels"]);
+    const parsedUrgencyLevels = typeof urgencyLevels === "string" ? (() => { try { return JSON.parse(urgencyLevels); } catch { return {}; } })() : urgencyLevels || {};
+    const fixedThreshold = parsedUrgencyLevels?.[priority];
+    const fixedThresholdValue = Number(fixedThreshold?.slaValue);
+    const fixedThresholdMilliseconds = Number.isFinite(fixedThresholdValue) && fixedThresholdValue > 0
+        ? fixedThresholdValue * (fixedThreshold?.slaUnit === "days" ? 86400000 : 3600000)
+        : null;
+    const processStart = processStartTime ? new Date(processStartTime) : null;
+    const derivedDeadline = processStart && !Number.isNaN(processStart.getTime()) && fixedThresholdMilliseconds
+        ? new Date(processStart.getTime() + fixedThresholdMilliseconds)
+        : null;
     const deadlineRaw = variableValue(variables, DEADLINE_KEYS) || config.deadline;
-    const deadline = deadlineRaw ? new Date(deadlineRaw) : null;
+    const deadline = deadlineRaw ? new Date(deadlineRaw) : derivedDeadline;
     const remainingMinutes = deadline && !Number.isNaN(deadline.getTime())
         ? Math.round((deadline.getTime() - now.getTime()) / 60000)
         : null;
@@ -58,4 +71,3 @@ export function formatRemaining(minutes) {
     if (minutes < 60) return `${minutes}m left`;
     return `${Math.round(minutes / 60)}h left`;
 }
-

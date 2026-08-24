@@ -41,6 +41,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
                 camundaApi.getTasks(tenantId), camundaApi.getHistoricInstances(tenantId), camundaApi.getJobs(tenantId),
             ]);
             const definitionMap = Object.fromEntries((definitions || []).map(item => [item.id, item]));
+            const historyMap = Object.fromEntries((history || []).map(item => [item.id, item]));
             const details = await Promise.all((rawInstances || []).map(async instance => {
                 const [rawVariables, activity] = await Promise.all([
                     camundaApi.getInstanceVariables(instance.id).catch(() => ({})),
@@ -48,7 +49,8 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
                 ]);
                 const variables = await hydrateJsonVariables(instance.id, rawVariables);
                 const definition = definitionMap[instance.definitionId];
-                return { ...instance, definition, definitionName: definition?.name || definition?.key, variables, activity, sla: calculateSla(variables), tasks: (tasks || []).filter(task => task.processInstanceId === instance.id) };
+                const startTime = instance.startTime || historyMap[instance.id]?.startTime;
+                return { ...instance, startTime, history: historyMap[instance.id], definition, definitionName: definition?.name || definition?.key, variables, activity, sla: calculateSla(variables, new Date(), startTime), tasks: (tasks || []).filter(task => task.processInstanceId === instance.id) };
             }));
             setState({ definitions: definitions || [], instances: details, tasks: tasks || [], jobs: jobs || [], history: history || [] });
         } catch (requestError) {
@@ -57,6 +59,37 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
             setLoading(false);
         }
     }, [tenantId]);
+
+    async function refreshInstance(instanceId) {
+        const [rawInstance, rawVariables, activity, instanceTasks, instanceJobs] = await Promise.all([
+            camundaApi.getProcessInstance(instanceId),
+            camundaApi.getInstanceVariables(instanceId),
+            camundaApi.getActivityInstances(instanceId),
+            camundaApi.getTasksByInstance(instanceId),
+            camundaApi.getJobsByInstance(instanceId),
+        ]);
+        const variables = await hydrateJsonVariables(instanceId, rawVariables);
+        setState(previous => {
+            const existing = previous.instances.find(item => item.id === instanceId);
+            const definition = previous.definitions.find(item => item.id === rawInstance.definitionId) || existing?.definition;
+            const updated = {
+                ...existing,
+                ...rawInstance,
+                definition,
+                definitionName: definition?.name || definition?.key,
+                variables,
+                activity,
+                tasks: instanceTasks || [],
+                sla: calculateSla(variables, new Date(), existing?.startTime),
+            };
+            return {
+                ...previous,
+                instances: previous.instances.map(item => item.id === instanceId ? updated : item),
+                tasks: [...previous.tasks.filter(item => item.processInstanceId !== instanceId), ...(instanceTasks || [])],
+                jobs: [...previous.jobs.filter(item => item.processInstanceId !== instanceId), ...(instanceJobs || [])],
+            };
+        });
+    }
 
     useEffect(() => { if (activeTab === "PROCESS_MONITOR") load(); }, [activeTab, load]);
     const instanceMap = useMemo(() => Object.fromEntries(state.instances.map(item => [item.id, item])), [state.instances]);
@@ -74,7 +107,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
                     <Dashboard {...state} tenantId={tenantId} />
                     <DeployedProcesses definitions={state.definitions} instances={state.instances} jobs={state.jobs} onSelectDefinition={setSelectedDefinition} />
                     {/* <div className="grid gap-5 xl:grid-cols-[1.3fr_.9fr]">
-                        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 p-4"><h2 className="mb-0 text-lg font-bold">Running instances</h2></div><div className="divide-y divide-slate-100">{state.instances.map(instance => <button key={instance.id} type="button" onClick={() => setSelected({ instanceId: instance.id, taskId: "" })} className="block w-full p-4 text-left hover:bg-slate-50"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="mb-1 truncate font-semibold">{instance.definitionName || instance.definitionId}</p><p className="mb-0 truncate text-xs text-slate-500">{instance.businessKey || instance.id} · Tenant {instance.tenantId || "none"}</p></div><SlaBadge sla={instance.sla} /></div></button>)}{!state.instances.length && <div className="p-10 text-center text-sm text-slate-500">No running instances in this tenant.</div>}</div></section>
+                        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 p-4"><h2 className="mb-0 text-lg font-bold">Running instances</h2></div><div className="divide-y divide-slate-100">{state.instances.map(instance => <button key={instance.id} type="button" onClick={() => setSelected({ instanceId: instance.id, taskId: "" })} className="block w-full p-4 text-left hover:bg-slate-50"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="mb-1 truncate font-semibold">{instance.definitionName || instance.definitionId}</p><p className="mb-0 truncate text-xs text-slate-500">{instance.businessKey || instance.id} · Tenant {instance.tenantId || "none"}</p></div><SlaBadge instance={instance} /></div></button>)}{!state.instances.length && <div className="p-10 text-center text-sm text-slate-500">No running instances in this tenant.</div>}</div></section>
                         <TaskList tasks={state.tasks} currentUser={currentUser} instanceMap={instanceMap} onSelectInstance={(instanceId, taskId) => setSelected({ instanceId, taskId })} />
                     </div> */}
                 </>}
@@ -84,7 +117,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
                     <ProcessExecutionView definition={selectedDefinition} instances={state.instances} tasks={state.tasks} jobs={state.jobs} onBack={() => setSelectedDefinition(null)} onSelectInstance={instanceId => setSelected({ instanceId, taskId: "" })} />
                 </div>
             )}
-            <InstanceDetail instance={selectedInstance} selectedTaskId={selected.taskId} jobs={state.jobs} onRefresh={load} onClose={() => setSelected({ instanceId: "", taskId: "" })} />
+            <InstanceDetail instance={selectedInstance} selectedTaskId={selected.taskId} jobs={state.jobs} onRefresh={() => refreshInstance(selected.instanceId)} onClose={() => setSelected({ instanceId: "", taskId: "" })} />
         </main>
     );
 }

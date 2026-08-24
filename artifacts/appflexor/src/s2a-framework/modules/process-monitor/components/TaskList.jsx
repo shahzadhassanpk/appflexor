@@ -42,7 +42,7 @@ export default function TaskList({ tasks, currentUser, instanceMap, onSelectInst
                                     <p className="mb-1 truncate font-semibold text-slate-900">{task.name || task.taskDefinitionKey}</p>
                                     <p className="mb-0 text-sm text-slate-500">{task.assignee || "Unassigned"} · {task.due ? new Date(task.due).toLocaleString() : "No due date"}</p>
                                 </div>
-                                {instance?.sla && <SlaBadge sla={instance.sla} compact />}
+                                {instance?.sla && <SlaBadge instance={instance} compact />}
                             </div>
                         </button>
                     );

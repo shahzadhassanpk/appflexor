@@ -34,36 +34,47 @@ function query(params = {}) {
 }
 
 export const camundaApi = {
-    getProcessDefinitions: tenantId => camundaRequest(`/process-definition${query({
+    getProcessDefinitions: () => camundaRequest(`/process-definition${query({
         latestVersion: true,
     })}`),
 
-    getProcessInstances: tenantId => camundaRequest(`/process-instance${query({
+    getProcessInstances: () => camundaRequest(`/process-instance${query({
+        active: true,
+        firstResult: 0,
+        maxResults: 100,
+    })}`),
+    getProcessInstance: instanceId => camundaRequest(`/process-instance/${instanceId}`),
+    getProcessInstancesByDefinition: definitionId => camundaRequest(`/process-instance${query({
+        processDefinitionId: definitionId,
         active: true,
         firstResult: 0,
         maxResults: 100,
     })}`),
 
-    getTasks: tenantId => camundaRequest(`/task${query({
+    getTasks: () => camundaRequest(`/task${query({
         active: true,
         sortBy: "created",
         sortOrder: "desc",
         firstResult: 0,
         maxResults: 200,
     })}`),
+    getTasksByDefinition: definitionId => camundaRequest(`/task${query({ processDefinitionId: definitionId, active: true, firstResult: 0, maxResults: 200 })}`),
+    getTasksByInstance: instanceId => camundaRequest(`/task${query({ processInstanceId: instanceId, active: true, firstResult: 0, maxResults: 200 })}`),
 
-    getHistoricInstances: tenantId => camundaRequest(`/history/process-instance${query({
+    getHistoricInstances: () => camundaRequest(`/history/process-instance${query({
         sortBy: "startTime",
         sortOrder: "desc",
         firstResult: 0,
         maxResults: 20,
     })}`),
 
-    getJobs: tenantId => camundaRequest(`/job${query({
+    getJobs: () => camundaRequest(`/job${query({
         withException: false,
         firstResult: 0,
         maxResults: 100,
     })}`),
+    getJobsByDefinition: definitionId => camundaRequest(`/job${query({ processDefinitionId: definitionId, firstResult: 0, maxResults: 100 })}`),
+    getJobsByInstance: instanceId => camundaRequest(`/job${query({ processInstanceId: instanceId, firstResult: 0, maxResults: 100 })}`),
 
     getInstanceVariables: instanceId => camundaRequest(`/process-instance/${instanceId}/variables?deserializeValue=true`),
     getInstanceVariable: (instanceId, name) => camundaRequest(`/process-instance/${instanceId}/variables/${encodeURIComponent(name)}?deserializeValue=true`),

@@ -49,9 +49,12 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const [diagramError, setDiagramError] = useState("");
     const [versions, setVersions] = useState([definition]);
     const [viewDefinition, setViewDefinition] = useState(definition);
-    const definitionInstances = useMemo(() => instances.filter(item => item.definitionId === viewDefinition.id), [instances, viewDefinition.id]);
-    const definitionTasks = useMemo(() => tasks.filter(item => item.processDefinitionId === viewDefinition.id), [tasks, viewDefinition.id]);
-    const definitionJobs = useMemo(() => jobs.filter(item => item.processDefinitionId === viewDefinition.id), [jobs, viewDefinition.id]);
+    const [runtimeState, setRuntimeState] = useState({ instances, tasks, jobs });
+    const [runtimeRefresh, setRuntimeRefresh] = useState(0);
+    const [refreshing, setRefreshing] = useState(false);
+    const definitionInstances = useMemo(() => runtimeState.instances.filter(item => item.definitionId === viewDefinition.id), [runtimeState.instances, viewDefinition.id]);
+    const definitionTasks = useMemo(() => runtimeState.tasks.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.tasks, viewDefinition.id]);
+    const definitionJobs = useMemo(() => runtimeState.jobs.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.jobs, viewDefinition.id]);
     const incidents = useMemo(() => definitionJobs.filter(item => item.exceptionMessage || item.retries === 0), [definitionJobs]);
 
     useEffect(() => {
@@ -60,6 +63,35 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
             .then(items => setVersions(items?.length ? items : [definition]))
             .catch(() => setVersions([definition]));
     }, [definition]);
+
+    useEffect(() => {
+        let disposed = false;
+        async function loadLatestRuntimeState() {
+            setRefreshing(true);
+            try {
+                const [latestInstances, latestTasks, latestJobs] = await Promise.all([
+                    camundaApi.getProcessInstancesByDefinition(viewDefinition.id),
+                    camundaApi.getTasksByDefinition(viewDefinition.id),
+                    camundaApi.getJobsByDefinition(viewDefinition.id),
+                ]);
+                const hydratedInstances = await Promise.all((latestInstances || []).map(async instance => ({
+                    ...instance,
+                    activity: await camundaApi.getActivityInstances(instance.id).catch(() => null),
+                })));
+                if (!disposed) setRuntimeState({
+                    instances: hydratedInstances,
+                    tasks: latestTasks || [],
+                    jobs: latestJobs || [],
+                });
+            } catch {
+                // Preserve the parent snapshot when a runtime refresh is temporarily unavailable.
+            } finally {
+                if (!disposed) setRefreshing(false);
+            }
+        }
+        loadLatestRuntimeState();
+        return () => { disposed = true; };
+    }, [viewDefinition.id, viewDefinition.tenantId, runtimeRefresh]);
 
     useEffect(() => {
         let disposed = false;
@@ -100,9 +132,14 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                 .process-monitor-active .djs-visual > :first-child { stroke: #0284c7 !important; stroke-width: 4px !important; fill: #e0f2fe !important; }
                 .process-monitor-activity-count { display: grid; place-items: center; min-width: 25px; height: 25px; padding: 0 6px; border: 2px solid #0369a1; border-radius: 9999px; background: #7dd3fc; color: #0c4a6e; font: 700 13px/1 sans-serif; box-shadow: 0 1px 3px rgba(15, 23, 42, .25); }
             `}</style>
-            <nav className="flex flex-wrap items-center gap-2 text-sm" aria-label="Breadcrumb">
-                <button type="button" onClick={onBack} className="font-semibold text-indigo-600 hover:underline">Dashboard</button><i className="fa-solid fa-angle-right text-slate-400" /><span className="text-slate-500">Processes</span><i className="fa-solid fa-angle-right text-slate-400" /><span className="font-medium text-slate-800">{viewDefinition.name || viewDefinition.key}: Version {viewDefinition.version}</span>
-            </nav>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <nav className="flex flex-wrap items-center gap-2 text-sm" aria-label="Breadcrumb">
+                    <button type="button" onClick={onBack} className="font-semibold text-indigo-600 hover:underline">Dashboard</button><i className="fa-solid fa-angle-right text-slate-400" /><span className="text-slate-500">Processes</span><i className="fa-solid fa-angle-right text-slate-400" /><span className="font-medium text-slate-800">{viewDefinition.name || viewDefinition.key}: Version {viewDefinition.version}</span>
+                </nav>
+                <button type="button" onClick={() => setRuntimeRefresh(value => value + 1)} disabled={refreshing} className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
+                    <i className={`fa-solid fa-rotate mr-2 ${refreshing ? "fa-spin" : ""}`} />Refresh
+                </button>
+            </div>
             <div className="grid min-h-[500px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[260px_1fr]">
                 <aside className="border-b border-slate-200 bg-slate-50 p-4 lg:border-b-0 lg:border-r">
                     <button type="button" onClick={onBack} className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600"><i className="fa-solid fa-arrow-left" />All processes</button>
@@ -137,7 +174,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
 
 function RuntimeTable({ rows, onSelect }) {
     if (!rows.length) return <p className="p-8 text-center text-sm text-slate-500">No running process instances.</p>;
-    return <div className="overflow-x-auto"><table className="mt-2 w-full min-w-[650px] text-left text-sm"><thead className="text-xs uppercase text-slate-500"><tr><th className="p-3">State</th><th className="p-3">ID</th><th className="p-3">Business Key</th><th className="p-3">Tenant</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.map(item => <tr key={item.id}><td className="p-3"><i className="fa-solid fa-circle-check text-emerald-500" /></td><td className="p-3"><button type="button" onClick={() => onSelect(item.id)} className="font-medium text-indigo-600 hover:underline">{item.id}</button></td><td className="p-3">{item.businessKey || "—"}</td><td className="p-3">{item.tenantId || "—"}</td></tr>)}</tbody></table></div>;
+    return <div className="overflow-x-auto"><table className="mt-2 w-full min-w-[650px] text-left text-sm"><thead className="text-xs uppercase text-slate-500"><tr><th className="p-3">State</th><th className="p-3">ID</th><th className="p-3">Business Key</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.map(item => <tr key={item.id}><td className="p-3"><i className="fa-solid fa-circle-check text-emerald-500" /></td><td className="p-3"><button type="button" onClick={() => onSelect(item.id)} className="font-medium text-indigo-600 hover:underline">{item.id}</button></td><td className="p-3">{item.businessKey || "—"}</td></tr>)}</tbody></table></div>;
 }
 
 function MessageList({ rows, empty, render }) {

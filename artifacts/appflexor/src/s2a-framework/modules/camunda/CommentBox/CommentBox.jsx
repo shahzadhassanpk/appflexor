@@ -361,6 +361,12 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
         return Number.isNaN(timestamp) ? null : timestamp;
     }
 
+    function getUtcTimestamp(value) {
+        if (!value) return null;
+        const timestamp = moment.utc(value).valueOf();
+        return Number.isNaN(timestamp) ? null : timestamp;
+    }
+
     function formatSlaDuration(milliseconds) {
         const totalMinutes = Math.max(0, Math.floor(Math.abs(milliseconds) / 60000));
         const days = Math.floor(totalMinutes / 1440);
@@ -392,8 +398,14 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
         return urgencyLevels?.urgencyLevels || urgencyLevels || null;
     }
 
-    const taskCreatedTimestamp = getValidTimestamp(
-        task?.date_created || task?.datecreated || task?.created_time || task?.created,
+    const processStartHistory = history.find(item => item?.task_type === "startEvent");
+    const processStartTimestamp = getUtcTimestamp(
+        task?.process_start_date ||
+        task?.process_start_time ||
+        task?.processStartDate ||
+        task?.processStartTime ||
+        task?.start_time ||
+        processStartHistory?.created_time,
     );
     const priorityLevel = getPriorityLevel(task);
     const urgencyLevels = getUrgencyLevels(task);
@@ -410,20 +422,19 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
             (configuredSlaUnit === "days" ? 86400000 : 3600000)
             : null;
     const calculatedSlaDueTimestamp =
-        taskCreatedTimestamp !== null && configuredSlaMilliseconds !== null
-            ? taskCreatedTimestamp + configuredSlaMilliseconds
+        processStartTimestamp !== null && configuredSlaMilliseconds !== null
+            ? processStartTimestamp + configuredSlaMilliseconds
             : null;
-    const slaDueTimestamp =
-        calculatedSlaDueTimestamp ?? getValidTimestamp(task?.due_date);
+    const slaDueTimestamp = calculatedSlaDueTimestamp;
     const isSlaOverdue = slaDueTimestamp !== null && slaDueTimestamp < slaNow;
     const slaTimeLeft = slaDueTimestamp === null
         ? "Not set"
         : isSlaOverdue
             ? `Overdue by ${formatSlaDuration(slaNow - slaDueTimestamp)}`
             : formatSlaDuration(slaDueTimestamp - slaNow);
-    const elapsedTime = taskCreatedTimestamp === null
+    const elapsedTime = processStartTimestamp === null
         ? "Not available"
-        : formatSlaDuration(slaNow - taskCreatedTimestamp);
+        : formatSlaDuration(slaNow - processStartTimestamp);
 
     const [quickComment, setQuickComment] = useState("");
     const [showHistoryAll, setShowHistoryAll] = useState(false);
@@ -473,16 +484,24 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                     <div className="cb-section-header">
                         <span className="cb-section-title" id="cb-sla-title">
                             <i className="fa-regular fa-clock"></i>
-                            SLA &amp; Timing {renderPriorityBadge(task)}
+                            Process SLA &amp; Timing {renderPriorityBadge(task)}
                         </span>
                     </div>
                     <dl className="cb-sla-grid">
-                        <dt title="The deadline calculated from the task creation time and its priority-based SLA.">
+                        <dt title="The date and time when this process instance started.">
+                            Start Date
+                        </dt>
+                        <dd title="All process SLA calculations use this start date.">
+                            {processStartTimestamp === null
+                                ? "Not available"
+                                : formatDateTimeForUserView(new Date(processStartTimestamp))}
+                        </dd>
+                        <dt title="The deadline calculated from the process start date and its priority-based SLA.">
                             SLA Due
                         </dt>
                         <dd
                             className="cb-sla-due-value"
-                            title="The date and time by which this task should be completed.">
+                            title="The date and time by which this process should be completed.">
                             {slaDueTimestamp === null
                                 ? "Not set"
                                 : formatDateTimeForUserView(new Date(slaDueTimestamp))}
@@ -495,10 +514,10 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                             title="Calculated from the current time and the SLA due date.">
                             {slaTimeLeft}
                         </dd>
-                        <dt title="The total time since this task was created.">
+                        <dt title="The total time since this process started.">
                             Elapsed Time
                         </dt>
-                        <dd title="Calculated from the task creation time to the current time.">
+                        <dd title="Calculated from the process start date to the current time.">
                             {elapsedTime}
                         </dd>
                     </dl>
