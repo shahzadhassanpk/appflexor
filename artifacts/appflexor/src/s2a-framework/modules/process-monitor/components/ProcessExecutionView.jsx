@@ -136,7 +136,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                 <nav className="flex flex-wrap items-center gap-2 text-sm" aria-label="Breadcrumb">
                     <button type="button" onClick={onBack} className="font-semibold text-indigo-600 hover:underline">Dashboard</button><i className="fa-solid fa-angle-right text-slate-400" /><span className="text-slate-500">Processes</span><i className="fa-solid fa-angle-right text-slate-400" /><span className="font-medium text-slate-800">{viewDefinition.name || viewDefinition.key}: Version {viewDefinition.version}</span>
                 </nav>
-                <button type="button" onClick={() => setRuntimeRefresh(value => value + 1)} disabled={refreshing} className="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
+                <button type="button" onClick={() => setRuntimeRefresh(value => value + 1)} disabled={refreshing} className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
                     <i className={`fa-solid fa-rotate mr-2 ${refreshing ? "fa-spin" : ""}`} />Refresh
                 </button>
             </div>

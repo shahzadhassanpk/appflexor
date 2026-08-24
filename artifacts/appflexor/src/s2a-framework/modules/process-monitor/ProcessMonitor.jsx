@@ -100,7 +100,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
             <div className="mx-auto max-w-7xl space-y-5">
                 <header className="flex flex-wrap items-center justify-between gap-3">
                     <p className="mb-0 text-sm text-slate-500">Live running processes, tasks, SLA health, and job status.</p>
-                    <button type="button" onClick={load} disabled={loading} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60"><i className={`fa-solid fa-rotate mr-2 ${loading ? "fa-spin" : ""}`} />Refresh</button>
+                    <button type="button" onClick={load} disabled={loading} className="!rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60"><i className={`fa-solid fa-rotate mr-2 ${loading ? "fa-spin" : ""}`} />Refresh</button>
                 </header>
                 {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
                 {loading ? <div className="grid place-items-center rounded-2xl border border-slate-200 bg-white py-20"><div className="text-center"><i className="fa-solid fa-circle-notch fa-spin text-2xl text-indigo-600" /><p className="mt-3 text-sm text-slate-500">Loading process operations…</p></div></div> : <>

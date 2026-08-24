@@ -2,7 +2,16 @@
 import { useMemo, useState } from "react";
 
 function Stat({ icon, label, value, tone }) {
-    return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><span className="text-sm font-medium text-slate-500">{label}</span><span className={`grid h-9 w-9 place-items-center rounded-xl ${tone}`}><i className={icon} /></span></div><p className="mb-0 mt-3 text-2xl font-bold text-slate-900">{value}</p></div>;
+    const cardTone = tone.includes("emerald")
+        ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white hover:border-emerald-300"
+        : tone.includes("amber")
+            ? "border-amber-200 bg-gradient-to-br from-amber-50 to-white hover:border-amber-300"
+            : tone.includes("sky")
+                ? "border-sky-200 bg-gradient-to-br from-sky-50 to-white hover:border-sky-300"
+                : tone.includes("slate")
+                    ? "border-slate-200 bg-gradient-to-br from-slate-100 to-white hover:border-slate-300"
+                    : "border-indigo-200 bg-gradient-to-br from-indigo-50 to-white hover:border-indigo-300";
+    return <div className={`flex min-w-0 items-center gap-3 rounded-xl border p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${cardTone}`}><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${tone}`}><i className={icon} aria-hidden="true" /></span><div className="min-w-0"><p className="mb-0 text-xl font-bold leading-none text-slate-900">{value}</p><span className="mt-1 block truncate text-xs font-semibold text-slate-600">{label}</span></div></div>;
 }
 
 function valueFor(item, column) { return column.sortValue ? column.sortValue(item) : item[column.key] ?? ""; }
@@ -21,8 +30,8 @@ export default function ProcessWorkspaceList({ title, description, stats, items,
     function changeSort(key) { setSort(previous => ({ key, direction: previous.key === key && previous.direction === "asc" ? "desc" : "asc" })); setPage(1); }
 
     return <div className="min-h-full bg-slate-50 p-3 sm:p-5"><div className="mx-auto max-w-7xl space-y-5">
-        <header className="flex flex-wrap items-center justify-between gap-3"><p className="mb-0 text-sm text-slate-500">{description}</p><button type="button" onClick={onAdd} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"><i className="fa-solid fa-plus mr-2" />{addLabel}</button></header>
-        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">{stats.map(stat => <Stat key={stat.label} {...stat} />)}</section>
+        <header className="flex flex-wrap items-center justify-between gap-3"><p className="mb-0 text-sm text-slate-500">{description}</p><button type="button" onClick={onAdd} className="!rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"><i className="fa-solid fa-plus mr-2" />{addLabel}</button></header>
+        <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">{stats.map(stat => <Stat key={stat.label} {...stat} />)}</section>
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4"><div><h2 className="mb-0 text-lg font-bold text-slate-900">{title}</h2><p className="mb-0 text-xs text-slate-500">{items.length} matching records</p></div><label className="relative w-full sm:w-80"><span className="sr-only">Search</span><i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={searchTerm} onChange={event => { setSearchTerm(event.target.value); setPage(1); }} placeholder={searchPlaceholder} className="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-9 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />{searchTerm && <button type="button" onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"><i className="fa-solid fa-xmark" /></button>}</label></div>
             <div className="divide-y divide-slate-100 md:hidden">{visible.map(item => <div key={item.id} className="p-4"><div className="mb-3 flex items-start justify-between gap-3"><div className="min-w-0"><p className="mb-1 truncate font-semibold text-slate-900">{columns[0].render ? columns[0].render(item) : valueFor(item, columns[0])}</p><p className="mb-0 truncate text-xs text-slate-500">{columns[1]?.render ? columns[1].render(item) : valueFor(item, columns[1])}</p></div>{renderActions(item)}</div><dl className="grid grid-cols-2 gap-2 text-xs">{columns.slice(2).map(column => <div key={column.key}><dt className="text-slate-400">{column.label}</dt><dd className="mt-1 text-slate-700">{column.render ? column.render(item) : valueFor(item, column)}</dd></div>)}</dl></div>)}</div>

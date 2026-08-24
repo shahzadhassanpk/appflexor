@@ -44,6 +44,7 @@ export function ProcessDeployDialog({
     const [processes,         setProcesses]         = useState([]); // [{id,name}] from BPMN
     const [fileStatus,        setFileStatus]        = useState("");
     const [showDiscardModal,  setShowDiscardModal]  = useState(false);
+    const [clearConfirmTask,  setClearConfirmTask]  = useState(null);
 
     /* ── Window / viewer layout ──────────────────────────────────────── */
     const [toggleModalWindow, setToggleModalWindow] = useState("maximize");
@@ -113,10 +114,13 @@ export function ProcessDeployDialog({
         setActiveProcessId("");
         setElementsMap({ userTasks: [], serviceTasks: [], variables: [], startEvents: [] });
         setActiveElemTab("userTasks");
-        setDeployPending(!!item.process_file);
+        const hasProcessFile = Boolean(item.process_file);
+        const hasDeployment = Boolean(item.version || item.deployment || item.process_id);
+        setDeployPending(hasProcessFile && !hasDeployment);
         setToggleBpmnViewer("restore");
         setFileStatus("");
         setStatusMsg(null);
+        setClearConfirmTask(null);
         setProcesses(
             tryParseJSONObject(
                 item.processes,
@@ -209,6 +213,64 @@ export function ProcessDeployDialog({
         return null;
     }
 
+    function getTaskConfigurationIssues(element) {
+        const bo = element?.businessObject || {};
+        const attrs = bo.$attrs || {};
+        if (element?.type === "bpmn:UserTask") {
+            const assignee = bo.assignee || bo.candidateUsers || bo.candidateGroups ||
+                attrs["camunda:assignee"] || attrs["camunda:candidateUsers"] || attrs["camunda:candidateGroups"] ||
+                attrs["activiti:assignee"] || attrs["activiti:candidateUsers"] || attrs["activiti:candidateGroups"];
+            const formKey = bo.formKey || attrs["camunda:formKey"] || attrs["activiti:formKey"];
+            return [!assignee && "assignment", !formKey && "form"].filter(Boolean);
+        }
+        if (element?.type !== "bpmn:ServiceTask") return [];
+
+        const inputParams = getInputParamMap(bo);
+        const topic = bo.topic || attrs["camunda:topic"] || "";
+        let meta = {};
+        try { meta = inputParams["appflexor.worker.meta"] ? JSON.parse(inputParams["appflexor.worker.meta"]) : {}; }
+        catch { return ["valid worker metadata"]; }
+
+        if (topic === "appflexor.ai.agent" || topic === "ai.agent.task") {
+            const agentKey = meta.agentKey || inputParams.s2aAgentKey || attrs.s2aAgentKey;
+            const taskKey = meta.taskKey || inputParams.s2aTaskKey || attrs.s2aTaskKey;
+            return [!agentKey && "AI agent", !taskKey && "AI task"].filter(Boolean);
+        }
+        if (topic === "appflexor.app.service" || topic === "app.service.api") {
+            const service = meta.service || inputParams.s2aAppServiceKey || attrs.s2aAppServiceKey;
+            let config = meta.serviceConfig || {};
+            if (!Object.keys(config).length && (inputParams.s2aAppServiceConfig || attrs.s2aAppServiceConfig)) {
+                try { config = JSON.parse(inputParams.s2aAppServiceConfig || attrs.s2aAppServiceConfig); } catch { return ["valid app service configuration"]; }
+            }
+            const requiredField = service === "update.formData" ? "formId" : service === "send.email" ? "emailKey" : "serviceKey";
+            return [!service && "app service", service && !config?.[requiredField] && requiredField].filter(Boolean);
+        }
+        if (topic === "appflexor.connector" || topic === "kafka.connector") {
+            const connectorTopic = meta["connector.topic"] || inputParams["kafka.topic"];
+            return connectorTopic ? [] : ["connector topic"];
+        }
+
+        const nativeImplementation = topic || bo.class || bo.delegateExpression || bo.expression ||
+            attrs["camunda:class"] || attrs["camunda:delegateExpression"] || attrs["camunda:expression"];
+        return nativeImplementation ? [] : ["service implementation"];
+    }
+
+    function getMissingTaskConfigurations() {
+        return allElementsRef.current
+            .filter(element => element.type === "bpmn:UserTask" || element.type === "bpmn:ServiceTask")
+            .map(element => ({ element, missing: getTaskConfigurationIssues(element) }))
+            .filter(item => item.missing.length);
+    }
+
+    function refreshConfigurationMarkers(viewer = viewerInstanceRef.current) {
+        if (!viewer) return;
+        const canvas = viewer.get("canvas");
+        allElementsRef.current
+            .filter(element => element.type === "bpmn:UserTask" || element.type === "bpmn:ServiceTask")
+            .forEach(element => canvas.removeMarker(element.id, "proc-task-missing-config"));
+        getMissingTaskConfigurations().forEach(({ element }) => canvas.addMarker(element.id, "proc-task-missing-config"));
+    }
+
     function parseProcessesFromXml(xml) {
         const parser = new DOMParser();
         const doc    = parser.parseFromString(xml, "application/xml");
@@ -239,6 +301,7 @@ export function ProcessDeployDialog({
                 variables:    filtered.filter(e => e.type === "bpmn:DataObjectReference"),
                 startEvents:  filtered.filter(e => e.type === "bpmn:StartEvent"),
             });
+            refreshConfigurationMarkers(viewer);
         } catch (err) {
             console.error("Element extraction error:", err);
         }
@@ -549,6 +612,12 @@ export function ProcessDeployDialog({
     }
 
     const deployProcess = async proc => {
+        const missingConfigurations = getMissingTaskConfigurations();
+        if (missingConfigurations.length) {
+            setStatus(`Configure ${missingConfigurations.length} highlighted task${missingConfigurations.length === 1 ? "" : "s"} before deployment`, "error");
+            refreshConfigurationMarkers();
+            return;
+        }
         const process_engine = appContext?.tenantSubscription?.process_engine;
         const request = {
             id:                proc.id,
@@ -843,6 +912,8 @@ export function ProcessDeployDialog({
             bo.name = propForm.name;
         }
 
+        refreshConfigurationMarkers();
+
         // Serialize XML and stage for deferred upload — flushed when Save Draft is clicked
         try {
             const { xml } = await viewerInstanceRef.current.saveXML({ format: true });
@@ -875,6 +946,61 @@ export function ProcessDeployDialog({
     /* ═══════════════════════════════════════════════════════════════════
        Close / discard
     ═══════════════════════════════════════════════════════════════════ */
+    function clearTaskConfiguration(element) {
+        setClearConfirmTask(element);
+    }
+
+    async function confirmClearTaskConfiguration() {
+        const element = clearConfirmTask;
+        if (!element) return;
+        setClearConfirmTask(null);
+        const bo = element.businessObject;
+        if (!bo.$attrs) bo.$attrs = {};
+        if (element.type === "bpmn:UserTask") {
+            bo.assignee = undefined;
+            bo.candidateUsers = undefined;
+            bo.candidateGroups = undefined;
+            bo.formKey = undefined;
+            [
+                "camunda:assignee", "camunda:candidateUsers", "camunda:candidateGroups", "camunda:formKey",
+                "activiti:assignee", "activiti:candidateUsers", "activiti:candidateGroups", "activiti:formKey",
+            ].forEach(key => delete bo.$attrs[key]);
+        } else if (element.type === "bpmn:ServiceTask") {
+            bo.topic = undefined;
+            bo.type = undefined;
+            bo.class = undefined;
+            bo.delegateExpression = undefined;
+            bo.expression = undefined;
+            if (bo.extensionElements?.values) {
+                bo.extensionElements.values = bo.extensionElements.values.filter(value => value.$type !== "camunda:InputOutput");
+            }
+            [
+                "camunda:topic", "camunda:type", "camunda:class", "camunda:delegateExpression", "camunda:expression",
+                "activiti:class", "activiti:delegateExpression", "activiti:expression",
+                "s2aAgentKey", "s2aTaskKey", "s2aResultKey", "s2aPayload", "s2aParams",
+                "s2aAppServiceKey", "s2aAppServiceConfig",
+            ].forEach(key => delete bo.$attrs[key]);
+        }
+
+        refreshConfigurationMarkers();
+        setElementsMap(previous => ({ ...previous }));
+        try {
+            const { xml } = await viewerInstanceRef.current.saveXML({ format: true });
+            currentXmlRef.current = xml;
+            setXmlDirty(true);
+            setDeployPending(true);
+            const xmlBytes = new TextEncoder().encode(xml);
+            let binary = "";
+            xmlBytes.forEach(byte => { binary += String.fromCharCode(byte); });
+            const encodedData = btoa(binary);
+            pendingFileRef.current = { ...(pendingFileRef.current || {}), fileName: pendingFileRef.current?.fileName || selectedItem.process_file, encodedData };
+            setStatus("Task configuration cleared — click Save Draft to persist", "info");
+        } catch (error) {
+            console.error("clear task configuration error:", error);
+            setStatus("Failed to clear task configuration", "error");
+        }
+    }
+
     function handleCloseClick() {
         if (formStatus === STATUS.create && selectedItem.id !== "") {
             setShowDiscardModal(true);
@@ -1049,17 +1175,19 @@ export function ProcessDeployDialog({
                                     {isUserTasks && <th>Assigned User/Group</th>}
                                     {isUserTasks && <th>Associated Form</th>}
                                     {!isUserTasks && <th>Type</th>}
-                                    <th style={{ width: isUserTasks ? "9rem" : "5rem" }} />
+                                    <th style={{ width: isUserTasks ? "7rem" : activeElemTab === "serviceTasks" ? "5rem" : "3rem" }} />
                                 </tr>
                             </thead>
                             <tbody>
                                 {currentElems.map(elem => {
                                     const assignee  = isUserTasks ? resolveAssigneeLabel(elem) : null;
                                     const formLabel = isUserTasks ? resolveFormLabel(elem)     : null;
+                                    const missingConfiguration = getTaskConfigurationIssues(elem);
                                     return (
-                                        <tr key={elem.id}>
+                                        <tr key={elem.id} className={missingConfiguration.length ? "proc-elem-row--missing" : ""} title={missingConfiguration.length ? `Missing: ${missingConfiguration.join(", ")}` : undefined}>
                                             <td>
                                                 <span className="proc-elem-name">{elemDisplayName(elem)}</span>
+                                                {missingConfiguration.length > 0 && <i className="fa-solid fa-circle-exclamation ms-2 text-danger" aria-label={`Missing ${missingConfiguration.join(", ")}`} />}
                                                 {elemBadge(elem)}
                                             </td>
                                             {isUserTasks && (
@@ -1150,14 +1278,23 @@ export function ProcessDeployDialog({
                                                         <button
                                                             className="btn btn-outline-secondary btn-sm proc-elem-edit-btn no-wrap"
                                                             title="Assign User/Group"
+                                                            aria-label="Assign user or group"
                                                             onClick={() => openPropModal("userTasks", elem, "assignee")}>
-                                                            <i className="fa-solid fa-user-pen" /> Assign
+                                                            <i className="fa-solid fa-user-pen" />
                                                         </button>
                                                         <button
                                                             className="btn btn-outline-secondary btn-sm proc-elem-edit-btn no-wrap"
                                                             title="Configure Form"
+                                                            aria-label="Configure form"
                                                             onClick={() => openPropModal("userTasks", elem, "form")}>
-                                                            <i className="fa-solid fa-file-lines" /> Configure
+                                                            <i className="fa-solid fa-file-lines" />
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-outline-danger btn-sm proc-elem-edit-btn no-wrap"
+                                                            title="Clear assignment and form configuration"
+                                                            aria-label="Clear assignment and form configuration"
+                                                            onClick={() => clearTaskConfiguration(elem)}>
+                                                            <i className="fa-solid fa-eraser" />
                                                         </button>
                                                     </div>
                                                 ) : (
@@ -1165,9 +1302,19 @@ export function ProcessDeployDialog({
                                                         <button
                                                             className="btn btn-outline-secondary btn-sm proc-elem-edit-btn no-wrap"
                                                             title="Configure"
+                                                            aria-label={`Configure ${elemDisplayName(elem)}`}
                                                             onClick={() => openPropModal(activeElemTab, elem)}>
-                                                            <i className="fa-solid fa-file-lines me-1" />Configure
+                                                            <i className="fa-solid fa-file-lines" />
                                                         </button>
+                                                        {activeElemTab === "serviceTasks" && (
+                                                            <button
+                                                                className="btn btn-outline-danger btn-sm proc-elem-edit-btn no-wrap"
+                                                                title="Clear service task configuration"
+                                                                aria-label="Clear service task configuration"
+                                                                onClick={() => clearTaskConfiguration(elem)}>
+                                                                <i className="fa-solid fa-eraser" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
                                             </td>
@@ -1185,6 +1332,8 @@ export function ProcessDeployDialog({
     /* ═══════════════════════════════════════════════════════════════════
        Render
     ═══════════════════════════════════════════════════════════════════ */
+    const configurationIssues = getMissingTaskConfigurations();
+
     return (
         <>
             {/* ── Main deploy modal ── */}
@@ -1322,10 +1471,16 @@ export function ProcessDeployDialog({
                                 </div>
 
                                 {/* Pending-deploy banner */}
-                                {deployPending && formStatus === STATUS.update && (
+                                {deployPending && formStatus === STATUS.update && configurationIssues.length === 0 && (
                                     <div className="proc-deploy-pending-banner">
                                         <i className="fa-solid fa-triangle-exclamation me-2" />
                                         Changes saved — deploy to apply to the process engine
+                                    </div>
+                                )}
+                                {configurationIssues.length > 0 && (
+                                    <div className="proc-task-config-warning" role="alert">
+                                        <i className="fa-solid fa-circle-exclamation me-2" />
+                                        Draft saving is allowed. Configure {configurationIssues.length} highlighted task{configurationIssues.length === 1 ? "" : "s"} before deployment.
                                     </div>
                                 )}
 
@@ -1334,7 +1489,8 @@ export function ProcessDeployDialog({
                                     <button
                                         className="btn button-theme btn-sm"
                                         onClick={() => saveData(selectedItem)}
-                                        disabled={saveIsDisabled}>
+                                        disabled={saveIsDisabled}
+                                        title={saveIsDisabled ? "Select a process and BPMN file before saving" : "Save as draft, even with incomplete task configuration"}>
                                         <i className="fa-solid fa-floppy-disk pe-1" />
                                         Save Draft
                                     </button>
@@ -1342,8 +1498,8 @@ export function ProcessDeployDialog({
                                         <button
                                             className={`btn button-theme btn-sm ${deployPending ? "proc-deploy-btn--pulse" : ""}`}
                                             onClick={() => deployProcess(selectedItem)}
-                                            disabled={!deployPending || deploying}
-                                            title="Deploy to process engine">
+                                            disabled={!deployPending || deploying || configurationIssues.length > 0}
+                                            title={configurationIssues.length ? "Complete all highlighted task configurations before deployment" : "Deploy to process engine"}>
                                             {deploying
                                                 ? <><i className="fa-solid fa-spinner fa-spin pe-1" />Deploying…</>
                                                 : <><i className="fa-solid fa-rocket pe-1" />Deploy Process</>}
@@ -1386,6 +1542,31 @@ export function ProcessDeployDialog({
             />
 
             {/* ── Discard confirm ── */}
+            <Modal
+                show={Boolean(clearConfirmTask)}
+                onHide={() => setClearConfirmTask(null)}
+                backdrop="static"
+                centered
+                size="sm"
+                className="proc-clear-confirm-modal"
+                backdropClassName="proc-clear-confirm-backdrop"
+                style={{ zIndex: 2000 }}>
+                <Modal.Header closeButton>
+                    <Modal.Title id="clear-task-config-title" className="d-flex align-items-center gap-2 fs-6">
+                        <span className="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger" style={{ width: 36, height: 36 }}><i className="fa-solid fa-eraser" /></span>
+                        Clear task configuration?
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p className="mb-2">This will clear all configuration from <strong>{clearConfirmTask?.businessObject?.name || clearConfirmTask?.id}</strong>.</p>
+                    <p className="mb-0 small text-muted">Deployment will remain unavailable until the task is configured again and the draft is saved.</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <button type="button" autoFocus onClick={() => setClearConfirmTask(null)} className="btn btn-outline-secondary btn-sm rounded-pill px-3">Cancel</button>
+                    <button type="button" onClick={confirmClearTaskConfiguration} className="btn btn-danger btn-sm rounded-pill px-3"><i className="fa-solid fa-eraser me-2" />Clear configuration</button>
+                </Modal.Footer>
+            </Modal>
+
             <Modal
                 show={showDiscardModal}
                 onHide={() => setShowDiscardModal(false)}

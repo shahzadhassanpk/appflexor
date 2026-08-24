@@ -127,6 +127,40 @@
     height: 100% !important;
 }
 
+/* Tasks that cannot be deployed until their required AppFlexor settings are complete. */
+.proc-viewer-canvas .proc-task-missing-config .djs-visual > :first-child {
+    fill: #fef2f2 !important;
+    stroke: #dc2626 !important;
+    stroke-width: 3px !important;
+}
+
+.proc-viewer-canvas .proc-task-missing-config .djs-visual {
+    filter: drop-shadow(0 0 3px rgba(220, 38, 38, 0.4));
+}
+
+.proc-task-config-warning {
+    margin: 0.5rem 0.75rem 0;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #fecaca;
+    border-radius: 0.6rem;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.proc-elem-table tr.proc-elem-row--missing > td {
+    background: #fff7f7;
+}
+
+.proc-clear-confirm-backdrop {
+    z-index: 1990 !important;
+}
+
+.proc-clear-confirm-modal {
+    z-index: 2000 !important;
+}
+
 /* ── Element tabs panel ─────────────────────────────────────────────────── */
 .proc-elem-panel {
     display: flex;
@@ -256,7 +290,9 @@
 
 .proc-elem-edit-btn {
     font-size: 0.72rem;
-    padding: 0.15rem 0.5rem;
+    width: 1.8rem;
+    height: 1.8rem;
+    padding: 0;
     line-height: 1.4;
 }
 

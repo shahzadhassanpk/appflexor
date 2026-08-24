@@ -58,9 +58,7 @@ export default function DeployedProcesses({ definitions, instances, jobs, onSele
             <div className="border-b border-slate-200 p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 id="deployed-processes-title" className="mb-1 text-lg font-bold text-slate-900">
-                            {definitions.length} process definitions deployed
-                        </h2>
+                        <h2 className="mb-2.5 text-base font-bold text-slate-900">Deployed</h2>
                         <p className="mb-0 text-sm text-slate-500">Latest deployed version for the active tenant</p>
                     </div>
                     <label className="relative w-full sm:w-72">

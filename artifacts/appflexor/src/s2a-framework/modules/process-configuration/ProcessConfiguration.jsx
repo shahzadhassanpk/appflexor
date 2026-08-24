@@ -520,23 +520,23 @@ function ProcessConfiguration() {
                                 </button> */}
                                 <button
                                     type="button"
-                                    className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
+                                    className="group btn button-theme btn-sm d-inline-flex align-items-center gap-2 !border-blue-600 !bg-blue-600 !text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:!border-blue-700 hover:!bg-blue-700 hover:shadow-lg hover:shadow-blue-200/70 active:translate-y-0 active:shadow-sm focus:!ring-2 focus:!ring-blue-300"
                                     onClick={() => setShowDeploy(true)}>
-                                    <i className="fa-solid fa-rocket" aria-hidden="true" />
+                                    <i className="fa-solid fa-rocket transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
                                     Deploy Processes
                                 </button>
                                 <button
                                     type="button"
-                                    className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
+                                    className="group btn button-theme btn-sm d-inline-flex align-items-center gap-2 !border-violet-600 !bg-violet-600 !text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:!border-violet-700 hover:!bg-violet-700 hover:shadow-lg hover:shadow-violet-200/70 active:translate-y-0 active:shadow-sm focus:!ring-2 focus:!ring-violet-300"
                                     onClick={() => setShowProcessMap(true)}>
-                                    <i className="fa-solid fa-gears" aria-hidden="true" />
+                                    <i className="fa-solid fa-gears transition-transform duration-300 group-hover:rotate-45" aria-hidden="true" />
                                     Configure Processes
                                 </button>
                                 <button
                                     type="button"
-                                    className="btn button-theme btn-sm d-inline-flex align-items-center gap-2"
+                                    className="group btn button-theme btn-sm d-inline-flex align-items-center gap-2 !border-emerald-600 !bg-emerald-600 !text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:!border-emerald-700 hover:!bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200/70 active:translate-y-0 active:shadow-sm focus:!ring-2 focus:!ring-emerald-300"
                                     onClick={openProcessMonitor}>
-                                    <i className="fa-solid fa-chart-line" aria-hidden="true" />
+                                    <i className="fa-solid fa-chart-line transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
                                     Monitor Processes
                                 </button>
                             </div>

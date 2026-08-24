@@ -1,23 +1,27 @@
 /* eslint-disable react/prop-types */
 
 function Metric({ icon, label, value, tone }) {
+    const cardTone = tone.includes("emerald")
+        ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white hover:border-emerald-300"
+        : tone.includes("amber")
+            ? "border-amber-200 bg-gradient-to-br from-amber-50 to-white hover:border-amber-300"
+            : tone.includes("red")
+                ? "border-red-200 bg-gradient-to-br from-red-50 to-white hover:border-red-300"
+                : tone.includes("sky")
+                    ? "border-sky-200 bg-gradient-to-br from-sky-50 to-white hover:border-sky-300"
+                    : "border-indigo-200 bg-gradient-to-br from-indigo-50 to-white hover:border-indigo-300";
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">{label}</span>
-                <span className={`grid h-9 w-9 place-items-center rounded-xl ${tone}`}><i className={icon} aria-hidden="true" /></span>
+        <div className={`flex min-w-0 items-center gap-3 rounded-xl border p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${cardTone}`}>
+            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${tone}`}><i className={icon} aria-hidden="true" /></span>
+            <div className="min-w-0">
+                <p className="mb-0 text-xl font-bold leading-none text-slate-900">{value}</p>
+                <span className="mt-1 block truncate text-xs font-semibold text-slate-600">{label}</span>
             </div>
-            <p className="mb-0 mt-3 text-2xl font-bold text-slate-900">{value}</p>
         </div>
     );
 }
 
-function RingMetric({ label, value, color = "border-indigo-600" }) {
-    return <div className="flex flex-col items-center p-4 text-center"><div className={`grid h-24 w-24 place-items-center rounded-full border-[14px] ${color} bg-white text-2xl font-bold text-indigo-700`}>{value}</div><p className="mb-0 mt-3 text-sm font-medium text-slate-700">{label}</p></div>;
-}
-
-export default function Dashboard({ definitions, instances, tasks, jobs, history, tenantId }) {
-    const failedJobs = jobs.filter(job => job.exceptionMessage || job.retries === 0).length;
+export default function Dashboard({ definitions, instances, tasks }) {
     const overdue = tasks.filter(task => task.due && new Date(task.due) < new Date()).length;
     const deployments = new Set(definitions.map(item => item.deploymentId).filter(Boolean)).size;
     return (
@@ -37,9 +41,13 @@ export default function Dashboard({ definitions, instances, tasks, jobs, history
                     <RingMetric label="Open Human Tasks" value={tasks.length} />
                 </div>
             </div> */}
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h2 className="mb-3 text-lg font-bold text-slate-900">Deployed</h2>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4"><div><p className="mb-1 text-sm text-slate-500">Process Definitions</p><p className="mb-0 text-2xl font-bold text-indigo-600">{definitions.length}</p></div><div><p className="mb-1 text-sm text-slate-500">Deployments</p><p className="mb-0 text-2xl font-bold text-indigo-600">{deployments}</p></div><div><p className="mb-1 text-sm text-slate-500">Running Instances</p><p className="mb-0 text-2xl font-bold text-indigo-600">{instances.length}</p></div><div><p className="mb-1 text-sm text-slate-500">Overdue Tasks</p><p className="mb-0 text-2xl font-bold text-indigo-600">{overdue}</p></div></div>
+            <div className="mt-4">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                    <Metric icon="fa-solid fa-diagram-project" label="Process Definitions" value={definitions.length} tone="bg-indigo-100 text-indigo-700" />
+                    <Metric icon="fa-solid fa-rocket" label="Deployments" value={deployments} tone="bg-sky-100 text-sky-700" />
+                    <Metric icon="fa-solid fa-play" label="Running Instances" value={instances.length} tone="bg-emerald-100 text-emerald-700" />
+                    <Metric icon="fa-solid fa-clock" label="Overdue Tasks" value={overdue} tone={overdue ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"} />
+                </div>
             </div>
         </section>
     );

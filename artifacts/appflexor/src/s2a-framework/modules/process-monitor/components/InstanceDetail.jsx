@@ -144,10 +144,10 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
             <nav className="min-w-0 truncate text-sm"><span className="font-semibold text-indigo-600">Dashboard</span><i className="fa-solid fa-angle-right mx-2 text-slate-400" /><span className="font-semibold text-indigo-600">Processes</span><i className="fa-solid fa-angle-right mx-2 text-slate-400" /><span id="instance-detail-title">{instance.definitionName || instance.definitionId}: {instance.id}: Runtime</span></nav>
             <div className="ml-3 flex shrink-0 items-center gap-2">
-                <button type="button" onClick={refreshInstance} disabled={refreshing} className="inline-flex h-10 items-center rounded-lg bg-indigo-600 px-3 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
+                <button type="button" onClick={refreshInstance} disabled={refreshing} className="inline-flex h-10 items-center rounded-full bg-indigo-600 px-3 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
                     <i className={`fa-solid fa-rotate mr-2 ${refreshing ? "fa-spin" : ""}`} />Refresh
                 </button>
-                <button type="button" onClick={onClose} title="Close instance details" className="inline-flex h-10 items-center rounded-lg bg-indigo-600 px-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-1" aria-label="Close instance details">
+                <button type="button" onClick={onClose} title="Close instance details" className="inline-flex h-10 items-center rounded-full bg-indigo-600 px-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-1" aria-label="Close instance details">
                     <i className="fa-solid fa-xmark mr-2" aria-hidden="true" />Close
                 </button>
             </div>
