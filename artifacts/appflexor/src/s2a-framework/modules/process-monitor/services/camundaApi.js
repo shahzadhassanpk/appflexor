@@ -14,12 +14,21 @@ function unwrap(response) {
 }
 
 export async function camundaRequest(path, options = {}) {
-    const response = await axios.post(proxyUrl, {
-        path,
-        method: options.method || "GET",
-        data: options.data || {},
-    });
-    return unwrap(response);
+    const method = options.method || "GET";
+    const maxAttempts = method === "GET" ? 3 : 1;
+    let lastError;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+            const response = await axios.post(proxyUrl, { path, method, data: options.data || {} });
+            return unwrap(response);
+        } catch (error) {
+            lastError = error;
+            if (attempt < maxAttempts && !String(error.message || "").includes("session has expired")) {
+                await new Promise(resolve => setTimeout(resolve, attempt * 250));
+            }
+        }
+    }
+    throw lastError;
 }
 
 function query(params = {}) {
@@ -33,23 +42,32 @@ function query(params = {}) {
     return value ? `?${value}` : "";
 }
 
+async function getAllPages(path, params = {}, pageSize = 100) {
+    const rows = [];
+    const seenIds = new Set();
+    let firstResult = 0;
+    let hasMore = true;
+    while (hasMore) {
+        const page = await camundaRequest(`${path}${query({ ...params, firstResult, maxResults: pageSize })}`);
+        const items = Array.isArray(page) ? page : [];
+        const newItems = items.filter(item => !seenIds.has(item.id));
+        newItems.forEach(item => seenIds.add(item.id));
+        rows.push(...newItems);
+        hasMore = items.length === pageSize && newItems.length > 0;
+        if (hasMore) firstResult += pageSize;
+    }
+    return rows;
+}
+
 export const camundaApi = {
     getProcessDefinitions: () => camundaRequest(`/process-definition${query({
         latestVersion: true,
     })}`),
 
-    getProcessInstances: () => camundaRequest(`/process-instance${query({
-        active: true,
-        firstResult: 0,
-        maxResults: 100,
-    })}`),
+    getProcessInstances: () => getAllPages("/process-instance", { active: true }),
     getProcessInstance: instanceId => camundaRequest(`/process-instance/${instanceId}`),
-    getProcessInstancesByDefinition: definitionId => camundaRequest(`/process-instance${query({
-        processDefinitionId: definitionId,
-        active: true,
-        firstResult: 0,
-        maxResults: 100,
-    })}`),
+    deleteProcessInstance: instanceId => camundaRequest(`/process-instance/${instanceId}${query({ skipCustomListeners: true, skipIoMappings: true })}`, { method: "DELETE" }),
+    getProcessInstancesByDefinition: definitionId => getAllPages("/process-instance", { processDefinitionId: definitionId, active: true }),
 
     getTasks: () => camundaRequest(`/task${query({
         active: true,

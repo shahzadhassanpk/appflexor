@@ -23,6 +23,15 @@ async function hydrateJsonVariables(instanceId, variables) {
     return hydrated;
 }
 
+async function mapWithConcurrency(items, concurrency, mapper) {
+    const results = [];
+    for (let index = 0; index < items.length; index += concurrency) {
+        const batch = items.slice(index, index + concurrency);
+        results.push(...await Promise.all(batch.map(mapper)));
+    }
+    return results;
+}
+
 export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
     const appContext = useContext(AppContext);
     const tenantId = appContext?.tenantSubscription?.tenant_id || "";
@@ -38,11 +47,13 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
         try {
             const [definitions, rawInstances, tasks, history, jobs] = await Promise.all([
                 camundaApi.getProcessDefinitions(tenantId), camundaApi.getProcessInstances(tenantId),
-                camundaApi.getTasks(tenantId), camundaApi.getHistoricInstances(tenantId), camundaApi.getJobs(tenantId),
+                camundaApi.getTasks(tenantId),
+                camundaApi.getHistoricInstances(tenantId).catch(() => []),
+                camundaApi.getJobs(tenantId).catch(() => []),
             ]);
             const definitionMap = Object.fromEntries((definitions || []).map(item => [item.id, item]));
             const historyMap = Object.fromEntries((history || []).map(item => [item.id, item]));
-            const details = await Promise.all((rawInstances || []).map(async instance => {
+            const details = await mapWithConcurrency(rawInstances || [], 8, async instance => {
                 const [rawVariables, activity] = await Promise.all([
                     camundaApi.getInstanceVariables(instance.id).catch(() => ({})),
                     camundaApi.getActivityInstances(instance.id).catch(() => null),
@@ -51,7 +62,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
                 const definition = definitionMap[instance.definitionId];
                 const startTime = instance.startTime || historyMap[instance.id]?.startTime;
                 return { ...instance, startTime, history: historyMap[instance.id], definition, definitionName: definition?.name || definition?.key, variables, activity, sla: calculateSla(variables, new Date(), startTime), tasks: (tasks || []).filter(task => task.processInstanceId === instance.id) };
-            }));
+            });
             setState({ definitions: definitions || [], instances: details, tasks: tasks || [], jobs: jobs || [], history: history || [] });
         } catch (requestError) {
             setError(requestError.response?.data?.message || requestError.message || "Unable to load Camunda monitor data.");
@@ -91,6 +102,16 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
         });
     }
 
+    function removeInstance(instanceId) {
+        setState(previous => ({
+            ...previous,
+            instances: previous.instances.filter(item => item.id !== instanceId),
+            tasks: previous.tasks.filter(item => item.processInstanceId !== instanceId),
+            jobs: previous.jobs.filter(item => item.processInstanceId !== instanceId),
+        }));
+        setSelected(current => current.instanceId === instanceId ? { instanceId: "", taskId: "" } : current);
+    }
+
     useEffect(() => { if (activeTab === "PROCESS_MONITOR") load(); }, [activeTab, load]);
     const instanceMap = useMemo(() => Object.fromEntries(state.instances.map(item => [item.id, item])), [state.instances]);
     const selectedInstance = instanceMap[selected.instanceId];
@@ -114,7 +135,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
             </div>
             {selectedDefinition && (
                 <div className="fixed inset-0 z-[1070] overflow-y-auto bg-slate-50 p-3 sm:p-5">
-                    <ProcessExecutionView definition={selectedDefinition} instances={state.instances} tasks={state.tasks} jobs={state.jobs} onBack={() => setSelectedDefinition(null)} onSelectInstance={instanceId => setSelected({ instanceId, taskId: "" })} />
+                    <ProcessExecutionView definition={selectedDefinition} instances={state.instances} tasks={state.tasks} jobs={state.jobs} onBack={() => setSelectedDefinition(null)} onSelectInstance={instanceId => setSelected({ instanceId, taskId: "" })} onInstanceDeleted={removeInstance} />
                 </div>
             )}
             <InstanceDetail instance={selectedInstance} selectedTaskId={selected.taskId} jobs={state.jobs} onRefresh={() => refreshInstance(selected.instanceId)} onClose={() => setSelected({ instanceId: "", taskId: "" })} />

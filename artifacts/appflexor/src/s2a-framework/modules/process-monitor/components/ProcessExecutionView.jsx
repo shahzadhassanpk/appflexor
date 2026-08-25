@@ -42,7 +42,7 @@ function createCountBadge(count) {
     return badge;
 }
 
-export default function ProcessExecutionView({ definition, instances, tasks, jobs, onBack, onSelectInstance }) {
+export default function ProcessExecutionView({ definition, instances, tasks, jobs, onBack, onSelectInstance, onInstanceDeleted }) {
     const containerRef = useRef(null);
     const viewerRef = useRef(null);
     const [activeTab, setActiveTab] = useState("Process Instances");
@@ -52,6 +52,9 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const [runtimeState, setRuntimeState] = useState({ instances, tasks, jobs });
     const [runtimeRefresh, setRuntimeRefresh] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
     const definitionInstances = useMemo(() => runtimeState.instances.filter(item => item.definitionId === viewDefinition.id), [runtimeState.instances, viewDefinition.id]);
     const definitionTasks = useMemo(() => runtimeState.tasks.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.tasks, viewDefinition.id]);
     const definitionJobs = useMemo(() => runtimeState.jobs.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.jobs, viewDefinition.id]);
@@ -92,6 +95,26 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         loadLatestRuntimeState();
         return () => { disposed = true; };
     }, [viewDefinition.id, viewDefinition.tenantId, runtimeRefresh]);
+
+    async function deleteInstance() {
+        if (!deleteTarget) return;
+        setDeleting(true);
+        setDeleteError("");
+        try {
+            await camundaApi.deleteProcessInstance(deleteTarget.id);
+            setRuntimeState(previous => ({
+                instances: previous.instances.filter(item => item.id !== deleteTarget.id),
+                tasks: previous.tasks.filter(item => item.processInstanceId !== deleteTarget.id),
+                jobs: previous.jobs.filter(item => item.processInstanceId !== deleteTarget.id),
+            }));
+            onInstanceDeleted?.(deleteTarget.id);
+            setDeleteTarget(null);
+        } catch (error) {
+            setDeleteError(error.message || "Unable to delete the process instance.");
+        } finally {
+            setDeleting(false);
+        }
+    }
 
     useEffect(() => {
         let disposed = false;
@@ -161,20 +184,21 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                     </div>
                     <div className="p-4">
                         <div className="flex gap-1 overflow-x-auto border-b border-slate-200" role="tablist">{TABS.map(tab => <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`shrink-0 border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500"}`}>{tab}</button>)}</div>
-                        {activeTab === "Process Instances" && <RuntimeTable rows={definitionInstances} onSelect={onSelectInstance} />}
+                        {activeTab === "Process Instances" && <RuntimeTable rows={definitionInstances} onSelect={onSelectInstance} onDelete={setDeleteTarget} />}
                         {activeTab === "Incidents" && <MessageList rows={incidents} empty="No open incidents." render={item => item.exceptionMessage || "Job retries exhausted"} />}
                         {activeTab === "Human Tasks" && <MessageList rows={definitionTasks} empty="No open human tasks." render={item => `${item.name || item.taskDefinitionKey} · ${item.assignee || "Unassigned"}`} />}
                         {activeTab === "Jobs" && <MessageList rows={definitionJobs} empty="No jobs for this definition." render={item => `${item.jobDefinitionId || item.id} · ${item.retries} retries`} />}
                     </div>
                 </div>
             </div>
+            {deleteTarget && <div className="fixed inset-0 z-[1100] grid place-items-center bg-slate-950/50 p-4" role="presentation" onMouseDown={() => !deleting && setDeleteTarget(null)}><section className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="delete-instance-title" onMouseDown={event => event.stopPropagation()}><div className="flex items-start gap-3 p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-red-100 text-red-600"><i className="fa-solid fa-trash-can" aria-hidden="true" /></span><div className="min-w-0"><h2 id="delete-instance-title" className="mb-1 text-base font-bold text-slate-900">Delete process instance?</h2><p className="mb-1 text-sm text-slate-600">This permanently deletes the running instance and its active tasks.</p><p className="mb-0 break-all text-xs font-medium text-slate-500">{deleteTarget.businessKey || deleteTarget.id}</p></div></div>{deleteError && <div role="alert" className="mx-5 mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{deleteError}</div>}<div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3"><button type="button" disabled={deleting} onClick={() => setDeleteTarget(null)} className="!rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Cancel</button><button type="button" disabled={deleting} onClick={deleteInstance} className="!rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"><i className={`fa-solid ${deleting ? "fa-spinner fa-spin" : "fa-trash-can"} mr-2`} />{deleting ? "Deleting…" : "Delete instance"}</button></div></section></div>}
         </div>
     );
 }
 
-function RuntimeTable({ rows, onSelect }) {
+function RuntimeTable({ rows, onSelect, onDelete }) {
     if (!rows.length) return <p className="p-8 text-center text-sm text-slate-500">No running process instances.</p>;
-    return <div className="overflow-x-auto"><table className="mt-2 w-full min-w-[650px] text-left text-sm"><thead className="text-xs uppercase text-slate-500"><tr><th className="p-3">State</th><th className="p-3">ID</th><th className="p-3">Business Key</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.map(item => <tr key={item.id}><td className="p-3"><i className="fa-solid fa-circle-check text-emerald-500" /></td><td className="p-3"><button type="button" onClick={() => onSelect(item.id)} className="font-medium text-indigo-600 hover:underline">{item.id}</button></td><td className="p-3">{item.businessKey || "—"}</td></tr>)}</tbody></table></div>;
+    return <div className="overflow-x-auto"><table className="mt-2 w-full min-w-[650px] text-left text-sm"><thead className="text-xs uppercase text-slate-500"><tr><th className="p-3">State</th><th className="p-3">ID</th><th className="p-3">Business Key</th><th className="p-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.map(item => <tr key={item.id}><td className="p-3"><i className="fa-solid fa-circle-check text-emerald-500" /></td><td className="p-3"><button type="button" onClick={() => onSelect(item.id)} className="font-medium text-indigo-600 hover:underline">{item.id}</button></td><td className="p-3">{item.businessKey || "—"}</td><td className="p-3 text-right"><button type="button" onClick={() => onDelete(item)} title="Delete process instance" aria-label={`Delete process instance ${item.id}`} className="ml-auto grid h-8 w-8 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"><i className="fa-solid fa-trash-can" aria-hidden="true" /></button></td></tr>)}</tbody></table></div>;
 }
 
 function MessageList({ rows, empty, render }) {

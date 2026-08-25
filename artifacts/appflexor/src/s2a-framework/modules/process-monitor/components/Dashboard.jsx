@@ -24,6 +24,10 @@ function Metric({ icon, label, value, tone }) {
 export default function Dashboard({ definitions, instances, tasks }) {
     const overdue = tasks.filter(task => task.due && new Date(task.due) < new Date()).length;
     const deployments = new Set(definitions.map(item => item.deploymentId).filter(Boolean)).size;
+    const displayedDefinitionIds = new Set(definitions.map(item => item.id));
+    const runningInstanceCount = new Set(instances
+        .filter(instance => displayedDefinitionIds.has(instance.definitionId))
+        .map(instance => instance.id)).size;
     return (
         <section aria-labelledby="monitor-overview">
             
@@ -45,7 +49,7 @@ export default function Dashboard({ definitions, instances, tasks }) {
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                     <Metric icon="fa-solid fa-diagram-project" label="Process Definitions" value={definitions.length} tone="bg-indigo-100 text-indigo-700" />
                     <Metric icon="fa-solid fa-rocket" label="Deployments" value={deployments} tone="bg-sky-100 text-sky-700" />
-                    <Metric icon="fa-solid fa-play" label="Running Instances" value={instances.length} tone="bg-emerald-100 text-emerald-700" />
+                    <Metric icon="fa-solid fa-play" label="Running Instances" value={runningInstanceCount} tone="bg-emerald-100 text-emerald-700" />
                     <Metric icon="fa-solid fa-clock" label="Overdue Tasks" value={overdue} tone={overdue ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"} />
                 </div>
             </div>
