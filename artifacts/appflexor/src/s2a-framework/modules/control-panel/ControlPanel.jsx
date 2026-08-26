@@ -127,13 +127,13 @@ const PANELS = [
         quickActions: [                         
             {
                 icon: "fa-solid fa-database",
-                label: "Data Sharing Services",
+                label: "Data Services",
                 route: "/data-management",
                 description: "Design reusable forms, manage persistent data lists, and configure SQL‑based APIs."
             },
             {
                 icon: "fa-solid fa-magnifying-glass-chart",
-                label: "Custom Reports and Analytics",
+                label: "Reports and Analytics",
                 route: "/data-analysis",
                 description: "Deploy custom reports to analyze data streams and generate actionable insights for decision-making."
             },

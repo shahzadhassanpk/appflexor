@@ -29,8 +29,8 @@ export const DOC_MANIFEST = [
         slug: "integrate",
         icon: "fa-solid fa-plug",
         docs: [
-            { title: "Data Sharing Services", slug: "data-sharing", excerpt: "Design reusable forms, manage persistent data lists, and configure SQL‑based APIs." },
-            { title: "Custom Reports and Analytics", slug: "reports", excerpt: "Deploy custom reports to analyze data streams and generate actionable insights for decision-making." },
+            { title: "Data Services", slug: "data-sharing", excerpt: "Design reusable forms, manage persistent data lists, and configure SQL‑based APIs." },
+            { title: "Reports and Analytics", slug: "reports", excerpt: "Deploy custom reports to analyze data streams and generate actionable insights for decision-making." },
             { title: "Email Services", slug: "email-services", excerpt: "Manage accounts and templates for sending system‑generated emails." },
             { title: "AI Provider Services", slug: "ai-services", excerpt: "Configure AI providers, agents, and task definitions for workflow automation" },
             { title: "External Systems Integration", slug: "connector", excerpt: "Guidelines to integrate external systems with your processes as external workers" },

@@ -128,7 +128,7 @@ function Processes(props) {
 
     useEffect(() => {
         getTaskList();
-    }, [taskFilterType]);
+    }, [taskFilterType, data?.process_scope, data?.process_keys]);
 
     useEffect(() => {
         if (renderProcessModal) {
@@ -292,6 +292,9 @@ function Processes(props) {
         let serviceParams = "";
         let filterCondition = "";
         let serviceKeyOrder = "cam.list.my.tasks";
+        if (data.process_scope === "SELECTED") {
+            filterCondition = " and process.proc_def_key_ in ('" + (Array.isArray(data?.process_keys) ? data.process_keys.join("','") : "") + "')";
+        }
         if (taskFilterType == "allTask") {
             serviceKeyOrder = "cam.list.task.all";
             serviceParams = "";
@@ -302,7 +305,7 @@ function Processes(props) {
                 !delegates || delegates == ""
                     ? username
                     : username + "," + delegates;
-            filterCondition = _params;
+            filterCondition = filterCondition + " and task.Assignee_ in (" + _params + ")";
         }
 
         let dataRequest = {
@@ -354,6 +357,15 @@ function Processes(props) {
                                     item.variables &&
                                     item.variables?.org_id === org_id || !item.variables?.org_id,
                             );
+                        }
+
+                        const processScope = data?.process_scope || "ALL";
+                        const configuredProcessKeys = Array.isArray(data?.process_keys)
+                            ? data.process_keys
+                            : tryParseJSONObject(data?.process_keys || "[]");
+                        if (processScope === "SELECTED") {
+                            const selectedKeys = new Set((Array.isArray(configuredProcessKeys) ? configuredProcessKeys : []).map(String));
+                            list = list.filter(item => selectedKeys.has(String(item.proc_def_key || item.process_def_key || "")));
                         }
 
                         /* Persist the all-tasks count separately so it
@@ -547,7 +559,7 @@ function Processes(props) {
                     "/" +
                     user.profile_img;
             }
-        } catch (e) {}
+        } catch (e) { }
         return url;
     }
 
@@ -717,10 +729,16 @@ function ModalBox(props) {
         auto_refresh: false,
         allow_start_task: true,
         use_dynamic: true,
+        process_scope: "ALL",
+        process_keys: [],
         inbox_fields: initialInboxOptions,
     };
     const [config, setConfig] = useState(initialConfig);
     const [options, setOptions] = useState(initialInboxOptions);
+    const [configProcessList, setConfigProcessList] = useState([]);
+    const [processListLoading, setProcessListLoading] = useState(false);
+    const [showProcessSelector, setShowProcessSelector] = useState(false);
+    const [processSearch, setProcessSearch] = useState("");
 
     const [currentComponent, setCurrentComponent] = useState({});
     const [toggleModalWindow, setToggleModalWindow] = useState("restore");
@@ -752,8 +770,11 @@ function ModalBox(props) {
 
     useEffect(() => {
         if (data) {
-            setOptions(data?.inbox_fields);
-            setConfig(data ? data : initialConfig);
+            const savedProcessKeys = Array.isArray(data.process_keys)
+                ? data.process_keys
+                : tryParseJSONObject(data.process_keys || "[]");
+            setOptions(data?.inbox_fields || initialInboxOptions);
+            setConfig({ ...initialConfig, ...data, process_keys: Array.isArray(savedProcessKeys) ? savedProcessKeys : [] });
             selectTaskRadio(data?.show_task);
             selectTaskViewRadio(data?.task_view);
         }
@@ -765,6 +786,21 @@ function ModalBox(props) {
             inbox_fields: options,
         }));
     }, [options]);
+
+    useEffect(() => {
+        if (!show) return;
+        setProcessListLoading(true);
+        axios.post(API_URL + "?service.key=masterKey.tenantData", {
+            dataKeys: [{ serviceParams: "", dataKey: "processMap", serviceKey: "process.map", mode: "formData" }],
+        }).then(response => {
+            const rows = response.data?.C_STATUS === "SUCCESS" ? response.data.C_DATA?.processMap || [] : [];
+            const uniqueRows = [...new Map(rows.filter(item => item.process_key).map(item => [String(item.process_key), item])).values()];
+            setConfigProcessList(uniqueRows.sort((left, right) => String(left.title || left.process_key).localeCompare(String(right.title || right.process_key))));
+        }).catch(error => {
+            console.error("Unable to load process map:", error);
+            setConfigProcessList([]);
+        }).finally(() => setProcessListLoading(false));
+    }, [show]);
 
     function handleShowTask(e, code) {
         const { name } = e.target;
@@ -928,10 +964,29 @@ function ModalBox(props) {
         setOptions(_updatedArr);
     }
 
+    function handleProcessSelection(processKey, checked) {
+        setConfig(previous => {
+            const selected = new Set(Array.isArray(previous.process_keys) ? previous.process_keys : []);
+            if (checked) selected.add(processKey);
+            else selected.delete(processKey);
+            return { ...previous, process_keys: [...selected] };
+        });
+    }
+
+    const selectedProcessKeys = Array.isArray(config.process_keys) ? config.process_keys : [];
+    const selectedConfigProcesses = selectedProcessKeys.map(processKey =>
+        configProcessList.find(process => String(process.process_key) === String(processKey)) || { process_key: processKey, title: processKey },
+    );
+    const processSearchTerm = processSearch.toLowerCase().trim();
+    const filteredConfigProcesses = configProcessList.filter(process =>
+        !processSearchTerm || String(process.title || "").toLowerCase().includes(processSearchTerm) || String(process.process_key || "").toLowerCase().includes(processSearchTerm),
+    );
+
     return (
         <>
             <Modal
                 className="s2a-modal"
+                dialogClassName="inbox-process-config-dialog"
                 show={show}
                 onHide={handleClose}
                 backdrop="static"
@@ -943,22 +998,20 @@ function ModalBox(props) {
                         <span>Processes Config</span>
                         <div className="d-flex">
                             <div
-                                className={`${
-                                    toggleModalWindow === "maximize"
-                                        ? "visually-hidden"
-                                        : ""
-                                } `}
+                                className={`${toggleModalWindow === "maximize"
+                                    ? "visually-hidden"
+                                    : ""
+                                    } `}
                                 onClick={() => setToggleModalWindow("maximize")}
                                 data-bs-toggle="tooltip"
                                 data-bs-title="Maximize window">
                                 <i className="fa-regular fa-window-maximize modal-resize"></i>
                             </div>
                             <div
-                                className={`${
-                                    toggleModalWindow === "restore"
-                                        ? "visually-hidden"
-                                        : ""
-                                } `}
+                                className={`${toggleModalWindow === "restore"
+                                    ? "visually-hidden"
+                                    : ""
+                                    } `}
                                 onClick={() => setToggleModalWindow("restore")}
                                 data-bs-toggle="tooltip"
                                 data-bs-title="Restore Window">
@@ -1036,6 +1089,17 @@ function ModalBox(props) {
                                 ))}
                             </div>
                         </div>
+                        <section className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3" aria-labelledby="inbox-process-scope-title">
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                <div><h3 id="inbox-process-scope-title" className="mb-0 text-sm font-bold text-slate-900">Processes to display</h3><p className="mb-0 text-xs text-slate-500">Choose which process tasks are retrieved for this Inbox.</p></div>
+                                {config?.process_scope === "SELECTED" && <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700">{(config.process_keys || []).length} selected</span>}
+                            </div>
+                            <div className="mb-2 flex flex-wrap gap-4 text-sm">
+                                <label className="inline-flex cursor-pointer items-center gap-2"><input type="radio" className="form-check-input m-0" name="process_scope" value="ALL" checked={(config?.process_scope || "ALL") === "ALL"} onChange={event => setConfig(previous => ({ ...previous, process_scope: event.target.value }))} /><span> All processes</span></label>
+                                <label className="inline-flex cursor-pointer items-center gap-2"><input type="radio" className="form-check-input m-0" name="process_scope" value="SELECTED" checked={config?.process_scope === "SELECTED"} onChange={event => { setConfig(previous => ({ ...previous, process_scope: event.target.value })); setShowProcessSelector(true); }} /><span> Selected processes</span></label>
+                            </div>
+                            {config?.process_scope === "SELECTED" && <div className="rounded-lg border border-slate-200 bg-white p-2"><div className="mb-2 flex items-center justify-between gap-2"><span className="text-xs font-semibold text-slate-600">Selected processes</span><button type="button" onClick={() => { setProcessSearch(""); setShowProcessSelector(true); }} className="!rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"><i className="fa-solid fa-list-check mr-1.5" />Manage</button></div>{selectedConfigProcesses.length ? <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">{selectedConfigProcesses.map(process => <span key={process.process_key} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200"><span className="truncate">{process.title || process.process_key}</span><button type="button" onClick={() => handleProcessSelection(String(process.process_key), false)} className="shrink-0 text-indigo-400 hover:text-red-600" aria-label={`Remove ${process.title || process.process_key}`}><i className="fa-solid fa-xmark" /></button></span>)}</div> : <button type="button" onClick={() => setShowProcessSelector(true)} className="w-full rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-500 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600">No processes selected. Choose processes.</button>}</div>}
+                        </section>
                         <div className="mt-2">
                             <span className="me-2">
                                 <input
@@ -1188,17 +1252,17 @@ function ModalBox(props) {
                                                                 </div>
                                                                 {option?.type ==
                                                                     "dynamic" && (
-                                                                    <div
-                                                                        onClick={() =>
-                                                                            handleRadioOptDelete(
-                                                                                option,
-                                                                                "array",
-                                                                            )
-                                                                        }
-                                                                        className="col-sm-2 d-flex justify-content-center align-items-center pointer">
-                                                                        <i className=" fa-solid fa-trash text-danger ps-2"></i>
-                                                                    </div>
-                                                                )}
+                                                                        <div
+                                                                            onClick={() =>
+                                                                                handleRadioOptDelete(
+                                                                                    option,
+                                                                                    "array",
+                                                                                )
+                                                                            }
+                                                                            className="col-sm-2 d-flex justify-content-center align-items-center pointer">
+                                                                            <i className=" fa-solid fa-trash text-danger ps-2"></i>
+                                                                        </div>
+                                                                    )}
                                                             </div>
                                                         </DndCard>
                                                     );
@@ -1232,6 +1296,36 @@ function ModalBox(props) {
                         </div>
                     </>
                 </Modal.Body>
+            </Modal>
+            <Modal
+                show={showProcessSelector}
+                onHide={() => setShowProcessSelector(false)}
+                backdrop="static"
+                centered
+                size="lg"
+                className="inbox-process-selector-modal"
+                backdropClassName="inbox-process-selector-backdrop"
+                style={{ zIndex: 2000 }}>
+                <Modal.Header closeButton>
+                    <Modal.Title className="modal-title"><span><i className="fa-solid fa-diagram-project me-2 text-primary" />Select processes</span></Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-0">
+                    <div className="sticky top-0 z-10 border-b border-slate-200 bg-white p-3">
+                        <label className="relative block w-50">
+                            <span className="sr-only">Search processes</span>
+                            <span className="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center text-slate-400 pl-2 pb-2">
+                                <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+                            </span>
+                            <input type="search" autoFocus value={processSearch} onChange={event => setProcessSearch(event.target.value)} placeholder="Search process name or key…" className="form-control !rounded-xl py-3.5 !pl-10 pr-3" /></label>
+                        <div className="mt-2 flex items-center justify-between text-xs text-slate-500"><span>{filteredConfigProcesses.length} available · {selectedProcessKeys.length} selected</span>{selectedProcessKeys.length > 0 && <button type="button" onClick={() => setConfig(previous => ({ ...previous, process_keys: [] }))} className="font-semibold text-red-600 hover:underline">Clear selection</button>}</div>
+                    </div>
+                    <div className="max-h-[55vh] overflow-y-auto p-3">
+                        {processListLoading ? <p className="mb-0 p-8 text-center text-sm text-slate-500"><i className="fa-solid fa-spinner fa-spin mr-2" />Loading processes…</p> : filteredConfigProcesses.length ? <div className="grid gap-2 sm:grid-cols-2">{filteredConfigProcesses.map((process, index) => { const processKey = String(process.process_key || ""); const checked = selectedProcessKeys.includes(processKey); return <label key={process.id || processKey || index} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all ${checked ? "border-indigo-300 bg-indigo-50 shadow-sm" : "border-slate-200 bg-white hover:border-indigo-200 hover:bg-slate-50"}`}><input type="checkbox" className="form-check-input mt-0.5 shrink-0" checked={checked} onChange={event => handleProcessSelection(processKey, event.target.checked)} /><span className="min-w-0"><strong className="block truncate text-sm text-slate-900">{process.title || processKey}</strong><small className="mt-0.5 block truncate text-xs text-slate-500">{processKey}</small></span></label>; })}</div> : <div className="p-10 text-center text-sm text-slate-500"><i className="fa-solid fa-magnifying-glass mb-2 block text-xl text-slate-300" />No processes match your search.</div>}
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <button type="button" onClick={() => setShowProcessSelector(false)} className="btn button-theme btn-sm rounded-pill px-4"><i className="fa-solid fa-check me-2" />Done</button>
+                </Modal.Footer>
             </Modal>
         </>
     );

@@ -1345,7 +1345,7 @@ function RenderListView({
                             </span>
                             </button>
                         )}
-
+                        {/* {JSON.stringify(data)} */}
                     </div>
 
                     {/* Actions: start process */}

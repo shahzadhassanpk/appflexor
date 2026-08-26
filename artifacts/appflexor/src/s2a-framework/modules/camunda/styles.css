@@ -55,3 +55,24 @@
 .history-date-value-right {
     width: 70%;
 }
+
+.inbox-process-selector-backdrop {
+    z-index: 1990 !important;
+}
+
+.inbox-process-selector-modal {
+    z-index: 2000 !important;
+}
+
+.inbox-process-config-dialog {
+    width: 60vw;
+    max-width: 60vw;
+}
+
+@media (max-width: 768px) {
+    .inbox-process-config-dialog {
+        width: 95vw;
+        max-width: 95vw;
+        margin-inline: auto;
+    }
+}
