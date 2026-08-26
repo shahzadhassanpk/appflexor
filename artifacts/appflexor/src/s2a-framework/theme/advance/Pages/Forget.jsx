@@ -37,7 +37,6 @@ function Forget() {
         axios
             .post(url, { username: userDetail.username })
             .then(response => {
-                debugger;
                 const status = response.data.C_STATUS;
                 if (status === "SUCCESS") {
                     if (response.data.C_ID) {

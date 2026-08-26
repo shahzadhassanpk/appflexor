@@ -878,13 +878,11 @@ export function ProcessDeployDialog({
             );
 
             if (propForm.serviceType === "ai") {
-                debugger
                 bo.topic = "appflexor.ai.agent";
                 if (propForm.agentKey) meta.agentKey = propForm.agentKey;
                 if (propForm.taskKey)  meta.taskKey  = propForm.taskKey;
                 const resultVar = (propForm.result || "").trim();
                 if (resultVar) meta.result = resultVar;
-                debugger
                 setInputParams(bo, {
                     "appflexor.worker.meta": JSON.stringify(meta),
                     ...extraParams,
