@@ -400,7 +400,7 @@ export default function ControlPanel() {
         <div style={sx.page}>
             <div style={{ marginBottom: "1.5rem" }}>
                 <h1 style={sx.headTitle}>Control Panel</h1>
-                <p style={sx.headSub}>Integrate and Optimize People, Processes and Technology to Streamline and Continuously Improve Business Operations.</p>
+                <p style={sx.headSub}>Integrate and Optimize People, Processes and Technology to Streamline and Continuously Improve Business Processes.</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))", gap: "1.25rem" }}>

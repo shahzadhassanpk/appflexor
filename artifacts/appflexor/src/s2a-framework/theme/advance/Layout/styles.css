@@ -1,7 +1,7 @@
 /* Sidebar geometry is kept here so the fixed navigation and page content use
    the same dimensions at every desktop viewport size. */
 :root {
-    --s2a-sidebar-width: 200px;
+    --s2a-sidebar-width: 250px;
     --s2a-sidebar-mini-width: 60px;
 }
 
