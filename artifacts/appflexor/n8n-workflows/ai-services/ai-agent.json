@@ -3,25 +3,6 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "ai-agent",
-        "responseMode": "responseNode",
-        "options": {
-          "allowedOrigins": "*"
-        }
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -624,
-        -32
-      ],
-      "id": "c5f6ee65-2af1-4c0a-bfe6-3552d4dd566f",
-      "name": "Webhook",
-      "webhookId": "700e8222-dee2-46c1-8775-cbb1b5518162"
-    },
-    {
-      "parameters": {
         "mode": "combine",
         "combineBy": "combineAll",
         "options": {}
@@ -29,10 +10,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -32,
+        752,
         -48
       ],
-      "id": "f190b236-18a1-4cb1-b707-48d3df91ac97",
+      "id": "ce55f255-6b6d-4461-80e5-7fcc5ae992d2",
       "name": "Merge"
     },
     {
@@ -44,45 +25,32 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        256,
+        1072,
         -64
       ],
-      "id": "3a96d1ca-3711-4350-b9d9-bff4992e78b1",
+      "id": "fbb879f5-8f18-49e3-8907-619577903f27",
       "name": "Merge3"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
-      "position": [
-        416,
-        160
-      ],
-      "id": "e219e839-6a4a-4b9f-b039-d4913041e246",
-      "name": "Respond to Webhook"
     },
     {
       "parameters": {
         "operation": "executeQuery",
         "query": "{{ $json.c_sql_query }}",
         "options": {
-          "queryReplacement": "={{ $json.payload.business_key }}"
+          "queryReplacement": "={{ $json.payload.businessKey }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        192,
-        -256
+        960,
+        -304
       ],
-      "id": "de331bf1-bca4-49f8-8abe-28246a6a121c",
+      "id": "4a57f187-3e06-40ab-a0dc-e292de1b9597",
       "name": "Retrieve Context Data",
       "credentials": {
         "postgres": {
-          "id": "MT11H8kh6sWGRCfL",
-          "name": "TENANT_DB"
+          "id": "anJV88BkR6LF5LkB",
+          "name": "Tenant DB"
         }
       }
     },
@@ -93,23 +61,23 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        400,
-        -256
+        1120,
+        -304
       ],
-      "id": "c6711169-6aa0-48a1-8a90-db118afbe726",
+      "id": "2d7dd052-ded7-448e-bbb5-a17cbd7feb3a",
       "name": "Format Data"
     },
     {
       "parameters": {
-        "jsCode": "let arr_data = [];\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let data = item.json.body;\n  data.tenant_host = item.json[\"headers\"][\"x-forwarded-host\"]\n  arr_data.push(data);\n}\n\nreturn arr_data;"
+        "jsCode": "let arr_data = [];\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let data = item;\n  arr_data.push(data);\n}\n\nreturn arr_data;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -368,
+        336,
         -32
       ],
-      "id": "e30aa7eb-4240-4d0f-b3a3-f152ea081bf3",
+      "id": "c839a757-33b1-431e-b886-9fa1e5f3aee6",
       "name": "Normalize Request"
     },
     {
@@ -124,7 +92,7 @@
           "values": [
             {
               "role": "system",
-              "content": "={{ $json.c_system_prompt }}"
+              "content": "=Role:\n{{ $json.c_system_prompt }}\n\nTask:\n{{ $json.usermessage }}\n\nMeta Data:\n{{ JSON.stringify($json?.data ?? \"Not Exist\") }}\n\nMessage:\n{{ $json.payload.message }}"
             },
             {
               "content": "={{ $json.usermessage }}"
@@ -137,15 +105,15 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.1,
       "position": [
-        -96,
-        160
+        1008,
+        272
       ],
-      "id": "7b2ec9ca-56b4-4439-aad3-be8c99bab3c3",
+      "id": "090ce136-71d2-42a2-86d5-0f09eee069d3",
       "name": "AI Agent",
       "credentials": {
         "openAiApi": {
-          "id": "1A2StWKt1cs3z1JD",
-          "name": "AppFlexor OpenAi"
+          "id": "n5c7tWBbLExyKkWC",
+          "name": "OpenAi account 8"
         }
       }
     },
@@ -156,10 +124,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        256,
-        160
+        1312,
+        272
       ],
-      "id": "934a3778-4157-445a-b372-96dcadd2a5a7",
+      "id": "0ee151aa-9172-49ca-8905-8d94e13777c6",
       "name": "Normalize Output"
     },
     {
@@ -169,10 +137,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        416,
+        1248,
         -64
       ],
-      "id": "1a0bb957-22fa-4776-b113-4c523c8b20d2",
+      "id": "f5c6946b-e21b-4f2b-8415-e3230cf65df0",
       "name": "Prepare Prompts"
     },
     {
@@ -186,44 +154,94 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -64,
-        -240
+        560,
+        -160
       ],
-      "id": "3273e3f2-c4d6-4c2c-b345-5dddd8e368e6",
+      "id": "2a6b5de4-90bd-49a9-8c00-4953faa2b113",
       "name": "Retrieve Agent Config",
       "credentials": {
         "postgres": {
-          "id": "MT11H8kh6sWGRCfL",
-          "name": "TENANT_DB"
+          "id": "anJV88BkR6LF5LkB",
+          "name": "Tenant DB"
         }
       }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        -32
+      ],
+      "id": "1001f24d-f2d1-402f-8e63-35093e33b416",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "40894443-ae14-45f1-bef5-d227680b383c",
+              "leftValue": "={{ $json.c_sql_query }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        720,
+        -288
+      ],
+      "id": "0d5c15bf-b643-40a5-8b4e-ed4c572ba8ca",
+      "name": "If"
     }
   ],
-  "pinData": {},
-  "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Normalize Request",
-            "type": "main",
-            "index": 0
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "datasource": "tenant00051",
+          "agentKey": "umair-ai-agent",
+          "taskKey": "identify-sender",
+          "payload": {
+            "businessKey": "107a1a66-8654-4683-b542-8485c729c0bd",
+            "message": "i am from step2agility"
           }
-        ]
-      ]
-    },
+        }
+      }
+    ]
+  },
+  "connections": {
     "Merge": {
       "main": [
         [
           {
-            "node": "Retrieve Context Data",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "Merge3",
             "type": "main",
             "index": 1
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -290,13 +308,7 @@
     },
     "Normalize Output": {
       "main": [
-        [
-          {
-            "node": "Respond to Webhook",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Prepare Prompts": {
@@ -320,6 +332,35 @@
           }
         ]
       ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Context Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -328,14 +369,16 @@
     "binaryMode": "separate",
     "availableInMCP": false,
     "timeSavedMode": "fixed",
-    "errorWorkflow": "BE4dhGcsWn5SRWzT",
-    "callerPolicy": "workflowsFromSameOwner"
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "HCSC4JhJJZghpniI"
   },
-  "versionId": "2e66099b-1512-4f1d-85e1-fdce99b4be87",
+  "versionId": "4ac8bedd-3b16-4598-b871-1f7f0e0e47ad",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "6254c1260eb2af98ad176dc897f9396a6e30c89f8579acd08ebe94e54822dcd3"
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
   },
-  "id": "u1REbG5cwEwpi9vu",
+  "id": "AJrAwgD9GEMCQsm6",
   "tags": []
 }

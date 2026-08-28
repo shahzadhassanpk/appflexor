@@ -93,6 +93,8 @@ export const camundaApi = {
     })}`),
     getJobsByDefinition: definitionId => camundaRequest(`/job${query({ processDefinitionId: definitionId, firstResult: 0, maxResults: 100 })}`),
     getJobsByInstance: instanceId => camundaRequest(`/job${query({ processInstanceId: instanceId, firstResult: 0, maxResults: 100 })}`),
+    setJobRetries: (jobId, retries) => camundaRequest(`/job/${jobId}/retries`, { method: "PUT", data: { retries } }),
+    getExternalTasksByInstance: instanceId => camundaRequest(`/external-task${query({ processInstanceId: instanceId, firstResult: 0, maxResults: 100 })}`),
 
     getInstanceVariables: instanceId => camundaRequest(`/process-instance/${instanceId}/variables?deserializeValue=true`),
     getInstanceVariable: (instanceId, name) => camundaRequest(`/process-instance/${instanceId}/variables/${encodeURIComponent(name)}?deserializeValue=true`),

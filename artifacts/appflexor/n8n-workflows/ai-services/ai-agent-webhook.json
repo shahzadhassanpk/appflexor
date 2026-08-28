@@ -1,0 +1,126 @@
+{
+  "name": "AI Agent Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-agent",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -368,
+        0
+      ],
+      "id": "e468f1d2-662f-4430-a11f-5b49aa3c0581",
+      "name": "Webhook",
+      "webhookId": "700e8222-dee2-46c1-8775-cbb1b5518162"
+    },
+    {
+      "parameters": {
+        "jsCode": "let arr_data = [];\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  let data = item.json.body;\n  data.tenant_host = item.json[\"headers\"][\"x-forwarded-host\"]\n  arr_data.push(data);\n}\n\nreturn arr_data;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        0
+      ],
+      "id": "f897c2a8-1ab0-4832-838f-aaf936da2a67",
+      "name": "Normalize Request"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "AJrAwgD9GEMCQsm6",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/AJrAwgD9GEMCQsm6",
+          "cachedResultName": "S2A Cloud — AI Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        112,
+        0
+      ],
+      "id": "876b3ebe-a129-4325-bdc1-0a8620d35e61",
+      "name": "Call 'AI Agent'"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        320,
+        0
+      ],
+      "id": "1972e1e3-1acc-4537-8a70-16ac6e145f32",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Call 'AI Agent'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'AI Agent'": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "af9b2f5a-882b-4989-8c5a-0e9c93b7f44b",
+  "meta": {
+    "instanceId": "ef4497f8d5217e9621c78657131904e819ae96299c38b7a122d90b030f76fc21"
+  },
+  "id": "awYb3YlUcn2Si3sa",
+  "tags": []
+}

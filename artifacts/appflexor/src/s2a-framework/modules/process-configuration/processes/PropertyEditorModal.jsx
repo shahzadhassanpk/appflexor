@@ -24,6 +24,7 @@ export function PropertyEditorModal({
     onFormChange,   // (updater) => void
     onSave,         // () => void  (savePropChanges)
     onAgentChange,  // (agentKey) => void
+    onRefreshReferenceData,
     zIndex = 1060,
 }) {
     if (!propModal) return null;
@@ -86,9 +87,11 @@ export function PropertyEditorModal({
                             </>
                         ) : (
                             <>
-                                <label className="ai-label">
-                                    {propForm.assigneeType === "group" ? "Group" : "User"}
-                                </label>
+                                <EditorLabel
+                                    label={propForm.assigneeType === "group" ? "Group" : "User"}
+                                    loading={propLoading}
+                                    onRefresh={onRefreshReferenceData}
+                                />
                                 <SearchableSelect
                                     options={propForm.assigneeType === "group" ? groups : users}
                                     value={propForm.assignee || ""}
@@ -150,7 +153,11 @@ export function PropertyEditorModal({
                             </>
                         ) : (
                             <>
-                                <label className="ai-label">Form Key</label>
+                                <EditorLabel
+                                    label="Form Key"
+                                    loading={propLoading}
+                                    onRefresh={onRefreshReferenceData}
+                                />
                                 <SearchableSelect
                                     options={formList}
                                     value={propForm.formKey || ""}
@@ -561,7 +568,11 @@ export function PropertyEditorModal({
                     {isAi && (
                         <>
                             <div className="mb-2">
-                                <label className="ai-label">AI Agent</label>
+                                <EditorLabel
+                                    label="AI Agent"
+                                    loading={propLoading}
+                                    onRefresh={onRefreshReferenceData}
+                                />
                                 <select
                                     className="form-control form-control-sm"
                                     value={propForm.agentKey || ""}
@@ -684,5 +695,23 @@ export function PropertyEditorModal({
                 </button>
             </Modal.Footer>
         </Modal>
+    );
+}
+
+function EditorLabel({ label, loading, onRefresh }) {
+    return (
+        <div className="mb-1 d-flex align-items-center justify-content-between gap-2">
+            <label className="ai-label mb-0">{label}</label>
+            <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center gap-1 px-2 py-1"
+                onClick={onRefresh}
+                disabled={loading}
+                title={`Refresh ${label.toLowerCase()} list`}
+                aria-label={`Refresh ${label.toLowerCase()} list`}>
+                <i className={`fa-solid fa-rotate ${loading ? "fa-spin" : ""}`} aria-hidden="true" />
+                <span>Refresh</span>
+            </button>
+        </div>
     );
 }

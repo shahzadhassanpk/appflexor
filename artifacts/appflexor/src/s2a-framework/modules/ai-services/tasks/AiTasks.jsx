@@ -290,7 +290,7 @@ function AiTasks({ agentId, agentKey, agentName, onTaskCountChanged }) {
                             {/* User Prompt */}
                             <div className="mb-3">
                                 <label className="ai-label">
-                                    User Prompt <span className="text-danger">*</span>
+                                    Task Prompt <span className="text-danger">*</span>
                                     <span className="ai-tooltip ms-1" title="Prompt template appended after the system prompt. Use {{variables}} for webhook-injected values.">
                                         <i className="fa-solid fa-circle-info" />
                                     </span>

@@ -352,8 +352,8 @@ export function ProcessDeployDialog({
     /* ═══════════════════════════════════════════════════════════════════
        Reference data (groups / users / forms / AI agents)
     ═══════════════════════════════════════════════════════════════════ */
-    async function loadRefData() {
-        if (refDataLoaded) return;
+    async function loadRefData(force = false) {
+        if (refDataLoaded && !force) return;
         setPropLoading(true);
         try {
             const res = await axios.post(API_URL + "?service.key=masterKey.tenantData", {
@@ -1537,6 +1537,7 @@ export function ProcessDeployDialog({
                 onFormChange={setPropForm}
                 onSave={savePropChanges}
                 onAgentChange={loadAiTasksForAgent}
+                onRefreshReferenceData={() => loadRefData(true)}
             />
 
             {/* ── Discard confirm ── */}
