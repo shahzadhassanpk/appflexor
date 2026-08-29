@@ -613,7 +613,7 @@ const SchemaManagement = props => {
                     </div>
                     <div>
                         <div className="d-flex justify-content-between">
-                            <div className="col-sm-10 ps-2">
+                            <div className="col-sm-9 ps-2">
                                 <SearchItem
                                     searchInput={tableSearchTxt}
                                     keysToSearch={["label"]}
@@ -623,7 +623,7 @@ const SchemaManagement = props => {
                                     _items={tables}
                                 />
                             </div>
-                            <div className="col-sm-2 pt-2">
+                            <div className="col-sm-3 pt-2">
                                 <i
                                     title="Import"
                                     className="fa-solid fa-file-import pointer s2a-import"
