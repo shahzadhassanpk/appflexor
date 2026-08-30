@@ -41,7 +41,7 @@ const SchemaManagement = props => {
     // const [sqlQuery, setSqlQuery] = useState("");
     const [exportConfig, setExportConfig] = useState({
         name: "",
-        exportByName: () => {},
+        exportByName: () => { },
     });
     const [selectedTable, setSelectedTable] = useState({});
     const [hide, setHide] = useState({
@@ -49,6 +49,8 @@ const SchemaManagement = props => {
     });
     const [tables, setTables] = useState([]);
     const [dataSources, setDataSources] = useState([]);
+    const [dataSourcesLoading, setDataSourcesLoading] = useState(false);
+    const [dataSourcesError, setDataSourcesError] = useState("");
     const [selectedDataSource, setSelectedDataSource] = useState(null);
     const [tableData, setTableData] = useState([]);
     const [selectedTables, setSelectedTables] = useState([]);
@@ -70,7 +72,7 @@ const SchemaManagement = props => {
     );
     const [deleteClosure, setDeleteClosure] = useState({
         name: "",
-        delFunc: () => {},
+        delFunc: () => { },
     });
     const [prefix, setPrefix] = useState("NO");
 
@@ -87,6 +89,7 @@ const SchemaManagement = props => {
     const modalColConstraint = useRef(null);
     const tableSearchTxt = useRef(null);
     const colsSearchTxt = useRef(null);
+    const dataSourceRequestRef = useRef(0);
 
     const [deleteTableConfig, setDeleteTableConfig] = useState({
         show: false,
@@ -166,7 +169,11 @@ const SchemaManagement = props => {
         localStorage.setItem(key, JSON.stringify(value));
 
     async function getDataSources() {
-        let keys = [
+        const requestId = dataSourceRequestRef.current + 1;
+        dataSourceRequestRef.current = requestId;
+        setDataSourcesLoading(true);
+        setDataSourcesError("");
+        const keys = [
             {
                 serviceParams: "",
                 dataKey: "datasources",
@@ -174,17 +181,36 @@ const SchemaManagement = props => {
                 mode: "formData",
             },
         ];
-        let url = API_URL + "?service.key=masterKey.tenantData";
-        let datasource = "";
-        let tenant_id = "";
-        const res = await getData({ keys, url, datasource, tenant_id });
+        const url = API_URL + "?service.key=masterKey.tenantData";
+        let lastError;
 
-        if (res.data.C_STATUS === "SUCCESS") {
-            if (res.data.C_DATA && res.data.C_DATA.datasources) {
-                let list = res.data.C_DATA.datasources;
-                list.push({ name: "Default", code: "" });
-                setDataSources(list);
+        try {
+            for (let attempt = 1; attempt <= 3; attempt += 1) {
+                try {
+                    const res = await getData({ keys, url, datasource: "", tenant_id: "" });
+                    if (res?.data?.C_STATUS !== "SUCCESS") {
+                        throw new Error(res?.data?.C_MESSAGE || "Unable to load data sources");
+                    }
+                    const returnedList = res?.data?.C_DATA?.datasources;
+                    if (!Array.isArray(returnedList)) {
+                        throw new Error("Invalid data source response");
+                    }
+                    if (dataSourceRequestRef.current !== requestId) return;
+                    const list = returnedList.filter(item => item?.code !== "");
+                    setDataSources([...list, { name: "Default", code: "" }]);
+                    return;
+                } catch (error) {
+                    lastError = error;
+                    if (attempt < 3) {
+                        await new Promise(resolve => setTimeout(resolve, attempt * 300));
+                    }
+                }
             }
+            if (dataSourceRequestRef.current === requestId) {
+                setDataSourcesError(lastError?.message || "Unable to load data sources");
+            }
+        } finally {
+            if (dataSourceRequestRef.current === requestId) setDataSourcesLoading(false);
         }
     }
 
@@ -337,10 +363,10 @@ const SchemaManagement = props => {
         if (query) {
             axios.post(url, request).then(res => {
                 if (res.status === 200 && res.data.C_STATUS === "SUCCESS") {
-                    
+
                     const response = res.data.C_DATA.data;
                     const rowsAffected = response?.rowsAffected;
-                    if(response?.error){
+                    if (response?.error) {
                         toastEmitter(response.error, true, "error");
                         return;
                     }
@@ -369,7 +395,7 @@ const SchemaManagement = props => {
                             "error",
                         );
                     }
-                }else{
+                } else {
                     toastEmitter(res.data.C_MESSAGE || res.data.C_DATA.data.error, true, "error");
                 }
             });
@@ -423,7 +449,7 @@ const SchemaManagement = props => {
 
                     setExportConfig({
                         name: "",
-                        exportByName: () => {},
+                        exportByName: () => { },
                     });
                     modalRef.current.close();
                 };
@@ -485,7 +511,7 @@ const SchemaManagement = props => {
             toastEmitter("Item Deleted", true, "error");
             setDeleteClosure({
                 name: "",
-                delFunc: () => {},
+                delFunc: () => { },
             });
             deleteTabModalRef.current.close();
         };
@@ -501,8 +527,8 @@ const SchemaManagement = props => {
         let readOnly = false;
         readOnly =
             validArray(instances) &&
-            instances.length > 0 &&
-            selectedInstance.label
+                instances.length > 0 &&
+                selectedInstance.label
                 ? ""
                 : "nocursor";
         return readOnly;
@@ -593,27 +619,40 @@ const SchemaManagement = props => {
                 className="tables s2a-border-scroll pe-1">
                 <div className="p-2">
                     <div className="fw-bold listing-header d-flex justify-content-between">
-                        <div className="col-sm-6">
-                        <ReactSelect
-                            options={dataSources}
-                            fieldLabel="name"
-                            fieldValue="code"
-                            handleChange={handleChangeDataSource}
-                            selectedOption={selectedDataSource?selectedDataSource:{code: "", name: "Default"}}
-                            // selectedOption={dataSources.find(
-                            //     item =>
-                            //         item.code === inputField?.datasource,
-                            // )}
-                        />
-                        </div>
-                        <div className="col-sm-6 text-center">
-                            <i className="fa-solid fa-table me-1"></i>
-                            Tables ({filteredTables.length}){" "}
+                        <div className="col-sm-12">
+                            <div className="d-flex align-items-center gap-1">
+                                <div className="flex-grow-1 min-w-0">
+                                    <ReactSelect
+                                        options={dataSources}
+                                        fieldLabel="name"
+                                        fieldValue="code"
+                                        handleChange={handleChangeDataSource}
+                                        selectedOption={selectedDataSource ? selectedDataSource : { code: "", name: "Default" }}
+                                        disabled={dataSourcesLoading}
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                                    style={{ width: 32, height: 32 }}
+                                    onClick={getDataSources}
+                                    disabled={dataSourcesLoading}
+                                    title="Refresh data sources"
+                                    aria-label="Refresh data sources">
+                                    <i className={`fa-solid fa-rotate ${dataSourcesLoading ? "fa-spin" : ""}`} />
+                                </button>                                
+                            </div>
+                            {dataSourcesError && (
+                                <div className="mt-1 small text-danger" role="alert">
+                                    {dataSourcesError}. Select refresh to try again.
+                                </div>
+                            )}
+
                         </div>
                     </div>
                     <div>
                         <div className="d-flex justify-content-between">
-                            <div className="col-sm-9 ps-2">
+                            <div className="col-sm-10 d-flex">
                                 <SearchItem
                                     searchInput={tableSearchTxt}
                                     keysToSearch={["label"]}
@@ -622,8 +661,11 @@ const SchemaManagement = props => {
                                     setItems={setFilteredTables}
                                     _items={tables}
                                 />
+                                <span className="mt-2 pe-2">                                
+                                ({filteredTables.length})
+                                </span>
                             </div>
-                            <div className="col-sm-3 pt-2">
+                            <div className="col-sm-2 pt-2">
                                 <i
                                     title="Import"
                                     className="fa-solid fa-file-import pointer s2a-import"
@@ -778,7 +820,7 @@ const SchemaManagement = props => {
                                             <div
                                                 className={
                                                     instance?.id ===
-                                                    selectedInstance?.id
+                                                        selectedInstance?.id
                                                         ? "selected-tab"
                                                         : "tab"
                                                 }
