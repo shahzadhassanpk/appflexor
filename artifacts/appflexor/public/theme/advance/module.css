@@ -6265,6 +6265,11 @@ chart color picker component
     padding: 0px;
 }
 
+.datalist-table.aside .s2a-datalist-header{
+    display: table;
+    width: 100%;
+}
+
 /* .datalist-table.aside .table-container{
     height: 100%;
 } */
