@@ -289,7 +289,6 @@ function Processes(props) {
 
     // API calls
     function getTaskList() {
-        debugger;
         let serviceParams = "";
         let filterCondition = "";
         let serviceKeyOrder = "cam.list.my.tasks";
