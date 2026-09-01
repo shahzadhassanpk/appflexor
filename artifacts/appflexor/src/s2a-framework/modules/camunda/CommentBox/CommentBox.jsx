@@ -13,7 +13,7 @@ import { get } from "jquery";
 import "../inbox-style.css";
 
 function CommentBox({ task, getProfileImage, getDisplayName }) {
-    const processKey = task.process_def_key;
+    const processKey = task.proc_def_key;
     const processInstanceId = task.instance_id;
 
     const [businessKey, setBusinessKey] = useState("");
@@ -56,11 +56,17 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
 
     useEffect(() => {
         setSlaNow(Date.now());
-        const intervalId = window.setInterval(() => setSlaNow(Date.now()), 60000);
+        const intervalId = window.setInterval(
+            () => setSlaNow(Date.now()),
+            60000,
+        );
         return () => window.clearInterval(intervalId);
     }, [task?.id]);
 
     useEffect(() => {
+        if (!businessKey || businessKey.trim() === "") return;
+        // ✅ Skip if businessKey is null, undefined, or empty string
+
         setComment(prevState => ({
             ...prevState,
             business_key: businessKey,
@@ -74,10 +80,13 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
         }));
 
         if (tabs.comments) {
+            // handle comments tab
         }
 
         if (tabs.attachments) {
+            // handle attachments tab
         }
+
         getComments();
         getAttachments();
         getHistory();
@@ -170,6 +179,7 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
             entityForm.id = "new";
             fieldsData.id = "new";
         }
+        fieldsData.process_key = processKey;
 
         entityForm.formData = fieldsData;
         request.data.push(entityForm);
@@ -316,9 +326,12 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
     // ── Helpers ──────────────────────────────────────
     function getFileIcon(filename = "") {
         const ext = (filename.split(".").pop() || "").toLowerCase();
-        if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext)) return { cls: "img-type", icon: "fa-regular fa-image" };
-        if (["doc", "docx"].includes(ext)) return { cls: "doc-type", icon: "fa-regular fa-file-word" };
-        if (["xls", "xlsx", "csv"].includes(ext)) return { cls: "doc-type", icon: "fa-regular fa-file-excel" };
+        if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext))
+            return { cls: "img-type", icon: "fa-regular fa-image" };
+        if (["doc", "docx"].includes(ext))
+            return { cls: "doc-type", icon: "fa-regular fa-file-word" };
+        if (["xls", "xlsx", "csv"].includes(ext))
+            return { cls: "doc-type", icon: "fa-regular fa-file-excel" };
         return { cls: "", icon: "fa-regular fa-file-pdf" };
     }
 
@@ -338,20 +351,21 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
             return h.assignee
                 ? `${h.task_name} Pending`
                 : `${h.task_name || "Task"} Unassigned`;
-        if (h?.created_time !== "")
-            return `${h.task_name || "Task"} Assigned`;
+        if (h?.created_time !== "") return `${h.task_name || "Task"} Assigned`;
         return h.task_name || "Activity";
     }
 
     function formatHistoryBy(h) {
-        const who = h.assignee ? `by ${getDisplayName(h.assignee)}` : "by System";
+        const who = h.assignee
+            ? `by ${getDisplayName(h.assignee)}`
+            : "by System";
         const when = h?.completed_time
             ? convertDBDateToUserView(h?.completed_time)
             : h?.assigned_time
-                ? convertDBDateToUserView(h?.assigned_time)
-                : h?.created_time
-                    ? convertDBDateToUserView(h?.created_time)
-                    : "";
+              ? convertDBDateToUserView(h?.assigned_time)
+              : h?.created_time
+                ? convertDBDateToUserView(h?.created_time)
+                : "";
         return { who, when };
     }
 
@@ -368,7 +382,10 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
     }
 
     function formatSlaDuration(milliseconds) {
-        const totalMinutes = Math.max(0, Math.floor(Math.abs(milliseconds) / 60000));
+        const totalMinutes = Math.max(
+            0,
+            Math.floor(Math.abs(milliseconds) / 60000),
+        );
         const days = Math.floor(totalMinutes / 1440);
         const hours = Math.floor((totalMinutes % 1440) / 60);
         const minutes = totalMinutes % 60;
@@ -398,28 +415,31 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
         return urgencyLevels?.urgencyLevels || urgencyLevels || null;
     }
 
-    const processStartHistory = history.find(item => item?.task_type === "startEvent");
+    const processStartHistory = history.find(
+        item => item?.task_type === "startEvent",
+    );
     const processStartTimestamp = getUtcTimestamp(
         task?.process_start_date ||
-        task?.process_start_time ||
-        task?.processStartDate ||
-        task?.processStartTime ||
-        task?.start_time ||
-        processStartHistory?.created_time,
+            task?.process_start_time ||
+            task?.processStartDate ||
+            task?.processStartTime ||
+            task?.start_time ||
+            processStartHistory?.created_time,
     );
     const priorityLevel = getPriorityLevel(task);
     const urgencyLevels = getUrgencyLevels(task);
-    const configuredSla = urgencyLevels?.[
-        priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1)
-    ];
+    const configuredSla =
+        urgencyLevels?.[
+            priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1)
+        ];
     const configuredSlaValue = Number.parseInt(configuredSla?.slaValue, 10);
     const configuredSlaUnit = configuredSla?.slaUnit;
     const configuredSlaMilliseconds =
         Number.isInteger(configuredSlaValue) &&
-            configuredSlaValue > 0 &&
-            ["hours", "days"].includes(configuredSlaUnit)
+        configuredSlaValue > 0 &&
+        ["hours", "days"].includes(configuredSlaUnit)
             ? configuredSlaValue *
-            (configuredSlaUnit === "days" ? 86400000 : 3600000)
+              (configuredSlaUnit === "days" ? 86400000 : 3600000)
             : null;
     const calculatedSlaDueTimestamp =
         processStartTimestamp !== null && configuredSlaMilliseconds !== null
@@ -427,14 +447,16 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
             : null;
     const slaDueTimestamp = calculatedSlaDueTimestamp;
     const isSlaOverdue = slaDueTimestamp !== null && slaDueTimestamp < slaNow;
-    const slaTimeLeft = slaDueTimestamp === null
-        ? "Not set"
-        : isSlaOverdue
-            ? `Overdue by ${formatSlaDuration(slaNow - slaDueTimestamp)}`
-            : formatSlaDuration(slaDueTimestamp - slaNow);
-    const elapsedTime = processStartTimestamp === null
-        ? "Not available"
-        : formatSlaDuration(slaNow - processStartTimestamp);
+    const slaTimeLeft =
+        slaDueTimestamp === null
+            ? "Not set"
+            : isSlaOverdue
+              ? `Overdue by ${formatSlaDuration(slaNow - slaDueTimestamp)}`
+              : formatSlaDuration(slaDueTimestamp - slaNow);
+    const elapsedTime =
+        processStartTimestamp === null
+            ? "Not available"
+            : formatSlaDuration(slaNow - processStartTimestamp);
 
     const [quickComment, setQuickComment] = useState("");
     const [showHistoryAll, setShowHistoryAll] = useState(false);
@@ -454,11 +476,9 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
 
     // ── Helpers ──────────────────────────────────────
     function getPriorityLevel(task) {
-        const p = (
-            task.variables?.priority ||
-            task.priority ||
-            ""
-        ).toString().toLowerCase();
+        const p = (task.variables?.priority || task.priority || "")
+            .toString()
+            .toLowerCase();
         if (p === "high" || p === "1") return "high";
         if (p === "low" || p === "3") return "low";
         if (p === "medium" || p === "2" || p === "") return "medium";
@@ -468,10 +488,19 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
     function renderPriorityBadge(task) {
         const level = getPriorityLevel(task);
         const labels = { high: "High", medium: "Medium", low: "Low" };
-        const flagColor = { high: "#e05252", medium: "#d4820a", low: "#38a169" }[level];
+        const flagColor = {
+            high: "#e05252",
+            medium: "#d4820a",
+            low: "#38a169",
+        }[level];
         return (
-            <span className={`${level}`} style={{ color: flagColor }}>
-                <i className="fa-solid fa-flag" style={{ fontSize: 11 }}></i> {labels[level]}
+            <span
+                className={`${level}`}
+                style={{ color: flagColor }}>
+                <i
+                    className="fa-solid fa-flag"
+                    style={{ fontSize: 11 }}></i>{" "}
+                {labels[level]}
             </span>
         );
     }
@@ -479,10 +508,13 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
     return (
         <div className="cb-panel">
             <div className="cb-scroll-area">
-
-                <section className="cb-section cb-sla-section" aria-labelledby="cb-sla-title">
+                <section
+                    className="cb-section cb-sla-section"
+                    aria-labelledby="cb-sla-title">
                     <div className="cb-section-header">
-                        <span className="cb-section-title" id="cb-sla-title">
+                        <span
+                            className="cb-section-title"
+                            id="cb-sla-title">
                             <i className="fa-regular fa-clock"></i>
                             Process SLA &amp; Timing {renderPriorityBadge(task)}
                         </span>
@@ -494,7 +526,9 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                         <dd title="All process SLA calculations use this start date.">
                             {processStartTimestamp === null
                                 ? "Not available"
-                                : formatDateTimeForUserView(new Date(processStartTimestamp))}
+                                : formatDateTimeForUserView(
+                                      new Date(processStartTimestamp),
+                                  )}
                         </dd>
                         <dt title="The deadline calculated from the process start date and its priority-based SLA.">
                             SLA Due
@@ -504,13 +538,17 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                             title="The date and time by which this process should be completed.">
                             {slaDueTimestamp === null
                                 ? "Not set"
-                                : formatDateTimeForUserView(new Date(slaDueTimestamp))}
+                                : formatDateTimeForUserView(
+                                      new Date(slaDueTimestamp),
+                                  )}
                         </dd>
                         <dt title="The remaining time until the SLA deadline, or how long the task has been overdue.">
                             Time Left
                         </dt>
                         <dd
-                            className={isSlaOverdue ? "is-overdue" : "is-warning"}
+                            className={
+                                isSlaOverdue ? "is-overdue" : "is-warning"
+                            }
                             title="Calculated from the current time and the SLA due date.">
                             {slaTimeLeft}
                         </dd>
@@ -530,7 +568,9 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                             <i className="fa-regular fa-comments"></i>
                             Comments
                             {comments.length > 0 && (
-                                <span className="cb-section-badge">{comments.length}</span>
+                                <span className="cb-section-badge">
+                                    {comments.length}
+                                </span>
                             )}
                         </span>
                         {/* <button className="cb-add-btn" onClick={() => addComment()}>
@@ -574,20 +614,36 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                     ) : (
                         <div className="cb-comment-list">
                             {comments.map((c, i) => (
-                                <div className="cb-comment-item" key={i}>
+                                <div
+                                    className="cb-comment-item"
+                                    key={i}>
                                     <img
                                         className="cb-comment-avatar"
                                         src={getProfileImage(c.createdby)}
                                         alt={getDisplayName(c.createdby)}
-                                        onError={e => { e.target.src = "/theme/images/default-user-profile-img.png"; e.target.onerror = null; }}
+                                        onError={e => {
+                                            e.target.src =
+                                                "/theme/images/default-user-profile-img.png";
+                                            e.target.onerror = null;
+                                        }}
                                     />
                                     <div className="cb-comment-body">
                                         <div className="cb-comment-header-row">
                                             <div>
-                                                <div className="cb-commenter-name">{getDisplayName(c.createdby)}</div>
+                                                <div className="cb-commenter-name">
+                                                    {getDisplayName(
+                                                        c.createdby,
+                                                    )}
+                                                </div>
                                             </div>
-                                            <span className="cb-comment-time" title={convertDBDateToUserView(c.datecreated)}>
-                                                {convertDBDateToFromNow(c.datecreated)}
+                                            <span
+                                                className="cb-comment-time"
+                                                title={convertDBDateToUserView(
+                                                    c.datecreated,
+                                                )}>
+                                                {convertDBDateToFromNow(
+                                                    c.datecreated,
+                                                )}
                                             </span>
                                         </div>
                                         <div className="cb-comment-text">
@@ -610,14 +666,21 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                                 placeholder="Write a comment…"
                                 value={quickComment}
                                 onChange={e => setQuickComment(e.target.value)}
-                                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleQuickComment(); } }}
+                                onKeyDown={e => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleQuickComment();
+                                    }
+                                }}
                             />
                             <button
                                 className="cb-send-btn"
                                 onClick={handleQuickComment}
                                 title="Send comment"
                                 aria-label="Send comment">
-                                <i className="fa-solid fa-paper-plane" style={{ fontSize: 11 }}></i>
+                                <i
+                                    className="fa-solid fa-paper-plane"
+                                    style={{ fontSize: 11 }}></i>
                             </button>
                         </div>
                     )}
@@ -630,13 +693,17 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                             <i className="fa-solid fa-paperclip"></i>
                             Attachments
                             {attachments.length > 0 && (
-                                <span className="cb-section-badge">{attachments.length}</span>
+                                <span className="cb-section-badge">
+                                    {attachments.length}
+                                </span>
                             )}
                         </span>
                         <button
                             className="cb-action-btn"
                             onClick={() => addAttachment()}>
-                            <i className="fa-solid fa-upload" style={{ fontSize: 11 }}></i>
+                            <i
+                                className="fa-solid fa-upload"
+                                style={{ fontSize: 11 }}></i>
                             Upload
                         </button>
                     </div>
@@ -670,17 +737,38 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                     ) : (
                         <div className="cb-attachment-list">
                             {attachments.map((att, i) => {
-                                const { cls, icon } = getFileIcon(att.files || "");
+                                const { cls, icon } = getFileIcon(
+                                    att.files || "",
+                                );
                                 return (
-                                    <div className="cb-attachment-item" key={i}>
+                                    <div
+                                        className="cb-attachment-item"
+                                        key={i}>
                                         <div className={`cb-file-icon ${cls}`}>
                                             <i className={icon}></i>
                                         </div>
                                         <div className="cb-file-info">
-                                            <div className="cb-file-name">{att.files}</div>
+                                            <div className="cb-file-name">
+                                                {att.files}
+                                            </div>
                                             <div className="cb-file-meta">
-                                                <span>Uploaded {convertDBDateToFromNow(att.datecreated)}</span>
-                                                {att.createdby ? <span> · {getDisplayName(att.createdby)}</span> : ""}
+                                                <span>
+                                                    Uploaded{" "}
+                                                    {convertDBDateToFromNow(
+                                                        att.datecreated,
+                                                    )}
+                                                </span>
+                                                {att.createdby ? (
+                                                    <span>
+                                                        {" "}
+                                                        ·{" "}
+                                                        {getDisplayName(
+                                                            att.createdby,
+                                                        )}
+                                                    </span>
+                                                ) : (
+                                                    ""
+                                                )}
                                             </div>
                                             <div className="cb-file-actions">
                                                 <a
@@ -688,10 +776,21 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                                                     href={`/file/service/process_attachments/${att.id}/${att.files}`}
                                                     title="Download"
                                                     aria-label="Download">
-                                                    <i className="fa-solid fa-download" style={{ fontSize: 12 }}></i>
+                                                    <i
+                                                        className="fa-solid fa-download"
+                                                        style={{
+                                                            fontSize: 12,
+                                                        }}></i>
                                                 </a>
-                                                <button className="cb-icon-btn" title="More options" aria-label="More options">
-                                                    <i className="fa-solid fa-ellipsis-vertical" style={{ fontSize: 12 }}></i>
+                                                <button
+                                                    className="cb-icon-btn"
+                                                    title="More options"
+                                                    aria-label="More options">
+                                                    <i
+                                                        className="fa-solid fa-ellipsis-vertical"
+                                                        style={{
+                                                            fontSize: 12,
+                                                        }}></i>
                                                 </button>
                                             </div>
                                         </div>
@@ -722,13 +821,22 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                                 const dotCls = getHistoryDotClass(h);
                                 const { who, when } = formatHistoryBy(h);
                                 return (
-                                    <div className="cb-history-item" key={i}>
-                                        <div className={`cb-history-dot ${dotCls}`}></div>
+                                    <div
+                                        className="cb-history-item"
+                                        key={i}>
+                                        <div
+                                            className={`cb-history-dot ${dotCls}`}></div>
                                         <div className="cb-history-content">
                                             {/* {JSON.stringify(h)} */}
-                                            <div className="cb-history-action">{formatHistoryAction(h)}</div>
-                                            <div className="cb-history-date">{when}</div>
-                                            <div className="cb-history-by">{who}</div>
+                                            <div className="cb-history-action">
+                                                {formatHistoryAction(h)}
+                                            </div>
+                                            <div className="cb-history-date">
+                                                {when}
+                                            </div>
+                                            <div className="cb-history-by">
+                                                {who}
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -741,12 +849,13 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                             <button
                                 className="cb-view-all"
                                 onClick={() => setShowHistoryAll(v => !v)}>
-                                {showHistoryAll ? "View Less History" : "View Full History"}
+                                {showHistoryAll
+                                    ? "View Less History"
+                                    : "View Full History"}
                             </button>
                         </div>
                     )}
                 </div>
-
             </div>
         </div>
     );
@@ -766,17 +875,27 @@ function HistoryViewer({
     function formatHistory(task) {
         let status = "In Progress";
         if (task.completed_time && task.completed_time !== "") {
-            status = `${task.assignee} has completed ${task.task_name
-                } on ${convertDBDateToUserView(task.completed_time)}.`;
-        } else if (task.assigned_time && task.assigned_time !== "" && task?.assignee) {
+            status = `${task.assignee} has completed ${
+                task.task_name
+            } on ${convertDBDateToUserView(task.completed_time)}.`;
+        } else if (
+            task.assigned_time &&
+            task.assigned_time !== "" &&
+            task?.assignee
+        ) {
             status = `${task.task_name} task assigned to ${task.assignee} on ${convertDBDateToUserView(task.assigned_time)}.`;
-        } else if (task.assigned_time && task.assigned_time !== "" && !task?.assignee) {
+        } else if (
+            task.assigned_time &&
+            task.assigned_time !== "" &&
+            !task?.assignee
+        ) {
             status = `${task.task_name} task is unassigned.`;
         } else if (task.task_type == "startEvent" && task.created_time !== "") {
             status = `Process started by ${task.assignee} on ${convertDBDateToUserView(task.created_time)}.`;
         } else if (task.created_time && task.created_time !== "") {
-            status = `Task ${task.task_name
-                } created on ${convertDBDateToUserView(task.created_time)}.`;
+            status = `Task ${
+                task.task_name
+            } created on ${convertDBDateToUserView(task.created_time)}.`;
         }
         return status;
     }
@@ -791,9 +910,9 @@ function HistoryViewer({
                             <li
                                 className="comment-item"
                                 key={index}
-                            // title={JSON.stringify(
-                            //     comment
-                            // )}
+                                // title={JSON.stringify(
+                                //     comment
+                                // )}
                             >
                                 <div className="col-sm-12 p-3 task-meta d-flex">
                                     <span className="avatar me-2">
@@ -823,11 +942,13 @@ function TrackHistoryViewer({ trackHistory, tabs, convertDBDateToUserView }) {
         let status = "";
         if (task.created_time && task.created_time !== "") {
             if (task.event == "start")
-                status = `${task.task_name
-                    } started on ${convertDBDateToUserView(task.created_time)} by ${task.assignee}.`;
+                status = `${
+                    task.task_name
+                } started on ${convertDBDateToUserView(task.created_time)} by ${task.assignee}.`;
         } else if (task.event == "end") {
-            status = `${task.task_name
-                } started on ${convertDBDateToUserView(task.created_time)}`;
+            status = `${
+                task.task_name
+            } started on ${convertDBDateToUserView(task.created_time)}`;
         }
         return status;
     }
@@ -938,7 +1059,7 @@ function HistoryViewerOld({ task, tabs }) {
                 } catch (error) {
                     console.log(
                         "Unable to format date time for formatNewValue : " +
-                        error,
+                            error,
                     );
                 }
             }
