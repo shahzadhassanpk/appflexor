@@ -289,10 +289,11 @@ function Processes(props) {
 
     // API calls
     function getTaskList() {
+        debugger;
         let serviceParams = "";
         let filterCondition = "";
         let serviceKeyOrder = "cam.list.my.tasks";
-        if (data.process_scope === "SELECTED") {
+        if (data?.process_scope === "SELECTED") {
             filterCondition = " and process.proc_def_key_ in ('" + (Array.isArray(data?.process_keys) ? data.process_keys.join("','") : "") + "')";
         }
         if (taskFilterType == "allTask") {
