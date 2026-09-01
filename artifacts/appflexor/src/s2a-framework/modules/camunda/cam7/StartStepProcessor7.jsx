@@ -289,7 +289,7 @@ function StartStepProcessor({
         const nextDraft = normalizeDraft({ ...draft, ...changes });
         const draftId = nextDraft.id || "new";
         const fields = {
-            id: nextDraft.id,
+            id: draftId,
             process_definition_id: nextDraft.process_definition_id,
             process_key: nextDraft.process_key,
             form_key: nextDraft.form_key,
