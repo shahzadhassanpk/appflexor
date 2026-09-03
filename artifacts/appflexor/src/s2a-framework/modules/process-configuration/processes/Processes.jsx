@@ -28,6 +28,7 @@ function Processes({ activeTab }) {
 
     /* ── List state ──────────────────────────────────────────────────── */
     const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [size, setSize] = useState(5);
     const [current, setCurrent] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
@@ -48,6 +49,7 @@ function Processes({ activeTab }) {
 
     function getData() {
         const tenantId = appContext?.tenantSubscription?.tenant_id;
+        setLoading(true);
         axios
             .post(API_URL + "?service.key=masterKey.tenantData", {
                 tenant_id: tenantId,
@@ -65,7 +67,8 @@ function Processes({ activeTab }) {
                     setItems(response.data.C_DATA?.engine || []);
                 }
             })
-            .catch(console.error);
+            .catch(console.error)
+            .finally(() => setLoading(false));
     }
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -170,7 +173,7 @@ function Processes({ activeTab }) {
     ═══════════════════════════════════════════════════════════════════ */
     return (
         <div className="process-configuration-map">
-            <ProcessWorkspaceList title="Deploy Processes" description="Manage BPMN files, deployed versions, and process definitions." items={getFilteredItems()} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, definition key, or file" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add process" stats={[
+            <ProcessWorkspaceList title="Deploy Processes" description="Manage BPMN files, deployed versions, and process definitions." items={getFilteredItems()} loading={loading} onRefresh={getData} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, definition key, or file" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add process" stats={[
                 { label: "Process files", value: items.length, icon: "fa-solid fa-file-code", tone: "bg-indigo-50 text-indigo-600" },
                 { label: "Deployed", value: items.filter(item => item.version).length, icon: "fa-solid fa-rocket", tone: "bg-emerald-50 text-emerald-600" },
                 { label: "Drafts", value: items.filter(item => !item.version).length, icon: "fa-solid fa-pen-ruler", tone: "bg-amber-50 text-amber-600" },

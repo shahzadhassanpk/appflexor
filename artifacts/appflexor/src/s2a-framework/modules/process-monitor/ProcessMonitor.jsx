@@ -7,6 +7,7 @@ import InstanceDetail from "./components/InstanceDetail";
 import ProcessExecutionView from "./components/ProcessExecutionView";
 import { camundaApi } from "./services/camundaApi";
 import { calculateSla } from "./utils/sla";
+import "../process-configuration/process-theme.css";
 
 async function hydrateJsonVariables(instanceId, variables) {
     const hydrated = { ...(variables || {}) };
@@ -117,7 +118,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
     const selectedInstance = instanceMap[selected.instanceId];
 
     return (
-        <main className="min-h-full bg-slate-50 p-3 text-slate-900 sm:p-5">
+        <main className="process-theme-surface min-h-full bg-slate-50 p-3 text-slate-900 sm:p-5">
             <div className="mx-auto max-w-7xl space-y-5">
                 <header className="flex flex-wrap items-center justify-between gap-3">
                     <p className="mb-0 text-sm text-slate-500">Live running processes, tasks, SLA health, and job status.</p>

@@ -1,0 +1,113 @@
+/* Shared channel-theme bridge for the modern process workspaces. */
+.process-theme-surface {
+    background-color: var(--bg-app, var(--primary-color)) !important;
+    color: var(--text-primary, var(--font-color)) !important;
+}
+
+.process-theme-surface .bg-white,
+.process-theme-modal .modal-content,
+.process-theme-modal .modal-header,
+.process-theme-modal .modal-body,
+.process-theme-modal .modal-footer,
+.process-theme-modal .card,
+.process-theme-modal .form-background {
+    background-color: var(--bg-surface, var(--secondary-color)) !important;
+    color: var(--text-primary, var(--font-color)) !important;
+}
+
+.process-theme-surface .bg-slate-50,
+.process-theme-surface.bg-slate-50,
+.process-theme-modal .bg-light,
+.process-theme-modal .card-header {
+    background-color: var(--bg-surface-alt, var(--primary-color)) !important;
+}
+
+.process-theme-surface .bg-slate-100 {
+    background-color: var(--bg-hover, var(--secondary-color)) !important;
+}
+
+.process-theme-surface .bg-gradient-to-br {
+    background-color: var(--bg-surface, var(--secondary-color)) !important;
+    background-image: none !important;
+}
+
+.process-theme-surface .text-slate-900,
+.process-theme-surface .text-slate-800,
+.process-theme-surface .text-slate-700,
+.process-theme-modal,
+.process-theme-modal .modal-title,
+.process-theme-modal label,
+.process-theme-modal .form-control,
+.process-theme-modal .form-select {
+    color: var(--text-primary, var(--font-color)) !important;
+}
+
+.process-theme-surface .text-slate-600,
+.process-theme-modal .form-text,
+.process-theme-modal .text-muted {
+    color: var(--text-secondary, var(--font-color)) !important;
+}
+
+.process-theme-surface .text-slate-500,
+.process-theme-surface .text-slate-400 {
+    color: var(--text-muted, var(--font-color)) !important;
+}
+
+.process-theme-surface .border-slate-300,
+.process-theme-surface .border-slate-200,
+.process-theme-modal .modal-content,
+.process-theme-modal .modal-header,
+.process-theme-modal .modal-footer,
+.process-theme-modal .card,
+.process-theme-modal .form-control,
+.process-theme-modal .form-select {
+    border-color: var(--border-default, var(--border-color)) !important;
+}
+
+.process-theme-surface .border-slate-100 {
+    border-color: var(--border-subtle, var(--border-color)) !important;
+}
+
+.process-theme-surface input,
+.process-theme-surface select,
+.process-theme-surface textarea,
+.process-theme-modal .form-control,
+.process-theme-modal .form-select {
+    background-color: var(--bg-surface, var(--secondary-color)) !important;
+    color: var(--text-primary, var(--font-color)) !important;
+}
+
+.process-theme-surface input::placeholder,
+.process-theme-surface textarea::placeholder,
+.process-theme-modal input::placeholder,
+.process-theme-modal textarea::placeholder {
+    color: var(--text-placeholder, var(--text-muted)) !important;
+}
+
+.process-theme-surface .hover\:bg-slate-50:hover,
+.process-theme-surface .hover\:bg-slate-100:hover {
+    background-color: var(--bg-hover, var(--secondary-color)) !important;
+}
+
+.process-theme-surface .text-indigo-600,
+.process-theme-surface .text-indigo-700 {
+    color: var(--accent-primary, #2563eb) !important;
+}
+
+.process-theme-surface .bg-indigo-600 {
+    background-color: var(--accent-primary, #2563eb) !important;
+}
+
+.process-theme-surface .bg-indigo-50,
+.process-theme-surface .bg-indigo-100 {
+    background-color: var(--accent-primary-soft, color-mix(in srgb, var(--accent-primary) 16%, transparent)) !important;
+}
+
+.process-theme-surface .bg-indigo-600:hover {
+    background-color: var(--accent-primary-hover, #1d4ed8) !important;
+}
+
+.process-theme-surface table,
+.process-theme-modal table {
+    color: inherit;
+}

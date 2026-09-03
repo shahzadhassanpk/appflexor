@@ -69,6 +69,7 @@ function ProcessMap({ activeTab }) {
         urgency_levels: normalizeUrgencyLevels(),
     };
     const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [saveIsDisabled, setSaveIsDisabled] = useState(true);
     const [selectedItem, setSelectedItem] = useState(initialState);
@@ -400,6 +401,7 @@ function ProcessMap({ activeTab }) {
     }
 
     function getData() {
+        setLoading(true);
         var dataRequest = {
             dataKeys: [
                 {
@@ -474,7 +476,8 @@ function ProcessMap({ activeTab }) {
             })
             .catch(error => {
                 console.error(error);
-            });
+            })
+            .finally(() => setLoading(false));
     }
 
     function handleInputField(event, id) {
@@ -642,7 +645,7 @@ function ProcessMap({ activeTab }) {
                 setState={setDeleteConfig}
                 modalType="deleteModal"
             />
-            <ProcessWorkspaceList title="Configure Processes" description="Configure process access, ownership, forms, and SLA policies." items={getFilteredItems()} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, key, category, or business area" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add configuration" stats={[
+            <ProcessWorkspaceList title="Configure Processes" description="Configure process access, ownership, forms, and SLA policies." items={getFilteredItems()} loading={loading} onRefresh={getData} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, key, category, or business area" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add configuration" stats={[
                 { label: "Configurations", value: items.length, icon: "fa-solid fa-diagram-project", tone: "bg-indigo-50 text-indigo-600" },
                 { label: "Active", value: items.filter(item => item.is_active === "YES").length, icon: "fa-solid fa-circle-check", tone: "bg-emerald-50 text-emerald-600" },
                 { label: "Inactive", value: items.filter(item => item.is_active !== "YES").length, icon: "fa-solid fa-circle-pause", tone: "bg-slate-100 text-slate-600" },
@@ -750,6 +753,7 @@ function ProcessMap({ activeTab }) {
                     />
                 </div>
                 <ModuleFormViewer
+                    className="process-theme-modal"
                     handleClose={handleClose}
                     showModal={formShow}
                     modalTitle="Process Configuration"

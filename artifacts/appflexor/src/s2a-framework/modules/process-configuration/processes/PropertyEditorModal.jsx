@@ -672,7 +672,7 @@ export function PropertyEditorModal({
             backdrop="static"
             size="lg"
             style={{ zIndex }}
-            className="s2a-modal">
+            className="s2a-modal process-theme-modal">
             <Modal.Header>
                 <Modal.Title className="h4" style={{ fontSize: "0.9rem" }}>
                     <i className="fa-solid fa-sliders me-2" />

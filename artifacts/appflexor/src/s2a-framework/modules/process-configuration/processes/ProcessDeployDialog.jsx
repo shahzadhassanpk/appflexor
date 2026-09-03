@@ -1336,6 +1336,7 @@ export function ProcessDeployDialog({
         <>
             {/* ── Main deploy modal ── */}
             <Modal
+                className="process-theme-modal"
                 show={show}
                 onHide={() => {}}
                 backdrop="static"

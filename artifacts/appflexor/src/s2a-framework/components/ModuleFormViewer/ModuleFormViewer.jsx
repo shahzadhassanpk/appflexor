@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useState } from "react";
 import Modal from "react-bootstrap/Modal";
 
@@ -8,14 +9,14 @@ function ModuleFormViewer(props) {
         children,
         modalTitle,
         size,
-        isStatic = false,
+        className = "",
     } = props;
     const [toggleModalWindow, setToggleModalWindow] = useState("restore");
 
     return (
         <>
             <Modal
-                className="s2a-modal"
+                className={`s2a-modal ${className}`.trim()}
                 size={size}
                 show={showModal}
                 onHide={handleClose}

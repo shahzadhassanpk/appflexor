@@ -382,7 +382,7 @@
   z-index: 1055; /* above Bootstrap modals (1050) */
   display: flex;
   flex-direction: column;
-  background: var(--body-bg, #f3f4f6);
+  background: var(--bg-app, var(--primary-color, #f3f4f6));
   overflow: hidden;
 }
 
@@ -392,8 +392,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.7rem 1.25rem;
-  background: var(--primary-color, #fff);
-  border-bottom: 1.5px solid color-mix(in srgb, var(--border-color, rgba(0,0,0,0.1)) 100%, transparent);
+  background: var(--bg-surface, var(--secondary-color, #fff));
+  border-bottom: 1.5px solid var(--border-default, var(--border-color, rgba(0,0,0,0.1)));
   flex-shrink: 0;
   gap: 1rem;
 }
@@ -433,5 +433,5 @@
   flex: 1;
   overflow-y: auto;
   padding: 0;
-  background-color: var(--secondary-color);
+  background-color: var(--bg-app, var(--primary-color));
 }
