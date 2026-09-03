@@ -218,6 +218,15 @@ function Pages(props) {
     }
 
     // event handlers
+    function toSnakeCase(value) {
+        return (value || "")
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .replace(/_+/g, "_");
+    }
+
     function handleInputField(event) {
         let value = event.target.value;
         let name = event.target.name;
@@ -239,10 +248,30 @@ function Pages(props) {
             }
         }
 
-        setSelectedPage(prev => ({
-            ...prev,
-            [name]: value,
-        }));
+        setSelectedPage(prev => {
+            let updatedPage = {
+                ...prev,
+                [name]: value,
+            };
+
+            const isNewPage =
+                !prev.id || prev.id === "" || prev.id === "new";
+
+            if (name === "name" && isNewPage) {
+                const generatedValue = toSnakeCase(value);
+                const previousGeneratedValue = toSnakeCase(prev.name);
+
+                const canUpdatePageKey =
+                    !prev.page_key ||
+                    prev.page_key === previousGeneratedValue;
+
+                if (canUpdatePageKey) {
+                    updatedPage.page_key = generatedValue;
+                }
+            }
+
+            return updatedPage;
+        });
     }
 
     function getUpdatedState(id, arr) {
