@@ -279,14 +279,48 @@ function Forms(props) {
     }
 
     // event handlers
+    function toSnakeCase(value) {
+        return (value || "")
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .replace(/_+/g, "_");
+    }
+
     function handleInputField(event) {
         let value = event.target.value;
         let name = event.target.name;
 
-        setSelectedForm(prev => ({
-            ...prev,
-            [name]: value,
-        }));
+        setSelectedForm(prev => {
+            let updatedForm = {
+                ...prev,
+                [name]: value,
+            };
+
+            const isNewForm =
+                !prev.id || prev.id === "" || prev.id === "new";
+
+            if (name === "name" && isNewForm) {
+                const generatedValue = toSnakeCase(value);
+                const previousGeneratedValue = toSnakeCase(prev.name);
+
+                const canUpdateFormKey =
+                    !prev.form_key || prev.form_key === previousGeneratedValue;
+                const canUpdateTable =
+                    !prev.table || prev.table === previousGeneratedValue;
+
+                if (canUpdateFormKey) {
+                    updatedForm.form_key = generatedValue;
+                }
+
+                if (canUpdateTable) {
+                    updatedForm.table = generatedValue;
+                }
+            }
+
+            return updatedForm;
+        });
         if (name === "datasource") {
             if (value === "") {
                 setUsePrefix(true);

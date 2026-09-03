@@ -174,13 +174,42 @@ function DataList(props) {
     }
 
     // event handlers
+    function toSnakeCase(value) {
+        return (value || "")
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .replace(/_+/g, "_");
+    }
+
     function handleInputField(event) {
         const { value, name } = event.target;
 
-        setSelectedItem(prev => ({
-            ...prev,
-            [name]: value,
-        }));
+        setSelectedItem(prev => {
+            const updatedItem = {
+                ...prev,
+                [name]: value,
+            };
+
+            const isNewDataList =
+                !prev.id || prev.id === "" || prev.id === "new";
+
+            if (name === "name" && isNewDataList) {
+                const generatedValue = toSnakeCase(value);
+                const previousGeneratedValue = toSnakeCase(prev.name);
+
+                const canUpdateKey =
+                    !prev.db_column ||
+                    prev.db_column === previousGeneratedValue;
+
+                if (canUpdateKey) {
+                    updatedItem.db_column = generatedValue;
+                }
+            }
+
+            return updatedItem;
+        });
     }
 
     function handleType(event) {
