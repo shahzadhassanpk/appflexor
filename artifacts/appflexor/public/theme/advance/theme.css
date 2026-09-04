@@ -86,7 +86,7 @@ body.dark {
     --tab-color: #1a2740;
     --shadow-color: rgba(2, 8, 23, 0.45);
     --font-color: #f2f6fc;
-    --link-active-color: #223554;
+    --link-active-color: #0891b2;
 
     /* Backgrounds */
     --bg-app: var(--primary-color);

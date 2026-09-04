@@ -4,6 +4,10 @@
     color: var(--text-primary, var(--font-color)) !important;
 }
 
+.border{
+    border-color: var(--border-default, var(--border-color)) !important;
+}
+
 .process-theme-surface .bg-white,
 .process-theme-modal .modal-content,
 .process-theme-modal .modal-header,

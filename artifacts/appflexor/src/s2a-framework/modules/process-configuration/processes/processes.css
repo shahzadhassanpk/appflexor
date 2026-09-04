@@ -149,10 +149,6 @@
     font-weight: 600;
 }
 
-.proc-elem-table tr.proc-elem-row--missing > td {
-    background: #fff7f7;
-}
-
 .proc-clear-confirm-backdrop {
     z-index: 1990 !important;
 }
@@ -189,6 +185,7 @@
 .proc-elem-tab.active {
     color: var(--link-active-color, #2563eb) !important;
     font-weight: 600 !important;
+    border-bottom: 1px solid var(--link-active-color, #2563eb);
 }
 
 .proc-elem-count {
