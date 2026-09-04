@@ -66,7 +66,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
             });
             setState({ definitions: definitions || [], instances: details, tasks: tasks || [], jobs: jobs || [], history: history || [] });
         } catch (requestError) {
-            setError(requestError.response?.data?.message || requestError.message || "Unable to load Camunda monitor data.");
+            setError(requestError.response?.data?.message || requestError.message || "Unable to load process engine monitor data.");
         } finally {
             setLoading(false);
         }

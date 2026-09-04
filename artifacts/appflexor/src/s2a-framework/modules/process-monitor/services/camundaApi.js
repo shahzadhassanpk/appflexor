@@ -8,7 +8,7 @@ function unwrap(response) {
         throw new Error("Your AppFlexor session has expired. Please sign in again.");
     }
     if (["FAILED", "FAILURE", "ERROR"].includes(response.data?.C_STATUS) || response.data?.status === "ERROR") {
-        throw new Error(response.data?.C_MESSAGE || response.data?.message || "Camunda request failed.");
+        throw new Error(response.data?.C_MESSAGE || response.data?.message || "Process engine request failed.");
     }
     return response.data?.data ?? response.data;
 }

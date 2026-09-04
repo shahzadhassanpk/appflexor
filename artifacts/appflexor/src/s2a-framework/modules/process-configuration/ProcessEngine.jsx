@@ -134,10 +134,10 @@ function ProcessEngine({ activeTab }) {
                                     onChange={e => handleChange(e)}>
                                     <option value="">Select Engine Type</option>
                                     <option value="CAMUNDA_SEVEN">
-                                        Camunda v7
+                                        Process Engine v7
                                     </option>
                                     <option value="CAMUNDA_EIGHT">
-                                        Camunda v8
+                                        Process Engine v8
                                     </option>
                                     <option value="JOGET">Joget</option>
                                 </select> */}

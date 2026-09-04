@@ -501,7 +501,7 @@ function ProcessMonitor({ activeTab }) {
             .post(BPM_API_URL + "?service.key=reset.password", dataRequest)
             .then(response => {
                 if (response.status === 200) {
-                    toastEmitter("Camunda cockpit password reset successfully for "+camLogin.username, true);
+                    toastEmitter("Process engine console password reset successfully for "+camLogin.username, true);
                 }
             })
             .catch(err => {
@@ -572,9 +572,9 @@ function ProcessMonitor({ activeTab }) {
                 appContext.tenantSubscription.process_engine ==
                     "CAMUNDA_SEVEN" && (
                     <div className="card p-4 text-center mx-auto mt-4 mb-4" style={{maxWidth:700, backgroundColor:"var(--primary-color)"}}>
-                        <h4 className="mb-3">Camunda Process Engine (v7)</h4>
+                        <h4 className="mb-3">Process Engine (v7)</h4>
                         <p className="mb-3">
-                            Open Camunda Cockpit to monitor running processes.
+                            Open the process engine console to monitor running processes.
                         </p>
                         <div className="mb-3">
                             <a className="btn btn-primary me-2" href="/camunda/app/cockpit/default/#/login" target="_blank">Open Cockpit</a>

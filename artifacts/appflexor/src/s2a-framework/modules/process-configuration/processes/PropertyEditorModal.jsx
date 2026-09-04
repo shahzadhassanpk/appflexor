@@ -260,7 +260,7 @@ export function PropertyEditorModal({
                             <i className="fa fa-plus me-1" />Add Parameter
                         </button>
                         <p className="proc-payload-hint mt-1 mb-0">
-                            Values support Camunda expressions, e.g.{" "}
+                            Values support process engine expressions, e.g.{" "}
                             <code>{"${execution.businessKey}"}</code> or{" "}
                             <code>{"${someVariable}"}</code>
                         </p>
@@ -518,7 +518,7 @@ export function PropertyEditorModal({
                                             <i className="fa fa-plus me-1" />Add Field
                                         </button>
                                         <p className="proc-payload-hint mt-1 mb-0">
-                                            Values support Camunda expressions, e.g.{" "}
+                                            Values support process engine expressions, e.g.{" "}
                                             <code>{"${execution.businessKey}"}</code> or{" "}
                                             <code>{"${someVariable}"}</code>
                                         </p>

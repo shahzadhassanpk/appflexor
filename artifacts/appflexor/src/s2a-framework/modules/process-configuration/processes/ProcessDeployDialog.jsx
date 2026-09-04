@@ -636,6 +636,7 @@ export function ProcessDeployDialog({
                     version:    data.version,
                     process_id: data.process_id,
                     deployment: data.deployment,
+                    status:     "DEPLOYED",
                 });
                 setDeployPending(false);
                 setStatus("Process deployed successfully");
