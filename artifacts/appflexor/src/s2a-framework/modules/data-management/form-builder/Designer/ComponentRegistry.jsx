@@ -27,7 +27,7 @@ import TextArea from "./components/TextArea";
 import TextField from "./components/TextField";
 import PasswordField from "./components/PasswordField";
 import Time from "./components/Time";
-import BpmnViewerComponent from "./components/bpm-diagram-viewer/viewer";
+// import BpmnViewerComponent from "./components/bpm-diagram-viewer/viewer";
 import VideoComponent from "./components/video/Video";
 import Audio from "./components/audio/Audio";
 import CustomActionsPropEditer from "./components/CustomActions/CustomActionsPropEditer";
@@ -68,11 +68,11 @@ export const componentList = {
     time: Time,
     carousel: FormCarousel,
     json: JsonViewer,
-    bpmviewer: BpmnViewerComponent,
+    // bpmviewer: BpmnViewerComponent,
     video: VideoComponent,
     audio: Audio,
     action: CustomActionsPropEditer,
-    appView: AppView,
+    // appView: AppView,
     // dndlisting: DndListing,
     // audio:audioComponent
     // subform: SubForm,
@@ -375,14 +375,14 @@ export const SIDEBAR_ITEMS = [
             icon: "fa-regular fa-file-code",
         },
     },
-    {
-        type: SIDEBAR_ITEM, //  used by designer to identify dragable component
-        component: {
-            type: "bpmviewer",
-            title: "Bpm viewer",
-            icon: "fa-solid fa-list-check",
-        },
-    },
+    // {
+    //     type: SIDEBAR_ITEM, //  used by designer to identify dragable component
+    //     component: {
+    //         type: "bpmviewer",
+    //         title: "Bpm viewer",
+    //         icon: "fa-solid fa-list-check",
+    //     },
+    // },
     {
         type: SIDEBAR_ITEM, //  used by designer to identify dragable component
         component: {
@@ -391,39 +391,39 @@ export const SIDEBAR_ITEMS = [
             icon: "fa fa-gear",
         },
     },
-    {
-        id: `${makeid(8)}`,
-        type: SIDEBAR_ITEM,
-        require_auth: "false",
-        path: "",
-        code: "WEB_CONTENT",
-        component: {
-            type: "appView",
-            title: "App View",
-            icon: "fa-solid fa-crop-simple",
-            data: {
-                url: "",
-                width: "",
-                height: "",
-            },
-            props: [
-                {
-                    id: "app",
-                    label: "App",
-                    type: "text", // text, date, options,
-                    value: "",
-                    options: [], // optional
-                    hidden: false,
-                },
-                {
-                    id: "view",
-                    label: "View",
-                    type: "text", // text, date, options,
-                    value: "",
-                    options: [], // optional
-                    hidden: false,
-                },
-            ],
-        },
-    },
+    // {
+    //     id: `${makeid(8)}`,
+    //     type: SIDEBAR_ITEM,
+    //     require_auth: "false",
+    //     path: "",
+    //     code: "WEB_CONTENT",
+    //     component: {
+    //         type: "appView",
+    //         title: "App View",
+    //         icon: "fa-solid fa-crop-simple",
+    //         data: {
+    //             url: "",
+    //             width: "",
+    //             height: "",
+    //         },
+    //         props: [
+    //             {
+    //                 id: "app",
+    //                 label: "App",
+    //                 type: "text", // text, date, options,
+    //                 value: "",
+    //                 options: [], // optional
+    //                 hidden: false,
+    //             },
+    //             {
+    //                 id: "view",
+    //                 label: "View",
+    //                 type: "text", // text, date, options,
+    //                 value: "",
+    //                 options: [], // optional
+    //                 hidden: false,
+    //             },
+    //         ],
+    //     },
+    // },
 ];
