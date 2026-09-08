@@ -123,6 +123,47 @@ pnpm --filter @workspace/appflexor run build
 
 Build may emit existing warnings about large chunks, dynamic imports, and optional peer dependencies from `plotly.js`.
 
+## AppFlexor Form Component Builder Memory
+
+Use this instruction when a user asks to create or change a form-builder component.
+
+### Source-of-Truth Flow
+
+- Registry and designer palette: `artifacts/appflexor/src/s2a-framework/modules/data-management/form-builder/Designer/ComponentRegistry.jsx`
+- Designer drag/drop creation: `artifacts/appflexor/src/s2a-framework/modules/data-management/form-builder/Designer/Designer.jsx`
+- Designer component resolver: `artifacts/appflexor/src/s2a-framework/modules/data-management/form-builder/Designer/designer-components/Wrapper.jsx`
+- Generic settings editor: `artifacts/appflexor/src/s2a-framework/modules/data-management/form-builder/Designer/designer-components/Settings.jsx`
+- Settings field renderer: `artifacts/appflexor/src/s2a-framework/modules/data-management/form-builder/Designer/designer-components/RenderFormFields.jsx`
+- Runtime resolver: `artifacts/appflexor/src/s2a-framework/modules/data-management/form-builder/Forms/FormViewer/RenderFormFields.jsx`
+- Main form runtime/modes: `artifacts/appflexor/src/s2a-framework/modules/data-management/form-builder/Forms/FormViewer/FormViewer.jsx`
+
+### Registration and Persistence Contract
+
+1. Create the React implementation under `Designer/components/<ComponentName>/`.
+2. Import it in `ComponentRegistry.jsx` and add it to `componentList` using a stable, case-sensitive type key.
+3. Add a `SIDEBAR_ITEMS` entry whose `component.type` exactly matches that key. Include:
+   - `title` and Font Awesome `icon` for the palette.
+   - `data` for persisted component values and defaults.
+   - `props` for the generic settings schema. Each property uses `id`, `label`, `type`, `value`, and `hidden`; `id` must match its key in `data`.
+4. Supported generic settings types are implemented in `designer-components/RenderFormFields.jsx` and include `text`, `textarea`, `number`, `date`, `time`, `datetime-local`, `checkbox`, `options`, `richtext`, and `array`. Extend that renderer only when a new editor type is genuinely required.
+
+On palette drop, `Designer.jsx` generates a component ID, copies `props`, initializes the declared `data` keys, stores the full record in `design.components[id]`, and puts only `{ id, type: COMPONENT }` in a column's `layout.children`. Settings changes update `design.components[id].data`. Form saves persist `layout`, `components`, `images`, and `htmlCollection` inside `design` (or each multipage design).
+
+### Design, Preview, and Render Contract
+
+Both designer and runtime resolve the implementation with `componentList[component.type]` and pass the persisted record as `component`. Common props are `mode`, `modeType`, `images`, and `htmlCollection`; runtime field components may also receive form data/change handlers. Mode values are `DESIGN_MODE`, `PREVIEW_MODE`, `READONLY_MODE`, and `RENDER_MODE`.
+
+- In design mode, keep the component visible and selectable, even if its runtime output is normally invisible.
+- In preview/render/readonly modes, produce the real output and avoid designer controls.
+- Read configuration from `component.data`; do not create a parallel state contract.
+- Call runtime input handlers only for values that belong in submitted form data. Display/decorator components should not add schema fields.
+- Preserve legacy/branding classes and use a unique wrapper or data attribute when DOM targeting is needed.
+- Gracefully handle missing component data so older saved forms continue to render.
+
+### Prompt-to-Component Workflow
+
+For a simple prompt, infer the component type/title/icon, persisted data, settings schema, and mode-specific UI; then implement the component, register it in both registry structures, and verify the component file plus registry with focused ESLint. Confirm that it can be dragged into a form, edited through Settings, survives save/reload, appears appropriately in design mode, and produces the intended preview/render output.
+
 ## AppFlexor Site Builder Agent Instruction
 
 Use this instruction when the user asks to create a new site or site skeleton from a prompt.

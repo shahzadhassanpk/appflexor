@@ -49,6 +49,10 @@ export default function RichTextPropsEditor({ setShow }) {
                 componentData.mode = "BASIC";
             }
 
+            if (!componentData.height) {
+                componentData.height = 300;
+            }
+
             setInputField(componentData);
         }
 
@@ -475,6 +479,9 @@ export default function RichTextPropsEditor({ setShow }) {
                         <input
                             type="number"
                             name="height"
+                            min="100"
+                            step="10"
+                            aria-describedby="rich-text-height-help"
                             className={`form-control form-control-sm ${
                                 invalidFields["height"] !== undefined
                                     ? "form-control-danger"
@@ -483,6 +490,11 @@ export default function RichTextPropsEditor({ setShow }) {
                             onChange={e => handleInputField(e)}
                             value={inputField.height}
                         />
+                        <small
+                            id="rich-text-height-help"
+                            className="form-text text-muted">
+                            Height in pixels.
+                        </small>
                     </div>
                     <div className="col-sm-8 d-flex mb-3 mt-auto">
                         <div className="pe-3">Type:</div>

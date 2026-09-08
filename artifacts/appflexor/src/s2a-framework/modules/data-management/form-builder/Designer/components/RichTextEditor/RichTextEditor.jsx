@@ -420,6 +420,9 @@ function RichTextEditor(props) {
     function HTMLIframe({ html, height }) {
         const [maximized, setMaximized] = useState(false);
         const iframeRef = useRef(null);
+        const containerHeight = /^\d+(\.\d+)?$/.test(String(height))
+            ? `${height}px`
+            : height || "100%";
         useEffect(() => {
             if (!maximized && iframeRef.current) {
                 const iframe = iframeRef.current;
@@ -447,9 +450,10 @@ function RichTextEditor(props) {
                         : "0 2px 6px rgba(0,0,0,0.15)",
                     display: "flex",
                     flexDirection: "column",
+                    height: maximized ? "100vh" : containerHeight,
                 }}>
                 {/* Toolbar */}
-                <div
+                {/* <div
                     style={{
                         padding: "8px 12px",
                         borderBottom: "1px solid #e5e7eb",
@@ -458,19 +462,33 @@ function RichTextEditor(props) {
                         justifyContent: "flex-end",
                     }}>
                     <button
+                        type="button"
                         onClick={() => setMaximized(!maximized)}
+                        aria-label={maximized ? "Restore view" : "Maximize view"}
+                        title={maximized ? "Restore view" : "Maximize view"}
                         style={{
                             background: "#34495e",
                             color: "#fff",
                             border: "none",
                             borderRadius: 4,
-                            padding: "4px 10px",
+                            width: 30,
+                            height: 30,
+                            padding: 0,
                             cursor: "pointer",
-                            fontSize: 12,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                         }}>
-                        {maximized ? "Restore" : "Maximize"}
+                        <i
+                            className={
+                                maximized
+                                    ? "fa-solid fa-compress"
+                                    : "fa-solid fa-expand"
+                            }
+                            aria-hidden="true"
+                        />
                     </button>
-                </div>
+                </div> */}
 
                 {/* Iframe */}
                 <iframe
@@ -480,8 +498,9 @@ function RichTextEditor(props) {
                     sandbox=""
                     style={{
                         width: "100%",
-                        height: maximized ? "100vh" : height || 300,
-                        flexGrow: 1,
+                        height: "100%",
+                        minHeight: 0,
+                        flex: "1 1 auto",
                         border: "none",
                     }}
                 />

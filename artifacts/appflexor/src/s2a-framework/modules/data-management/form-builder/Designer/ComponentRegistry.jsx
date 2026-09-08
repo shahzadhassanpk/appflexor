@@ -31,10 +31,9 @@ import Time from "./components/Time";
 import VideoComponent from "./components/video/Video";
 import Audio from "./components/audio/Audio";
 import CustomActionsPropEditer from "./components/CustomActions/CustomActionsPropEditer";
-import AppView from "./components/AppView";
 import HTMLTemplate from "./components/HTMLTemplate";
 import AutoIncrement from "./components/Auto Increment/AutoIncrement";
-import { makeid } from "../../../../utils/utils";
+import CustomCSS from "./components/CustomCSS/CustomCSS";
 export const SIDEBAR_ITEM = "sidebaritem"; // draggable
 export const ROW = "row"; // dropable
 export const COLUMN = "DB Column"; // dropable
@@ -64,6 +63,7 @@ export const componentList = {
     textfield: TextField,
     passwordfield: PasswordField,
     autoincrement: AutoIncrement,
+    customcss: CustomCSS,
     hiddenfield: HiddenField,
     time: Time,
     carousel: FormCarousel,
@@ -101,6 +101,26 @@ export const componentList = {
 
  */
 export const SIDEBAR_ITEMS = [
+    {
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "customcss",
+            title: "Custom CSS",
+            icon: "fa-brands fa-css3-alt",
+            data: {
+                css: "",
+            },
+            props: [
+                {
+                    id: "css",
+                    label: "CSS",
+                    type: "textarea",
+                    value: "",
+                    hidden: false,
+                },
+            ],
+        },
+    },
     {
         type: SIDEBAR_ITEM,
         component: {
@@ -277,6 +297,12 @@ export const SIDEBAR_ITEMS = [
             type: "richtexteditor",
             title: "Rich Text Editor",
             icon: "fa-solid fa-font",
+            data: {
+                label: "",
+                db_column: "",
+                value: "",
+                height: 300,
+            },
         },
     },
     {
