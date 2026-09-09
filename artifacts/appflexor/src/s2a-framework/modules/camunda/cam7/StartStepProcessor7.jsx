@@ -17,6 +17,7 @@ function StartStepProcessor({
     camundaVars = {},
     formVars = {},
     action = {},
+    slaSelection = null,
     processStartDraft = null,
     onDraftChange,
 }) {
@@ -69,6 +70,13 @@ function StartStepProcessor({
         );
 
         if (actionType !== actions.complete) return true;
+
+        if (!slaSelection && !getDraftSlaVariables()) {
+            const message = "Select a service level agreement before starting this process.";
+            setStartNotice({ type: "danger", message });
+            toastEmitter(message, true, "error");
+            return false;
+        }
 
         const processKey =
             formDetails?.process_key || formDetails?.processKey || "";
@@ -235,7 +243,9 @@ function StartStepProcessor({
         } else {
             path = `/process-definition/key/${processKey}/tenant-id/${tenantId}/start`;
         }
-        let variables = taskVariables ? { ...taskVariables } : camundaVars;
+        let variables = normalizeStartVariables(
+            taskVariables ? taskVariables : camundaVars,
+        );
         variables["requestor"] = {
             value: appContext?.profile?.username,
             type: "string",
@@ -254,15 +264,55 @@ function StartStepProcessor({
     }
 
     function buildStartVariables(taskVariables) {
-        const variables = {
+        let variables = {
             ...camundaVars,
             ...(taskVariables || {}),
         };
+        const draftSlaVariables = getDraftSlaVariables();
+        if (draftSlaVariables) {
+            variables.priority = draftSlaVariables.priority;
+            variables.slaLevels = draftSlaVariables.slaLevels;
+        }
+        variables = normalizeStartVariables(variables);
         variables.requestor = {
             value: appContext?.profile?.username,
             type: "string",
         };
         return variables;
+    }
+
+    function normalizeStartVariables(variables = {}) {
+        const normalized = { ...variables };
+        delete normalized.dueDate;
+        if ((!normalized.priority || !normalized.slaLevels) && slaSelection) {
+            normalized.priority = {
+                value: slaSelection.level,
+                type: "String",
+            };
+            normalized.slaLevels = {
+                value: JSON.stringify(slaSelection.slaLevels || {}),
+                type: "Json",
+            };
+        }
+        return normalized;
+    }
+
+    function getDraftSlaVariables() {
+        if (!processStartDraft?.process_variables) return null;
+        try {
+            const variables =
+                typeof processStartDraft.process_variables === "string"
+                    ? JSON.parse(processStartDraft.process_variables)
+                    : processStartDraft.process_variables;
+            return variables?.priority && variables?.slaLevels
+                ? {
+                    priority: variables.priority,
+                    slaLevels: variables.slaLevels,
+                }
+                : null;
+        } catch {
+            return null;
+        }
     }
 
     function getErrorMessage(error) {
@@ -475,13 +525,15 @@ function StartStepProcessor({
         setIsStarting(true);
         setStartNotice(null);
         try {
-            const variables =
+            const storedVariables =
                 typeof activeDraft.process_variables === "string"
                     ? JSON.parse(activeDraft.process_variables || "{}")
                     : activeDraft.process_variables || {};
+            const variables = normalizeStartVariables(storedVariables);
             const startingDraft = await saveDraft(activeDraft, {
                 status: "STARTING",
                 last_error: "",
+                process_variables: JSON.stringify(variables),
             });
             setActiveDraft(startingDraft);
             onDraftChange?.(startingDraft);

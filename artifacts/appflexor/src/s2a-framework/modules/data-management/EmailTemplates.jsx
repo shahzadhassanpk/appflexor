@@ -275,7 +275,6 @@ function EmailTemplates({ activeTab }) {
                 if (response.status === 200) {
                     if (response.data.C_STATUS === "SUCCESS") {
                         if (response.data.C_DATA.emailServices) {
-                            debugger;
                             setItems(response.data.C_DATA.emailServices);
                             let data = response.data.C_DATA.emailServices;
                             if (inputReference.current.value) {

@@ -85,6 +85,15 @@ export const camundaApi = {
         firstResult: 0,
         maxResults: 20,
     })}`),
+    getHistoricInstancesByDefinition: definitionId => getAllPages(
+        "/history/process-instance",
+        {
+            processDefinitionId: definitionId,
+            unfinished: true,
+            sortBy: "startTime",
+            sortOrder: "desc",
+        },
+    ),
 
     getJobs: () => camundaRequest(`/job${query({
         withException: false,

@@ -77,13 +77,18 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         async function loadLatestRuntimeState() {
             setRefreshing(true);
             try {
-                const [latestInstances, latestTasks, latestJobs] = await Promise.all([
+                const [latestInstances, latestTasks, latestJobs, latestHistory] = await Promise.all([
                     camundaApi.getProcessInstancesByDefinition(viewDefinition.id),
                     camundaApi.getTasksByDefinition(viewDefinition.id),
                     camundaApi.getJobsByDefinition(viewDefinition.id),
+                    camundaApi.getHistoricInstancesByDefinition(viewDefinition.id).catch(() => []),
                 ]);
+                const historyByInstanceId = Object.fromEntries(
+                    (latestHistory || []).map(item => [item.id, item]),
+                );
                 const hydratedInstances = await Promise.all((latestInstances || []).map(async instance => ({
                     ...instance,
+                    startTime: instance.startTime || historyByInstanceId[instance.id]?.startTime,
                     activity: await camundaApi.getActivityInstances(instance.id).catch(() => null),
                 })));
                 if (!disposed) setRuntimeState({
@@ -236,7 +241,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
 
 function RuntimeTable({ rows, onSelect, onDelete }) {
     if (!rows.length) return <p className="p-8 text-center text-sm text-slate-500">No running process instances.</p>;
-    return <div className="overflow-x-auto"><table className="mt-2 w-full min-w-[650px] text-left text-sm"><thead className="text-xs uppercase text-slate-500"><tr><th className="p-3">State</th><th className="p-3">ID</th><th className="p-3">Business Key</th><th className="p-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.map(item => <tr key={item.id}><td className="p-3"><i className="fa-solid fa-circle-check text-emerald-500" /></td><td className="p-3"><button type="button" onClick={() => onSelect(item.id)} className="font-medium text-indigo-600 hover:underline">{item.id}</button></td><td className="p-3">{item.businessKey || "—"}</td><td className="p-3 text-right"><button type="button" onClick={() => onDelete(item)} title="Delete process instance" aria-label={`Delete process instance ${item.id}`} className="ml-auto grid h-8 w-8 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"><i className="fa-solid fa-trash-can" aria-hidden="true" /></button></td></tr>)}</tbody></table></div>;
+    return <div className="overflow-x-auto"><table className="mt-2 w-full min-w-[780px] text-left text-sm"><thead className="text-xs uppercase text-slate-500"><tr><th className="p-3">State</th><th className="p-3">ID</th><th className="p-3">Business Key</th><th className="p-3">Created</th><th className="p-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.map(item => <tr key={item.id}><td className="p-3"><i className="fa-solid fa-circle-check text-emerald-500" /></td><td className="p-3"><button type="button" onClick={() => onSelect(item.id)} className="font-medium text-indigo-600 hover:underline">{item.id}</button></td><td className="p-3">{item.businessKey || "—"}</td><td className="whitespace-nowrap p-3">{item.startTime ? <time dateTime={item.startTime}>{new Date(item.startTime).toLocaleString()}</time> : "—"}</td><td className="p-3 text-right"><button type="button" onClick={() => onDelete(item)} title="Delete process instance" aria-label={`Delete process instance ${item.id}`} className="ml-auto grid h-8 w-8 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"><i className="fa-solid fa-trash-can" aria-hidden="true" /></button></td></tr>)}</tbody></table></div>;
 }
 
 function MessageList({ rows, empty, render }) {

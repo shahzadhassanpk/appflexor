@@ -17,6 +17,9 @@ const PROCESS_URGENCY_LEVELS = ["High", "Medium", "Low"];
 
 function getProcessUrgencyLevels(value) {
     let parsedValue = value;
+    if (parsedValue?.value !== undefined) {
+        parsedValue = parsedValue.value;
+    }
     if (typeof parsedValue === "string") {
         try {
             parsedValue = JSON.parse(parsedValue);
@@ -123,6 +126,7 @@ function RenderListView({
     const [selectedPendingDraft, setSelectedPendingDraft] = useState(null);
     const [draftSearch, setDraftSearch] = useState("");
     const [draftActions, setDraftActions] = useState({});
+    const [selectedStartSlaLevel, setSelectedStartSlaLevel] = useState("");
     const draftRetryLocks = useRef(new Set());
     const pendingDraftsInitializedRef = useRef(false);
 
@@ -573,9 +577,14 @@ function RenderListView({
     }, []);
 
     // ── Helpers ──────────────────────────────────────
+    function getTaskVariableValue(task, name) {
+        const variable = task?.variables?.[name];
+        return variable?.value !== undefined ? variable.value : variable;
+    }
+
     function getPriorityLevel(task) {
         const p = (
-            task.variables?.priority ||
+            getTaskVariableValue(task, "priority") ||
             task.priority ||
             ""
         ).toString().toLowerCase();
@@ -583,6 +592,50 @@ function RenderListView({
         if (p === "low" || p === "3") return "low";
         if (p === "medium" || p === "2" || p === "") return "medium";
         return "medium";
+    }
+
+    function getTimestamp(value) {
+        if (!value) return null;
+        if (/^\d+$/.test(String(value))) {
+            const numericValue = Number(value);
+            return numericValue < 1000000000000
+                ? numericValue * 1000
+                : numericValue;
+        }
+        const timestamp = new Date(value).getTime();
+        return Number.isNaN(timestamp) ? null : timestamp;
+    }
+
+    function getTaskSlaDueTimestamp(task) {
+        const priority = getPriorityLevel(task);
+        const levels = getProcessUrgencyLevels(
+            getTaskVariableValue(task, "slaLevels") ||
+                getTaskVariableValue(task, "sla_levels"),
+        );
+        const selectedSla =
+            levels?.[priority.charAt(0).toUpperCase() + priority.slice(1)];
+        const slaValue = Number.parseInt(selectedSla?.slaValue, 10);
+        const startTimestamp = getTimestamp(
+            task?.process_start_date ||
+                task?.process_start_time ||
+                task?.processStartDate ||
+                task?.processStartTime ||
+                task?.start_time,
+        );
+        if (
+            startTimestamp === null ||
+            !Number.isInteger(slaValue) ||
+            slaValue <= 0 ||
+            !["hours", "days"].includes(selectedSla?.slaUnit)
+        ) {
+            return null;
+        }
+        return startTimestamp +
+            slaValue * (selectedSla.slaUnit === "days" ? 86400000 : 3600000);
+    }
+
+    function getTaskDueTimestamp(task) {
+        return getTaskSlaDueTimestamp(task) ?? getTimestamp(task?.due_date);
     }
 
     function groupTasksByDue(tasks) {
@@ -595,7 +648,8 @@ function RenderListView({
 
         const groups = { "Overdue": [], "Due Today": [], "Due This Week": [], "Due Later": [] };
         tasks.forEach(task => {
-            const due = task.due_date ? new Date(task.due_date) : null;
+            const dueTimestamp = getTaskDueTimestamp(task);
+            const due = dueTimestamp === null ? null : new Date(dueTimestamp);
             if (!due || due > weekEnd) {
                 groups["Due Later"].push(task);
             } else if (due < todayStart) {
@@ -625,7 +679,8 @@ function RenderListView({
                 if (getPriorityLevel(task) !== filters.priority) return false;
             }
             if (filters.dueDate !== "all") {
-                const due = task.due_date ? new Date(task.due_date) : null;
+                const dueTimestamp = getTaskDueTimestamp(task);
+                const due = dueTimestamp === null ? null : new Date(dueTimestamp);
                 const now = new Date();
                 const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
                 const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + 7); weekEnd.setHours(23, 59, 59, 999);
@@ -872,6 +927,7 @@ function RenderListView({
         setRenderProcessModal(true);
         setExpandedProcessDescriptionId("");
         setSelectedProcessId("");
+        setSelectedStartSlaLevel("");
         setSelectedTask(taskInitState);
         setCurrentProcessState({
             initial: true,
@@ -885,6 +941,7 @@ function RenderListView({
         setSelectedPendingDraft(null);
         setPendingDraftsView(false);
         setSelectedProcessId(process.id);
+        setSelectedStartSlaLevel("");
         setCurrentProcessState({
             initial: false,
             start: true,
@@ -968,9 +1025,22 @@ function RenderListView({
         const due = new Date(task.due_date);
         const isOverdue = due < new Date();
         return (
-            <span className={`inbox-due-badge ${isOverdue ? "overdue" : ""}`}>
-                <i className="fa-regular fa-calendar" style={{ fontSize: 10 }}></i>
+            <span title="Task Due Date" className={`inbox-due-badge ${isOverdue ? "overdue" : ""}`}>
+                Task Due On: <i className="fa-regular fa-calendar" style={{ fontSize: 10 }}></i>
                 {formatDueLabel(task.due_date)}
+            </span>
+        );
+    }
+
+    function renderSLADueBadge(task) {
+        const dueTimestamp = getTaskSlaDueTimestamp(task);
+        if (dueTimestamp === null) return null;
+        const due = new Date(dueTimestamp);
+        const isOverdue = due < new Date();
+        return (
+            <span title="SLA Due Date" className={`inbox-due-badge ${isOverdue ? "overdue" : ""}`}>
+                SLA Due On: <i className="fa-regular fa-calendar" style={{ fontSize: 10 }}></i>
+                {formatDueLabel(dueTimestamp)}
             </span>
         );
     }
@@ -980,7 +1050,7 @@ function RenderListView({
         const labels = { high: "High", medium: "Medium", low: "Low" };
         const flagColor = { high: "#e05252", medium: "#d4820a", low: "#38a169" }[level];
         return (
-            <span className={`${level}`} style={{ color: flagColor }}>
+            <span title="SLA Priority" className={`${level}`} style={{ color: flagColor }}>
                 <i className="fa-solid fa-flag" style={{ fontSize: 11 }}></i> {labels[level]}
             </span>
         );
@@ -1042,7 +1112,10 @@ function RenderListView({
                                     ))
                                 }
                                 <div className="inbox-task-footer">
-                                    {renderDueBadge(currentTask)}
+                                    {renderDueBadge(currentTask)}                                    
+                                </div>
+                                <div className="inbox-task-footer">                                    
+                                    {renderSLADueBadge(currentTask)}
                                     {renderPriorityBadge(currentTask)}
                                 </div>
                             </div>
@@ -1105,6 +1178,13 @@ function RenderListView({
         setSelectedPendingDraft(draft);
         setSelectedTask(taskInitState);
         setSelectedProcessId(processId);
+        const draftVariables = getDraftVariables(draft);
+        const draftPriority = draftVariables?.priority?.value ?? draftVariables?.priority;
+        setSelectedStartSlaLevel(
+            PROCESS_URGENCY_LEVELS.find(
+                level => level.toLowerCase() === String(draftPriority || "").toLowerCase(),
+            ) || "",
+        );
         setCurrentProcessState({
             initial: false,
             start: true,
@@ -1602,7 +1682,7 @@ function RenderListView({
                             )}
                             {renderStartStepProcessor()}
                         </div>
-                        <div className="col-sm-3 comment-panel p-3">
+                        <div className="col-sm-3 comment-panel p-3 order-first order-sm-last">
                             <Interweave content={selectedStartProcess?.description || "No description available for this service."} />
                             <div className="border-top mt-3 pt-3">
                                 <div className="fw-semibold mb-2">
@@ -1610,21 +1690,34 @@ function RenderListView({
                                     Service Level Agreements
                                 </div>
                                 {selectedStartUrgencyLevels ? (
-                                    <div className="d-grid gap-2">
+                                    <fieldset className="d-grid gap-2">
+                                        <legend className="small text-muted mb-2">
+                                            Select the SLA for this process
+                                        </legend>
                                         {PROCESS_URGENCY_LEVELS.map(level => {
                                             const sla = selectedStartUrgencyLevels[level];
                                             return sla ? (
-                                                <div
-                                                    className="d-flex justify-content-between align-items-center border rounded px-2 py-2"
+                                                <label
+                                                    className={`d-flex justify-content-between align-items-center border rounded px-2 py-2 pointer ${selectedStartSlaLevel === level ? "border-primary bg-primary-subtle" : ""}`}
                                                     key={level}>
-                                                    <span className="fw-semibold">{level}</span>
+                                                    <span className="d-flex align-items-center gap-2 fw-semibold">
+                                                        <input
+                                                            type="radio"
+                                                            className="form-check-input mt-0"
+                                                            name="process-start-sla"
+                                                            value={level}
+                                                            checked={selectedStartSlaLevel === level}
+                                                            onChange={() => setSelectedStartSlaLevel(level)}
+                                                        />
+                                                        {level}
+                                                    </span>
                                                     <span className="text-muted">
                                                         {sla.slaValue} {sla.slaUnit}
                                                     </span>
-                                                </div>
+                                                </label>
                                             ) : null;
                                         })}
-                                    </div>
+                                    </fieldset>
                                 ) : (
                                     <div className="small text-muted">
                                         No urgency SLA information available for this service.
@@ -1911,20 +2004,20 @@ function RenderListView({
             return <span>Loading...</span>;
         }
 
-        const configuredVariables = selectedStartUrgencyLevels
-            ? {
-                urgencyLevels: {
-                    value: JSON.stringify(selectedStartUrgencyLevels),
-                    type: "Json",
-                },
-            }
-            : {};
+        const selectedSla =
+            selectedStartSlaLevel && selectedStartUrgencyLevels
+                ? {
+                    level: selectedStartSlaLevel,
+                    ...selectedStartUrgencyLevels[selectedStartSlaLevel],
+                    slaLevels: selectedStartUrgencyLevels,
+                }
+                : null;
 
         return (
             <StartStepProcessor
                 id={selectedProcessId}
                 handleProcessActions={handleStartProcessActions}
-                camundaVars={configuredVariables}
+                slaSelection={selectedSla}
                 processStartDraft={selectedPendingDraft}
                 onDraftChange={handlePendingDraftChange}
                 formVars={

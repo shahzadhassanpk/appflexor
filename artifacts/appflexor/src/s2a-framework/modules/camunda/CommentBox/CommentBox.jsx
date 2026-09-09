@@ -395,24 +395,37 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
         return `${minutes}m`;
     }
 
-    function getUrgencyLevels(task) {
-        let urgencyLevels =
-            task?.variables?.urgencyLevels ||
-            task?.variables?.urgency_levels ||
-            task?.urgency_levels;
+    function getProcessVariableValue(name) {
+        const normalizedName = name.replaceAll("_", "").toLowerCase();
+        const findVariable = (source, depth = 0) => {
+            if (!source || typeof source !== "object" || depth > 6) return undefined;
+            const matchingKey = Object.keys(source).find(
+                key => key.replaceAll("_", "").toLowerCase() === normalizedName,
+            );
+            if (matchingKey) return source[matchingKey];
+            for (const value of Object.values(source)) {
+                const found = findVariable(value, depth + 1);
+                if (found !== undefined) return found;
+            }
+            return undefined;
+        };
+        const unwrap = variable =>
+            variable?.value !== undefined ? variable.value : variable;
+        return unwrap(findVariable(task?.variables));
+    }
 
-        if (urgencyLevels?.value !== undefined) {
-            urgencyLevels = urgencyLevels.value;
-        }
-        if (typeof urgencyLevels === "string") {
+    function getSlaLevels() {
+        let levels =
+            getProcessVariableValue("slaLevels") ||
+            getProcessVariableValue("sla_levels");
+        while (typeof levels === "string") {
             try {
-                urgencyLevels = JSON.parse(urgencyLevels);
+                levels = JSON.parse(levels);
             } catch {
                 return null;
             }
         }
-
-        return urgencyLevels?.urgencyLevels || urgencyLevels || null;
+        return levels?.urgencyLevels || levels || null;
     }
 
     const processStartHistory = history.find(
@@ -427,25 +440,28 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
             processStartHistory?.created_time,
     );
     const priorityLevel = getPriorityLevel(task);
-    const urgencyLevels = getUrgencyLevels(task);
-    const configuredSla =
-        urgencyLevels?.[
-            priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1)
-        ];
-    const configuredSlaValue = Number.parseInt(configuredSla?.slaValue, 10);
-    const configuredSlaUnit = configuredSla?.slaUnit;
-    const configuredSlaMilliseconds =
-        Number.isInteger(configuredSlaValue) &&
-        configuredSlaValue > 0 &&
-        ["hours", "days"].includes(configuredSlaUnit)
-            ? configuredSlaValue *
-              (configuredSlaUnit === "days" ? 86400000 : 3600000)
+    const slaLevels = getSlaLevels();
+    const selectedSlaKey = Object.keys(slaLevels || {}).find(
+        key => key.toLowerCase() === priorityLevel,
+    );
+    const selectedSla = selectedSlaKey ? slaLevels[selectedSlaKey] : null;
+    const slaValue = Number.parseInt(
+        selectedSla?.slaValue ?? selectedSla?.sla_value,
+        10,
+    );
+    const slaUnit = String(
+        selectedSla?.slaUnit ?? selectedSla?.sla_unit ?? "",
+    ).toLowerCase();
+    const slaMilliseconds =
+        Number.isInteger(slaValue) &&
+        slaValue > 0 &&
+        ["hour", "hours", "day", "days"].includes(slaUnit)
+            ? slaValue * (slaUnit.startsWith("day") ? 86400000 : 3600000)
             : null;
-    const calculatedSlaDueTimestamp =
-        processStartTimestamp !== null && configuredSlaMilliseconds !== null
-            ? processStartTimestamp + configuredSlaMilliseconds
+    const slaDueTimestamp =
+        processStartTimestamp !== null && slaMilliseconds !== null
+            ? processStartTimestamp + slaMilliseconds
             : null;
-    const slaDueTimestamp = calculatedSlaDueTimestamp;
     const isSlaOverdue = slaDueTimestamp !== null && slaDueTimestamp < slaNow;
     const slaTimeLeft =
         slaDueTimestamp === null
@@ -476,7 +492,8 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
 
     // ── Helpers ──────────────────────────────────────
     function getPriorityLevel(task) {
-        const p = (task.variables?.priority || task.priority || "")
+        const priorityVariable = getProcessVariableValue("priority");
+        const p = (priorityVariable ?? task.priority ?? "")
             .toString()
             .toLowerCase();
         if (p === "high" || p === "1") return "high";
@@ -530,7 +547,7 @@ function CommentBox({ task, getProfileImage, getDisplayName }) {
                                       new Date(processStartTimestamp),
                                   )}
                         </dd>
-                        <dt title="The deadline calculated from the process start date and its priority-based SLA.">
+                        <dt title="The SLA deadline captured when the process started.">
                             SLA Due
                         </dt>
                         <dd
