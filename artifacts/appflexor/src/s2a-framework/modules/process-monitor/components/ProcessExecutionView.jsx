@@ -1,8 +1,11 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import BpmnViewer from "bpmn-js/lib/NavigatedViewer";
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
+import { AppContext } from "../../../../AppContext";
+import { API_URL } from "../../../Config";
 import { camundaApi } from "../services/camundaApi";
 
 const TABS = ["Process Instances", "Incidents", "Human Tasks", "Jobs"];
@@ -43,6 +46,7 @@ function createCountBadge(count) {
 }
 
 export default function ProcessExecutionView({ definition, instances, tasks, jobs, onBack, onSelectInstance, onInstanceDeleted }) {
+    const appContext = useContext(AppContext);
     const containerRef = useRef(null);
     const viewerRef = useRef(null);
     const [activeTab, setActiveTab] = useState("Process Instances");
@@ -55,6 +59,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState("");
+    const [auditError, setAuditError] = useState("");
     const definitionInstances = useMemo(() => runtimeState.instances.filter(item => item.definitionId === viewDefinition.id), [runtimeState.instances, viewDefinition.id]);
     const definitionTasks = useMemo(() => runtimeState.tasks.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.tasks, viewDefinition.id]);
     const definitionJobs = useMemo(() => runtimeState.jobs.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.jobs, viewDefinition.id]);
@@ -96,12 +101,44 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         return () => { disposed = true; };
     }, [viewDefinition.id, viewDefinition.tenantId, runtimeRefresh]);
 
+    async function createDeleteAudit(instance) {
+        const eventTime = Date.now();
+        const response = await axios.post(`${API_URL}?service.key=update.formData`, {
+            data: [{
+                formId: "task_history",
+                entity: "task_history",
+                action: "update",
+                id: "new",
+                formData: {
+                    id: "new",
+                    task_type: "endEvent",
+                    assignee: appContext?.profile?.username || "",
+                    process_instance_id: instance.id,
+                    process_definition_key: viewDefinition.key,
+                    created_time: eventTime,
+                    assigned_time: eventTime,
+                    completed_time: eventTime,
+                },
+            }],
+        });
+
+        if (response.data?.C_STATUS !== "SUCCESS") {
+            throw new Error(response.data?.C_MESSAGE || "Audit record was rejected.");
+        }
+    }
+
     async function deleteInstance() {
         if (!deleteTarget) return;
         setDeleting(true);
         setDeleteError("");
+        setAuditError("");
         try {
             await camundaApi.deleteProcessInstance(deleteTarget.id);
+            try {
+                await createDeleteAudit(deleteTarget);
+            } catch (error) {
+                setAuditError(`Process deleted, but its audit record could not be saved: ${error.message || "Unknown error"}`);
+            }
             setRuntimeState(previous => ({
                 instances: previous.instances.filter(item => item.id !== deleteTarget.id),
                 tasks: previous.tasks.filter(item => item.processInstanceId !== deleteTarget.id),
@@ -163,6 +200,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                     <i className={`fa-solid fa-rotate mr-2 ${refreshing ? "fa-spin" : ""}`} />Refresh
                 </button>
             </div>
+            {auditError && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{auditError}</div>}
             <div className="grid min-h-[500px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[260px_1fr]">
                 <aside className="border-b border-slate-200 bg-slate-50 p-4 lg:border-b-0 lg:border-r">
                     <button type="button" onClick={onBack} className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600"><i className="fa-solid fa-arrow-left" />All processes</button>
