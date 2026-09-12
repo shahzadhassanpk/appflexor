@@ -116,7 +116,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                 id: "new",
                 formData: {
                     id: "new",
-                    task_type: "endEvent",
+                    task_type: "deleteEvent",
                     assignee: appContext?.profile?.username || "",
                     process_instance_id: instance.id,
                     process_definition_key: viewDefinition.key,

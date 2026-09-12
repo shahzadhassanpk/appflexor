@@ -610,17 +610,17 @@ function RenderListView({
         const priority = getPriorityLevel(task);
         const levels = getProcessUrgencyLevels(
             getTaskVariableValue(task, "slaLevels") ||
-                getTaskVariableValue(task, "sla_levels"),
+            getTaskVariableValue(task, "sla_levels"),
         );
         const selectedSla =
             levels?.[priority.charAt(0).toUpperCase() + priority.slice(1)];
         const slaValue = Number.parseInt(selectedSla?.slaValue, 10);
         const startTimestamp = getTimestamp(
             task?.process_start_date ||
-                task?.process_start_time ||
-                task?.processStartDate ||
-                task?.processStartTime ||
-                task?.start_time,
+            task?.process_start_time ||
+            task?.processStartDate ||
+            task?.processStartTime ||
+            task?.start_time,
         );
         if (
             startTimestamp === null ||
@@ -1082,7 +1082,7 @@ function RenderListView({
 
                     return (
                         <div
-                            className={`inbox-task-card ${currentTask.id === selectedTaskId ? "selected" : ""}`}
+                            className={`row inbox-task-card ${currentTask.id === selectedTaskId ? "selected" : ""}`}
                             key={currentTask.id}
                             role="button"
                             tabIndex={0}
@@ -1094,30 +1094,32 @@ function RenderListView({
                                     handleTaskSelection(currentTask);
                                 }
                             }}>
-                            <img
-                                className="inbox-task-avatar"
-                                src={getProfileImage(assigneeKey)}
-                                alt={getDisplayName(assigneeKey)}
-                                onError={e => { e.target.src = "/theme/images/default-user-profile-img.png"; e.target.onerror = null; }}
-                            />
-                            <div className="inbox-task-body">
-                                <div className="inbox-task-name">{currentTask.task_name}</div>
-                                <div className="inbox-task-process">{currentTask.process_name}</div>
-                                {metaText && <div className="inbox-task-meta-row">{metaText}</div>}
-                                {data?.use_dynamic === true && parsedOptions.length > 0 &&
-                                    parsedOptions.map(option => (
-                                        <div key={option.id} className="inbox-task-meta-row">
-                                            {option.label}: {currentTask?.variables?.[option.value] || ""}
-                                        </div>
-                                    ))
-                                }
-                                <div className="inbox-task-footer">
-                                    {renderDueBadge(currentTask)}                                    
+                            <div className="col-sm-12 d-flex">
+                                <img
+                                    className="inbox-task-avatar me-2"
+                                    src={getProfileImage(assigneeKey)}
+                                    alt={getDisplayName(assigneeKey)}
+                                    onError={e => { e.target.src = "/theme/images/default-user-profile-img.png"; e.target.onerror = null; }}
+                                />
+                                <div className="inbox-task-body">
+                                    <div className="inbox-task-name">{currentTask.task_name}</div>
+                                    <div className="inbox-task-process">{currentTask.process_name}</div>
+                                    {metaText && <div className="inbox-task-meta-row">{metaText}</div>}
+                                    {data?.use_dynamic === true && parsedOptions.length > 0 &&
+                                        parsedOptions.map(option => (
+                                            <div key={option.id} className="inbox-task-meta-row">
+                                                {option.label}: {currentTask?.variables?.[option.value] || ""}
+                                            </div>
+                                        ))
+                                    }
+                                    <div className="inbox-task-footer">
+                                        {renderDueBadge(currentTask)}
+                                    </div>
                                 </div>
-                                <div className="inbox-task-footer">                                    
-                                    {renderSLADueBadge(currentTask)}
-                                    {renderPriorityBadge(currentTask)}
-                                </div>
+                            </div>
+                            <div className="col-sm-12 inbox-task-footer">
+                                {renderSLADueBadge(currentTask)}
+                                {renderPriorityBadge(currentTask)}
                             </div>
                         </div>
                     );
@@ -1357,7 +1359,7 @@ function RenderListView({
 
                     {/* Stat filter cards */}
                     <div className="inbox-stat-group">
-                        {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && overdueCount > 0 &&  (
+                        {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && overdueCount > 0 && (
                             <button
                                 type="button"
                                 className={`inbox-stat-item inbox-stat-item--overdue${!pendingDraftsView && filters.dueDate === "overdue" ? " active" : ""}`}
@@ -1372,16 +1374,16 @@ function RenderListView({
                         )}
                         {dueTodayCount > 0 && (
                             <button
-                            type="button"
-                            className={`inbox-stat-item inbox-stat-item--due${!pendingDraftsView && filters.dueDate === "today" ? " active" : ""}`}
-                            title="Filter: tasks due today"
-                            onClick={handleDueTodayClick}>
-                            <span className="inbox-stat-value">{dueTodayCount}</span>
-                            <span className="inbox-stat-label">
-                                <i className="fa-regular fa-calendar-check"></i>
-                                Due Today
-                            </span>
-                        </button>
+                                type="button"
+                                className={`inbox-stat-item inbox-stat-item--due${!pendingDraftsView && filters.dueDate === "today" ? " active" : ""}`}
+                                title="Filter: tasks due today"
+                                onClick={handleDueTodayClick}>
+                                <span className="inbox-stat-value">{dueTodayCount}</span>
+                                <span className="inbox-stat-label">
+                                    <i className="fa-regular fa-calendar-check"></i>
+                                    Due Today
+                                </span>
+                            </button>
                         )}
                         {((data?.show_task === "MY-TASK") || data?.show_task === "BOTH") && (
                             <button
@@ -1396,7 +1398,7 @@ function RenderListView({
                                 </span>
                             </button>
                         )}
-                                              
+
                         {((data?.show_task === "ALL-TASK") || data?.show_task === "BOTH") && appContext.userGroups?.groupid && (
                             <button
                                 type="button"
@@ -1412,17 +1414,17 @@ function RenderListView({
                         )}
                         {pendingDrafts?.length > 0 && (
                             <button
-                            type="button"
-                            className={`inbox-stat-item inbox-stat-item--assigned${pendingDraftsView ? " active" : ""}`}
-                            title="View saved process starts waiting for the engine"
-                            onClick={handlePendingDraftsClick}>
-                            <span className="inbox-stat-value">
-                                {pendingDraftsLoading ? "…" : pendingDrafts.length}
-                            </span>
-                            <span className="inbox-stat-label">
-                                <i className="fa-regular fa-floppy-disk"></i>
-                                Pending Drafts
-                            </span>
+                                type="button"
+                                className={`inbox-stat-item inbox-stat-item--assigned${pendingDraftsView ? " active" : ""}`}
+                                title="View saved process starts waiting for the engine"
+                                onClick={handlePendingDraftsClick}>
+                                <span className="inbox-stat-value">
+                                    {pendingDraftsLoading ? "…" : pendingDrafts.length}
+                                </span>
+                                <span className="inbox-stat-label">
+                                    <i className="fa-regular fa-floppy-disk"></i>
+                                    Pending Drafts
+                                </span>
                             </button>
                         )}
                         {/* {JSON.stringify(data)} */}

@@ -65,6 +65,7 @@ export const camundaApi = {
     })}`),
 
     getProcessInstances: () => getAllPages("/process-instance", { active: true }),
+    getSuspendedProcessInstances: () => getAllPages("/process-instance", { suspended: true }),
     getProcessInstance: instanceId => camundaRequest(`/process-instance/${instanceId}`),
     deleteProcessInstance: instanceId => camundaRequest(`/process-instance/${instanceId}${query({ skipCustomListeners: true, skipIoMappings: true })}`, { method: "DELETE" }),
     getProcessInstancesByDefinition: definitionId => getAllPages("/process-instance", { processDefinitionId: definitionId, active: true }),
@@ -85,6 +86,14 @@ export const camundaApi = {
         firstResult: 0,
         maxResults: 20,
     })}`),
+    getRunningHistoricInstances: () => getAllPages(
+        "/history/process-instance",
+        {
+            unfinished: true,
+            sortBy: "startTime",
+            sortOrder: "desc",
+        },
+    ),
     getHistoricInstancesByDefinition: definitionId => getAllPages(
         "/history/process-instance",
         {
@@ -100,8 +109,12 @@ export const camundaApi = {
         firstResult: 0,
         maxResults: 100,
     })}`),
+    getFailedJobs: () => getAllPages("/job", {
+        withException: true,
+    }),
     getJobsByDefinition: definitionId => camundaRequest(`/job${query({ processDefinitionId: definitionId, firstResult: 0, maxResults: 100 })}`),
     getJobsByInstance: instanceId => camundaRequest(`/job${query({ processInstanceId: instanceId, firstResult: 0, maxResults: 100 })}`),
+    getIncidents: () => getAllPages("/incident", {}),
     setJobRetries: (jobId, retries) => camundaRequest(`/job/${jobId}/retries`, { method: "PUT", data: { retries } }),
     getExternalTasksByInstance: instanceId => camundaRequest(`/external-task${query({ processInstanceId: instanceId, firstResult: 0, maxResults: 100 })}`),
 

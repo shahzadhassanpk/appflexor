@@ -1,0 +1,93 @@
+.process-dashboard {
+    --process-dashboard-surface: var(--bs-body-bg, #ffffff);
+    --process-dashboard-subtle: var(--bs-tertiary-bg, #f8fafc);
+    --process-dashboard-muted: var(--bs-secondary-color, #64748b);
+    --process-dashboard-border: var(--bs-border-color, #e2e8f0);
+    --process-dashboard-strong: var(--bs-body-color, #0f172a);
+    --process-dashboard-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    --process-dashboard-accent: var(--bs-primary, #4f46e5);
+}
+
+.process-dashboard__panel,
+.process-dashboard__empty,
+.process-dashboard__alert,
+.process-dashboard__loading,
+.process-dashboard__header,
+.process-dashboard__metric-card,
+.process-dashboard__section,
+.process-dashboard__config-card,
+.process-dashboard__config-section,
+.process-dashboard__selector-panel,
+.process-dashboard__selector-option,
+.process-dashboard__list-item,
+.process-dashboard__summary-tile,
+.process-dashboard__chip,
+.process-dashboard__count-badge,
+.process-dashboard__progress-track,
+.process-dashboard__sample,
+.process-dashboard__selected-shell {
+    border-color: var(--process-dashboard-border);
+}
+
+.process-dashboard__header,
+.process-dashboard__panel,
+.process-dashboard__config-section,
+.process-dashboard__selector-panel,
+.process-dashboard__empty,
+.process-dashboard__selected-shell,
+.process-dashboard__summary-tile,
+.process-dashboard__list-item {
+    background-color: var(--process-dashboard-subtle);
+}
+
+.process-dashboard__metric-card,
+.process-dashboard__section,
+.process-dashboard__config-card,
+.process-dashboard__sample,
+.process-dashboard__progress-track,
+.process-dashboard__count-badge {
+    background-color: var(--process-dashboard-surface);
+}
+
+.process-dashboard__metric-card,
+.process-dashboard__section,
+.process-dashboard__loading {
+    box-shadow: var(--process-dashboard-shadow);
+}
+
+.process-dashboard__title,
+.process-dashboard__section-title,
+.process-dashboard__metric-value,
+.process-dashboard__item-title,
+.process-dashboard__value,
+.process-dashboard__config-title {
+    color: var(--process-dashboard-strong);
+}
+
+.process-dashboard__scope,
+.process-dashboard__meta,
+.process-dashboard__item-key,
+.process-dashboard__helper,
+.process-dashboard__empty,
+.process-dashboard__loading,
+.process-dashboard__config-note,
+.process-dashboard__label,
+.process-dashboard__date {
+    color: var(--process-dashboard-muted);
+}
+
+.process-dashboard__selector-modal {
+    z-index: 2000;
+}
+
+.process-dashboard__progress-fill {
+    width: var(--process-dashboard-progress, 0%);
+}
+
+.process-dashboard__tab-row {
+    row-gap: 0.375rem;
+}
+
+.process-dashboard__tab {
+    white-space: nowrap;
+}

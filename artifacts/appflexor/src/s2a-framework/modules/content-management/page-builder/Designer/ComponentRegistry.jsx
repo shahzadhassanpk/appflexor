@@ -6,6 +6,10 @@ const ReactPivottable = lazy(
 );
 import { makeid } from "../../../../utils/utils";
 import Processes from "../../../camunda/Processes";
+const ProcessDashboard = lazy(
+    () =>
+        import("../../../camunda/cam7/ProcessDashboard/index"),
+);
 const ContentViewer = lazy(
     () =>
         import("../../../content-management/page-builder/ContentViewer/ContentViewer"),
@@ -63,6 +67,7 @@ export const componentList = {
     dms: DmsRepository,
     wiki: Wiki,
     taskList: Processes,
+    processDashboard: ProcessDashboard,
     iframe: Iframe,
     media: Media,
     report: Report,
@@ -292,6 +297,32 @@ export const SIDEBAR_ITEMS = [
             title: "Task List",
             icon: "fa-solid fa-inbox",
             data: {},
+            props: [],
+        },
+    },
+    {
+        id: `${makeid(8)}`,
+        type: SIDEBAR_ITEM,
+        require_auth: "false",
+        code: "TASK_INBOX",
+        path: "",
+        component: {
+            type: "processDashboard",
+            title: "Process Dashboard",
+            icon: "fa-solid fa-chart-line",
+            data: {
+                title: "Process Dashboard",
+                process_scope: "ALL",
+                process_keys: [],
+                refresh_interval_seconds: 60,
+                show_header: true,
+                show_activity_status: true,
+                show_error_tracking: true,
+                show_sla_breaches: true,
+                max_activity_rows: 6,
+                max_incident_rows: 6,
+                max_sla_rows: 6,
+            },
             props: [],
         },
     },
