@@ -8,6 +8,7 @@ export default function DashboardHeader({
     setActiveTab,
     title,
     scopeLabel,
+    activeFilterSummary,
     lastUpdated,
     loading,
     onRefresh,
@@ -22,7 +23,7 @@ export default function DashboardHeader({
             />
             <TabButton
                 active={activeTab === DASHBOARD_TABS.HISTORY}
-                icon="fa-solid fa-timeline"
+                icon="fa-regular fa-clock"
                 label="History"
                 onClick={() => setActiveTab(DASHBOARD_TABS.HISTORY)}
             />
@@ -52,6 +53,11 @@ export default function DashboardHeader({
                         <h2 className="process-dashboard__title mb-0 text-base font-bold">{title}</h2>
                     </div>
                     <p className="process-dashboard__scope mb-0 mt-1 text-xs">{scopeLabel}</p>
+                    {activeTab === DASHBOARD_TABS.HISTORY && activeFilterSummary && (
+                        <p className="process-dashboard__meta mb-0 mt-1 text-xs">
+                            {activeFilterSummary}
+                        </p>
+                    )}
                 </div>
                 <div className="process-dashboard__header-actions flex flex-wrap items-center gap-2">
                     {tabs}

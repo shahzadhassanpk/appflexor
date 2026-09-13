@@ -7,15 +7,38 @@ export const DEFAULT_CONFIG = {
     show_activity_status: true,
     show_error_tracking: true,
     show_sla_breaches: true,
-    max_activity_rows: 6,
-    max_incident_rows: 6,
-    max_sla_rows: 6,
+    max_activity_rows: 10,
+    max_incident_rows: 10,
+    max_sla_rows: 10,
 };
 
 export const DASHBOARD_TABS = {
     LIVE: "LIVE",
     HISTORY: "HISTORY",
 };
+
+export const HISTORY_QUICK_FILTERS = [
+    {
+        key: "LAST_7_DAYS",
+        label: "Last 7 Days",
+        days: 7,
+    },
+    {
+        key: "LAST_14_DAYS",
+        label: "Last 14 Days",
+        days: 14,
+    },
+    {
+        key: "LAST_30_DAYS",
+        label: "Last 30 Days",
+        days: 30,
+    },
+    {
+        key: "CUSTOM",
+        label: "Custom Dates",
+        days: null,
+    },
+];
 
 export const INITIAL_DASHBOARD_STATE = {
     loading: false,

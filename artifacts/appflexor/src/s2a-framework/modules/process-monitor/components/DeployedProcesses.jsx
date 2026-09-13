@@ -10,6 +10,16 @@ const SORT_VALUE = {
     version: row => Number(row.definition.version) || 0,
 };
 
+function definitionGroupKey(key, tenantId) {
+    return `${String(tenantId || "__no_tenant__")}::${String(key || "")}`;
+}
+
+function deriveProcessKey(definitionId = "") {
+    const value = String(definitionId || "");
+    if (!value) return "";
+    return value.split(":")[0] || value;
+}
+
 function SortHeader({ column, label, sort, onSort }) {
     const active = sort.column === column;
     return <th className="px-4 py-3" aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}><button type="button" onClick={() => onSort(column)} className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-wide hover:text-indigo-600 focus:text-indigo-600"><span>{label}</span><i className={`fa-solid ${active ? (sort.direction === "asc" ? "fa-sort-up" : "fa-sort-down") : "fa-sort"} text-[10px] ${active ? "text-indigo-600" : "text-slate-300"}`} aria-hidden="true" /></button></th>;
@@ -20,25 +30,45 @@ export default function DeployedProcesses({ definitions, instances, jobs, onSele
     const [sort, setSort] = useState({ column: "name", direction: "asc" });
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(5);
-    const rows = useMemo(() => definitions.map(definition => {
-        const running = instances.filter(instance => instance.definitionId === definition.id);
-        const failedJobs = jobs.filter(job =>
-            job.processDefinitionId === definition.id &&
-            (job.exceptionMessage || job.retries === 0),
-        );
-        return { definition, running, failedJobs };
-    }).filter(({ definition }) => {
+    const rows = useMemo(() => {
+        const runningByDefinitionGroup = instances.reduce((groups, instance) => {
+            const definitionKey =
+                instance?.definition?.key || deriveProcessKey(instance?.definitionId);
+            const groupKey = definitionGroupKey(definitionKey, instance?.tenantId);
+            if (!groups[groupKey]) groups[groupKey] = [];
+            groups[groupKey].push(instance);
+            return groups;
+        }, {});
+
+        const failedJobsByDefinitionGroup = jobs.reduce((groups, job) => {
+            if (!(job?.exceptionMessage || job?.retries === 0)) {
+                return groups;
+            }
+            const definitionKey = deriveProcessKey(job?.processDefinitionId);
+            const groupKey = definitionGroupKey(definitionKey, job?.tenantId);
+            if (!groups[groupKey]) groups[groupKey] = [];
+            groups[groupKey].push(job);
+            return groups;
+        }, {});
+
+        return definitions.map(definition => {
+            const groupKey = definitionGroupKey(definition?.key, definition?.tenantId);
+            const running = runningByDefinitionGroup[groupKey] || [];
+            const failedJobs = failedJobsByDefinitionGroup[groupKey] || [];
+            return { definition, running, failedJobs };
+        }).filter(({ definition }) => {
         const term = search.trim().toLowerCase();
         return !term || [definition.name, definition.key, definition.tenantId]
             .some(value => String(value || "").toLowerCase().includes(term));
-    }).sort((left, right) => {
-        const leftValue = SORT_VALUE[sort.column](left);
-        const rightValue = SORT_VALUE[sort.column](right);
-        const comparison = typeof leftValue === "number"
-            ? leftValue - rightValue
-            : String(leftValue).localeCompare(String(rightValue), undefined, { numeric: true, sensitivity: "base" });
-        return sort.direction === "asc" ? comparison : -comparison;
-    }), [definitions, instances, jobs, search, sort]);
+        }).sort((left, right) => {
+            const leftValue = SORT_VALUE[sort.column](left);
+            const rightValue = SORT_VALUE[sort.column](right);
+            const comparison = typeof leftValue === "number"
+                ? leftValue - rightValue
+                : String(leftValue).localeCompare(String(rightValue), undefined, { numeric: true, sensitivity: "base" });
+            return sort.direction === "asc" ? comparison : -comparison;
+        });
+    }, [definitions, instances, jobs, search, sort]);
     const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
     const currentPage = Math.min(page, pageCount);
     const paginatedRows = useMemo(() => rows.slice((currentPage - 1) * pageSize, currentPage * pageSize), [currentPage, pageSize, rows]);
@@ -59,7 +89,7 @@ export default function DeployedProcesses({ definitions, instances, jobs, onSele
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 className="mb-2.5 text-base font-bold text-slate-900">Deployed</h2>
-                        <p className="mb-0 text-sm text-slate-500">Latest deployed version for the active tenant</p>
+                        <p className="mb-0 text-sm text-slate-500">Latest deployed version with running and failed counts across all versions</p>
                     </div>
                     <label className="relative w-full sm:w-72">
                         <span className="sr-only">Search deployed processes</span>
@@ -85,7 +115,7 @@ export default function DeployedProcesses({ definitions, instances, jobs, onSele
 
             <div className="hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[800px] text-left text-sm">
-                    <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><SortHeader column="state" label="State" sort={sort} onSort={handleSort} /><SortHeader column="name" label="Name" sort={sort} onSort={handleSort} /><SortHeader column="incidents" label="Incidents" sort={sort} onSort={handleSort} /><SortHeader column="running" label="Running" sort={sort} onSort={handleSort} /><SortHeader column="key" label="Key" sort={sort} onSort={handleSort} /><SortHeader column="version" label="Version" sort={sort} onSort={handleSort} />{/* <th className="px-4 py-3">Tenant ID</th> */}</tr></thead>
+                    <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><SortHeader column="state" label="State" sort={sort} onSort={handleSort} /><SortHeader column="name" label="Name" sort={sort} onSort={handleSort} /><SortHeader column="incidents" label="Incidents" sort={sort} onSort={handleSort} /><SortHeader column="running" label="Running" sort={sort} onSort={handleSort} /><SortHeader column="key" label="Key" sort={sort} onSort={handleSort} /><SortHeader column="version" label="Latest Version" sort={sort} onSort={handleSort} />{/* <th className="px-4 py-3">Tenant ID</th> */}</tr></thead>
                     <tbody className="divide-y divide-slate-100">
                         {paginatedRows.map(({ definition, running, failedJobs }) => <tr key={definition.id} className="cursor-pointer hover:bg-slate-50" onClick={() => onSelectDefinition(definition)}>
                             <td className="px-4 py-3"><i className={`fa-solid ${failedJobs.length ? "fa-circle-exclamation text-red-500" : "fa-circle-check text-emerald-500"}`} aria-label={failedJobs.length ? "Has failed jobs" : "Healthy"} /></td>

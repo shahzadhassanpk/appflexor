@@ -60,7 +60,28 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const [deleting, setDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState("");
     const [auditError, setAuditError] = useState("");
-    const definitionInstances = useMemo(() => runtimeState.instances.filter(item => item.definitionId === viewDefinition.id), [runtimeState.instances, viewDefinition.id]);
+    const [suspensionAction, setSuspensionAction] = useState({ scope: "", targetId: "", suspended: null });
+    const [suspensionError, setSuspensionError] = useState("");
+    const processInstances = useMemo(() => runtimeState.instances, [runtimeState.instances]);
+    const activeProcessInstances = useMemo(
+        () => processInstances.filter(item => !item.suspended),
+        [processInstances],
+    );
+    const suspendedProcessInstances = useMemo(
+        () => processInstances.filter(item => item.suspended),
+        [processInstances],
+    );
+    const runningCountsByDefinitionId = useMemo(
+        () => activeProcessInstances.reduce((counts, item) => {
+            counts[item.definitionId] = (counts[item.definitionId] || 0) + 1;
+            return counts;
+        }, {}),
+        [activeProcessInstances],
+    );
+    const definitionInstances = useMemo(
+        () => runtimeState.instances.filter(item => item.definitionId === viewDefinition.id && !item.suspended),
+        [runtimeState.instances, viewDefinition.id],
+    );
     const definitionTasks = useMemo(() => runtimeState.tasks.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.tasks, viewDefinition.id]);
     const definitionJobs = useMemo(() => runtimeState.jobs.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.jobs, viewDefinition.id]);
     const incidents = useMemo(() => definitionJobs.filter(item => item.exceptionMessage || item.retries === 0), [definitionJobs]);
@@ -77,20 +98,66 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         async function loadLatestRuntimeState() {
             setRefreshing(true);
             try {
-                const [latestInstances, latestTasks, latestJobs, latestHistory] = await Promise.all([
-                    camundaApi.getProcessInstancesByDefinition(viewDefinition.id),
+                const definitionsById = Object.fromEntries(
+                    (versions?.length ? versions : [definition]).map(item => [item.id, item]),
+                );
+                const seededInstancesById = Object.fromEntries(
+                    (instances || []).map(item => [item.id, item]),
+                );
+                const [latestActiveInstances, latestSuspendedInstances, latestTasks, latestJobs, latestHistoryGroups] = await Promise.all([
+                    camundaApi.getProcessInstancesByDefinitionKey(
+                        viewDefinition.key,
+                        viewDefinition.tenantId,
+                        { active: true },
+                    ),
+                    camundaApi.getProcessInstancesByDefinitionKey(
+                        viewDefinition.key,
+                        viewDefinition.tenantId,
+                        { suspended: true },
+                    ),
                     camundaApi.getTasksByDefinition(viewDefinition.id),
                     camundaApi.getJobsByDefinition(viewDefinition.id),
-                    camundaApi.getHistoricInstancesByDefinition(viewDefinition.id).catch(() => []),
+                    Promise.all(
+                        (versions?.length ? versions : [definition]).map(item =>
+                            camundaApi.getHistoricInstancesByDefinition(item.id).catch(() => []),
+                        ),
+                    ),
                 ]);
                 const historyByInstanceId = Object.fromEntries(
-                    (latestHistory || []).map(item => [item.id, item]),
+                    latestHistoryGroups.flat().map(item => [item.id, item]),
                 );
-                const hydratedInstances = await Promise.all((latestInstances || []).map(async instance => ({
-                    ...instance,
-                    startTime: instance.startTime || historyByInstanceId[instance.id]?.startTime,
-                    activity: await camundaApi.getActivityInstances(instance.id).catch(() => null),
-                })));
+                const combinedInstances = [
+                    ...(latestActiveInstances || []),
+                    ...(latestSuspendedInstances || []),
+                ];
+                const hydratedInstances = await Promise.all(
+                    [...new Map(combinedInstances.map(item => [item.id, item])).values()]
+                        .map(async instance => {
+                            const seededInstance = seededInstancesById[instance.id] || {};
+                            const resolvedDefinition =
+                                definitionsById[instance.definitionId] ||
+                                seededInstance.definition ||
+                                null;
+                            return {
+                                ...seededInstance,
+                                ...instance,
+                                suspended: Boolean(instance.suspended),
+                                definition: resolvedDefinition,
+                                definitionName:
+                                    resolvedDefinition?.name ||
+                                    resolvedDefinition?.key ||
+                                    seededInstance.definitionName ||
+                                    instance.definitionId,
+                                startTime:
+                                    instance.startTime ||
+                                    seededInstance.startTime ||
+                                    historyByInstanceId[instance.id]?.startTime,
+                                activity: instance.suspended
+                                    ? null
+                                    : await camundaApi.getActivityInstances(instance.id).catch(() => null),
+                            };
+                        }),
+                );
                 if (!disposed) setRuntimeState({
                     instances: hydratedInstances,
                     tasks: latestTasks || [],
@@ -104,7 +171,15 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         }
         loadLatestRuntimeState();
         return () => { disposed = true; };
-    }, [viewDefinition.id, viewDefinition.tenantId, runtimeRefresh]);
+    }, [
+        definition,
+        instances,
+        runtimeRefresh,
+        versions,
+        viewDefinition.id,
+        viewDefinition.key,
+        viewDefinition.tenantId,
+    ]);
 
     async function createDeleteAudit(instance) {
         const eventTime = Date.now();
@@ -158,6 +233,51 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         }
     }
 
+    async function updateInstanceSuspension(instance, suspended) {
+        if (!instance?.id) return;
+        setSuspensionAction({
+            scope: "single",
+            targetId: instance.id,
+            suspended,
+        });
+        setSuspensionError("");
+        try {
+            await camundaApi.setProcessInstanceSuspended(instance.id, suspended);
+            setRuntimeRefresh(value => value + 1);
+        } catch (error) {
+            setSuspensionError(
+                error.message ||
+                `Unable to ${suspended ? "suspend" : "resume"} the selected process instance.`,
+            );
+        } finally {
+            setSuspensionAction({ scope: "", targetId: "", suspended: null });
+        }
+    }
+
+    async function updateProcessSuspension(suspended) {
+        setSuspensionAction({
+            scope: "bulk",
+            targetId: viewDefinition.key,
+            suspended,
+        });
+        setSuspensionError("");
+        try {
+            await camundaApi.setProcessInstancesSuspendedByDefinitionKey(
+                viewDefinition.key,
+                viewDefinition.tenantId,
+                suspended,
+            );
+            setRuntimeRefresh(value => value + 1);
+        } catch (error) {
+            setSuspensionError(
+                error.message ||
+                `Unable to ${suspended ? "suspend" : "resume"} process instances.`,
+            );
+        } finally {
+            setSuspensionAction({ scope: "", targetId: "", suspended: null });
+        }
+    }
+
     useEffect(() => {
         let disposed = false;
         async function renderDiagram() {
@@ -201,15 +321,62 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                 <nav className="flex flex-wrap items-center gap-2 text-sm" aria-label="Breadcrumb">
                     <button type="button" onClick={onBack} className="font-semibold text-indigo-600 hover:underline">Dashboard</button><i className="fa-solid fa-angle-right text-slate-400" /><span className="text-slate-500">Processes</span><i className="fa-solid fa-angle-right text-slate-400" /><span className="font-medium text-slate-800">{viewDefinition.name || viewDefinition.key}: Version {viewDefinition.version}</span>
                 </nav>
-                <button type="button" onClick={() => setRuntimeRefresh(value => value + 1)} disabled={refreshing} className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
-                    <i className={`fa-solid fa-rotate mr-2 ${refreshing ? "fa-spin" : ""}`} />Refresh
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => updateProcessSuspension(true)}
+                        disabled={!activeProcessInstances.length || suspensionAction.scope === "bulk"}
+                        className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 disabled:opacity-50">
+                        <i className={`fa-solid ${suspensionAction.scope === "bulk" && suspensionAction.suspended ? "fa-spinner fa-spin" : "fa-pause"} mr-2`} />
+                        Suspend All Running
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => updateProcessSuspension(false)}
+                        disabled={!suspendedProcessInstances.length || suspensionAction.scope === "bulk"}
+                        className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 disabled:opacity-50">
+                        <i className={`fa-solid ${suspensionAction.scope === "bulk" && suspensionAction.suspended === false ? "fa-spinner fa-spin" : "fa-play"} mr-2`} />
+                        Resume All Suspended
+                    </button>
+                    <button type="button" onClick={() => setRuntimeRefresh(value => value + 1)} disabled={refreshing} className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
+                        <i className={`fa-solid fa-rotate mr-2 ${refreshing ? "fa-spin" : ""}`} />Refresh
+                    </button>
+                </div>
             </div>
             {auditError && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{auditError}</div>}
+            {suspensionError && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{suspensionError}</div>}
             <div className="grid min-h-[500px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[260px_1fr]">
                 <aside className="border-b border-slate-200 bg-slate-50 p-4 lg:border-b-0 lg:border-r">
                     <button type="button" onClick={onBack} className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600"><i className="fa-solid fa-arrow-left" />All processes</button>
                     <dl className="space-y-4 text-sm">
+                        {viewDefinition?.id ? (
+                            <>
+                                <div>
+                                    <dt className="font-semibold text-slate-500">Definition Version</dt>
+                                    <dd className="mt-1">
+                                        <select
+                                            value={viewDefinition.id}
+                                            onChange={event => setViewDefinition(versions.find(item => item.id === event.target.value) || definition)}
+                                            className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900">
+                                            {versions.map(item => (
+                                                <option key={item.id} value={item.id}>
+                                                    {`Version ${item.version} (${runningCountsByDefinitionId[item.id] || 0} running)${item.versionTag ? ` - ${item.versionTag}` : ""}`}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </dd>
+                                </div>
+                                <div><dt className="font-semibold text-slate-500">Version Tag</dt><dd className="mt-1 text-slate-900">{viewDefinition.versionTag || "-"}</dd></div>
+                                <div><dt className="font-semibold text-slate-500">Definition ID</dt><dd className="mt-1 break-all text-slate-900">{viewDefinition.id}</dd></div>
+                                <div><dt className="font-semibold text-slate-500">Definition Key</dt><dd className="mt-1 text-slate-900">{viewDefinition.key}</dd></div>
+                                <div><dt className="font-semibold text-slate-500">Definition Name</dt><dd className="mt-1 text-slate-900">{viewDefinition.name || viewDefinition.key}</dd></div>
+                                <div><dt className="font-semibold text-slate-500">Tenant ID</dt><dd className="mt-1 text-slate-900">{viewDefinition.tenantId || "-"}</dd></div>
+                                <div><dt className="font-semibold text-slate-500">Deployment ID</dt><dd className="mt-1 break-all text-indigo-600">{viewDefinition.deploymentId || "-"}</dd></div>
+                                <div><dt className="font-semibold text-slate-500">Running Instances</dt><dd className="mt-1 text-xl font-bold text-indigo-600">{activeProcessInstances.length}</dd></div>
+                                <div><dt className="font-semibold text-slate-500">Suspended Instances</dt><dd className="mt-1 text-xl font-bold text-amber-600">{suspendedProcessInstances.length}</dd></div>
+                            </>
+                        ) : (
+                            <>
                         <div><dt className="font-semibold text-slate-500">Definition Version</dt><dd className="mt-1"><select value={viewDefinition.id} onChange={event => setViewDefinition(versions.find(item => item.id === event.target.value) || definition)} className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900">{versions.map(item => <option key={item.id} value={item.id}>Version {item.version}{item.versionTag ? ` · ${item.versionTag}` : ""}</option>)}</select></dd></div>
                         <div><dt className="font-semibold text-slate-500">Version Tag</dt><dd className="mt-1 text-slate-900">{viewDefinition.versionTag || "—"}</dd></div>
                         <div><dt className="font-semibold text-slate-500">Definition ID</dt><dd className="mt-1 break-all text-slate-900">{viewDefinition.id}</dd></div>
@@ -217,7 +384,10 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                         <div><dt className="font-semibold text-slate-500">Definition Name</dt><dd className="mt-1 text-slate-900">{viewDefinition.name || viewDefinition.key}</dd></div>
                         <div><dt className="font-semibold text-slate-500">Tenant ID</dt><dd className="mt-1 text-slate-900">{viewDefinition.tenantId || "—"}</dd></div>
                         <div><dt className="font-semibold text-slate-500">Deployment ID</dt><dd className="mt-1 break-all text-indigo-600">{viewDefinition.deploymentId || "—"}</dd></div>
-                        <div><dt className="font-semibold text-slate-500">Instances Running</dt><dd className="mt-1 text-xl font-bold text-indigo-600">{definitionInstances.length}</dd></div>
+                        <div><dt className="font-semibold text-slate-500">Running Instances</dt><dd className="mt-1 text-xl font-bold text-indigo-600">{activeProcessInstances.length}</dd></div>
+                        <div><dt className="font-semibold text-slate-500">Suspended Instances</dt><dd className="mt-1 text-xl font-bold text-amber-600">{suspendedProcessInstances.length}</dd></div>
+                            </>
+                        )}
                     </dl>
                 </aside>
                 <div className="min-w-0">
@@ -227,7 +397,15 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                     </div>
                     <div className="p-4">
                         <div className="flex gap-1 overflow-x-auto border-b border-slate-200" role="tablist">{TABS.map(tab => <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`shrink-0 border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500"}`}>{tab}</button>)}</div>
-                        {activeTab === "Process Instances" && <RuntimeTable rows={definitionInstances} onSelect={onSelectInstance} onDelete={setDeleteTarget} />}
+                        {activeTab === "Process Instances" && (
+                            <RuntimeTable
+                                rows={processInstances}
+                                onSelect={onSelectInstance}
+                                onDelete={setDeleteTarget}
+                                onToggleSuspension={updateInstanceSuspension}
+                                actionState={suspensionAction}
+                            />
+                        )}
                         {activeTab === "Incidents" && <MessageList rows={incidents} empty="No open incidents." render={item => item.exceptionMessage || "Job retries exhausted"} />}
                         {activeTab === "Human Tasks" && <MessageList rows={definitionTasks} empty="No open human tasks." render={item => `${item.name || item.taskDefinitionKey} · ${item.assignee || "Unassigned"}`} />}
                         {activeTab === "Jobs" && <MessageList rows={definitionJobs} empty="No jobs for this definition." render={item => `${item.jobDefinitionId || item.id} · ${item.retries} retries`} />}
@@ -239,9 +417,110 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     );
 }
 
-function RuntimeTable({ rows, onSelect, onDelete }) {
+/*
+function RuntimeTableLegacy({ rows, onSelect, onDelete, onToggleSuspension, actionState }) {
     if (!rows.length) return <p className="p-8 text-center text-sm text-slate-500">No running process instances.</p>;
     return <div className="overflow-x-auto"><table className="mt-2 w-full min-w-[780px] text-left text-sm"><thead className="text-xs uppercase text-slate-500"><tr><th className="p-3">State</th><th className="p-3">ID</th><th className="p-3">Business Key</th><th className="p-3">Created</th><th className="p-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.map(item => <tr key={item.id}><td className="p-3"><i className="fa-solid fa-circle-check text-emerald-500" /></td><td className="p-3"><button type="button" onClick={() => onSelect(item.id)} className="font-medium text-indigo-600 hover:underline">{item.id}</button></td><td className="p-3">{item.businessKey || "—"}</td><td className="whitespace-nowrap p-3">{item.startTime ? <time dateTime={item.startTime}>{new Date(item.startTime).toLocaleString()}</time> : "—"}</td><td className="p-3 text-right"><button type="button" onClick={() => onDelete(item)} title="Delete process instance" aria-label={`Delete process instance ${item.id}`} className="ml-auto grid h-8 w-8 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"><i className="fa-solid fa-trash-can" aria-hidden="true" /></button></td></tr>)}</tbody></table></div>;
+}
+
+*/
+function RuntimeTable({ rows, onSelect, onDelete, onToggleSuspension, actionState }) {
+    if (!rows.length) {
+        return <p className="p-8 text-center text-sm text-slate-500">No process instances for this process.</p>;
+    }
+
+    return (
+        <div className="overflow-x-auto">
+            <table className="mt-2 w-full min-w-[920px] text-left text-sm">
+                <thead className="text-xs uppercase text-slate-500">
+                    <tr>
+                        <th className="p-3">State</th>
+                        <th className="p-3">ID</th>
+                        <th className="p-3">Business Key</th>
+                        <th className="p-3">Version</th>
+                        <th className="p-3">Created</th>
+                        <th className="p-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                    {rows.map(item => {
+                        const rowActionBusy =
+                            actionState.scope === "single" &&
+                            actionState.targetId === item.id;
+
+                        return (
+                            <tr key={item.id}>
+                                <td className="p-3">
+                                    {item.suspended ? (
+                                        <i
+                                            className="fa-solid fa-circle-pause text-amber-500"
+                                            aria-label="Suspended"
+                                        />
+                                    ) : (
+                                        <i
+                                            className="fa-solid fa-circle-check text-emerald-500"
+                                            aria-label="Running"
+                                        />
+                                    )}
+                                </td>
+                                <td className="p-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => onSelect(item.id)}
+                                        className="font-medium text-indigo-600 hover:underline">
+                                        {item.id}
+                                    </button>
+                                </td>
+                                <td className="p-3">{item.businessKey || "-"}</td>
+                                <td className="p-3">{item.definition?.version || "-"}</td>
+                                <td className="whitespace-nowrap p-3">
+                                    {item.startTime ? (
+                                        <time dateTime={item.startTime}>
+                                            {new Date(item.startTime).toLocaleString()}
+                                        </time>
+                                    ) : "-"}
+                                </td>
+                                <td className="p-3">
+                                    <div className="ml-auto flex justify-end gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={rowActionBusy}
+                                            onClick={() => onToggleSuspension(item, !item.suspended)}
+                                            title={item.suspended ? "Resume process instance" : "Suspend process instance"}
+                                            aria-label={`${item.suspended ? "Resume" : "Suspend"} process instance ${item.id}`}
+                                            className={`grid h-8 w-8 place-items-center rounded-lg border ${
+                                                item.suspended
+                                                    ? "border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                                                    : "border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100"
+                                            } disabled:opacity-50`}>
+                                            <i
+                                                className={`fa-solid ${
+                                                    rowActionBusy
+                                                        ? "fa-spinner fa-spin"
+                                                        : item.suspended
+                                                            ? "fa-play"
+                                                            : "fa-pause"
+                                                }`}
+                                                aria-hidden="true"
+                                            />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onDelete(item)}
+                                            title="Delete process instance"
+                                            aria-label={`Delete process instance ${item.id}`}
+                                            className="grid h-8 w-8 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100">
+                                            <i className="fa-solid fa-trash-can" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
 }
 
 function MessageList({ rows, empty, render }) {

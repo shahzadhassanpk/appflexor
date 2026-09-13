@@ -43,11 +43,11 @@ export default function ProcessDashboardConfigModal({
                             </div>
                             <div>
                                 <label className="process-dashboard__label form-label text-sm font-semibold text-slate-700">
-                                    Refresh interval (seconds)
+                                    Refresh interval (seconds - 60 minimum)
                                 </label>
                                 <input
                                     type="number"
-                                    min="15"
+                                    min="60"
                                     className="form-control"
                                     value={config.refresh_interval_seconds}
                                     onChange={event =>
@@ -230,7 +230,8 @@ export default function ProcessDashboardConfigModal({
                                 </label>
                                 <input
                                     type="number"
-                                    min="1"
+                                    min="10"
+                                    max="50"
                                     className="form-control"
                                     value={config.max_activity_rows}
                                     onChange={event =>
@@ -247,7 +248,8 @@ export default function ProcessDashboardConfigModal({
                                 </label>
                                 <input
                                     type="number"
-                                    min="1"
+                                    min="10"
+                                    max="50"
                                     className="form-control"
                                     value={config.max_incident_rows}
                                     onChange={event =>
@@ -264,7 +266,8 @@ export default function ProcessDashboardConfigModal({
                                 </label>
                                 <input
                                     type="number"
-                                    min="1"
+                                    min="10"
+                                    max="50"
                                     className="form-control"
                                     value={config.max_sla_rows}
                                     onChange={event =>

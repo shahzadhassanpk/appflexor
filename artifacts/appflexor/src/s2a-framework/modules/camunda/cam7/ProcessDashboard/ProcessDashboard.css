@@ -1,11 +1,21 @@
 .process-dashboard {
-    --process-dashboard-surface: var(--bs-body-bg, #ffffff);
-    --process-dashboard-subtle: var(--bs-tertiary-bg, #f8fafc);
-    --process-dashboard-muted: var(--bs-secondary-color, #64748b);
-    --process-dashboard-border: var(--bs-border-color, #e2e8f0);
-    --process-dashboard-strong: var(--bs-body-color, #0f172a);
-    --process-dashboard-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-    --process-dashboard-accent: var(--bs-primary, #4f46e5);
+    --process-dashboard-surface: var(--bg-surface, var(--secondary-color, #ffffff));
+    --process-dashboard-subtle: var(--bg-surface-alt, var(--primary-color, #f8fafc));
+    --process-dashboard-hover: var(--bg-hover, var(--bg-surface-alt, #f1f5f9));
+    --process-dashboard-border: var(--border-default, var(--border-color, #e2e8f0));
+    --process-dashboard-border-subtle: var(--border-subtle, var(--border-color, #e2e8f0));
+    --process-dashboard-strong: var(--text-primary, var(--font-color, #0f172a));
+    --process-dashboard-text: var(--text-secondary, var(--font-color, #1e293b));
+    --process-dashboard-muted: var(--text-muted, var(--font-color, #64748b));
+    --process-dashboard-placeholder: var(--text-placeholder, var(--text-muted, #94a3b8));
+    --process-dashboard-accent: var(--accent-primary, #2563eb);
+    --process-dashboard-accent-soft: var(--accent-primary-soft, color-mix(in srgb, var(--process-dashboard-accent) 14%, var(--process-dashboard-surface)));
+    --process-dashboard-accent-hover: var(--accent-primary-hover, var(--process-dashboard-accent));
+    --process-dashboard-shadow: 0 1px 2px color-mix(in srgb, var(--font-color, #0f172a) 8%, transparent);
+    --process-dashboard-font-family: var(--bs-body-font-family, inherit);
+    --process-dashboard-sticky-top: calc(60px + 0.75rem);
+    color: var(--process-dashboard-strong);
+    font-family: var(--process-dashboard-font-family);
 }
 
 .process-dashboard__panel,
@@ -90,4 +100,296 @@
 
 .process-dashboard__tab {
     white-space: nowrap;
+}
+
+.process-dashboard__quick-filter-row,
+.process-dashboard__button-group,
+.process-dashboard__header-actions {
+    align-items: center;
+}
+
+.process-dashboard__quick-filter.btn-outline-secondary {
+    background-color: transparent;
+}
+
+.process-dashboard__custom-modal {
+    z-index: 2000;
+}
+
+.process-dashboard,
+.process-dashboard button,
+.process-dashboard input,
+.process-dashboard select,
+.process-dashboard textarea {
+    font-family: var(--process-dashboard-font-family);
+}
+
+.process-dashboard__section-header,
+.process-dashboard__selector-toolbar {
+    border-color: var(--process-dashboard-border-subtle);
+}
+
+.process-dashboard__selector-panel,
+.process-dashboard__selector-toolbar,
+.process-dashboard__progress-track,
+.process-dashboard__count-badge,
+.process-dashboard__sample,
+.process-dashboard__config-card,
+.process-dashboard__metric-card,
+.process-dashboard__section {
+    color: var(--process-dashboard-text);
+}
+
+.process-dashboard__tab:not(.bg-indigo-600) {
+    background-color: var(--process-dashboard-surface);
+    color: var(--process-dashboard-text);
+    box-shadow: inset 0 0 0 1px var(--process-dashboard-border);
+}
+
+.process-dashboard__tab:not(.bg-indigo-600):hover,
+.process-dashboard__quick-filter.btn-outline-secondary:hover,
+.process-dashboard__list-item:hover,
+.process-dashboard__selector-option:hover,
+.process-dashboard__empty:hover {
+    background-color: var(--process-dashboard-hover);
+    border-color: var(--process-dashboard-border);
+    color: var(--process-dashboard-strong);
+}
+
+.process-dashboard__tab.bg-indigo-600 {
+    background-color: var(--process-dashboard-accent) !important;
+}
+
+.process-dashboard__tab.bg-indigo-600:hover,
+.process-dashboard__refresh:hover {
+    background-color: var(--process-dashboard-accent-hover) !important;
+}
+
+.process-dashboard__quick-filter.btn-outline-secondary {
+    background-color: var(--process-dashboard-surface);
+    border-color: var(--process-dashboard-border);
+    color: var(--process-dashboard-text);
+}
+
+.process-dashboard__history-filter-bar {
+    position: -webkit-sticky;
+    position: sticky;
+    top: var(--process-dashboard-sticky-top);
+    z-index: 1020;
+    width: 100%;
+    backdrop-filter: blur(8px);
+    background-color: color-mix(in srgb, var(--process-dashboard-subtle) 92%, transparent);
+}
+
+.process-dashboard__selector-option,
+.process-dashboard__list-item,
+.process-dashboard__summary-tile,
+.process-dashboard__selected-shell,
+.process-dashboard__config-section,
+.process-dashboard__panel,
+.process-dashboard__header {
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        color 0.18s ease,
+        box-shadow 0.18s ease;
+}
+
+.process-dashboard__chip,
+.process-dashboard__quick-filter.button-theme,
+.process-dashboard__progress-fill {
+    background-color: var(--process-dashboard-accent);
+}
+
+.process-dashboard__chip {
+    background-color: var(--process-dashboard-accent-soft);
+    color: var(--process-dashboard-accent);
+}
+
+.process-dashboard__quick-filter.button-theme {
+    color: white;
+    border-color: color-mix(in srgb, var(--process-dashboard-accent) 28%, var(--process-dashboard-border));
+}
+
+.process-dashboard__selector-option.border-indigo-300,
+.process-dashboard__selector-option.bg-indigo-50 {
+    background-color: var(--process-dashboard-accent-soft);
+}
+
+.process-dashboard__selector-option.border-indigo-300 .process-dashboard__item-title,
+.process-dashboard__selector-option.border-indigo-300 .process-dashboard__item-key {
+    color: var(--process-dashboard-strong);
+}
+
+.process-dashboard__history-process-picker {
+    position: relative;
+}
+
+.process-dashboard__history-process-summary {
+    cursor: pointer;
+}
+
+.process-dashboard__history-process-summary::-webkit-details-marker {
+    display: none;
+}
+
+.process-dashboard__history-process-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.125rem;
+    white-space: nowrap;
+}
+
+.process-dashboard__history-process-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    z-index: 30;
+    width: min(24rem, calc(100vw - 2rem));
+    background-color: var(--process-dashboard-surface);
+    border-color: var(--process-dashboard-border);
+}
+
+.process-dashboard__history-process-list {
+    display: grid;
+    gap: 0.5rem;
+    max-height: 16rem;
+    overflow-y: auto;
+}
+
+.process-dashboard__history-process-option {
+    background-color: var(--process-dashboard-subtle);
+    border-color: var(--process-dashboard-border);
+    cursor: pointer;
+}
+
+.process-dashboard__history-process-option:hover {
+    background-color: var(--process-dashboard-hover);
+}
+
+.process-dashboard__history-process-clear {
+    color: var(--process-dashboard-accent);
+    text-decoration: none;
+}
+
+.process-dashboard__history-process-clear:hover {
+    color: var(--process-dashboard-accent-hover);
+}
+
+.process-dashboard__selector-group {
+    border-top: 1px solid var(--process-dashboard-border-subtle);
+    padding-top: 0.75rem;
+}
+
+.process-dashboard__selector-group:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.process-dashboard__selector-group-title {
+    color: var(--process-dashboard-strong);
+}
+
+.process-dashboard__selector-group-title-wrap {
+    min-width: 0;
+}
+
+.process-dashboard__selector-group-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--process-dashboard-border);
+    border-radius: 999px;
+    background-color: var(--process-dashboard-accent-soft);
+    color: var(--process-dashboard-accent);
+    flex-shrink: 0;
+}
+
+.process-dashboard__selector-group-meta {
+    color: var(--process-dashboard-muted);
+}
+
+.process-dashboard__selector-tags {
+    min-height: 1.25rem;
+}
+
+.process-dashboard__selector-badge {
+    border: 1px solid var(--process-dashboard-border);
+    border-radius: 999px;
+    background-color: var(--process-dashboard-accent-soft);
+    color: var(--process-dashboard-accent);
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+}
+
+.process-dashboard__selector-badge--muted {
+    background-color: var(--process-dashboard-surface);
+    color: var(--process-dashboard-muted);
+}
+
+.process-dashboard__selector-option--compact {
+    align-items: flex-start;
+}
+
+.process-dashboard__selector-checkbox {
+    margin-top: 0.125rem;
+}
+
+.process-dashboard__selector-line {
+    min-width: 0;
+    line-height: 1.2;
+}
+
+.process-dashboard__selector-process-icon {
+    color: var(--process-dashboard-muted);
+    font-size: 0.875rem;
+}
+
+.process-dashboard__selector-title-inline {
+    display: inline;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.process-dashboard__selector-key-inline {
+    display: inline;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-top: 0;
+}
+
+.process-dashboard__progress-track {
+    background-color: color-mix(in srgb, var(--process-dashboard-border) 36%, var(--process-dashboard-surface));
+}
+
+.process-dashboard__label {
+    color: var(--process-dashboard-muted);
+}
+
+.process-dashboard__meta,
+.process-dashboard__helper,
+.process-dashboard__date,
+.process-dashboard__config-note,
+.process-dashboard__item-key,
+.process-dashboard__empty {
+    color: var(--process-dashboard-muted);
+}
+
+.process-dashboard__title,
+.process-dashboard__section-title,
+.process-dashboard__metric-value,
+.process-dashboard__item-title,
+.process-dashboard__value,
+.process-dashboard__config-title {
+    color: var(--process-dashboard-strong);
+}
+
+.process-dashboard__selected-shell,
+.process-dashboard__summary-tile,
+.process-dashboard__list-item,
+.process-dashboard__panel,
+.process-dashboard__header,
+.process-dashboard__config-section {
+    border-color: var(--process-dashboard-border);
 }

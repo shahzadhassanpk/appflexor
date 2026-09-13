@@ -4,6 +4,7 @@ import {
     formatPercent,
     formatSeconds,
 } from "../utils";
+import CustomDateRangeModal from "./CustomDateRangeModal";
 import HistoryFilterBar from "./HistoryFilterBar";
 import MetricCard from "./MetricCard";
 import SectionCard from "./SectionCard";
@@ -11,19 +12,43 @@ import SectionCard from "./SectionCard";
 export default function HistoryDashboardTab({
     historyDraft,
     setHistoryDraft,
-    onApply,
-    onReset,
-    selectedLabel,
+    activeFilterKey,
+    activeFilterLabel,
+    activeFilterSummary,
+    showCustomDateModal,
+    onQuickFilterSelect,
+    onOpenCustomDates,
+    onCloseCustomDates,
+    onApplyCustomDates,
+    availableProcesses,
+    selectedProcessKeys,
+    selectedProcessLabel,
+    onToggleProcess,
+    onClearProcesses,
     historyState,
 }) {
     return (
         <>
             <HistoryFilterBar
-                historyDraft={historyDraft}
-                setHistoryDraft={setHistoryDraft}
-                onApply={onApply}
-                onReset={onReset}
-                selectedLabel={selectedLabel}
+                activeFilterKey={activeFilterKey}
+                activeFilterLabel={activeFilterLabel}
+                activeFilterSummary={activeFilterSummary}
+                onQuickFilterSelect={onQuickFilterSelect}
+                onOpenCustomDates={onOpenCustomDates}
+                availableProcesses={availableProcesses}
+                selectedProcessKeys={selectedProcessKeys}
+                selectedProcessLabel={selectedProcessLabel}
+                onToggleProcess={onToggleProcess}
+                onClearProcesses={onClearProcesses}
+                loading={historyState.loading}
+            />
+
+            <CustomDateRangeModal
+                show={showCustomDateModal}
+                onHide={onCloseCustomDates}
+                draft={historyDraft}
+                setDraft={setHistoryDraft}
+                onApply={onApplyCustomDates}
                 loading={historyState.loading}
             />
 
@@ -51,7 +76,7 @@ export default function HistoryDashboardTab({
                     helper="Across selected range"
                 />
                 <MetricCard
-                    icon="fa-solid fa-shield-check"
+                    icon="fa-regular fa-clock"
                     label="SLA Compliance"
                     value={formatPercent(historyState.summary.compliancePercent)}
                     tone="success"
@@ -80,40 +105,51 @@ export default function HistoryDashboardTab({
                 </div>
             ) : (
                 <div className="process-dashboard__sections-grid grid gap-4 xl:grid-cols-2">
+                     {/* SLA Compliance Rate */}
                     <SectionCard
-                        title="Cycle Time Analysis"
-                        subtitle="Average duration per process definition."
-                        icon="fa-solid fa-hourglass-half">
-                        {historyState.cycleRows.length ? (
+                        title="SLA Compliance Rate"
+                        subtitle="Percent of workflows completed within the SLA target."
+                        icon="fa-solid fa-badge-check">
+                        {historyState.complianceRows.length ? (
                             <div className="process-dashboard__stack space-y-2">
-                                {historyState.cycleRows.map(row => (
+                                {historyState.complianceRows.map(row => (
                                     <div
                                         key={row.processKey}
-                                        className="process-dashboard__list-item flex items-center justify-between gap-3 rounded-xl border px-3 py-2">
-                                        <div className="process-dashboard__item-copy min-w-0">
-                                            <p className="process-dashboard__item-title mb-0 truncate text-sm font-semibold">
-                                                {row.title}
-                                            </p>
-                                            <p className="process-dashboard__item-key mb-0 text-xs">
-                                                {row.processKey}
-                                            </p>
+                                        className="process-dashboard__list-item rounded-xl border p-3">
+                                        <div className="mb-2 flex items-center justify-between gap-3">
+                                            <div className="process-dashboard__item-copy min-w-0">
+                                                <p className="process-dashboard__item-title mb-0 truncate text-sm font-semibold">
+                                                    {row.title}
+                                                </p>
+                                                <p className="process-dashboard__item-key mb-0 text-xs">
+                                                    {row.processKey}
+                                                </p>
+                                            </div>
+                                            <span className="process-dashboard__value text-sm font-bold">
+                                                {formatPercent(row.compliancePercent)}
+                                            </span>
                                         </div>
-                                        <span className="process-dashboard__value text-sm font-bold">
-                                            {formatSeconds(row.avgCycleSeconds)}
-                                        </span>
+                                        <div className="process-dashboard__progress-track h-2 overflow-hidden rounded-full ring-1 ring-inset ring-slate-200">
+                                            <div
+                                                className="process-dashboard__progress-fill h-full rounded-full bg-indigo-600"
+                                                style={{
+                                                    "--process-dashboard-progress": `${Math.max(0, Math.min(100, row.compliancePercent))}%`,
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
                             <div className="process-dashboard__empty rounded-xl border border-dashed p-6 text-center text-sm">
-                                No completed history found for the selected dates.
+                                No SLA compliance rows available.
                             </div>
                         )}
                     </SectionCard>
-
+                    {/* Throughput Metrics */}
                     <SectionCard
                         title="Throughput Metrics"
-                        subtitle="Completed instances by day, week, and month."
+                        subtitle="Completed instances by day, week, and month. Pinpoint which workflows are heavily utilized."
                         icon="fa-solid fa-chart-column">
                         <div className="process-dashboard__summary-grid mb-3 grid grid-cols-3 gap-2 text-xs">
                             <div className="process-dashboard__summary-tile rounded-lg p-3 ring-1 ring-inset ring-slate-200">
@@ -161,61 +197,63 @@ export default function HistoryDashboardTab({
                             </div>
                         )}
                     </SectionCard>
-
+                    {/* Cycle Time Analysis */}
                     <SectionCard
-                        title="SLA Compliance Rate"
-                        subtitle="Percent of tasks completed within the SLA target."
-                        icon="fa-solid fa-badge-check">
-                        {historyState.complianceRows.length ? (
+                        title="Cycle Time Analysis"
+                        subtitle="Average duration per process definition. Pinpoint which workflows need redesign or automation."
+                        icon="fa-solid fa-hourglass-half">
+                        {historyState.cycleRows.length ? (
                             <div className="process-dashboard__stack space-y-2">
-                                {historyState.complianceRows.map(row => (
+                                {historyState.cycleRows.map(row => (
                                     <div
                                         key={row.processKey}
-                                        className="process-dashboard__list-item rounded-xl border p-3">
-                                        <div className="mb-2 flex items-center justify-between gap-3">
-                                            <div className="process-dashboard__item-copy min-w-0">
-                                                <p className="process-dashboard__item-title mb-0 truncate text-sm font-semibold">
-                                                    {row.title}
-                                                </p>
-                                                <p className="process-dashboard__item-key mb-0 text-xs">
-                                                    {row.processKey}
-                                                </p>
-                                            </div>
-                                            <span className="process-dashboard__value text-sm font-bold">
-                                                {formatPercent(row.compliancePercent)}
-                                            </span>
+                                        className="process-dashboard__list-item flex items-center justify-between gap-3 rounded-xl border px-3 py-2">
+                                        <div className="process-dashboard__item-copy min-w-0">
+                                            <p className="process-dashboard__item-title mb-0 truncate text-sm font-semibold">
+                                                {row.title}
+                                            </p>
+                                            <p className="process-dashboard__item-key mb-0 text-xs">
+                                                {row.processKey}
+                                            </p>
                                         </div>
-                                        <div className="process-dashboard__progress-track h-2 overflow-hidden rounded-full ring-1 ring-inset ring-slate-200">
-                                            <div
-                                                className="process-dashboard__progress-fill h-full rounded-full bg-indigo-600"
-                                                style={{
-                                                    "--process-dashboard-progress": `${Math.max(0, Math.min(100, row.compliancePercent))}%`,
-                                                }}
-                                            />
-                                        </div>
+                                        <span className="process-dashboard__value text-sm font-bold">
+                                            {formatSeconds(row.avgCycleSeconds)}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
                             <div className="process-dashboard__empty rounded-xl border border-dashed p-6 text-center text-sm">
-                                No SLA compliance rows available.
+                                No completed history found for the selected dates.
                             </div>
                         )}
                     </SectionCard>
-
+                    {/* Activity Performance */}
                     <SectionCard
                         title="Activity Performance"
-                        subtitle="Mean execution time per activity."
+                        subtitle="Mean execution time per activity. Pinpoint which tasks are slowing down your processes."
                         icon="fa-solid fa-person-running">
                         {historyState.activityPerformanceRows.length ? (
                             <div className="process-dashboard__stack space-y-2">
                                 {historyState.activityPerformanceRows.slice(0, 10).map(row => (
                                     <div
-                                        key={row.taskName}
+                                        key={`${row.processKey || "unknown"}-${row.taskName}`}
                                         className="process-dashboard__list-item flex items-center justify-between gap-3 rounded-xl border px-3 py-2">
-                                        <p className="process-dashboard__item-title mb-0 truncate text-sm font-semibold">
-                                            {row.taskName}
-                                        </p>
+                                        <div className="process-dashboard__item-copy min-w-0">
+                                            <p className="process-dashboard__item-title mb-0 truncate text-sm font-semibold">
+                                                {row.taskName}
+                                            </p>
+                                            {row.processKey && (
+                                                <>
+                                                    <p className="process-dashboard__item-key mb-0 mt-1 text-xs">
+                                                        {row.title || row.processKey}
+                                                    </p>
+                                                    <p className="process-dashboard__item-key mb-0 text-xs">
+                                                        {row.processKey}
+                                                    </p>
+                                                </>
+                                            )}
+                                        </div>
                                         <span className="process-dashboard__value text-sm font-bold">
                                             {formatSeconds(row.avgActivitySeconds)}
                                         </span>

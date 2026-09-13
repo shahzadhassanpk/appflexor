@@ -1,6 +1,6 @@
 import { tryParseJSONObject } from "../../../../utils/utils";
 import { calculateSla, variableValue } from "../../../process-monitor/utils/sla";
-import { DEFAULT_CONFIG } from "./constants";
+import { DEFAULT_CONFIG, HISTORY_QUICK_FILTERS } from "./constants";
 
 export function toDateInputValue(date) {
     const year = date.getFullYear();
@@ -10,13 +10,39 @@ export function toDateInputValue(date) {
 }
 
 export function defaultHistoryFilters() {
+    return createQuickHistoryFilter("LAST_7_DAYS");
+}
+
+export function createQuickHistoryFilter(filterKey) {
+    const selectedFilter = HISTORY_QUICK_FILTERS.find(
+        filter => filter.key === filterKey && Number.isFinite(filter.days),
+    ) || HISTORY_QUICK_FILTERS[0];
     const today = new Date();
     const prior = new Date(today);
-    prior.setDate(today.getDate() - 29);
+    prior.setDate(today.getDate() - (selectedFilter.days - 1));
     return {
+        key: selectedFilter.key,
+        label: selectedFilter.label,
         from: toDateInputValue(prior),
         to: toDateInputValue(today),
     };
+}
+
+export function createCustomHistoryFilter(from, to) {
+    return {
+        key: "CUSTOM",
+        label: "Custom Dates",
+        from,
+        to,
+    };
+}
+
+export function formatHistoryFilterSummary(filters) {
+    if (!filters?.from || !filters?.to) return "Showing results";
+    if (filters?.key === "CUSTOM") {
+        return `Showing results: Custom Dates (${filters.from} to ${filters.to})`;
+    }
+    return `Showing results: ${filters.label}`;
 }
 
 export function formatServiceDate(dateValue, endOfDay = false) {
@@ -38,6 +64,20 @@ export function normalizeNumber(value, fallback) {
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export function clampNumber(value, minimum, maximum, fallback) {
+    const parsed = normalizeNumber(value, fallback);
+    if (!Number.isFinite(parsed)) {
+        return fallback;
+    }
+    if (Number.isFinite(minimum) && parsed < minimum) {
+        return minimum;
+    }
+    if (Number.isFinite(maximum) && parsed > maximum) {
+        return maximum;
+    }
+    return parsed;
+}
+
 export function normalizeProcessKeys(value) {
     if (Array.isArray(value)) return value.map(String);
     const parsed = tryParseJSONObject(value || "[]", []);
@@ -50,8 +90,10 @@ export function normalizeConfig(data = {}) {
         ...data,
         process_scope: data?.process_scope === "SELECTED" ? "SELECTED" : "ALL",
         process_keys: normalizeProcessKeys(data?.process_keys),
-        refresh_interval_seconds: normalizeNumber(
+        refresh_interval_seconds: clampNumber(
             data?.refresh_interval_seconds,
+            60,
+            Number.POSITIVE_INFINITY,
             DEFAULT_CONFIG.refresh_interval_seconds,
         ),
         show_header: normalizeBoolean(
@@ -70,16 +112,22 @@ export function normalizeConfig(data = {}) {
             data?.show_sla_breaches,
             DEFAULT_CONFIG.show_sla_breaches,
         ),
-        max_activity_rows: normalizeNumber(
+        max_activity_rows: clampNumber(
             data?.max_activity_rows,
+            10,
+            50,
             DEFAULT_CONFIG.max_activity_rows,
         ),
-        max_incident_rows: normalizeNumber(
+        max_incident_rows: clampNumber(
             data?.max_incident_rows,
+            10,
+            50,
             DEFAULT_CONFIG.max_incident_rows,
         ),
-        max_sla_rows: normalizeNumber(
+        max_sla_rows: clampNumber(
             data?.max_sla_rows,
+            10,
+            50,
             DEFAULT_CONFIG.max_sla_rows,
         ),
     };
@@ -160,24 +208,21 @@ export function monthKey(dateValue) {
 }
 
 function quoteProcessKey(processKey) {
-    return `'${String(processKey).replace(/'/g, "''")}'`;
+    return `'${String(processKey.trim()).replace(/'/g, "''")}'`;
 }
 
-function wrapServiceParam(value) {
-    return `"${String(value)
-        .replace(/\\/g, "\\\\")
-        .replace(/"/g, '\\"')}"`;
-}
-
-export function buildHistoryServiceParams(filters, processKeys) {
-    const scopedKeys = Array.isArray(processKeys) ? processKeys.filter(Boolean) : [];
-    const processKeyList = scopedKeys.map(quoteProcessKey).join(",");
-    const encodedProcessKeyList = encodeURIComponent(processKeyList);
+export function buildHistoryServiceParams(filters) {
     return [
         formatServiceDate(filters.from, false),
         formatServiceDate(filters.to, true),
-        wrapServiceParam(encodedProcessKeyList),
     ].join(",");
+}
+
+export function buildHistoryInFilter(processKeys) {
+    const scopedKeys = Array.isArray(processKeys) ? processKeys.filter(Boolean) : [];
+    const processKeyList = scopedKeys.map(quoteProcessKey).join(",");
+    const encodedProcessKeyList = processKeyList;
+    return encodedProcessKeyList ? encodedProcessKeyList : "";
 }
 
 export function flattenLeafActivities(node, rows = []) {

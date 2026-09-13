@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { AppContext } from "../../../../../AppContext";
 import { ErrorBoundary } from "../../../../utils/ErrorBoundry";
 import { tryParseJSONObject } from "../../../../utils/utils";
@@ -23,9 +23,13 @@ import ProcessDashboardConfigModal from "./components/ProcessDashboardConfigModa
 import ProcessSelectorModal from "./components/ProcessSelectorModal";
 import {
     buildHistoryServiceParams,
+    buildHistoryInFilter,
     buildInstanceSla,
+    createCustomHistoryFilter,
+    createQuickHistoryFilter,
     defaultHistoryFilters,
     flattenLeafActivities,
+    formatHistoryFilterSummary,
     formatRelativeMinutes,
     isEmptyObject,
     mapWithConcurrency,
@@ -58,6 +62,8 @@ export default function ProcessDashboard(props) {
     const [activeTab, setActiveTab] = useState(DASHBOARD_TABS.LIVE);
     const [historyDraft, setHistoryDraft] = useState(defaultHistoryFilters);
     const [historyFilters, setHistoryFilters] = useState(defaultHistoryFilters);
+    const [historyProcessKeys, setHistoryProcessKeys] = useState([]);
+    const [showCustomDateModal, setShowCustomDateModal] = useState(false);
     const [reloadTick, setReloadTick] = useState(0);
     const [historyReloadTick, setHistoryReloadTick] = useState(0);
     const [dashboardState, setDashboardState] = useState(INITIAL_DASHBOARD_STATE);
@@ -69,7 +75,10 @@ export default function ProcessDashboard(props) {
     const processScopeSignature = JSON.stringify(
         resolvedComponentConfig.process_keys || [],
     );
-    const configuredProcessKeys = tryParseJSONObject(processScopeSignature, []);
+    const configuredProcessKeys = useMemo(
+        () => tryParseJSONObject(processScopeSignature, []),
+        [processScopeSignature],
+    );
     const configTitle = resolvedComponentConfig.title || DEFAULT_CONFIG.title;
     const configScope = resolvedComponentConfig.process_scope;
     const refreshIntervalSeconds = normalizeNumber(
@@ -96,11 +105,39 @@ export default function ProcessDashboard(props) {
     const selectedScopeLabel = configScope === "SELECTED"
         ? `${configuredProcessKeys.length} selected process${configuredProcessKeys.length === 1 ? "" : "es"}`
         : "All processes";
+    const availableHistoryProcesses = useMemo(() => processList.filter(process => {
+        const processKey = String(process?.process_key || "");
+        return processKey && (
+            configScope !== "SELECTED" ||
+            configuredProcessKeys.includes(processKey)
+        );
+    }), [configScope, configuredProcessKeys, processList]);
+    const availableHistoryProcessKeys = useMemo(() => availableHistoryProcesses.map(process =>
+        String(process.process_key || ""),
+    ), [availableHistoryProcesses]);
+    const availableHistoryProcessKeysSignature = JSON.stringify(availableHistoryProcessKeys);
+    const selectedHistoryProcessKeys = useMemo(() => historyProcessKeys.filter(processKey =>
+        availableHistoryProcessKeys.includes(processKey),
+    ), [availableHistoryProcessKeys, historyProcessKeys]);
+    const selectedHistoryProcessLabel = useMemo(() => (
+        selectedHistoryProcessKeys.length === 0 ||
+        selectedHistoryProcessKeys.length === availableHistoryProcessKeys.length
+            ? "All available processes"
+            : selectedHistoryProcessKeys.length === 1
+                ? (
+                    availableHistoryProcesses.find(process =>
+                        String(process.process_key || "") === selectedHistoryProcessKeys[0],
+                    )?.title || selectedHistoryProcessKeys[0]
+                )
+                : `${selectedHistoryProcessKeys.length} processes selected`
+    ), [availableHistoryProcessKeys.length, availableHistoryProcesses, selectedHistoryProcessKeys]);
+    const historyProcessSignature = JSON.stringify(selectedHistoryProcessKeys);
+    const activeHistoryFilterSummary = formatHistoryFilterSummary(historyFilters);
     const headerScopeLabel = activeTab === DASHBOARD_TABS.LIVE
         ? (configScope === "SELECTED"
             ? `${dashboardState.selectedProcessNames.length || configuredProcessKeys.length} selected process definitions`
             : "All running processes in scope")
-        : `Range ${historyFilters.from} to ${historyFilters.to} - ${selectedScopeLabel}`;
+        : `${selectedScopeLabel} - ${selectedHistoryProcessLabel} - ${historyFilters.from} to ${historyFilters.to}`;
 
     useEffect(() => {
         const nextData = normalizeConfig(component?.data || {});
@@ -160,6 +197,21 @@ export default function ProcessDashboard(props) {
     }, [activeTab, isDesignMode, processList.length]);
 
     useEffect(() => {
+        setHistoryProcessKeys(previous => {
+            const next = previous.filter(processKey =>
+                availableHistoryProcessKeys.includes(processKey),
+            );
+            if (!availableHistoryProcessKeys.length) {
+                return next.length === previous.length ? previous : next;
+            }
+            if (!next.length) {
+                return availableHistoryProcessKeys;
+            }
+            return next.length === previous.length ? previous : next;
+        });
+    }, [availableHistoryProcessKeys, availableHistoryProcessKeysSignature, configScope, processList, processScopeSignature]);
+
+    useEffect(() => {
         if (!canRenderLiveData || processEngine !== SOURCE.CAMUNDA_SEVEN) return;
         setReloadTick(previous => previous + 1);
     }, [
@@ -176,7 +228,7 @@ export default function ProcessDashboard(props) {
 
     useEffect(() => {
         if (!canRenderLiveData || processEngine !== SOURCE.CAMUNDA_SEVEN) return;
-        const refreshSeconds = Math.max(15, refreshIntervalSeconds);
+        const refreshSeconds = Math.max(60, refreshIntervalSeconds);
         const intervalId = setInterval(() => {
             setReloadTick(previous => previous + 1);
         }, refreshSeconds * 1000);
@@ -557,6 +609,7 @@ export default function ProcessDashboard(props) {
         processEngine,
         configScope,
         processScopeSignature,
+        historyProcessSignature,
         historyFilters.from,
         historyFilters.to,
     ]);
@@ -586,20 +639,31 @@ export default function ProcessDashboard(props) {
                     setProcessList(catalog);
                 }
                 const selectedKeys = tryParseJSONObject(processScopeSignature, []);
-                const scopedProcessKeys = configScope === "SELECTED"
-                    ? selectedKeys
-                    : catalog.map(item => String(item.process_key || "")).filter(Boolean);
+                const availableProcesses = configScope === "SELECTED"
+                    ? catalog.filter(item => selectedKeys.includes(String(item.process_key || "")))
+                    : catalog;
+                const availableProcessKeys = availableProcesses
+                    .map(item => String(item.process_key || ""))
+                    .filter(Boolean);
+                const scopedProcessKeys = (
+                    selectedHistoryProcessKeys.length &&
+                    selectedHistoryProcessKeys.length !== availableProcessKeys.length
+                )
+                    ? selectedHistoryProcessKeys.filter(processKey =>
+                        availableProcessKeys.includes(processKey),
+                    )
+                    : availableProcessKeys;
 
                 if (!scopedProcessKeys.length) {
                     throw new Error("No process definitions are available for the selected scope.");
-                }
+                } 
+                let historyInFilters = buildHistoryInFilter(scopedProcessKeys);
 
                 const serviceParams = buildHistoryServiceParams(
                     {
                         from: historyFilters.from,
                         to: historyFilters.to,
-                    },
-                    scopedProcessKeys,
+                    }
                 );
                 const titleByProcessKey = Object.fromEntries(
                     catalog
@@ -612,49 +676,46 @@ export default function ProcessDashboard(props) {
                         dataKey: "cycleTime",
                         serviceKey: "bpm.history.cycle.time",
                         mode: "formData",
+                        IN_FILTER: historyInFilters,
                     },
                     {
                         serviceParams,
                         dataKey: "throughput",
                         serviceKey: "bpm.history.throughput",
                         mode: "formData",
+                        IN_FILTER: historyInFilters,
                     },
                     {
                         serviceParams,
                         dataKey: "compliance",
                         serviceKey: "bpm.history.compliance.rate",
                         mode: "formData",
-                    },
-                    {
-                        serviceParams,
-                        dataKey: "activityPerformance",
-                        serviceKey: "bpm.history.activity.performance",
-                        mode: "formData",
+                        IN_FILTER: historyInFilters,
                     },
                     {
                         serviceParams,
                         dataKey: "failureTrend",
                         serviceKey: "bpm.history.failure.trend",
                         mode: "formData",
+                        IN_FILTER: historyInFilters,
                     },
                 ]);
-
                 const cycleRows = normalizeRows(data?.cycleTime)
                     .map(row => ({
-                        processKey: String(row?.c_process_definition_key || ""),
+                        processKey: String(row?.process_definition_key || ""),
                         title:
-                            titleByProcessKey[String(row?.c_process_definition_key || "")] ||
-                            String(row?.c_process_definition_key || ""),
+                            titleByProcessKey[String(row?.process_definition_key || "")] ||
+                            String(row?.process_definition_key || ""),
                         avgCycleSeconds: parseNumeric(row?.avg_cycle_seconds),
                     }))
                     .sort((left, right) => right.avgCycleSeconds - left.avgCycleSeconds);
 
                 const throughputRows = normalizeRows(data?.throughput)
                     .map(row => ({
-                        processKey: String(row?.c_process_definition_key || ""),
+                        processKey: String(row?.process_definition_key || ""),
                         title:
-                            titleByProcessKey[String(row?.c_process_definition_key || "")] ||
-                            String(row?.c_process_definition_key || ""),
+                            titleByProcessKey[String(row?.process_definition_key || "")] ||
+                            String(row?.process_definition_key || ""),
                         day: row?.day,
                         completedInstances: parseNumeric(row?.completed_instances),
                     }))
@@ -662,27 +723,47 @@ export default function ProcessDashboard(props) {
 
                 const complianceRows = normalizeRows(data?.compliance)
                     .map(row => ({
-                        processKey: String(row?.c_process_definition_key || ""),
+                        processKey: String(row?.process_definition_key || ""),
                         title:
-                            titleByProcessKey[String(row?.c_process_definition_key || "")] ||
-                            String(row?.c_process_definition_key || ""),
+                            titleByProcessKey[String(row?.process_definition_key || "")] ||
+                            String(row?.process_definition_key || ""),
                         compliancePercent: parseNumeric(row?.sla_compliance_percent),
                     }))
                     .sort((left, right) => right.compliancePercent - left.compliancePercent);
 
-                const activityPerformanceRows = normalizeRows(data?.activityPerformance)
-                    .map(row => ({
-                        taskName: row?.c_task_name || "Unknown activity",
-                        avgActivitySeconds: parseNumeric(row?.avg_activity_seconds),
-                    }))
+                const activityPerformanceGroups = await mapWithConcurrency(
+                    scopedProcessKeys,
+                    4,
+                    async processKey => {
+                        const activityData = await fetchTenantData([
+                            {
+                                serviceParams,
+                                dataKey: "activityPerformance",
+                                serviceKey: "bpm.history.activity.performance",
+                                mode: "formData",
+                                IN_FILTER: buildHistoryInFilter([processKey]),
+                            },
+                        ]);
+
+                        return normalizeRows(activityData?.activityPerformance).map(row => ({
+                            processKey,
+                            title: titleByProcessKey[processKey] || processKey,
+                            taskName: row?.task_name || "Unknown activity",
+                            avgActivitySeconds: parseNumeric(row?.avg_activity_seconds),
+                        }));
+                    },
+                );
+
+                const activityPerformanceRows = activityPerformanceGroups
+                    .flat()
                     .sort((left, right) => right.avgActivitySeconds - left.avgActivitySeconds);
 
                 const failureRows = normalizeRows(data?.failureTrend)
                     .map(row => ({
-                        processKey: String(row?.c_process_definition_key || ""),
+                        processKey: String(row?.process_definition_key || ""),
                         title:
-                            titleByProcessKey[String(row?.c_process_definition_key || "")] ||
-                            String(row?.c_process_definition_key || ""),
+                            titleByProcessKey[String(row?.process_definition_key || "")] ||
+                            String(row?.process_definition_key || ""),
                         event: String(row?.c_event || "").toLowerCase(),
                         eventCount: parseNumeric(row?.event_count),
                         day: row?.day,
@@ -778,6 +859,8 @@ export default function ProcessDashboard(props) {
         historyReloadTick,
         historyFilters.from,
         historyFilters.to,
+        selectedHistoryProcessKeys,
+        historyProcessSignature,
         configScope,
         processScopeSignature,
         processList,
@@ -828,21 +911,50 @@ export default function ProcessDashboard(props) {
             }));
             return;
         }
-        setHistoryFilters({
-            from: historyDraft.from,
-            to: historyDraft.to,
-        });
+        const customFilters = createCustomHistoryFilter(
+            historyDraft.from,
+            historyDraft.to,
+        );
+        setHistoryDraft(customFilters);
+        setHistoryFilters(customFilters);
+        setShowCustomDateModal(false);
     }
 
-    function resetHistoryFilters() {
-        const defaults = defaultHistoryFilters();
-        setHistoryDraft(defaults);
-        setHistoryFilters(defaults);
+    function applyQuickHistoryFilter(filterKey) {
+        const nextFilters = createQuickHistoryFilter(filterKey);
+        setHistoryDraft(nextFilters);
+        setHistoryFilters(nextFilters);
+        setShowCustomDateModal(false);
+    }
+
+    function openCustomDateModal() {
+        setHistoryDraft({
+            from: historyFilters.from,
+            to: historyFilters.to,
+        });
+        setShowCustomDateModal(true);
+    }
+
+    function closeCustomDateModal() {
+        setHistoryDraft({
+            from: historyFilters.from,
+            to: historyFilters.to,
+        });
+        setShowCustomDateModal(false);
     }
 
     function openProcessSelector() {
         setProcessSearch("");
         setShowProcessSelector(true);
+    }
+
+    function handleHistoryProcessToggle(processKey, checked) {
+        setHistoryProcessKeys(previous => {
+            const selected = new Set(previous || []);
+            if (checked) selected.add(processKey);
+            else selected.delete(processKey);
+            return [...selected];
+        });
     }
 
     function refreshActiveTab() {
@@ -888,6 +1000,7 @@ export default function ProcessDashboard(props) {
                             setActiveTab={setActiveTab}
                             title={configTitle}
                             scopeLabel={headerScopeLabel}
+                            activeFilterSummary={activeHistoryFilterSummary}
                             lastUpdated={
                                 activeTab === DASHBOARD_TABS.LIVE
                                     ? (dashboardState.lastUpdated || "just now")
@@ -910,9 +1023,19 @@ export default function ProcessDashboard(props) {
                             <HistoryDashboardTab
                                 historyDraft={historyDraft}
                                 setHistoryDraft={setHistoryDraft}
-                                onApply={applyHistoryFilters}
-                                onReset={resetHistoryFilters}
-                                selectedLabel={selectedScopeLabel}
+                                activeFilterKey={historyFilters.key}
+                                activeFilterLabel={historyFilters.label}
+                                activeFilterSummary={activeHistoryFilterSummary}
+                                showCustomDateModal={showCustomDateModal}
+                                onQuickFilterSelect={applyQuickHistoryFilter}
+                                onOpenCustomDates={openCustomDateModal}
+                                onCloseCustomDates={closeCustomDateModal}
+                                onApplyCustomDates={applyHistoryFilters}
+                                availableProcesses={availableHistoryProcesses}
+                                selectedProcessKeys={selectedHistoryProcessKeys}
+                                selectedProcessLabel={selectedHistoryProcessLabel}
+                                onToggleProcess={handleHistoryProcessToggle}
+                                onClearProcesses={() => setHistoryProcessKeys(availableHistoryProcessKeys)}
                                 historyState={historyState}
                             />
                         )}
