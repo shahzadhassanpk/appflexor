@@ -12,11 +12,16 @@ export default function HistoryFilterBar({
     selectedProcessKeys,
     selectedProcessLabel,
     onToggleProcess,
+    onSelectAllProcesses,
     onClearProcesses,
     loading,
 }) {
     const [processMenuOpen, setProcessMenuOpen] = useState(false);
     const processMenuRef = useRef(null);
+    const totalProcessCount = availableProcesses.length;
+    const allProcessesSelected =
+        totalProcessCount > 0 && selectedProcessKeys.length === totalProcessCount;
+    const noProcessesSelected = selectedProcessKeys.length === 0;
 
     useEffect(() => {
         if (!processMenuOpen) {
@@ -95,51 +100,60 @@ export default function HistoryFilterBar({
                             </button>
                             {processMenuOpen && (
                                 <div className="process-dashboard__history-process-menu rounded-2xl border p-3 shadow-sm">
-                                <div className="mb-2 flex items-center justify-between gap-2">
-                                    <p className="process-dashboard__label mb-0 text-xs font-semibold">
-                                        Available processes
-                                    </p>
-                                    <button
-                                        type="button"
-                                        onClick={onClearProcesses}
-                                        disabled={loading || selectedProcessKeys.length === availableProcesses.length}
-                                        className="btn btn-link process-dashboard__history-process-clear p-0 text-xs">
-                                        Reset to all
-                                    </button>
-                                </div>
-                                <div className="process-dashboard__history-process-list">
-                                    {availableProcesses.length ? availableProcesses.map(process => {
-                                        const processKey = String(process.process_key || "");
-                                        const checked = selectedProcessKeys.includes(processKey);
-                                        return (
-                                            <div
-                                                key={processKey}
-                                                className="process-dashboard__history-process-option flex items-start gap-2 rounded-xl border px-3 py-2">
-                                                <input
-                                                    type="checkbox"
-                                                    className="form-check-input mt-0.5 shrink-0"
-                                                    checked={checked}
-                                                    disabled={loading}
-                                                    onChange={event =>
-                                                        onToggleProcess(processKey, event.target.checked)
-                                                    }
-                                                />
-                                                <span className="min-w-0">
-                                                    <span className="process-dashboard__item-title truncate text-sm font-semibold">
-                                                        {process.title || processKey}
-                                                    </span>
-                                                    <span className="process-dashboard__item-key ms-1 truncate text-xs">
-                                                        [ {processKey} ]
-                                                    </span>
-                                                </span>
-                                            </div>
-                                        );
-                                    }) : (
-                                        <p className="process-dashboard__empty mb-0 rounded-xl border border-dashed p-3 text-center text-sm">
-                                            No processes available for this scope.
+                                    <div className="mb-2 flex items-center justify-between gap-2">
+                                        <p className="process-dashboard__label mb-0 text-xs font-semibold">
+                                            Available processes
                                         </p>
-                                    )}
-                                </div>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={onSelectAllProcesses}
+                                                disabled={loading || allProcessesSelected || totalProcessCount === 0}
+                                                className="btn btn-link p-0 text-xs">
+                                                Select all
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={onClearProcesses}
+                                                disabled={loading || noProcessesSelected || totalProcessCount === 0}
+                                                className="btn btn-link process-dashboard__history-process-clear p-0 text-xs">
+                                                Unselect all
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="process-dashboard__history-process-list">
+                                        {availableProcesses.length ? availableProcesses.map(process => {
+                                            const processKey = String(process.process_key || "");
+                                            const checked = selectedProcessKeys.includes(processKey);
+                                            return (
+                                                <div
+                                                    key={processKey}
+                                                    className="process-dashboard__history-process-option flex items-start gap-2 rounded-xl border px-3 py-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="form-check-input mt-0.5 shrink-0"
+                                                        checked={checked}
+                                                        disabled={loading}
+                                                        onChange={event =>
+                                                            onToggleProcess(processKey, event.target.checked)
+                                                        }
+                                                    />
+                                                    <span className="min-w-0">
+                                                        <span className="process-dashboard__item-title truncate text-sm font-semibold">
+                                                            {process.title || processKey}
+                                                        </span>
+                                                        <span className="process-dashboard__item-key ms-1 truncate text-xs">
+                                                            [ {processKey} ]
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                            );
+                                        }) : (
+                                            <p className="process-dashboard__empty mb-0 rounded-xl border border-dashed p-3 text-center text-sm">
+                                                No processes available for this scope.
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>

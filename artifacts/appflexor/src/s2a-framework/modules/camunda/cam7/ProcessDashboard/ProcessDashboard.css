@@ -367,6 +367,10 @@
     color: var(--process-dashboard-muted);
 }
 
+.process-dashboard__history-process-menu .btn-link{
+    font-size: 0.875rem !important;
+}
+
 .process-dashboard__meta,
 .process-dashboard__helper,
 .process-dashboard__date,

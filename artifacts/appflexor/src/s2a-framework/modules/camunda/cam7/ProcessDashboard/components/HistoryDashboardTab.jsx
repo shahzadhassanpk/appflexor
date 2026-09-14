@@ -24,6 +24,7 @@ export default function HistoryDashboardTab({
     selectedProcessKeys,
     selectedProcessLabel,
     onToggleProcess,
+    onSelectAllProcesses,
     onClearProcesses,
     historyState,
 }) {
@@ -39,6 +40,7 @@ export default function HistoryDashboardTab({
                 selectedProcessKeys={selectedProcessKeys}
                 selectedProcessLabel={selectedProcessLabel}
                 onToggleProcess={onToggleProcess}
+                onSelectAllProcesses={onSelectAllProcesses}
                 onClearProcesses={onClearProcesses}
                 loading={historyState.loading}
             />

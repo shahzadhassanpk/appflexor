@@ -63,6 +63,7 @@ export default function ProcessDashboard(props) {
     const [historyDraft, setHistoryDraft] = useState(defaultHistoryFilters);
     const [historyFilters, setHistoryFilters] = useState(defaultHistoryFilters);
     const [historyProcessKeys, setHistoryProcessKeys] = useState([]);
+    const [historyProcessSelectionTouched, setHistoryProcessSelectionTouched] = useState(false);
     const [showCustomDateModal, setShowCustomDateModal] = useState(false);
     const [reloadTick, setReloadTick] = useState(0);
     const [historyReloadTick, setHistoryReloadTick] = useState(0);
@@ -119,18 +120,39 @@ export default function ProcessDashboard(props) {
     const selectedHistoryProcessKeys = useMemo(() => historyProcessKeys.filter(processKey =>
         availableHistoryProcessKeys.includes(processKey),
     ), [availableHistoryProcessKeys, historyProcessKeys]);
+    const hasAvailableHistoryProcesses = availableHistoryProcessKeys.length > 0;
+    const isUsingDefaultHistorySelection = (
+        !historyProcessSelectionTouched &&
+        hasAvailableHistoryProcesses &&
+        selectedHistoryProcessKeys.length === 0
+    );
+    const areAllHistoryProcessesSelected = (
+        hasAvailableHistoryProcesses &&
+        (
+            selectedHistoryProcessKeys.length === availableHistoryProcessKeys.length ||
+            isUsingDefaultHistorySelection
+        )
+    );
     const selectedHistoryProcessLabel = useMemo(() => (
-        selectedHistoryProcessKeys.length === 0 ||
-        selectedHistoryProcessKeys.length === availableHistoryProcessKeys.length
-            ? "All available processes"
-            : selectedHistoryProcessKeys.length === 1
-                ? (
-                    availableHistoryProcesses.find(process =>
-                        String(process.process_key || "") === selectedHistoryProcessKeys[0],
-                    )?.title || selectedHistoryProcessKeys[0]
-                )
-                : `${selectedHistoryProcessKeys.length} processes selected`
-    ), [availableHistoryProcessKeys.length, availableHistoryProcesses, selectedHistoryProcessKeys]);
+        !hasAvailableHistoryProcesses
+            ? "No available processes"
+            : areAllHistoryProcessesSelected
+                ? "All available processes"
+                : selectedHistoryProcessKeys.length === 0
+                    ? "No processes selected"
+                    : selectedHistoryProcessKeys.length === 1
+                        ? (
+                            availableHistoryProcesses.find(process =>
+                                String(process.process_key || "") === selectedHistoryProcessKeys[0],
+                            )?.title || selectedHistoryProcessKeys[0]
+                        )
+                        : `${selectedHistoryProcessKeys.length} processes selected`
+    ), [
+        areAllHistoryProcessesSelected,
+        availableHistoryProcesses,
+        hasAvailableHistoryProcesses,
+        selectedHistoryProcessKeys,
+    ]);
     const historyProcessSignature = JSON.stringify(selectedHistoryProcessKeys);
     const activeHistoryFilterSummary = formatHistoryFilterSummary(historyFilters);
     const headerScopeLabel = activeTab === DASHBOARD_TABS.LIVE
@@ -204,12 +226,19 @@ export default function ProcessDashboard(props) {
             if (!availableHistoryProcessKeys.length) {
                 return next.length === previous.length ? previous : next;
             }
-            if (!next.length) {
+            if (!historyProcessSelectionTouched && !next.length) {
                 return availableHistoryProcessKeys;
             }
             return next.length === previous.length ? previous : next;
         });
-    }, [availableHistoryProcessKeys, availableHistoryProcessKeysSignature, configScope, processList, processScopeSignature]);
+    }, [
+        availableHistoryProcessKeys,
+        availableHistoryProcessKeysSignature,
+        configScope,
+        historyProcessSelectionTouched,
+        processList,
+        processScopeSignature,
+    ]);
 
     useEffect(() => {
         if (!canRenderLiveData || processEngine !== SOURCE.CAMUNDA_SEVEN) return;
@@ -645,18 +674,23 @@ export default function ProcessDashboard(props) {
                 const availableProcessKeys = availableProcesses
                     .map(item => String(item.process_key || ""))
                     .filter(Boolean);
-                const scopedProcessKeys = (
-                    selectedHistoryProcessKeys.length &&
-                    selectedHistoryProcessKeys.length !== availableProcessKeys.length
-                )
-                    ? selectedHistoryProcessKeys.filter(processKey =>
+                const scopedProcessKeys = areAllHistoryProcessesSelected
+                    ? availableProcessKeys
+                    : selectedHistoryProcessKeys.filter(processKey =>
                         availableProcessKeys.includes(processKey),
-                    )
-                    : availableProcessKeys;
+                    );
 
                 if (!scopedProcessKeys.length) {
+                    if (availableProcessKeys.length) {
+                        setHistoryState({
+                            ...INITIAL_HISTORY_STATE,
+                            loading: false,
+                            lastUpdated: new Date().toLocaleString(),
+                        });
+                        return;
+                    }
                     throw new Error("No process definitions are available for the selected scope.");
-                } 
+                }
                 let historyInFilters = buildHistoryInFilter(scopedProcessKeys);
 
                 const serviceParams = buildHistoryServiceParams(
@@ -854,6 +888,7 @@ export default function ProcessDashboard(props) {
         };
     }, [
         activeTab,
+        areAllHistoryProcessesSelected,
         canRenderLiveData,
         processEngine,
         historyReloadTick,
@@ -949,12 +984,23 @@ export default function ProcessDashboard(props) {
     }
 
     function handleHistoryProcessToggle(processKey, checked) {
+        setHistoryProcessSelectionTouched(true);
         setHistoryProcessKeys(previous => {
             const selected = new Set(previous || []);
             if (checked) selected.add(processKey);
             else selected.delete(processKey);
             return [...selected];
         });
+    }
+
+    function handleHistoryProcessSelectAll() {
+        setHistoryProcessSelectionTouched(true);
+        setHistoryProcessKeys(availableHistoryProcessKeys);
+    }
+
+    function handleHistoryProcessClearAll() {
+        setHistoryProcessSelectionTouched(true);
+        setHistoryProcessKeys([]);
     }
 
     function refreshActiveTab() {
@@ -1035,7 +1081,8 @@ export default function ProcessDashboard(props) {
                                 selectedProcessKeys={selectedHistoryProcessKeys}
                                 selectedProcessLabel={selectedHistoryProcessLabel}
                                 onToggleProcess={handleHistoryProcessToggle}
-                                onClearProcesses={() => setHistoryProcessKeys(availableHistoryProcessKeys)}
+                                onSelectAllProcesses={handleHistoryProcessSelectAll}
+                                onClearProcesses={handleHistoryProcessClearAll}
                                 historyState={historyState}
                             />
                         )}
