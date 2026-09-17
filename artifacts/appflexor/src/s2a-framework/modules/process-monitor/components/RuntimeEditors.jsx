@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { API_URL } from "../../../Config";
+import { formatDateTimeForUserView } from "../../../utils/utils";
 import { PropertyEditorModal } from "../../process-configuration/processes/PropertyEditorModal";
 
 const SLA_KEYS = new Set(["slaConfig", "sla_config", "SLA_CONFIG", "slaDeadline", "sla_deadline", "deadline"]);
@@ -30,7 +31,82 @@ function EditorModal({ editor, setEditor, busy, onSave }) {
 
 export function TaskManager({ tasks, busy, onAssign }) {
     const [task, setTask] = useState(null);
-    return <><div className="divide-y divide-slate-100">{tasks.map(item => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 p-4"><div><p className="mb-1 font-semibold text-slate-900">{item.name || item.taskDefinitionKey}</p><p className="mb-0 text-sm text-slate-500">{item.assignee ? `Assigned to ${item.assignee}` : item.candidateGroup ? `Candidate group ${item.candidateGroup}` : "Unassigned"} · {item.due ? new Date(item.due).toLocaleString() : "No due date"}</p></div><button type="button" disabled={busy} onClick={() => setTask(item)} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700"><i className="fa-solid fa-user-plus mr-2" />Assign</button></div>)}</div>{!tasks.length && <p className="p-8 text-center text-sm text-slate-500">No open user tasks.</p>}{task && <RuntimeAssignmentDialog task={task} busy={busy} onClose={() => setTask(null)} onAssign={(type, value) => onAssign(task, type, value).then(() => setTask(null)).catch(() => { })} />}</>;
+    const [sort, setSort] = useState({ key: "created", direction: "desc" });
+    const columns = [
+        { key: "name", label: "Activity" },
+        { key: "assignee", label: "Assignee" },
+        { key: "owner", label: "Owner" },
+        { key: "created", label: "Creation Date" },
+        { key: "due", label: "Due Date" },
+        { key: "followUp", label: "Follow Up Date" },
+        { key: "priority", label: "Priority" },
+        { key: "delegationState", label: "Delegation State" },
+        { key: "id", label: "Task ID" },
+    ];
+    const dateKeys = new Set(["created", "due", "followUp"]);
+    const valueFor = (item, key) => key === "name" ? item.name || item.taskDefinitionKey : item[key];
+    const rows = [...tasks].sort((left, right) => {
+        const a = valueFor(left, sort.key);
+        const b = valueFor(right, sort.key);
+        if (a == null || a === "") return b == null || b === "" ? 0 : 1;
+        if (b == null || b === "") return -1;
+        const comparison = sort.key === "priority" ? Number(a) - Number(b)
+            : dateKeys.has(sort.key) ? (Date.parse(a) || 0) - (Date.parse(b) || 0)
+                : String(a).localeCompare(String(b));
+        return sort.direction === "asc" ? comparison : -comparison;
+    });
+    const renderValue = (item, key) => {
+        const value = valueFor(item, key);
+        if (key === "assignee") return <span className="inline-flex items-center gap-1">
+            {value || "Unassigned"}
+            <button type="button" disabled={busy} onClick={() => setTask(item)}
+                title="Edit assignee" aria-label={`Edit assignee for ${item.name || item.taskDefinitionKey || item.id}`}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-indigo-600 hover:bg-indigo-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600 disabled:opacity-50 md:h-8 md:w-8">
+                <i className="fa-solid fa-pen" aria-hidden="true" />
+            </button>
+        </span>;
+        if(key === "created") return formatDateTimeForUserView(value) || "—";
+        if (value == null || value === "") return "—";
+        if (dateKeys.has(key)) return <time dateTime={value} title={value}>{value}</time>;
+        return value;
+    };
+    return <>
+        {!tasks.length ? <p className="p-8 text-center text-sm text-slate-500">No open user tasks.</p> : <>
+            <div className="grid gap-3 md:hidden">
+                {rows.map(item => <article key={item.id} className="rounded-xl border border-slate-200 p-4 text-sm">
+                    <h3 className="mb-3 break-words text-base font-semibold text-indigo-600">{valueFor(item, "name") || "Unnamed activity"}</h3>
+                    <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2">
+                        {columns.slice(1).map(column => <div key={column.key} className="contents">
+                            <dt className="text-slate-500">{column.label}</dt>
+                            <dd className="mb-0 break-words text-slate-800">{renderValue(item, column.key)}</dd>
+                        </div>)}
+                    </dl>
+                </article>)}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
+                <table className="w-full min-w-[1100px] text-left text-sm">
+                    <caption className="sr-only">User tasks for this process instance</caption>
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-600">
+                        <tr>{columns.map(column => <th key={column.key} scope="col" className="whitespace-nowrap px-3 py-2.5"
+                            aria-sort={sort.key === column.key ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}>
+                            <button type="button" className="inline-flex items-center gap-1 py-1 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600"
+                                onClick={() => setSort(previous => ({ key: column.key, direction: previous.key === column.key && previous.direction === "asc" ? "desc" : "asc" }))}>
+                                {column.label}<i aria-hidden="true" className={`fa-solid text-indigo-600 ${sort.key === column.key ? sort.direction === "asc" ? "fa-chevron-up" : "fa-chevron-down" : "fa-sort"}`} />
+                            </button>
+                        </th>)}</tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {rows.map(item => <tr key={item.id} className="hover:bg-slate-50">
+                            {columns.map(column => <td key={column.key} className={`px-3 py-2 ${column.key === "name" || column.key === "id" ? "font-medium text-indigo-600" : "text-slate-700"} ${dateKeys.has(column.key) ? "whitespace-nowrap" : "break-words"}`}>
+                                {renderValue(item, column.key)}
+                            </td>)}
+                        </tr>)}
+                    </tbody>
+                </table>
+            </div>
+        </>}
+        {task && <RuntimeAssignmentDialog task={task} busy={busy} onClose={() => setTask(null)} onAssign={(type, value) => onAssign(task, type, value).then(() => setTask(null)).catch(() => { })} />}
+    </>;
 }
 
 function RuntimeAssignmentDialog({ task, busy, onClose, onAssign }) {

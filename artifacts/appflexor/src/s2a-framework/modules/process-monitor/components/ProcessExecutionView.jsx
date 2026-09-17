@@ -8,7 +8,7 @@ import { AppContext } from "../../../../AppContext";
 import { API_URL } from "../../../Config";
 import { camundaApi } from "../services/camundaApi";
 
-const TABS = ["Process Instances", "Incidents", "Human Tasks", "Jobs"];
+const TABS = ["Process Instances", "Incidents", "Jobs"];
 
 function collectActivityIds(activity, result = []) {
     if (!activity) return result;
@@ -407,7 +407,6 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                             />
                         )}
                         {activeTab === "Incidents" && <MessageList rows={incidents} empty="No open incidents." render={item => item.exceptionMessage || "Job retries exhausted"} />}
-                        {activeTab === "Human Tasks" && <MessageList rows={definitionTasks} empty="No open human tasks." render={item => `${item.name || item.taskDefinitionKey} · ${item.assignee || "Unassigned"}`} />}
                         {activeTab === "Jobs" && <MessageList rows={definitionJobs} empty="No jobs for this definition." render={item => `${item.jobDefinitionId || item.id} · ${item.retries} retries`} />}
                     </div>
                 </div>
