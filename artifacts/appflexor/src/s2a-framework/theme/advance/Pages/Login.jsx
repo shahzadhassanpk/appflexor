@@ -266,7 +266,7 @@ function Login({
             icon: "fa-chart-line",
             iconBg: "bg-amber-100",
             iconColor: "text-amber-600",
-            title: "Analyze Process Execution",
+            title: "Process Execution",
             titleColor: "text-amber-600",
             desc: "Monitor process performance, identify bottlenecks, track SLA compliance.",
         },

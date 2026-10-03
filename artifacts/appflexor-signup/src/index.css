@@ -40,7 +40,7 @@ body {
 .s2a-login-presentation {
   width: 55% !important;
   min-width: 0;
-  padding: 26px 4.1vw 24px !important;
+  padding: 20px 4.1vw 20px !important;
 }
 .s2a-login-dot-grid { top: 42px !important; right: 42px !important; }
 .s2a-login-brand { min-height: 34px; margin-bottom: 28px !important; }
