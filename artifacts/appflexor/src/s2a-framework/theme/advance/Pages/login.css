@@ -444,3 +444,90 @@ body.s2a-login-page .s2a-main-content {
         padding-bottom: 26px !important;
     }
 }
+
+@media (max-height: 500px) and (min-width: 992px) {
+    .s2a-login-presentation {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        padding: 10px 3vw !important;
+        overscroll-behavior-y: contain;
+    }
+
+    .s2a-login-auth-panel {
+        min-height: 0;
+        overflow-y: auto !important;
+        align-items: flex-start !important;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        overscroll-behavior-y: contain;
+    }
+
+    .s2a-login-brand {
+        min-height: 28px;
+        margin-bottom: 10px !important;
+    }
+
+    .s2a-login-headline {
+        margin-bottom: 6px !important;
+        font-size: 1.85rem !important;
+        line-height: 1.02 !important;
+    }
+
+    .s2a-login-intro {
+        margin-bottom: 8px !important;
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+    }
+
+    .s2a-login-flow {
+        margin-bottom: 8px !important;
+    }
+
+    .s2a-login-flow-icon {
+        width: 42px !important;
+        height: 42px !important;
+    }
+
+    .s2a-login-flow-step:not(:last-child)::after {
+        top: 20px;
+        left: calc(50% + 21px);
+        width: calc(100% + var(--pillar-gap) - 42px);
+    }
+
+    .s2a-login-flow-step:not(:last-child)::before {
+        top: 15px;
+        left: calc(150% + var(--pillar-gap) - 29px);
+    }
+
+    .s2a-login-feature-grid {
+        row-gap: 6px !important;
+    }
+
+    .s2a-login-feature-card {
+        min-height: 0;
+        padding: 8px !important;
+    }
+
+    .s2a-login-feature-content {
+        gap: 5px !important;
+    }
+
+    .s2a-login-feature-icon {
+        width: 26px !important;
+        height: 26px !important;
+    }
+
+    .s2a-login-feature-card p.text-sm {
+        font-size: 9px !important;
+    }
+
+    .s2a-login-feature-card p.text-xs {
+        font-size: 8px !important;
+        line-height: 1.25 !important;
+    }
+
+    .s2a-login-card {
+        padding-top: 18px !important;
+        padding-bottom: 18px !important;
+    }
+}
