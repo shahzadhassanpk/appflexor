@@ -280,6 +280,14 @@ function Login({
             titleColor: "text-emerald-600",
             desc: "Connect ERP, CRM, Accounting, Ecommerce, and Enterprise Applications.",
         },
+        {
+            icon: "fa-chart-line",
+            iconBg: "bg-amber-100",
+            iconColor: "text-amber-600",
+            title: "Analyze Process Execution",
+            titleColor: "text-amber-600",
+            desc: "Monitor process performance, identify bottlenecks, track SLA compliance.",
+        },
     ];
 
     /* ── Flow steps ─────────────────────────────────────────────── */
@@ -287,6 +295,7 @@ function Login({
         { icon: HiInboxArrowDown, bg: "bg-indigo-600", label: "Capture" },
         { icon: "fa-arrows-spin", bg: "bg-violet-600", label: "Orchestrate" },
         { icon: "fa-link", bg: "bg-emerald-600", label: "Integrate" },
+        { icon: "fa-chart-line", bg: "bg-amber-600", label: "Analyze" },
     ];
 
     /* ── Supported channels ─────────────────────────────────────── */
@@ -367,7 +376,8 @@ function Login({
                                 <p className="s2a-login-intro text-sm text-slate-600 mb-8 leading-6">
                                     Capture business events.<br />
                                     Orchestrate business services.<br />
-                                    Integrate enterprise systems.
+                                    Integrate enterprise systems.<br />
+                                    Analyze process execution.
                                 </p>
 
                                 {/* Flow diagram */}
@@ -389,7 +399,7 @@ function Login({
                                 </div>
 
                                 {/* Feature cards */}
-                                <div className="s2a-login-feature-grid grid grid-cols-3 gap-3 mb-8">
+                                <div className="s2a-login-feature-grid grid grid-cols-2 xl:grid-cols-4 gap-3 mb-8">
                                     {featureCards.map(f => (
                                         <div key={f.title} className="s2a-login-feature-card bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
                                             <div className="flex items-start gap-3">
