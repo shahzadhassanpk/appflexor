@@ -152,11 +152,69 @@ body.s2a-login-page .s2a-main-content {
 }
 
 .s2a-login-feature-grid {
-    gap: 12px !important;
+    --pillar-gap: 12px;
+    display: grid !important;
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: var(--pillar-gap) !important;
+    row-gap: 12px !important;
     margin-bottom: 16px !important;
 }
 
+.s2a-login-flow {
+    --pillar-gap: 12px;
+    display: grid !important;
+    width: 100%;
+    max-width: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: var(--pillar-gap) !important;
+    align-items: start;
+    margin: 0 auto 16px !important;
+}
+
+.s2a-login-flow-step {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+}
+
+.s2a-login-flow-step:not(:last-child)::after {
+    position: absolute;
+    z-index: 0;
+    top: 27px;
+    left: calc(50% + 28px);
+    width: calc(100% + var(--pillar-gap) - 56px);
+    border-top: 4px dotted #b7c2f5;
+    content: "";
+}
+
+.s2a-login-flow-step:not(:last-child)::before {
+    position: absolute;
+    z-index: 0;
+    top: 22px;
+    left: calc(150% + var(--pillar-gap) - 35px);
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid #8e9de8;
+    content: "";
+}
+
+.s2a-login-flow-icon {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
+}
+
+.s2a-login-flow-step > span {
+    position: relative;
+    z-index: 1;
+    white-space: nowrap;
+}
+
 .s2a-login-feature-card {
+    min-width: 0;
     min-height: 106px;
     padding: 14px !important;
     border-radius: 11px !important;
@@ -178,16 +236,6 @@ body.s2a-login-page .s2a-main-content {
 .s2a-login-feature-card p.text-xs {
     font-size: 9px !important;
     line-height: 1.45 !important;
-}
-
-.s2a-login-flow {
-    width: min(100%, 500px);
-    margin: 0 auto 16px !important;
-    justify-content: center;
-}
-
-.s2a-login-flow > div.flex-col {
-    min-width: 74px;
 }
 
 .s2a-login-supported {
@@ -306,6 +354,41 @@ body.s2a-login-page .s2a-main-content {
 
     .s2a-login-feature-card {
         padding: 11px !important;
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .s2a-login-flow,
+    .s2a-login-feature-grid {
+        --pillar-gap: 8px;
+        column-gap: var(--pillar-gap) !important;
+    }
+
+    .s2a-login-flow-icon {
+        width: 48px !important;
+        height: 48px !important;
+    }
+
+    .s2a-login-flow-step:not(:last-child)::after {
+        top: 23px;
+        left: calc(50% + 24px);
+        width: calc(100% + var(--pillar-gap) - 48px);
+    }
+
+    .s2a-login-flow-step:not(:last-child)::before {
+        top: 18px;
+        left: calc(150% + var(--pillar-gap) - 31px);
+    }
+
+    .s2a-login-feature-content {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 7px !important;
+    }
+
+    .s2a-login-feature-icon {
+        width: 32px !important;
+        height: 32px !important;
     }
 }
 

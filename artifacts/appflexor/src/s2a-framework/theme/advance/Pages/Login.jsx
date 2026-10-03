@@ -45,24 +45,6 @@ function AppflexorMark({ size = 28 }) {
     );
 }
 
-/* ─── Dotted arrow between flow steps ─────────────────────────────────────── */
-function DottedArrow() {
-    return (
-        <div className="flex items-center justify-between mx-2 w-full mb-4">
-            {[...Array(6)].map((_, i) => (
-                <div
-                    key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-indigo-300 opacity-60"
-                />
-            ))}
-            <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[8px] border-l-indigo-400 opacity-70" />
-        </div>
-    );
-}
-
-
-
-
 /* ─── Main Login component ─────────────────────────────────────────────────── */
 function Login({
     isLoading,
@@ -381,29 +363,26 @@ function Login({
                                 </p>
 
                                 {/* Flow diagram */}
-                                <div className="s2a-login-flow flex items-center mb-8">
-                                    {flowSteps.map((step, i) => (
-                                        <React.Fragment key={step.label}>
-                                            <div className="flex flex-col items-center">
-                                                <div className={`w-14 h-14 ${step.bg} rounded-full flex items-center justify-center shadow-md mb-2`}>
-                                                    {typeof step.icon === "string"
-                                                        ? <i className={`fa-solid ${step.icon} text-white text-xl`}></i>
-                                                        : <step.icon style={{ color: "#fff", fontSize: "1.25rem" }} />
-                                                    }
-                                                </div>
-                                                <span className="text-xs font-semibold text-slate-700">{step.label}</span>
+                                <div className="s2a-login-flow">
+                                    {flowSteps.map(step => (
+                                        <div className="s2a-login-flow-step" key={step.label}>
+                                            <div className={`s2a-login-flow-icon w-14 h-14 ${step.bg} rounded-full flex items-center justify-center shadow-md mb-2`}>
+                                                {typeof step.icon === "string"
+                                                    ? <i className={`fa-solid ${step.icon} text-white text-xl`}></i>
+                                                    : <step.icon style={{ color: "#fff", fontSize: "1.25rem" }} />
+                                                }
                                             </div>
-                                            {i < flowSteps.length - 1 && <DottedArrow />}
-                                        </React.Fragment>
+                                            <span className="text-xs font-semibold text-slate-700">{step.label}</span>
+                                        </div>
                                     ))}
                                 </div>
 
                                 {/* Feature cards */}
-                                <div className="s2a-login-feature-grid grid grid-cols-2 xl:grid-cols-4 gap-3 mb-8">
+                                <div className="s2a-login-feature-grid">
                                     {featureCards.map(f => (
                                         <div key={f.title} className="s2a-login-feature-card bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                                            <div className="flex items-start gap-3">
-                                                <div className={`w-9 h-9 ${f.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                                            <div className="s2a-login-feature-content flex items-start gap-3">
+                                                <div className={`s2a-login-feature-icon w-9 h-9 ${f.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
                                                     {typeof f.icon === "string"
                                                         ? <i className={`fa-solid ${f.icon} ${f.iconColor} text-sm`}></i>
                                                         : <f.icon className={f.iconColor} style={{ fontSize: "1rem" }} />
