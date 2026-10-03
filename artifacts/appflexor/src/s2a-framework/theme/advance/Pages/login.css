@@ -163,6 +163,9 @@ body.s2a-login-page .s2a-main-content {
 
 .s2a-login-flow {
     --pillar-gap: 12px;
+    --flow-circle-size: 56px;
+    --flow-arrow-gap: 6px;
+    --flow-arrow-width: 8px;
     display: grid !important;
     width: 100%;
     max-width: none;
@@ -183,21 +186,23 @@ body.s2a-login-page .s2a-main-content {
 .s2a-login-flow-step:not(:last-child)::after {
     position: absolute;
     z-index: 0;
-    top: 27px;
-    left: calc(50% + 28px);
-    width: calc(100% + var(--pillar-gap) - 56px);
+    top: calc(var(--flow-circle-size) / 2);
+    left: calc(50% + var(--flow-circle-size) / 2 + var(--flow-arrow-gap));
+    width: calc(100% + var(--pillar-gap) - var(--flow-circle-size) - 2 * var(--flow-arrow-gap) - var(--flow-arrow-width));
     border-top: 4px dotted #b7c2f5;
+    transform: translateY(-50%);
     content: "";
 }
 
 .s2a-login-flow-step:not(:last-child)::before {
     position: absolute;
     z-index: 0;
-    top: 22px;
-    left: calc(150% + var(--pillar-gap) - 35px);
+    top: calc(var(--flow-circle-size) / 2);
+    left: calc(150% + var(--pillar-gap) - var(--flow-circle-size) / 2 - var(--flow-arrow-gap) - var(--flow-arrow-width));
     border-top: 5px solid transparent;
     border-bottom: 5px solid transparent;
-    border-left: 8px solid #8e9de8;
+    border-left: var(--flow-arrow-width) solid #8e9de8;
+    transform: translateY(-50%);
     content: "";
 }
 
@@ -205,6 +210,8 @@ body.s2a-login-page .s2a-main-content {
     position: relative;
     z-index: 1;
     flex: 0 0 auto;
+    width: var(--flow-circle-size) !important;
+    height: var(--flow-circle-size) !important;
 }
 
 .s2a-login-flow-step > span {
@@ -364,20 +371,8 @@ body.s2a-login-page .s2a-main-content {
         column-gap: var(--pillar-gap) !important;
     }
 
-    .s2a-login-flow-icon {
-        width: 48px !important;
-        height: 48px !important;
-    }
-
-    .s2a-login-flow-step:not(:last-child)::after {
-        top: 23px;
-        left: calc(50% + 24px);
-        width: calc(100% + var(--pillar-gap) - 48px);
-    }
-
-    .s2a-login-flow-step:not(:last-child)::before {
-        top: 18px;
-        left: calc(150% + var(--pillar-gap) - 31px);
+    .s2a-login-flow {
+        --flow-circle-size: 48px;
     }
 
     .s2a-login-feature-content {
@@ -480,23 +475,8 @@ body.s2a-login-page .s2a-main-content {
     }
 
     .s2a-login-flow {
+        --flow-circle-size: 42px;
         margin-bottom: 8px !important;
-    }
-
-    .s2a-login-flow-icon {
-        width: 42px !important;
-        height: 42px !important;
-    }
-
-    .s2a-login-flow-step:not(:last-child)::after {
-        top: 20px;
-        left: calc(50% + 21px);
-        width: calc(100% + var(--pillar-gap) - 42px);
-    }
-
-    .s2a-login-flow-step:not(:last-child)::before {
-        top: 15px;
-        left: calc(150% + var(--pillar-gap) - 29px);
     }
 
     .s2a-login-feature-grid {
