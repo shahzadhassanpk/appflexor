@@ -256,14 +256,14 @@ function EmailTemplates({ activeTab }) {
             dataKeys: [
                 {
                     serviceParams: "",
-                    dataKey: "emailServices",
+                    dataKey: "emailProfiles",
                     serviceKey: "sys.email.profiles",
                     mode: "formData",
                 },
                 {
                     serviceParams: "",
-                    dataKey: "emailProfiles",
-                    serviceKey: "sys.emailtemplate.profiles",
+                    dataKey: "emailTemplates",
+                    serviceKey: "sys.email.templates",
                     mode: "formData",
                 },
             ],
@@ -274,9 +274,10 @@ function EmailTemplates({ activeTab }) {
             .then(response => {
                 if (response.status === 200) {
                     if (response.data.C_STATUS === "SUCCESS") {
-                        if (response.data.C_DATA.emailServices) {
-                            setItems(response.data.C_DATA.emailServices);
-                            let data = response.data.C_DATA.emailServices;
+                        if (response.data.C_DATA.emailTemplates) {
+                            
+                            setItems(response.data.C_DATA.emailTemplates);
+                            let data = response.data.C_DATA.emailTemplates;
                             if (inputReference.current.value) {
                                 let result = [];
                                 result = filterArrayByTerms(

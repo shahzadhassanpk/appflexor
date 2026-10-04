@@ -288,6 +288,13 @@ function Forms(props) {
             .replace(/_+/g, "_");
     }
 
+    function toTitleCase(value) {
+        return (value || "")
+            .trim()
+            .toLowerCase()
+            .replace(/\b\w/g, char => char.toUpperCase());
+    }
+
     function handleInputField(event) {
         let value = event.target.value;
         let name = event.target.name;
@@ -303,12 +310,16 @@ function Forms(props) {
 
             if (name === "name" && isNewForm) {
                 const generatedValue = toSnakeCase(value);
+                const titleValue = toTitleCase(value);
+                const prevtitleValue = toTitleCase(prev.name);
                 const previousGeneratedValue = toSnakeCase(prev.name);
 
                 const canUpdateFormKey =
                     !prev.form_key || prev.form_key === previousGeneratedValue;
                 const canUpdateTable =
                     !prev.table || prev.table === previousGeneratedValue;
+                const canUpdateTitle =
+                    !prev.title || prev.title === prevtitleValue;
 
                 if (canUpdateFormKey) {
                     updatedForm.form_key = generatedValue;
@@ -316,6 +327,10 @@ function Forms(props) {
 
                 if (canUpdateTable) {
                     updatedForm.table = generatedValue;
+                }
+
+                if (canUpdateTitle) {
+                    updatedForm.title = titleValue;
                 }
             }
 
@@ -754,7 +769,7 @@ function Forms(props) {
                     if (response.data.C_STATUS === "SUCCESS") {
                         let formId = response.data.C_DATA[0].formData.id;
                         let formData = response.data.C_DATA[0].formData;
-                        validateSchema(formId);                       
+                        validateSchema(formId);
 
                         if (
                             (selectedForm.id === "new" ||
@@ -771,8 +786,8 @@ function Forms(props) {
 
                         const status =
                             selectedForm.id == "new" ||
-                            selectedForm.id == "" ||
-                            selectedForm.id == undefined
+                                selectedForm.id == "" ||
+                                selectedForm.id == undefined
                                 ? "Saved"
                                 : "Updated";
 
@@ -920,10 +935,10 @@ function Forms(props) {
                                                 let _filteredForm =
                                                     updatedState.multipage_design
                                                         ? updatedState.multipage_design.filter(
-                                                              design =>
-                                                                  design.id ===
-                                                                  selectedFormPage.id,
-                                                          )
+                                                            design =>
+                                                                design.id ===
+                                                                selectedFormPage.id,
+                                                        )
                                                         : INITIAL_DESIGN;
 
                                                 filteredForm =
@@ -934,7 +949,7 @@ function Forms(props) {
                                                 filteredForm =
                                                     updatedState.multipage_design
                                                         ? updatedState
-                                                              .multipage_design[0]
+                                                            .multipage_design[0]
                                                         : INITIAL_DESIGN;
                                             }
 
@@ -1285,7 +1300,7 @@ function FormList(props) {
                     item.selected = true;
                     forms.push(item);
                 }
-                jsonExport(forms, () => {}, title, "_form");
+                jsonExport(forms, () => { }, title, "_form");
                 modalRef.current.close();
 
                 for (let item of list) {
@@ -1308,7 +1323,7 @@ function FormList(props) {
                         forms.push(item);
                     }
 
-                    jsonExport(forms, () => {}, title, "_form");
+                    jsonExport(forms, () => { }, title, "_form");
 
                     for (let item of list) {
                         delete item.selected;
@@ -1532,12 +1547,11 @@ function FormList(props) {
                                         key={form.id}
                                         onClick={() => handleFormScroll()}
                                         className={`form-item list-group-item d-flex justify-content-between align-items-start
-                                    ${
-                                        props.selectedForm &&
-                                        props.selectedForm["id"] === form["id"]
-                                            ? "selected-cell"
-                                            : ""
-                                    }
+                                    ${props.selectedForm &&
+                                                props.selectedForm["id"] === form["id"]
+                                                ? "selected-cell"
+                                                : ""
+                                            }
                                                 `}>
                                         <input
                                             className="form-check-input me-2"
@@ -1605,34 +1619,6 @@ function FormList(props) {
                         <div className="listing-header">
                             <label className="fw-bold ">Form Details</label>
                         </div>
-                        <div className="row">
-                            <div className="mb-2 form-group">
-                                <label className="mt-1 d-flex justify-content-between">
-                                    <span className="d-inline-block fw-bold">
-                                        Key&nbsp;
-                                        <span className="text-danger">*</span>
-                                    </span>
-                                    <span
-                                        className={`text-danger ${
-                                            props.error.indexOf("form_key") > -1
-                                                ? "d-inline-block"
-                                                : "d-none"
-                                        }`}>
-                                        Key cannot be empty.
-                                    </span>
-                                </label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    name="form_key"
-                                    value={
-                                        props.selectedForm &&
-                                        props.selectedForm["form_key"]
-                                    }
-                                    onChange={e => props.handleInputField(e)}
-                                />
-                            </div>
-                        </div>
                         <div className="row ">
                             <div className="mb-2 form-group">
                                 <label className="mt-1 d-flex justify-content-between">
@@ -1642,11 +1628,10 @@ function FormList(props) {
                                     </span>
 
                                     <span
-                                        className={`text-danger ${
-                                            props.error.indexOf("name") > -1
-                                                ? "d-inline-block"
-                                                : "d-none"
-                                        }`}>
+                                        className={`text-danger ${props.error.indexOf("name") > -1
+                                            ? "d-inline-block"
+                                            : "d-none"
+                                            }`}>
                                         Name cannot be empty.
                                     </span>
                                 </label>
@@ -1671,11 +1656,10 @@ function FormList(props) {
                                     </span>
 
                                     <span
-                                        className={`text-danger ${
-                                            props.error.indexOf("title") > -1
-                                                ? "d-inline-block"
-                                                : "d-none"
-                                        }`}>
+                                        className={`text-danger ${props.error.indexOf("title") > -1
+                                            ? "d-inline-block"
+                                            : "d-none"
+                                            }`}>
                                         Title cannot be empty.
                                     </span>
                                 </label>
@@ -1692,6 +1676,34 @@ function FormList(props) {
                             </div>
                         </div>
                         <div className="row">
+                            <div className="mb-2 form-group">
+                                <label className="mt-1 d-flex justify-content-between">
+                                    <span className="d-inline-block fw-bold">
+                                        Key&nbsp;
+                                        <span className="text-danger">*</span>
+                                    </span>
+                                    <span
+                                        className={`text-danger ${props.error.indexOf("form_key") > -1
+                                            ? "d-inline-block"
+                                            : "d-none"
+                                            }`}>
+                                        Key cannot be empty.
+                                    </span>
+                                </label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="form_key"
+                                    value={
+                                        props.selectedForm &&
+                                        props.selectedForm["form_key"]
+                                    }
+                                    onChange={e => props.handleInputField(e)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="row">
                             <div className="mb-2 ">
                                 <div className="form-group">
                                     <label className="mt-1 d-flex justify-content-between">
@@ -1705,13 +1717,12 @@ function FormList(props) {
                                             <span>Table already exists ✔</span>
                                         ) : (
                                             <span
-                                                className={`text-danger ${
-                                                    props.error.indexOf(
-                                                        "table",
-                                                    ) > -1
-                                                        ? "d-inline-block"
-                                                        : "d-none"
-                                                }`}>
+                                                className={`text-danger ${props.error.indexOf(
+                                                    "table",
+                                                ) > -1
+                                                    ? "d-inline-block"
+                                                    : "d-none"
+                                                    }`}>
                                                 {toggleLookup === "INPUT"
                                                     ? "Table cannot be empty."
                                                     : "Please select a table."}
@@ -2177,11 +2188,10 @@ function FormList(props) {
                                                         );
                                                         setSelectedIndex(i);
                                                     }}
-                                                    className={`list-group-item d-flex justify-content-between ${
-                                                        i === selectedIndex
-                                                            ? "list-group-item-active"
-                                                            : ""
-                                                    } `}>
+                                                    className={`list-group-item d-flex justify-content-between ${i === selectedIndex
+                                                        ? "list-group-item-active"
+                                                        : ""
+                                                        } `}>
                                                     <div
                                                         style={{
                                                             width: "70%",
@@ -2189,13 +2199,11 @@ function FormList(props) {
                                                         className="pointer">
                                                         {i + 1}.{" "}
                                                         <span
-                                                            className={`${
-                                                                formPage.icon
-                                                            } ${
-                                                                formPage.icon
+                                                            className={`${formPage.icon
+                                                                } ${formPage.icon
                                                                     ? "me-1"
                                                                     : ""
-                                                            }`}></span>
+                                                                }`}></span>
                                                         {formPage.title}
                                                     </div>
                                                     <div>
@@ -2213,11 +2221,10 @@ function FormList(props) {
                                                                 )
                                                             }>
                                                             <i
-                                                                className={`pointer me-2 ${
-                                                                    formPage.isMaster
-                                                                        ? "fa fa-file-text text-danger"
-                                                                        : "fa fa-file-text"
-                                                                }`}></i>
+                                                                className={`pointer me-2 ${formPage.isMaster
+                                                                    ? "fa fa-file-text text-danger"
+                                                                    : "fa fa-file-text"
+                                                                    }`}></i>
                                                         </span>
                                                         <span
                                                             className=""

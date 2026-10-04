@@ -471,7 +471,7 @@ function ProcessConfiguration() {
 
             {showProcessMap && (
                 <FullScreenDialog
-                    title="Orchestrate > Configure Processes"
+                    title="Orchestrate > Govern Processes"
                     icon="fa-diagram-project"
                     onClose={() => { setShowProcessMap(false); getData(); }}>
                     <ProcessMap activeTab="PROCESS_MAP" />
@@ -529,8 +529,8 @@ function ProcessConfiguration() {
                     <div className="col-12 datalist-viewer">
                         <div className="s2a-datalist-header">
                             <div className="s2a-dl-title-wrapper">
-                                <div className="s2a-dl-title"><span>Orchestrate — Business Activities Across People and Systems</span></div>
-                                <span>Configure and deploy business processes to coordinate business activities across people and systems.</span>
+                                <div className="s2a-dl-title"><span>Orchestrate — Business Processes</span></div>
+                                <span>Deploy, Govern and Monitor Business Processes.</span>
                             </div>
                             <div className="d-flex align-items-center gap-2 flex-shrink-0">
                                 {/* <button
@@ -545,21 +545,21 @@ function ProcessConfiguration() {
                                     className="group btn button-theme btn-sm d-inline-flex align-items-center gap-2 !border-blue-600 !bg-blue-600 !text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:!border-blue-700 hover:!bg-blue-700 hover:shadow-lg hover:shadow-blue-200/70 active:translate-y-0 active:shadow-sm focus:!ring-2 focus:!ring-blue-300"
                                     onClick={() => setShowDeploy(true)}>
                                     <i className="fa-solid fa-rocket transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
-                                    Deploy Processes
+                                    Deploy
                                 </button>
                                 <button
                                     type="button"
                                     className="group btn button-theme btn-sm d-inline-flex align-items-center gap-2 !border-violet-600 !bg-violet-600 !text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:!border-violet-700 hover:!bg-violet-700 hover:shadow-lg hover:shadow-violet-200/70 active:translate-y-0 active:shadow-sm focus:!ring-2 focus:!ring-violet-300"
                                     onClick={() => setShowProcessMap(true)}>
                                     <i className="fa-solid fa-gears transition-transform duration-300 group-hover:rotate-45" aria-hidden="true" />
-                                    Configure Processes
+                                    Govern
                                 </button>
                                 <button
                                     type="button"
                                     className="group btn button-theme btn-sm d-inline-flex align-items-center gap-2 !border-emerald-600 !bg-emerald-600 !text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:!border-emerald-700 hover:!bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200/70 active:translate-y-0 active:shadow-sm focus:!ring-2 focus:!ring-emerald-300"
                                     onClick={openProcessMonitor}>
                                     <i className="fa-solid fa-chart-line transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
-                                    Monitor Processes
+                                    Monitor
                                 </button>
                             </div>
                         </div>
@@ -784,8 +784,8 @@ function ProcessConfiguration() {
                                         <i className="fa-solid fa-tag" aria-hidden="true" />
                                     </span>
                                     <div>
-                                        <div className="orch-panel-title">Process Governance</div>
-                                        <div className="orch-panel-desc">Governing Body identifies the owner for approvals and policy.</div>
+                                        <div className="orch-panel-title">Process Ownership</div>
+                                        <div className="orch-panel-desc">Teams responsible for process implementation in specific business areas.</div>
                                     </div>
                                 </div>
                                 <button type="button" className="orch-add-btn" onClick={openAddGB}>
