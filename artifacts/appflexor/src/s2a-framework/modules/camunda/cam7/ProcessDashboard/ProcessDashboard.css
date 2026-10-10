@@ -203,7 +203,7 @@
 
 .process-dashboard__chip {
     background-color: var(--process-dashboard-accent-soft);
-    color: var(--process-dashboard-accent);
+    /* color: var(--process-dashboard-accent); */
 }
 
 .process-dashboard__quick-filter.button-theme {

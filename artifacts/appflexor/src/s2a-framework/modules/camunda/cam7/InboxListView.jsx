@@ -1038,9 +1038,8 @@ function RenderListView({
         const due = new Date(dueTimestamp);
         const isOverdue = due < new Date();
         return (
-            <span title="SLA Due Date" className={`inbox-due-badge ${isOverdue ? "overdue" : ""}`}>
-                SLA Due On: <i className="fa-regular fa-calendar" style={{ fontSize: 10 }}></i>
-                {formatDueLabel(dueTimestamp)}
+            <span title={`SLA Due Date ${formatDueLabel(dueTimestamp)}`} className={`inbox-due-badge ${isOverdue ? "overdue" : ""}`}>
+                <i className="fa-solid fa-warning" style={{ fontSize: 11 }}></i> SLA Breach
             </span>
         );
     }
@@ -1077,7 +1076,7 @@ function RenderListView({
                     const assigneeKey = currentTask.assignee || currentTask.variables?.["assignee"] || "";
                     const metaText = [
                         getDisplayName(assigneeKey),
-                        currentTask?.variables?.subject || currentTask.process_name,
+                        // currentTask?.variables?.subject || currentTask.process_name,
                     ].filter(Boolean).join(" · ");
 
                     return (
@@ -1098,13 +1097,13 @@ function RenderListView({
                                 <img
                                     className="inbox-task-avatar me-2"
                                     src={getProfileImage(assigneeKey)}
-                                    alt={getDisplayName(assigneeKey)}
+                                    title={getDisplayName(assigneeKey)}
                                     onError={e => { e.target.src = "/theme/images/default-user-profile-img.png"; e.target.onerror = null; }}
                                 />
                                 <div className="inbox-task-body">
-                                    <div className="inbox-task-name">{currentTask.task_name}</div>
-                                    <div className="inbox-task-process">{currentTask.process_name}</div>
-                                    {metaText && <div className="inbox-task-meta-row">{metaText}</div>}
+                                    <div title="Task Name" className="inbox-task-name">{currentTask.task_name}</div>
+                                    <div title="Process Name" className="inbox-task-process">{currentTask.process_name}</div>
+                                    {/* {metaText && <div className="inbox-task-meta-row">Assigned to: {metaText}</div>} */}
                                     {data?.use_dynamic === true && parsedOptions.length > 0 &&
                                         parsedOptions.map(option => (
                                             <div key={option.id} className="inbox-task-meta-row">
@@ -1114,13 +1113,14 @@ function RenderListView({
                                     }
                                     <div className="inbox-task-footer">
                                         {renderDueBadge(currentTask)}
+                                        {renderPriorityBadge(currentTask)}
+                                        {renderSLADueBadge(currentTask)}
                                     </div>
                                 </div>
+
                             </div>
-                            <div className="col-sm-12 inbox-task-footer">
-                                {renderSLADueBadge(currentTask)}
-                                {renderPriorityBadge(currentTask)}
-                            </div>
+
+
                         </div>
                     );
                 })}

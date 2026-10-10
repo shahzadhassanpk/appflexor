@@ -25,6 +25,7 @@ import {
     buildHistoryServiceParams,
     buildHistoryInFilter,
     buildInstanceSla,
+    buildInstanceVariableSla,
     createCustomHistoryFilter,
     createQuickHistoryFilter,
     defaultHistoryFilters,
@@ -45,6 +46,63 @@ import {
 
 function ErrorMessage() {
     return <div>Error occurred in Process Dashboard.</div>;
+}
+
+function normalizeVariableName(name = "") {
+    return String(name).replaceAll("_", "").toLowerCase();
+}
+
+function parseJsonVariableValue(value) {
+    let parsed = value;
+    while (typeof parsed === "string") {
+        try {
+            parsed = JSON.parse(parsed);
+        } catch {
+            return parsed;
+        }
+    }
+    return parsed;
+}
+
+function isSpinJsonNode(value) {
+    return Boolean(
+        value &&
+        typeof value === "object" &&
+        value.dataFormatName === "application/json" &&
+        value.nodeType,
+    );
+}
+
+function getParsedSlaJsonValue(variable) {
+    const parsed = parseJsonVariableValue(variable?.value);
+    return isSpinJsonNode(parsed) ? null : parsed;
+}
+
+async function hydrateSlaJsonVariables(instanceId, variables = {}) {
+    const hydrated = { ...variables };
+    const slaEntries = Object.entries(hydrated).filter(([name]) =>
+        ["slalevels"].includes(normalizeVariableName(name)),
+    );
+
+    await Promise.all(slaEntries.map(async ([name, variable]) => {
+        if (variable?.type !== "Json") return;
+        const raw = await camundaApi
+            .getSerializedInstanceVariable(instanceId, name)
+            .catch(() => null);
+        const parsedValue =
+            getParsedSlaJsonValue(raw) ??
+            getParsedSlaJsonValue(variable);
+
+        if (parsedValue !== null && parsedValue !== undefined) {
+            hydrated[name] = {
+                ...variable,
+                ...(raw || {}),
+                value: parsedValue,
+            };
+        }
+    }));
+
+    return hydrated;
 }
 
 export default function ProcessDashboard(props) {
@@ -401,10 +459,14 @@ export default function ProcessDashboard(props) {
                     filteredActiveInstances,
                     8,
                     async instance => {
-                        const [variables, activity] = await Promise.all([
+                        const [rawVariables, activity] = await Promise.all([
                             camundaApi.getInstanceVariables(instance.id).catch(() => ({})),
                             camundaApi.getActivityInstances(instance.id).catch(() => null),
                         ]);
+                        const variables = await hydrateSlaJsonVariables(
+                            instance.id,
+                            rawVariables,
+                        );
                         const definition = definitionMap[instance.definitionId] || {};
                         const startTime = historyMap[instance.id]?.startTime || null;
                         const activities = flattenLeafActivities(activity);
@@ -545,13 +607,28 @@ export default function ProcessDashboard(props) {
                         return rightScore - leftScore;
                     })
                     .slice(0, Math.max(1, currentConfig.max_incident_rows));
-
+                const slaNow = Date.now();
                 const breachedInstances = detailedInstances
-                    .filter(instance => instance?.sla?.remainingMinutes !== null)
-                    .filter(instance => instance.sla.remainingMinutes < 0)
+                    .map(instance => ({
+                        ...instance,
+                        variableSla: buildInstanceVariableSla(
+                            instance.variables,
+                            slaNow,
+                            instance.startTime,
+                        ),
+                    }))
+                    .filter(instance => {
+                        const deadline = instance.variableSla?.deadline;
+                        return (
+                            deadline &&
+                            !Number.isNaN(deadline.getTime()) &&
+                            deadline.getTime() < slaNow
+                        );
+                    })
                     .sort(
                         (left, right) =>
-                            left.sla.remainingMinutes - right.sla.remainingMinutes,
+                            (slaNow - right.variableSla.deadline.getTime()) -
+                            (slaNow - left.variableSla.deadline.getTime()),
                     );
 
                 const slaRows = breachedInstances
@@ -561,11 +638,13 @@ export default function ProcessDashboard(props) {
                         title: instance.definitionName,
                         processKey: instance.definitionKey,
                         businessKey: instance.businessKey || instance.id,
-                        deadline: instance.sla.deadline,
+                        deadline: instance.variableSla.deadline,
                         overdueText: formatRelativeMinutes(
-                            instance.sla.remainingMinutes,
+                            instance.variableSla.remainingMinutes,
                         ),
-                        thresholdText: `${instance.sla.thresholds.highMinutes}m / ${instance.sla.thresholds.mediumMinutes}m`,
+                        thresholdText:
+                            instance.variableSla.thresholdText ||
+                            `${instance.variableSla.thresholds.highMinutes}m / ${instance.variableSla.thresholds.mediumMinutes}m`,
                         escalationPath: instance.escalationPath,
                     }));
 

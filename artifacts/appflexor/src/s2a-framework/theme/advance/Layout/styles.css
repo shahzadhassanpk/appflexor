@@ -426,16 +426,18 @@ body .s2a-page {
     font-weight: 700;
     white-space: nowrap;
     color: var(--font-color);
+    text-align: center;
 }
 
 #side-navbar .app-sidebar-brand .navbar-brand-text {
     margin-top: 2px;
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.2;
     color: color-mix(in srgb, var(--font-color) 68%, var(--navigation-color));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: center;
 }
 
 #side-navbar .app-sidebar-navigation {

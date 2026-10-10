@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { formatDateTime } from "../utils";
+import { formatDateTimeForUserView } from "../../../../../utils/utils";
 import MetricCard from "./MetricCard";
 import SectionCard from "./SectionCard";
 
@@ -181,9 +181,9 @@ export default function LiveDashboardTab({ config, dashboardState }) {
                                                     <p className="process-dashboard__item-title mb-1 truncate text-sm font-semibold">
                                                         {row.title}
                                                     </p>
-                                                    <p className="process-dashboard__item-key mb-0 text-xs">
+                                                    {/* <p className="process-dashboard__item-key mb-0 text-xs">
                                                         {row.businessKey}
-                                                    </p>
+                                                    </p> */}
                                                 </div>
                                                 <span className="process-dashboard__chip rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
                                                     {row.overdueText}
@@ -193,7 +193,7 @@ export default function LiveDashboardTab({ config, dashboardState }) {
                                                 <div className="flex items-center justify-between gap-2">
                                                     <dt className="process-dashboard__label">Due date</dt>
                                                     <dd className="process-dashboard__value mb-0">
-                                                        {formatDateTime(row.deadline)}
+                                                        {formatDateTimeForUserView(row.deadline)}
                                                     </dd>
                                                 </div>
                                                 <div className="flex items-center justify-between gap-2">

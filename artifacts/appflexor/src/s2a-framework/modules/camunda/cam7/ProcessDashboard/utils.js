@@ -299,6 +299,164 @@ export function resolveEscalationPath(variables = {}) {
     );
 }
 
+function normalizeVariableName(name = "") {
+    return String(name).replaceAll("_", "").toLowerCase();
+}
+
+function unwrapVariable(variable) {
+    return variable?.value !== undefined ? variable.value : variable;
+}
+
+function findProcessVariableValue(variables, names) {
+    const normalizedNames = names.map(normalizeVariableName);
+    const findVariable = (source, depth = 0) => {
+        if (!source || typeof source !== "object" || depth > 6) return undefined;
+        const matchingKey = Object.keys(source).find(key =>
+            normalizedNames.includes(normalizeVariableName(key)),
+        );
+        if (matchingKey) return source[matchingKey];
+        for (const value of Object.values(source)) {
+            const found = findVariable(unwrapVariable(value), depth + 1);
+            if (found !== undefined) return found;
+        }
+        return undefined;
+    };
+    return unwrapVariable(findVariable(variables));
+}
+
+function parseJsonValue(value) {
+    let parsed = value;
+    while (typeof parsed === "string") {
+        const trimmed = parsed.trim();
+        if (!trimmed) return null;
+        if (
+            !(
+                (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+                (trimmed.startsWith("[") && trimmed.endsWith("]"))
+            )
+        ) {
+            return parsed;
+        }
+        try {
+            parsed = JSON.parse(trimmed);
+        } catch {
+            return null;
+        }
+    }
+    return parsed;
+}
+
+function getPriorityLevel(variables = {}) {
+    const priorityVariable = findProcessVariableValue(variables, ["priority"]);
+    const priority = String(priorityVariable ?? "").toLowerCase();
+    if (priority === "high" || priority === "1") return "high";
+    if (priority === "low" || priority === "3") return "low";
+    if (priority === "medium" || priority === "2" || priority === "") {
+        return "medium";
+    }
+    return "medium";
+}
+
+function getSlaLevels(variables = {}) {
+    const levels = parseJsonValue(
+        findProcessVariableValue(variables, ["slaLevels", "sla_levels"]),
+    );
+    return levels?.urgencyLevels || levels || null;
+}
+
+function getUtcTimestamp(value) {
+    if (!value) return null;
+    if (value instanceof Date) {
+        const timestamp = value.getTime();
+        return Number.isNaN(timestamp) ? null : timestamp;
+    }
+    if (typeof value === "number") {
+        return Number.isFinite(value) ? value : null;
+    }
+    const text = String(value).trim();
+    if (!text) return null;
+    const hasTimezone = /(?:z|[+-]\d{2}:?\d{2})$/i.test(text);
+    const normalizedText = hasTimezone
+        ? text
+        : `${text.replace(" ", "T")}Z`;
+    const timestamp = new Date(normalizedText).getTime();
+    return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+function getProcessStartTimestamp(variables = {}, startTime = null) {
+    return getUtcTimestamp(
+        findProcessVariableValue(variables, [
+            "process_start_date",
+            "process_start_time",
+            "processStartDate",
+            "processStartTime",
+            "start_time",
+        ]) || startTime,
+    );
+}
+
+export function buildInstanceVariableSla(
+    variables = {},
+    now = Date.now(),
+    startTime = null,
+) {
+    const nowTimestamp = getUtcTimestamp(now) ?? Date.now();
+    const processStartTimestamp = getProcessStartTimestamp(variables, startTime);
+    const priorityLevel = getPriorityLevel(variables);
+    const slaLevels = getSlaLevels(variables);
+    const selectedSlaKey = Object.keys(slaLevels || {}).find(
+        key => key.toLowerCase() === priorityLevel,
+    );
+    const selectedSla = selectedSlaKey ? slaLevels[selectedSlaKey] : null;
+    const slaValue = Number.parseInt(
+        selectedSla?.slaValue ?? selectedSla?.sla_value,
+        10,
+    );
+    const slaUnit = String(
+        selectedSla?.slaUnit ?? selectedSla?.sla_unit ?? "",
+    ).toLowerCase();
+    const slaMilliseconds =
+        Number.isInteger(slaValue) &&
+        slaValue > 0 &&
+        ["hour", "hours", "day", "days"].includes(slaUnit)
+            ? slaValue * (slaUnit.startsWith("day") ? 86400000 : 3600000)
+            : null;
+    const deadline =
+        processStartTimestamp !== null && slaMilliseconds !== null
+            ? new Date(processStartTimestamp + slaMilliseconds)
+            : null;
+    const remainingMinutes =
+        deadline && !Number.isNaN(deadline.getTime())
+            ? Math.round((deadline.getTime() - nowTimestamp) / 60000)
+            : null;
+    const isOverdue = deadline !== null && deadline.getTime() < nowTimestamp;
+    const overdueMilliseconds = isOverdue
+        ? nowTimestamp - deadline.getTime()
+        : 0;
+    const hasInstanceVariableSla =
+        processStartTimestamp !== null &&
+        slaMilliseconds !== null &&
+        selectedSla !== null;
+
+    return {
+        urgency: priorityLevel,
+        deadline,
+        remainingMinutes,
+        isOverdue,
+        overdueMilliseconds,
+        source: hasInstanceVariableSla ? "instanceVariables" : "",
+        thresholds: {
+            highMinutes: slaMilliseconds ? Math.round(slaMilliseconds / 60000) : 60,
+            mediumMinutes: slaMilliseconds ? Math.round(slaMilliseconds / 60000) : 240,
+        },
+        thresholdText:
+            selectedSla && slaValue
+                ? `${slaValue} ${slaUnit || "hours"}`
+                : "",
+        config: selectedSla || {},
+    };
+}
+
 export async function mapWithConcurrency(items, concurrency, mapper) {
     const rows = [];
     for (let index = 0; index < items.length; index += concurrency) {
@@ -309,5 +467,18 @@ export async function mapWithConcurrency(items, concurrency, mapper) {
 }
 
 export function buildInstanceSla(variables, startTime) {
-    return calculateSla(variables, new Date(), startTime);
+    const now = Date.now();
+    const variableSla = buildInstanceVariableSla(variables, now, startTime);
+    if (variableSla.remainingMinutes !== null) return variableSla;
+    const fallbackSla = calculateSla(variables, new Date(now), startTime);
+    const deadline = fallbackSla?.deadline;
+    const deadlineTimestamp =
+        deadline && !Number.isNaN(deadline.getTime()) ? deadline.getTime() : null;
+    const isOverdue = deadlineTimestamp !== null && deadlineTimestamp < now;
+    return {
+        ...fallbackSla,
+        isOverdue,
+        overdueMilliseconds: isOverdue ? now - deadlineTimestamp : 0,
+        source: "dashboardConfig",
+    };
 }
