@@ -41,6 +41,8 @@ const SchemaManagement = props => {
     // const [sqlQuery, setSqlQuery] = useState("");
     const [exportConfig, setExportConfig] = useState({
         name: "",
+        exportType: "sql",
+        exportItems: [],
         exportByName: () => { },
     });
     const [selectedTable, setSelectedTable] = useState({});
@@ -405,7 +407,7 @@ const SchemaManagement = props => {
         }
     };
 
-    const getSelectedTablesData = () => {
+    const getSelectedTablesData = (tableNames = selectedTables) => {
         const pg_end_point = API_URL + "?service.key=analytics.sqlData";
         const dataSource = selectedDataSource?.code || "";
         const url = pg_end_point + `&datasource=${dataSource}`;
@@ -414,7 +416,7 @@ const SchemaManagement = props => {
             dataKeys: [],
         };
 
-        selectedTables.forEach(item => {
+        tableNames.forEach(item => {
             request.dataKeys.push({
                 serviceParams: "",
                 dataKey: item,
@@ -426,38 +428,307 @@ const SchemaManagement = props => {
         return axios.post(url, request);
     };
 
+    const getTablesColumnsMetadata = async tableNames => {
+        const pg_end_point = API_URL + "?service.key=analytics.sqlData";
+        const dataSource = selectedDataSource?.code || "";
+        const url = pg_end_point + `&datasource=${dataSource}`;
+        const request = {
+            dataKeys: tableNames.map(tableName => ({
+                serviceParams: "",
+                dataKey: tableName,
+                sql: `
+                    select
+                        ns.nspname as table_schema,
+                        cls.relname as table_name,
+                        attr.attname as column_name,
+                        attr.attnum as ordinal_position,
+                        pg_catalog.format_type(attr.atttypid, attr.atttypmod) as column_type,
+                        typ.typname as udt_name,
+                        pg_catalog.pg_get_expr(def.adbin, def.adrelid) as column_default,
+                        case when attr.attnotnull then 'NO' else 'YES' end as is_nullable,
+                        case when attr.attidentity <> '' then 'YES' else 'NO' end as is_identity,
+                        case attr.attidentity
+                            when 'a' then 'ALWAYS'
+                            when 'd' then 'BY DEFAULT'
+                            else null
+                        end as identity_generation,
+                        attr.attgenerated as generated_kind,
+                        pg_catalog.pg_get_expr(def.adbin, def.adrelid) as generation_expression
+                    from pg_catalog.pg_attribute attr
+                    join pg_catalog.pg_class cls
+                        on cls.oid = attr.attrelid
+                    join pg_catalog.pg_namespace ns
+                        on ns.oid = cls.relnamespace
+                    join pg_catalog.pg_type typ
+                        on typ.oid = attr.atttypid
+                    left join pg_catalog.pg_attrdef def
+                        on def.adrelid = attr.attrelid
+                       and def.adnum = attr.attnum
+                    where cls.relname = '${escapeSqlLiteral(tableName)}'
+                      and ns.nspname not in ('pg_catalog', 'information_schema')
+                      and attr.attnum > 0
+                      and not attr.attisdropped
+                    order by attr.attnum
+                `,
+                mode: "lowerCase",
+            })),
+        };
+        const res = await axios.post(url, request);
+        if (res?.data?.C_STATUS !== "SUCCESS") {
+            throw new Error(res?.data?.C_MESSAGE || "Unable to load table schema");
+        }
+        return res?.data?.C_DATA || {};
+    };
+
+    function escapeSqlLiteral(value) {
+        return String(value || "").replace(/'/g, "''");
+    }
+
+    function normalizeMetadataValue(value) {
+        return value === undefined || value === null || value === ""
+            ? null
+            : value;
+    }
+
+    function formatTypeWithPrecision(typeName, precision) {
+        return precision ? `${typeName}(${precision})` : typeName;
+    }
+
+    function formatCharacterType(typeName, length) {
+        const normalizedLength = Number(length);
+        return Number.isFinite(normalizedLength) && normalizedLength > 0
+            ? `${typeName}(${normalizedLength})`
+            : typeName;
+    }
+
+    function formatNumericType(typeName, precision, scale) {
+        const normalizedPrecision = Number(precision);
+        const normalizedScale = Number(scale);
+        if (!Number.isFinite(normalizedPrecision)) return typeName;
+        return Number.isFinite(normalizedScale)
+            ? `${typeName}(${normalizedPrecision}, ${normalizedScale})`
+            : `${typeName}(${normalizedPrecision})`;
+    }
+
+    function normalizeArrayType(udtName = "") {
+        const baseType = String(udtName).replace(/^_/, "");
+        const typeMap = {
+            int2: "smallint",
+            int4: "integer",
+            int8: "bigint",
+            bool: "boolean",
+            float4: "real",
+            float8: "double precision",
+            timestamptz: "timestamp with time zone",
+            timestamp: "timestamp without time zone",
+            varchar: "character varying",
+            bpchar: "character",
+        };
+        return `${typeMap[baseType] || baseType}[]`;
+    }
+
+    function getColumnRows(schemaMap = {}, tableName) {
+        const rows = schemaMap?.[tableName] || [];
+        return Array.isArray(rows) ? rows : [];
+    }
+
+    function getTableIdentifier(schemaMap = {}, tableName) {
+        const columns = getColumnRows(schemaMap, tableName);
+        const schemaName = columns[0]?.table_schema;
+        return schemaName
+            ? `${quoteIdentifier(schemaName)}.${quoteIdentifier(tableName)}`
+            : quoteIdentifier(tableName);
+    }
+
+    function buildIdentityClause(column = {}) {
+        if (String(column.is_identity || "").toUpperCase() !== "YES") {
+            return "";
+        }
+        const generation = column.identity_generation || "BY DEFAULT";
+        return `GENERATED ${generation} AS IDENTITY`;
+    }
+
+    function buildGeneratedColumnClause(column = {}) {
+        if (column.generated_kind !== "s" || !column.generation_expression) {
+            return "";
+        }
+        return `GENERATED ALWAYS AS (${column.generation_expression}) STORED`;
+    }
+
+    function getDefaultClause(column = {}) {
+        if (String(column.is_identity || "").toUpperCase() === "YES") {
+            return "";
+        }
+        return column.column_default ? `DEFAULT ${column.column_default}` : "";
+    }
+
+    function normalizePostgresTypeAlias(typeName) {
+        const aliases = {
+            int2: "smallint",
+            int4: "integer",
+            int8: "bigint",
+            bool: "boolean",
+            float4: "real",
+            float8: "double precision",
+            timestamptz: "timestamp with time zone",
+            timestamp: "timestamp without time zone",
+            varchar: "character varying",
+            bpchar: "character",
+        };
+        return aliases[typeName] || typeName;
+    }
+
+    function getColumnDataType(column = {}) {
+        if (column.column_type) return column.column_type;
+        const dataType = String(column.data_type || "").toLowerCase();
+        const udtName = String(column.udt_name || "").toLowerCase();
+        const length = normalizeMetadataValue(column.character_maximum_length);
+        const precision = normalizeMetadataValue(column.numeric_precision);
+        const scale = normalizeMetadataValue(column.numeric_scale);
+        const datetimePrecision = normalizeMetadataValue(column.datetime_precision);
+
+        if (dataType === "array") return normalizeArrayType(udtName);
+        if (dataType === "user-defined") {
+            return quoteIdentifier(column.udt_name || column.data_type);
+        }
+        if (dataType === "character varying") {
+            return formatCharacterType("character varying", length);
+        }
+        if (dataType === "character") {
+            return formatCharacterType("character", length);
+        }
+        if (dataType === "numeric" || dataType === "decimal") {
+            return formatNumericType(dataType, precision, scale);
+        }
+        if (
+            dataType === "timestamp without time zone" ||
+            dataType === "timestamp with time zone" ||
+            dataType === "time without time zone" ||
+            dataType === "time with time zone"
+        ) {
+            return formatTypeWithPrecision(dataType, datetimePrecision);
+        }
+        if (dataType) return dataType;
+        return normalizePostgresTypeAlias(udtName) || "text";
+    }
+
     async function handleCopy() {
         toastEmitter("Text copy successfully", true);
     }
 
     const lenOfArr = item => item.length;
 
+    function downloadTextFile(content, fileName, mimeType) {
+        const element = document.createElement("a");
+        const blob = new Blob([content], { type: mimeType });
+        element.href = URL.createObjectURL(blob);
+        element.download = fileName;
+        element.style.display = "none";
+        document.body.appendChild(element);
+        element.click();
+        URL.revokeObjectURL(element.href);
+        document.body.removeChild(element);
+    }
+
+    function safeFileName(value, fallback = "schema-export") {
+        return String(value || fallback)
+            .trim()
+            .replace(/[^a-zA-Z0-9._-]+/g, "_")
+            .replace(/^_+|_+$/g, "") || fallback;
+    }
+
+    function quoteIdentifier(value) {
+        return `"${String(value || "").replace(/"/g, "\"\"")}"`;
+    }
+
+    function resolveColumnType(column = {}) {
+        return getColumnDataType(column);
+    }
+
+    function buildColumnDefinition(column = {}) {
+        const columnName = column.column_name || column.name || column.code;
+        if (!columnName) return "";
+        const parts = [quoteIdentifier(columnName), resolveColumnType(column)];
+        const generatedClause = buildGeneratedColumnClause(column);
+        const identityClause = buildIdentityClause(column);
+        const defaultClause = getDefaultClause(column);
+        if (generatedClause) parts.push(generatedClause);
+        if (identityClause) parts.push(identityClause);
+        if (!generatedClause && defaultClause) parts.push(defaultClause);
+        if (String(column.is_nullable || "").toUpperCase() === "NO") {
+            parts.push("NOT NULL");
+        }
+        return `    ${parts.join(" ")}`;
+    }
+
+    function buildCreateTableScript(schemaMap = {}, tableNames = []) {
+        return tableNames.map(tableName => {
+            const columns = getColumnRows(schemaMap, tableName);
+            const columnDefinitions = validArray(columns)
+                ? columns
+                    .sort((left, right) =>
+                        Number(left.ordinal_position || 0) -
+                        Number(right.ordinal_position || 0),
+                    )
+                    .map(buildColumnDefinition)
+                    .filter(Boolean)
+                : [];
+            const definitions = columnDefinitions.length
+                ? columnDefinitions.join(",\n")
+                : "    id text";
+            return `CREATE TABLE IF NOT EXISTS ${getTableIdentifier(schemaMap, tableName)} (\n${definitions}\n);`;
+        }).join("\n\n");
+    }
+
+    async function exportDataJson(exportItems, name) {
+        const res = await getSelectedTablesData(exportItems);
+        const dataObj = res?.data?.C_DATA;
+        const data = [];
+        data.push(dataObj);
+        JsonToCsv(data, safeFileName(name || exportItems[0], "schema-data"));
+    }
+
+    async function exportCreateSql(exportItems, name) {
+        const schemaMap = await getTablesColumnsMetadata(exportItems);
+        const sqlScript = buildCreateTableScript(schemaMap, exportItems);
+        const fileName = `${safeFileName(name || exportItems[0], "schema-create")}.sql`;
+        downloadTextFile(sqlScript, fileName, "application/sql;charset=utf-8");
+    }
+
     const handleExport = async (exportItems, modalRef) => {
         if (validArray(exportItems) && lenOfArr(exportItems) > 0) {
-            const res = await getSelectedTablesData();
-            const dataObj = res?.data?.C_DATA;
-            const data = [];
-            data.push(dataObj);
-
-            if (exportItems.length === 1) {
-                JsonToCsv(data, exportItems[0]);
-            } else if (exportItems.length > 1) {
-                modalRef.current.show();
-
-                const exportByName = name => {
-                    JsonToCsv(data, name);
-
+            const exportByName = async (name, exportType) => {
+                try {
+                    setShowLoader(true);
+                    if (exportType === "json") {
+                        await exportDataJson(exportItems, name);
+                    } else {
+                        await exportCreateSql(exportItems, name);
+                    }
                     setExportConfig({
                         name: "",
+                        exportType: "sql",
+                        exportItems: [],
                         exportByName: () => { },
                     });
                     modalRef.current.close();
-                };
-                setExportConfig(prev => ({
-                    ...prev,
-                    exportByName: exportByName,
-                }));
-            }
+                } catch (error) {
+                    toastEmitter(
+                        error?.message || "Export failed",
+                        true,
+                        "error",
+                    );
+                } finally {
+                    setShowLoader(false);
+                }
+            };
+            setExportConfig({
+                name: exportItems.length === 1 ? exportItems[0] : "",
+                exportType: "sql",
+                exportItems,
+                exportByName,
+            });
+            modalRef.current.show();
         }
     };
 
@@ -581,7 +852,7 @@ const SchemaManagement = props => {
             </ChildrenModal>
             <ChildrenModal
                 ref={exportModalRef}
-                header="Export Name"
+                header="Export Schema"
                 centered={true}>
                 <ExportForm
                     exportConfig={exportConfig}
@@ -886,10 +1157,31 @@ export default SchemaManagement;
 
 const ExportForm = props => {
     const { exportConfig, setExportConfig } = props;
+    const exportOptions = [
+        { code: "sql", label: "PostgreSQL create script (.sql)" },
+        { code: "json", label: "Data (.json)" },
+    ];
+
     return (
         <>
+            <div className="mb-2">
+                <label className="fw-bold mb-1">
+                    Export Type
+                </label>
+                <DynamicRadio
+                    items={exportOptions}
+                    selectedItem={exportConfig.exportType}
+                    handleChange={value =>
+                        setExportConfig(previous => ({
+                            ...previous,
+                            exportType: value,
+                        }))
+                    }
+                    classes={{ main: "d-flex flex-column gap-1" }}
+                />
+            </div>
             <DynamicInput
-                label="Name"
+                label="File Name"
                 formData={exportConfig}
                 setFormData={setExportConfig}
                 db_column={"name"}
@@ -900,10 +1192,15 @@ const ExportForm = props => {
                 disabled={exportConfig?.name ? false : true}
                 title={
                     exportConfig?.name
-                        ? "export data"
+                        ? `Export ${exportConfig.exportType === "json" ? "data" : "create script"}`
                         : "Please provide export file name"
                 }
-                onClick={() => exportConfig.exportByName(exportConfig?.name)}>
+                onClick={() =>
+                    exportConfig.exportByName(
+                        exportConfig?.name,
+                        exportConfig?.exportType,
+                    )
+                }>
                 Export
             </button>
         </>

@@ -18,6 +18,41 @@ const MODE = {
     interweave: "INTERWEAVE",
 };
 
+const TINYMCE_FOCUS_SELECTOR = [
+    ".tox",
+    ".tox-tinymce",
+    ".tox-tinymce-aux",
+    ".tox-fullscreen",
+    ".tox-dialog",
+    ".tox-dialog-wrap",
+    ".tox-control-wrap",
+    ".moxman-window",
+    ".tam-assetmanager-root",
+].join(", ");
+
+let tinyMceFocusGuardCount = 0;
+
+function stopModalFocusTrapForTinyMce(event) {
+    if (event.target?.closest?.(TINYMCE_FOCUS_SELECTOR)) {
+        event.stopImmediatePropagation();
+    }
+}
+
+function toggleTinyMceFocusGuard(action) {
+    const focusEvents = ["focus", "focusin"];
+    const focusTargets = [window, document];
+
+    focusTargets.forEach(target => {
+        focusEvents.forEach(eventName => {
+            target[`${action}EventListener`](
+                eventName,
+                stopModalFocusTrapForTinyMce,
+                true,
+            );
+        });
+    });
+}
+
 function TextEditor({
     id,
     name,
@@ -48,15 +83,18 @@ function TextEditor({
     }, [componentData?.mode]);
 
     useEffect(() => {
-        document.addEventListener("focusin", e => {
-            let _obj = e.target.closest(
-                ".tox-tinymce, .tox-fullscreen, .tox-control-wrap, .tox-tinymce-aux, .tox-dialog-wrap, .moxman-window, .tam-assetmanager-root",
-            );
-            if (_obj !== null) {
-                e.stopImmediatePropagation();
+        if (tinyMceFocusGuardCount === 0) {
+            toggleTinyMceFocusGuard("add");
+        }
+        tinyMceFocusGuardCount += 1;
+
+        return () => {
+            tinyMceFocusGuardCount -= 1;
+            if (tinyMceFocusGuardCount === 0) {
+                toggleTinyMceFocusGuard("remove");
             }
-        });
-    }, [editorIsLoaded]);
+        };
+    }, []);
 
     useEffect(() => {
         if (typeof value === "string") {
@@ -83,16 +121,6 @@ function TextEditor({
         onChange(event);
     };
 
-    function keepFocus() {
-        document.addEventListener("focusin", e => {
-            let _obj = e.target.closest(
-                ".tox-tinymce, .tox-fullscreen, .tox-control-wrap, .tox-tinymce-aux, .tox-dialog-wrap, .moxman-window, .tam-assetmanager-root",
-            );
-            if (_obj !== null) {
-                e.stopImmediatePropagation();
-            }
-        });
-    }
     // console.log(styles);
     // console.log(isLoaded);
 
@@ -169,7 +197,6 @@ function TextEditor({
                                 onEditorChange={onEditorChange}
                                 onInit={() => {
                                     setEditorIsLoaded(true);
-                                    keepFocus();
                                 }}
                                 init={{
                                     height: height,
