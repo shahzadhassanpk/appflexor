@@ -28,7 +28,7 @@ function HTMLTemplate(props) {
 
     Handlebars.registerHelper("formatDateForUserView", function (date) {
         try {
-            if(!date) return "";
+            if (!date) return "";
             return formatDateForUserView(date);
         } catch (error) {
             console.error("Error in formatDateForUserView helper:", error);
@@ -62,7 +62,7 @@ function HTMLTemplate(props) {
             setComponentData(props.component.data);
         }
         if (props.component.data?.service_key) {
-            let _data = getData(props.component.data.service_key, "");            
+            let _data = getData(props.component.data.service_key, "");
         }
     }, [props.component.data]);
 
@@ -99,12 +99,12 @@ function HTMLTemplate(props) {
             .then(response => {
                 if (response.data.C_STATUS === "SUCCESS") {
                     setData(response.data.C_DATA.data);
-                }else{
-                  toastEmitter(
-                            `HTMLTemplate error ${response.data.C_MESSAGE}`,
-                            true,
-                            "error",
-                        );
+                } else {
+                    toastEmitter(
+                        `HTMLTemplate error ${response.data.C_MESSAGE}`,
+                        true,
+                        "error",
+                    );
                 }
             })
             .catch(error => {
@@ -222,9 +222,15 @@ function RenderHTML({ componentData, htmlCollection, data }) {
         if (!data) {
             data = {};
         }
-        const compiled = Handlebars.compile(html);
-        const output = compiled({data: data});
-        return DOMPurify.sanitize(output);
+        try {
+            const compiled = Handlebars.compile(html);
+            const output = compiled({ data: data });
+            return DOMPurify.sanitize(output);
+        } catch (error) {
+            console.error("Error in previewTemplate:", error);
+            return `<div class="text-danger">Error rendering template</div>`;
+        }
+
     }
 
     return collapse && collapse !== "none" ? (

@@ -24,6 +24,8 @@ import {
     numberFormat,
 } from "../../../../../utils/utils";
 import { Interweave } from "interweave";
+import Handlebars from "handlebars";
+import DOMPurify from "dompurify";
 import { AppContext } from "../../../../../../AppContext";
 import { matchSorter } from "match-sorter";
 import { tryToParse } from "../datalist-helper/DatalistHelpers";
@@ -1690,6 +1692,100 @@ function checklistFormat(selectedItem) {
     return selectedItem;
 }
 
+function compileMustacheHtmlExpression(column, rowData = {}, value = "") {
+    if (!column?.expression) {
+        return "";
+    }
+
+    try {
+        const expression = `${column.expression}`;
+        const templateData = {
+            ...rowData,
+            data: rowData,
+            row: rowData,
+            value,
+            item: column,
+            column,
+        };
+        const isTemplate =
+            expression.includes("{{") || expression.trim().startsWith("<");
+        const output = isTemplate
+            ? Handlebars.compile(expression)(templateData)
+            : evaluateExpression(column, rowData);
+
+        return sanitizeMustacheHtmlExpression(`${output ?? ""}`);
+    } catch (error) {
+        console.error("Error rendering Mustache HTML expression:", error);
+        return "";
+    }
+}
+
+function sanitizeMustacheHtmlExpression(html) {
+    const sanitized = DOMPurify.sanitize(html, {
+        ADD_ATTR: ["target", "rel"],
+    });
+
+    if (typeof document === "undefined") {
+        return sanitized;
+    }
+
+    const template = document.createElement("template");
+    template.innerHTML = sanitized;
+    template.content
+        .querySelectorAll('a[target="_blank"]')
+        .forEach(anchor => {
+            const relValues = new Set(
+                `${anchor.getAttribute("rel") || ""}`
+                    .split(/\s+/)
+                    .filter(Boolean),
+            );
+
+            relValues.add("noopener");
+            relValues.add("noreferrer");
+            anchor.setAttribute("rel", Array.from(relValues).join(" "));
+        });
+
+    return template.innerHTML;
+}
+
+function renderMustacheHtmlExpressionCell(column, cell) {
+    const rowData = {
+        ...(cell?.row?.original || {}),
+    };
+
+    Object.keys(rowData).forEach(key => {
+        rowData[key.toLowerCase()] = rowData[key];
+    });
+
+    if (column?.db_column) {
+        rowData[column.db_column] = cell?.value;
+        rowData[column.db_column.toLowerCase()] = cell?.value;
+    }
+
+    return (
+        <div className="s2a-expression">
+            <Interweave
+                content={compileMustacheHtmlExpression(
+                    column,
+                    rowData,
+                    cell?.value,
+                )}
+            />
+        </div>
+    );
+}
+
+function withMustacheHtmlExpressionColumn(columnDefinition, column) {
+    if (!columnDefinition || !column?.isHtml || !column?.expression) {
+        return columnDefinition;
+    }
+
+    return {
+        ...columnDefinition,
+        Cell: cell => renderMustacheHtmlExpressionCell(column, cell),
+    };
+}
+
 const EXPRESSION = (column, type) => {
     if (type !== "EDITABLE-GRID") {
         return {
@@ -1703,17 +1799,12 @@ const EXPRESSION = (column, type) => {
 
             // filter: "fuzzyText",
             hideFilter: column.isFilter || false,
-            Cell: ({ value }) => {
+            Cell: cell => {
+                const { value, row } = cell;
                 const db_column = column.db_column;
-                const data = { [db_column]: value };
+                const data = { ...(row?.original || {}), [db_column]: value };
                 return column.isHtml ? (
-                    <div className="s2a-expression">
-                        <Interweave
-                            content={evaluateExpression(
-                                column,
-                                data,
-                            )}></Interweave>
-                    </div>
+                    renderMustacheHtmlExpressionCell(column, cell)
                 ) : (
                     evaluateExpression(column, data)
                 );
@@ -2483,6 +2574,7 @@ export {
     maxNumber,
     aggregateTypeKeys,
     datalistDataTypes,
+    withMustacheHtmlExpressionColumn,
     evaluateExpression,
     evaluateExpressionDefault,
 };

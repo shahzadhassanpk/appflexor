@@ -445,27 +445,27 @@ function FieldConfigModal(props) {
                                     </div>
                                 )}
                             <div className="col-sm-6">
-                                {item.type === "expression" && (
-                                    <Form.Group
-                                        className="mb-3"
-                                        controlId={item.db_column}>
-                                        <Form.Label>Expression</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            name="expression"
-                                            value={item.expression}
-                                            placeholder={item.expression}
-                                            autoFocus
-                                            onChange={e =>
-                                                handleSelectedField(
-                                                    e,
-                                                    index,
-                                                    item,
-                                                )
-                                            }
-                                        />
-                                    </Form.Group>
-                                )}
+                                {item.type === "expression" &&
+                                    !item.isHtml && (
+                                        <Form.Group
+                                            className="mb-3"
+                                            controlId={item.db_column}>
+                                            <Form.Label>Expression</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                name="expression"
+                                                value={item.expression || ""}
+                                                placeholder={item.expression}
+                                                onChange={e =>
+                                                    handleSelectedField(
+                                                        e,
+                                                        index,
+                                                        item,
+                                                    )
+                                                }
+                                            />
+                                        </Form.Group>
+                                    )}
                             </div>
                             {datalistType === "SQL" && item.type === "json" && (
                                 <>
@@ -549,6 +549,23 @@ function FieldConfigModal(props) {
                                 )
                             );
                         })}
+                        {item.isHtml && (
+                            <Form.Group
+                                className="mb-3"
+                                controlId={`${item.db_column}-html-expression`}>
+                                <Form.Label>Mustache HTML Expression</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    rows={6}
+                                    name="expression"
+                                    value={item.expression || ""}
+                                    placeholder="<span>{{ data.value }}</span>"
+                                    onChange={e =>
+                                        handleSelectedField(e, index, item)
+                                    }
+                                />
+                            </Form.Group>
+                        )}
                         {item.type === "number" && item.includeAggregate && (
                             <>
                                 <div className="row">

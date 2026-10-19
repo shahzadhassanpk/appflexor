@@ -35,6 +35,7 @@ import {
     evaluateExpression,
     evaluateExpressionDefault,
     multiDelete,
+    withMustacheHtmlExpressionColumn,
 } from "../datalist-filter-helpers/DatalistFilters";
 import {
     CSVToJSON,
@@ -1137,6 +1138,11 @@ export default function DataListTableById(props) {
             "carousel",
             // "fileuploader",
         ];
+        const pushColumn = (obj, column) => {
+            if (obj) {
+                columns.push(withMustacheHtmlExpressionColumn(obj, column));
+            }
+        };
         if (selectedItem) {
             try {
                 let parseLayout =
@@ -1166,7 +1172,7 @@ export default function DataListTableById(props) {
                                     selectFieldData,
                                     formFields,
                                 );
-                                if (obj) columns.push(obj);
+                                pushColumn(obj, column);
                             } else if (
                                 includeFields.includes(column.db_column) &&
                                 datalistDataTypes[column.type]?.code
@@ -1179,7 +1185,7 @@ export default function DataListTableById(props) {
                                     selectFieldData,
                                     formFields,
                                 );
-                                if (obj) columns.push(obj);
+                                pushColumn(obj, column);
                             } else {
                                 if (
                                     column.type !== "datalist" &&
@@ -1195,7 +1201,7 @@ export default function DataListTableById(props) {
                                         selectFieldData,
                                         formFields,
                                     );
-                                    if (obj) columns.push(obj);
+                                    pushColumn(obj, column);
                                 }
                             }
                         }
@@ -1215,7 +1221,7 @@ export default function DataListTableById(props) {
                                     selectFieldData,
                                     formFields,
                                 );
-                                if (obj) columns.push(obj);
+                                pushColumn(obj, column);
                             } else if (
                                 datalistDataTypes[column.type] &&
                                 datalistDataTypes[column.type].code
@@ -1228,7 +1234,7 @@ export default function DataListTableById(props) {
                                     selectFieldData,
                                     formFields,
                                 );
-                                if (obj) columns.push(obj);
+                                pushColumn(obj, column);
                             } else {
                                 let obj = {
                                     Header: column.label,
@@ -1237,7 +1243,7 @@ export default function DataListTableById(props) {
                                     accessor: column.db_column.toLowerCase(),
                                     className: `data ${column.db_column.toLowerCase()}`,
                                 };
-                                if (obj) columns.push(obj);
+                                pushColumn(obj, column);
                             }
                         }
                     });

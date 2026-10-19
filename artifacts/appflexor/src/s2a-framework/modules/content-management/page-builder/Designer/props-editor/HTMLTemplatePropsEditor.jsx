@@ -133,19 +133,21 @@ export default function HTMLTemplatePropsEditor({ setShow }) {
                     />
                 </div>
             </div>
-            <div className="mb-2">                
+            <div className="mb-2">
                 <DynamicInput
-                        label="Service Key"
-                        db_column="service_key"
-                        formData={inputField}
-                        setFormData={setInputField}
-                    />
+                    label="Service Key"
+                    db_column="service_key"
+                    formData={inputField}
+                    setFormData={setInputField}
+                />
             </div>
             <div className="mb-2">
                 <label
                     htmlFor="editor"
                     className="mb-2 fw-bold">
-                    Html Editor
+                    Mustache HTML Template <a href="https://mustache.github.io/mustache.5.html"
+                        target="_blank"
+                        title="Mustache Template Documentation"><i className="fa-regular fa-circle-question"> </i></a>
                 </label>
                 <TextEditor
                     name="value"
