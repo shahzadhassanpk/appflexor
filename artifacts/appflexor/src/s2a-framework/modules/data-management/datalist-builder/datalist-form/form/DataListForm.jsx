@@ -118,7 +118,9 @@ export default function DataListForm(props) {
     const [_selectedItem, _setSelectedItem] = useState({});
     const [showSearch, setShowSearch] = useState(false);
     const serviceParamModalRef = useRef(null);
+    const summaryCardModalRef = useRef(null);
     const [serviceParamId, setServiceParamId] = useState("");
+    const [summaryCardId, setSummaryCardId] = useState("");
 
     useEffect(() => {
         if (selectedItem?.form_id) {
@@ -131,6 +133,15 @@ export default function DataListForm(props) {
             _setSelectedItem(selectedItem);
         }
     }, [selectedItem?.id]);
+
+    useEffect(() => {
+        if (typeof selectedItem?.summary_cards === "string") {
+            setSelectedItem(prev => ({
+                ...prev,
+                summary_cards: parseConfigArray(prev?.summary_cards),
+            }));
+        }
+    }, [selectedItem?.summary_cards]);
 
     function handleSelectedField(event, index, selected_field) {
         let _selectedItem = structuredClone(selectedItem);
@@ -260,6 +271,11 @@ export default function DataListForm(props) {
         setServiceParamId("");
     }
 
+    function addNewSummaryCard() {
+        summaryCardModalRef.current.show();
+        setSummaryCardId("");
+    }
+
     function handleServiceParams() {}
 
     function handleMoveParams() {}
@@ -273,6 +289,16 @@ export default function DataListForm(props) {
                     setSelectedItem={setSelectedItem}
                     serviceParamModalRef={serviceParamModalRef}
                     serviceParamId={serviceParamId}
+                    selectedItem={selectedItem}
+                />
+            </ChildrenModal>
+            <ChildrenModal
+                ref={summaryCardModalRef}
+                header="Summary Card">
+                <SummaryCardForm
+                    setSelectedItem={setSelectedItem}
+                    summaryCardModalRef={summaryCardModalRef}
+                    summaryCardId={summaryCardId}
                     selectedItem={selectedItem}
                 />
             </ChildrenModal>
@@ -1196,45 +1222,160 @@ export default function DataListForm(props) {
                                             </>
                                         )}
                                 </div>
-                                {selectedItem?.type === "SQL" && (
+                                {["FORM", "SQL"].includes(
+                                    selectedItem?.type,
+                                ) && (
                                     <div className="sql-filter-actions">
+                                        {selectedItem?.type === "SQL" && (
+                                            <>
+                                                <div
+                                                    title="The order and number of params must be as per SQL where clause"
+                                                    className="actions-row mt-2 px-2">
+                                                    <span>
+                                                        SQL Params{" "}
+                                                        <i className="fa fa-question-circle"></i>
+                                                    </span>
+                                                    <span
+                                                        className="fa fa-plus pointer"
+                                                        title="Add Custom Action"
+                                                        onClick={
+                                                            addNewServiceParam
+                                                        }></span>
+                                                </div>
+                                                <div className="datalistactions-list">
+                                                    {/* <code>{JSON.stringify(selectedItem)}</code> */}
+                                                    <div className="d-flex">
+                                                        <div className="input-align">
+                                                            <input
+                                                                id="custom-action"
+                                                                className="form-check-input"
+                                                                type="checkbox"
+                                                                checked={
+                                                                    selectedItem?.serviceparams &&
+                                                                    selectedItem?.serviceparams !==
+                                                                        "[]" &&
+                                                                    selectedItem?.serviceparams?.every(
+                                                                        par =>
+                                                                            par.selected,
+                                                                    )
+                                                                }
+                                                                onChange={e => {
+                                                                    setSelectedItem(
+                                                                        prev => ({
+                                                                            ...prev,
+                                                                            serviceparams:
+                                                                                prev.serviceparams?.map(
+                                                                                    item => ({
+                                                                                        ...item,
+                                                                                        selected:
+                                                                                            e
+                                                                                                .target
+                                                                                                .checked,
+                                                                                    }),
+                                                                                ),
+                                                                        }),
+                                                                    );
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div className="action-list">
+                                                            Select All
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <DndWrapper>
+                                                    <ul className="service-params-listing">
+                                                        <Listing
+                                                            items={
+                                                                selectedItem?.serviceparams
+                                                            }
+                                                            renderItem={(
+                                                                item,
+                                                                index,
+                                                            ) => {
+                                                                return (
+                                                                    <ParamDndCard
+                                                                        mapKey="serviceparams"
+                                                                        id={
+                                                                            item.id
+                                                                        }
+                                                                        index={
+                                                                            index
+                                                                        }
+                                                                        setItems={
+                                                                            setSelectedItem
+                                                                        }
+                                                                        move={
+                                                                            true
+                                                                        }>
+                                                                        <ListItem
+                                                                            key={
+                                                                                item?.id
+                                                                            }
+                                                                            index={
+                                                                                index
+                                                                            }
+                                                                            item={
+                                                                                item
+                                                                            }
+                                                                            setSelectedItem={
+                                                                                setSelectedItem
+                                                                            }
+                                                                            setServiceParamId={
+                                                                                setServiceParamId
+                                                                            }
+                                                                            serviceParamModalRef={
+                                                                                serviceParamModalRef
+                                                                            }
+                                                                        />
+                                                                    </ParamDndCard>
+                                                                );
+                                                            }}
+                                                        />
+                                                    </ul>
+                                                </DndWrapper>
+                                            </>
+                                        )}
                                         <div
-                                            title="The order and number of params must be as per SQL where clause"
-                                            className="actions-row mt-2 px-2">
+                                            title="Summary cards add runtime filter params"
+                                            className="actions-row mt-3 px-2">
                                             <span>
-                                                SQL Params{" "}
-                                                <i class="fa fa-question-circle"></i>
+                                                Summary Cards{" "}
+                                                <i className="fa fa-question-circle"></i>
                                             </span>
                                             <span
                                                 className="fa fa-plus pointer"
-                                                title="Add Custom Action"
+                                                title="Add Summary Card"
                                                 onClick={
-                                                    addNewServiceParam
+                                                    addNewSummaryCard
                                                 }></span>
                                         </div>
                                         <div className="datalistactions-list">
-                                            {/* <code>{JSON.stringify(selectedItem)}</code> */}
                                             <div className="d-flex">
                                                 <div className="input-align">
                                                     <input
-                                                        id="custom-action"
+                                                        id="summary-card-select-all"
                                                         className="form-check-input"
                                                         type="checkbox"
                                                         checked={
-                                                            selectedItem?.serviceparams &&
-                                                            selectedItem?.serviceparams !==
-                                                                "[]" &&
-                                                            selectedItem?.serviceparams?.every(
-                                                                par =>
-                                                                    par.selected,
+                                                            parseConfigArray(
+                                                                selectedItem?.summary_cards,
+                                                            ).length > 0 &&
+                                                            parseConfigArray(
+                                                                selectedItem?.summary_cards,
+                                                            ).every(
+                                                                card =>
+                                                                    card.selected,
                                                             )
                                                         }
                                                         onChange={e => {
                                                             setSelectedItem(
                                                                 prev => ({
                                                                     ...prev,
-                                                                    serviceparams:
-                                                                        prev.serviceparams?.map(
+                                                                    summary_cards:
+                                                                        parseConfigArray(
+                                                                            prev.summary_cards,
+                                                                        ).map(
                                                                             item => ({
                                                                                 ...item,
                                                                                 selected:
@@ -1256,23 +1397,23 @@ export default function DataListForm(props) {
                                         <DndWrapper>
                                             <ul className="service-params-listing">
                                                 <Listing
-                                                    items={
-                                                        selectedItem?.serviceparams
-                                                    }
+                                                    items={parseConfigArray(
+                                                        selectedItem?.summary_cards,
+                                                    )}
                                                     renderItem={(
                                                         item,
                                                         index,
                                                     ) => {
                                                         return (
                                                             <ParamDndCard
-                                                                mapKey="serviceparams"
+                                                                mapKey="summary_cards"
                                                                 id={item.id}
                                                                 index={index}
                                                                 setItems={
                                                                     setSelectedItem
                                                                 }
                                                                 move={true}>
-                                                                <ListItem
+                                                                <SummaryCardListItem
                                                                     key={
                                                                         item?.id
                                                                     }
@@ -1283,11 +1424,11 @@ export default function DataListForm(props) {
                                                                     setSelectedItem={
                                                                         setSelectedItem
                                                                     }
-                                                                    setServiceParamId={
-                                                                        setServiceParamId
+                                                                    setSummaryCardId={
+                                                                        setSummaryCardId
                                                                     }
-                                                                    serviceParamModalRef={
-                                                                        serviceParamModalRef
+                                                                    summaryCardModalRef={
+                                                                        summaryCardModalRef
                                                                     }
                                                                 />
                                                             </ParamDndCard>
@@ -1605,20 +1746,21 @@ function ServiceParamForm(props) {
             values?.id
                 ? setSelectedItem(prev => ({
                       ...prev,
-                      serviceparams:
-                          Array.isArray(prev?.serviceparams) &&
-                          prev?.serviceparams?.map(serviceParam =>
-                              serviceParam?.id === values?.id
-                                  ? values
-                                  : serviceParam,
-                          ),
+                      serviceparams: parseConfigArray(
+                          prev?.serviceparams,
+                      ).map(serviceParam =>
+                          serviceParam?.id === values?.id
+                              ? values
+                              : serviceParam,
+                      ),
                   }))
                 : setSelectedItem(prev => {
                       return {
                           ...prev,
-                          serviceparams: prev?.serviceparams
-                              ? [...prev?.serviceparams, serviceParam]
-                              : [serviceParam],
+                          serviceparams: [
+                              ...parseConfigArray(prev?.serviceparams),
+                              serviceParam,
+                          ],
                       };
                   });
             serviceParamModalRef.current.close();
@@ -1725,12 +1867,207 @@ function ServiceParamForm(props) {
     );
 }
 
+function SummaryCardForm(props) {
+    const {
+        setSelectedItem,
+        summaryCardModalRef,
+        summaryCardId,
+        selectedItem,
+    } = props;
+    const rules = {
+        label: value => (value ? "" : "Label is  required"),
+    };
+    const defaultValues = {
+        label: "",
+        value: "",
+        filter_params: "",
+        summary_sql: "",
+        summary_service_params: "",
+        label_field: "city",
+        value_field: "total",
+        filter_param_field: "city",
+        classes: "",
+        selected: true,
+    };
+    const { values, handleOnChange, errors, validateValues, setValues } =
+        useInput({
+            defaultValues,
+            rules,
+        });
+    const selectedSummaryCard = parseConfigArray(
+        selectedItem?.summary_cards,
+    ).find(item => item?.id === summaryCardId);
+
+    useEffect(() => {
+        if (summaryCardId) {
+            setValues(selectedSummaryCard);
+        } else {
+            setValues(defaultValues);
+        }
+    }, [summaryCardId]);
+
+    const handleSaveSummaryCard = () => {
+        if (validateValues()) {
+            const summaryCard = values?.id
+                ? values
+                : {
+                      id: uuid(),
+                      ...values,
+                  };
+
+            values?.id
+                ? setSelectedItem(prev => ({
+                      ...prev,
+                      summary_cards: parseConfigArray(prev?.summary_cards).map(
+                          item =>
+                              item?.id === values?.id ? summaryCard : item,
+                      ),
+                  }))
+                : setSelectedItem(prev => ({
+                      ...prev,
+                      summary_cards: [
+                          ...parseConfigArray(prev?.summary_cards),
+                          summaryCard,
+                      ],
+                  }));
+            summaryCardModalRef.current.close();
+        }
+    };
+
+    return (
+        <>
+            <div className="row">
+                <div className="col-sm-6">
+                    <TextField
+                        label="Label"
+                        placeholder="All Leads"
+                        name="label"
+                        value={values?.label}
+                        onChange={handleOnChange}
+                        classes={{
+                            label: errors?.label ? "text-danger" : "",
+                            input: errors?.label ? "is-invalid !important" : "",
+                        }}
+                        errors={errors}
+                    />
+                </div>
+                <div className="col-sm-6">
+                    <TextField
+                        label="Value Text"
+                        placeholder="100"
+                        name="value"
+                        value={values?.value}
+                        onChange={handleOnChange}
+                    />
+                </div>
+                <div className="col-sm-12">
+                    <TextArea
+                        label="Filter Params"
+                        placeholder="{{city}}"
+                        name="filter_params"
+                        value={values?.filter_params}
+                        onChange={handleOnChange}
+                    />
+                </div>
+                <div className="col-sm-12">
+                    <TextArea
+                        label="Summary SQL"
+                        placeholder="SELECT COUNT(*) AS total FROM app_fd_resturant_leads WHERE c_status = 'ACTIVE'"
+                        name="summary_sql"
+                        value={values?.summary_sql}
+                        onChange={handleOnChange}
+                    />
+                </div>
+                <div className="col-sm-12">
+                    <TextArea
+                        label="Summary SQL Params"
+                        placeholder="ACTIVE,Karachi"
+                        name="summary_service_params"
+                        value={values?.summary_service_params}
+                        onChange={handleOnChange}
+                    />
+                </div>
+                <div className="col-sm-4">
+                    <TextField
+                        label="Label Field"
+                        placeholder="city"
+                        name="label_field"
+                        value={values?.label_field}
+                        onChange={handleOnChange}
+                    />
+                </div>
+                <div className="col-sm-4">
+                    <TextField
+                        label="Value Field"
+                        placeholder="total"
+                        name="value_field"
+                        value={values?.value_field}
+                        onChange={handleOnChange}
+                    />
+                </div>
+                <div className="col-sm-4">
+                    <TextField
+                        label="Filter Column Field"
+                        placeholder="city"
+                        name="filter_param_field"
+                        value={values?.filter_param_field}
+                        onChange={handleOnChange}
+                    />
+                </div>
+                <div className="col-sm-12">
+                    <TextField
+                        label="CSS Classes"
+                        placeholder="sales-summary-card"
+                        name="classes"
+                        value={values?.classes}
+                        onChange={handleOnChange}
+                    />
+                </div>
+                <div className="col-sm-12">
+                    <DynamicCheckBoxs
+                        items={[
+                            { code: "selected", label: "Show in datalist" },
+                        ]}
+                        handleChange={selectedOption =>
+                            handleOnChange({
+                                target: {
+                                    name: "selected",
+                                    value: Boolean(selectedOption),
+                                },
+                            })
+                        }
+                        selectedItem={values?.selected ? "selected" : ""}
+                    />
+                </div>
+            </div>
+            <button
+                className="button-theme float-end"
+                onClick={handleSaveSummaryCard}>
+                Save
+            </button>
+        </>
+    );
+}
+
 function Listing(props) {
     const { items, renderItem } = props;
     return (
         Array.isArray(items) &&
         items?.map((item, index) => renderItem(item, index))
     );
+}
+
+function parseConfigArray(items) {
+    if (Array.isArray(items)) return items;
+    if (typeof items === "string" && items) {
+        try {
+            const parsedItems = JSON.parse(items);
+            return Array.isArray(parsedItems) ? parsedItems : [];
+        } catch (error) {
+            return [];
+        }
+    }
+    return [];
 }
 
 function ListItem(props) {
@@ -1812,6 +2149,86 @@ function ListItem(props) {
                     className="fa-solid fa-gear std-icon-size me-2"
                     title="Edit"
                     onClick={() => editServiceParam(item)}></i>
+            </div>
+        </li>
+    );
+}
+
+function SummaryCardListItem(props) {
+    const {
+        item,
+        index,
+        setSelectedItem,
+        setSummaryCardId,
+        summaryCardModalRef,
+    } = props;
+
+    const [deleteItemId, setDeleteItemId] = useState("");
+    const deleteModalRef = useRef(null);
+
+    const handleItemSelection = id => {
+        setSelectedItem(prev => ({
+            ...prev,
+            summary_cards: parseConfigArray(prev?.summary_cards).map((card, i) =>
+                i === index
+                    ? {
+                          ...card,
+                          selected: id ? true : false,
+                      }
+                    : card,
+            ),
+        }));
+    };
+
+    const editSummaryCard = item => {
+        setSummaryCardId(item?.id);
+        summaryCardModalRef.current.show();
+    };
+
+    const handleDeleteConfimation = item => {
+        setDeleteItemId(item?.id);
+        deleteModalRef.current.show();
+    };
+
+    const handleDeleteCard = () => {
+        setSelectedItem(prev => ({
+            ...prev,
+            summary_cards: parseConfigArray(prev?.summary_cards).filter(
+                card => card.id !== deleteItemId,
+            ),
+        }));
+    };
+
+    return (
+        <li className="d-flex justify-content-between">
+            <ChildrenModal
+                ref={deleteModalRef}
+                size="md"
+                centered
+                header={"Delete Confirmation"}>
+                <DeleteConfimation
+                    item={index}
+                    deleteModalRef={deleteModalRef}
+                    handleDelete={handleDeleteCard}
+                    message="Are you sure to delete this summary card?"
+                />
+            </ChildrenModal>
+            <DynamicCheckBoxs
+                items={[item]}
+                mapValue="id"
+                mapLabel="label"
+                handleChange={handleItemSelection}
+                selectedItem={item?.selected ? item?.id : ""}
+            />
+            <div className="action-icon">
+                <i
+                    className="fa fa-trash std-icon-size"
+                    onClick={() => handleDeleteConfimation(item)}
+                />
+                <i
+                    className="fa-solid fa-gear std-icon-size me-2"
+                    title="Edit"
+                    onClick={() => editSummaryCard(item)}></i>
             </div>
         </li>
     );

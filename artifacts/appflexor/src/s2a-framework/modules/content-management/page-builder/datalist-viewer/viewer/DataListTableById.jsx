@@ -46,13 +46,6 @@ import {
 import FormViewerWrap from "./FormViewerWrap";
 import ReactTable from "./ReactTable";
 import { eventBus } from "../../../../../eventBus";
-
-const formAction = {
-    update: "UPDATE",
-    complete: "COMPLETE",
-    failed: "FAILED",
-    draft: "DRAFT",
-};
 import EditableGrid from "./components/EditableGrid";
 import DateRange from "../../../../../components/DateRange";
 import { SqlServiceParams } from "./context/SqlServiceParams";
@@ -62,6 +55,253 @@ import ReactSelect from "../../../../../components/ReactSelect/ReactSelect";
 import DynamicCheckBoxs from "../../../../../components/dynamic-checkbox/Checkbox";
 import DynamicRadio from "../../../../../components/dynamic-radio/radio";
 import useGlobalData from "../../../../../components/useGlobal";
+
+const formAction = {
+    update: "UPDATE",
+    complete: "COMPLETE",
+    failed: "FAILED",
+    draft: "DRAFT",
+};
+
+function parseSummaryCards(cards) {
+    if (Array.isArray(cards)) return cards;
+    if (typeof cards === "string" && cards) {
+        try {
+            const parsedCards = JSON.parse(cards);
+            return Array.isArray(parsedCards) ? parsedCards : [];
+        } catch (error) {
+            return [];
+        }
+    }
+    return [];
+}
+
+function getSummaryCardParams(card) {
+    if (Array.isArray(card?.__summaryFilterParams)) {
+        return card.__summaryFilterParams;
+    }
+
+    if (Array.isArray(card?.params)) {
+        return card.params
+            .map(param => param?.value ?? param)
+            .filter(param => param !== undefined && param !== null);
+    }
+
+    const filterParams = card?.filter_params ?? card?.filterParams ?? "";
+    if (typeof filterParams === "string" && filterParams.trim()) {
+        return filterParams
+            .split(",")
+            .map(param => param.trim())
+            .filter(param => param !== "");
+    }
+
+    if (card?.filter_param !== undefined && card?.filter_param !== "") {
+        return [card.filter_param];
+    }
+
+    return [];
+}
+
+function getSummaryCardSql(card) {
+    return card?.summary_sql ?? card?.sql ?? "";
+}
+
+function getSummaryCardSqlParams(card) {
+    const params = card?.summary_service_params ?? card?.summaryServiceParams;
+    if (params !== undefined && params !== null) return params;
+    return "";
+}
+
+function extractSummaryCardValue(rows) {
+    const firstRow = Array.isArray(rows) ? rows[0] : rows;
+    if (!firstRow || typeof firstRow !== "object") return "";
+
+    const preferredKeys = ["value", "total", "count", "cnt", "summary"];
+    const preferredKey = preferredKeys.find(key => firstRow[key] !== undefined);
+    if (preferredKey) return firstRow[preferredKey];
+
+    const firstKey = Object.keys(firstRow).find(key => key !== "id");
+    return firstKey ? firstRow[firstKey] : "";
+}
+
+function formatSummaryCardValue(value) {
+    if (value === undefined || value === null) return "";
+    if (typeof value === "number") return value;
+    if (typeof value !== "string") return value;
+    return value.replace(/\.0+$/, "").replace(/\.$/, "");
+}
+
+function getSummaryValueLabel(card) {
+    const valueField = card?.value_field || card?.valueField;
+    const label = card?.value_label || card?.valueLabel || valueField;
+    return label ? label.replaceAll("_", " ") : "";
+}
+
+function escapeFilterConditionValue(value) {
+    if (value === undefined || value === null) return "";
+    return String(value).replaceAll("'", "''");
+}
+
+function buildSummaryFilterCondition(card) {
+    const filterColumn =
+        card?.__summaryFilterColumn ||
+        card?.filter_column ||
+        card?.filterColumn ||
+        card?.filter_param_field ||
+        card?.filterParamField;
+    const filterParams = getSummaryCardParams(card);
+    const filterValue = filterParams?.[0];
+
+    if (!filterColumn || filterValue === undefined || filterValue === "") {
+        return "";
+    }
+
+    return `${filterColumn}='${escapeFilterConditionValue(filterValue)}'`;
+}
+
+function buildSummaryFilterConditions(cards) {
+    return cards
+        .map(card => buildSummaryFilterCondition(card))
+        .filter(Boolean)
+        .map(condition => `(${condition})`)
+        .join(" AND ");
+}
+
+function mergeFilterCondition(baseCondition = "", summaryCondition = "") {
+    if (!summaryCondition) return baseCondition ?? "";
+    if (!baseCondition) return summaryCondition;
+    return `(${baseCondition}) AND (${summaryCondition})`;
+}
+
+function getSummaryRowField(row, fields) {
+    if (!row || typeof row !== "object") return "";
+    const field = fields.find(key => row[key] !== undefined);
+    return field ? row[field] : "";
+}
+
+function resolveSummaryFilterParamsFromRow(card, row, filterParamField) {
+    const filterParams = card?.filter_params ?? card?.filterParams ?? "";
+    if (typeof filterParams === "string" && filterParams.trim()) {
+        return filterParams
+            .split(",")
+            .map(param =>
+                param
+                    .trim()
+                    .replace(/\{\{\s*([^}]+)\s*\}\}/g, (_, key) => {
+                        const value = row?.[key.trim()];
+                        return value ?? "";
+                    }),
+            )
+            .filter(param => param !== "");
+    }
+
+    const filterParam = filterParamField
+        ? row?.[filterParamField]
+        : getSummaryRowField(row, ["city", "c_city", "value", "id"]);
+
+    return filterParam !== undefined && filterParam !== ""
+        ? [filterParam]
+        : getSummaryCardParams(card);
+}
+
+function buildSummaryCardItems(cards, values) {
+    return cards.flatMap(card => {
+        const rows = values?.[card?.id];
+        if (!Array.isArray(rows) || rows.length === 0) {
+            return [{ ...card, __summaryGroupId: card?.id }];
+        }
+
+        const labelField = card?.label_field || card?.labelField;
+        const valueField = card?.value_field || card?.valueField;
+        const filterParamField =
+            card?.filter_param_field || card?.filterParamField;
+
+        return rows.map((row, index) => {
+            const label = labelField
+                ? row?.[labelField]
+                : getSummaryRowField(row, [
+                      "city",
+                      "c_city",
+                      "label",
+                      "name",
+                      "title",
+                  ]);
+            const value = valueField
+                ? row?.[valueField]
+                : extractSummaryCardValue(row);
+            const summaryFilterParams = resolveSummaryFilterParamsFromRow(
+                card,
+                row,
+                filterParamField,
+            );
+            const metricKeys = Object.keys(row || {}).filter(
+                key =>
+                    ![
+                        "id",
+                        labelField,
+                        valueField,
+                        filterParamField,
+                        "city",
+                        "c_city",
+                        "label",
+                        "name",
+                        "title",
+                        "value",
+                        "total",
+                        "count",
+                        "cnt",
+                        "summary",
+                    ].includes(key),
+            );
+
+            return {
+                ...card,
+                id: `${card?.id}-${index}`,
+                __summaryGroupId: card?.id,
+                label: label || card?.label,
+                value,
+                __summaryFilterColumn: filterParamField,
+                __summaryMetrics: metricKeys.map(key => ({
+                    label: key.replaceAll("_", " "),
+                    value: formatSummaryCardValue(row[key]),
+                })),
+                __summaryFilterParams: summaryFilterParams,
+            };
+        });
+    });
+}
+
+function buildSummaryCardGroups(cards, values) {
+    if (!Array.isArray(cards)) return [];
+    return cards
+        .map(card => ({
+            id: card?.id,
+            label: card?.label,
+            cards: buildSummaryCardItems([card], values),
+        }))
+        .filter(group => group.id && group.cards.length > 0);
+}
+
+function getSummaryGroupId(card) {
+    return card?.__summaryGroupId || card?.id || "";
+}
+
+function getSelectedSummaryCards(groups, activeCards) {
+    if (!Array.isArray(groups)) return [];
+    return groups
+        .map(group => {
+            const activeCardId = activeCards?.[group.id];
+            return (
+                group.cards.find(card => card?.id === activeCardId) ||
+                group.cards[0]
+            );
+        })
+        .filter(Boolean);
+}
+
+function getSummaryFilterParams(cards) {
+    return cards.flatMap(card => getSummaryCardParams(card));
+}
 
 export default function DataListTableById(props) {
     const appContext = useContext(AppContext);
@@ -163,6 +403,18 @@ export default function DataListTableById(props) {
     const [formFetch, setFormFetch] = useState(false);
     const featuresSubscription = appContext?.featuresSubscription;
     const [sqlServiceParams, setSqlServiceParams] = useState({});
+    const [summaryFilterParams, setSummaryFilterParams] = useState([]);
+    const [summaryFilterCondition, setSummaryFilterCondition] = useState("");
+    const [activeSummaryCards, setActiveSummaryCards] = useState({});
+    const [summaryCardValues, setSummaryCardValues] = useState({});
+    const [summaryCardsLoaded, setSummaryCardsLoaded] = useState(false);
+    const summaryCards = parseSummaryCards(selectedItem?.summary_cards).filter(
+        card => card?.selected,
+    );
+    const summaryCardGroups = buildSummaryCardGroups(
+        summaryCards,
+        summaryCardValues,
+    );
     // const show = SubscriptionAllowViewer(
     //     "DATALIST_BUILDER",
     //     featuresSubscription,
@@ -199,7 +451,51 @@ export default function DataListTableById(props) {
     };
     let tableColumns = [];
     tableColumns = [...finalColumns, dataColumns, actionColumns];
+
+    function requestDatalistWithSummaryCards(cards, nextActiveSummaryCards) {
+        const selectedCards = Array.isArray(cards) ? cards : [];
+        const nextSummaryFilterParams = getSummaryFilterParams(selectedCards);
+        const nextSummaryFilterCondition =
+            selectedItem?.type === "FORM"
+                ? buildSummaryFilterConditions(selectedCards)
+                : "";
+        setSummaryFilterParams(nextSummaryFilterParams);
+        setSummaryFilterCondition(nextSummaryFilterCondition);
+        if (nextActiveSummaryCards) {
+            setActiveSummaryCards(nextActiveSummaryCards);
+        }
+        getDatalistData(
+            selectedItem?.type === "FORM" ? selectedItem?.form_id : undefined,
+            selectedItem?.type === "SQL" ? selectedItem.id : undefined,
+            nextSummaryFilterParams,
+            nextSummaryFilterCondition,
+        );
+    }
+
+    function requestDatalistWithSummaryCard(card) {
+        const groupId = getSummaryGroupId(card);
+        const nextActiveSummaryCards = {
+            ...activeSummaryCards,
+            [groupId]: card?.id,
+        };
+        const selectedCards = getSelectedSummaryCards(
+            summaryCardGroups,
+            nextActiveSummaryCards,
+        );
+
+        requestDatalistWithSummaryCards(
+            selectedCards,
+            nextActiveSummaryCards,
+        );
+    }
+
     useEffect(() => {
+        if (
+            summaryCards.length > 0 &&
+            Object.keys(activeSummaryCards).length === 0
+        ) {
+            return;
+        }
         getDatalistData(selectedItem?.form_id, undefined);
     }, [props.fkValue]);
 
@@ -249,6 +545,7 @@ export default function DataListTableById(props) {
 
     useEffect(() => {
         if (show && !loaded) {
+            if (summaryCards.length > 0) return;
             if (selectedItem?.type === "FORM") {
                 getDatalistData(selectedItem?.form_id, undefined);
             } else if (selectedItem?.type === "SQL") {
@@ -289,6 +586,46 @@ export default function DataListTableById(props) {
         }
     }, [formAndModalConfig.show]);
 
+    useEffect(() => {
+        setSummaryCardsLoaded(false);
+        setActiveSummaryCards({});
+        setSummaryFilterParams([]);
+        setSummaryFilterCondition("");
+        loadSummaryCardValues(summaryCards);
+    }, [selectedItem?.summary_cards, selectedItem?.datasource, selectedForm?.datasource]);
+
+    useEffect(() => {
+        if (
+            !show ||
+            loaded ||
+            Object.keys(activeSummaryCards).length > 0 ||
+            !summaryCardsLoaded ||
+            summaryCardGroups.length === 0
+        ) {
+            return;
+        }
+
+        const nextActiveSummaryCards = {};
+        summaryCardGroups.forEach(group => {
+            nextActiveSummaryCards[group.id] = group.cards[0]?.id;
+        });
+        const selectedCards = getSelectedSummaryCards(
+            summaryCardGroups,
+            nextActiveSummaryCards,
+        );
+
+        requestDatalistWithSummaryCards(selectedCards, nextActiveSummaryCards);
+    }, [
+        show,
+        loaded,
+        activeSummaryCards,
+        summaryCardsLoaded,
+        summaryCardValues,
+        selectedItem?.type,
+        selectedItem?.id,
+        selectedItem?.form_id,
+    ]);
+
     useKeyboardShortcut(
         ["Control", "/"],
         shortcutKeys => {
@@ -301,9 +638,14 @@ export default function DataListTableById(props) {
         },
     );
 
-    const getParams = () => {
+    const getParams = (nextSummaryFilterParams = summaryFilterParams) => {
         let params = "";
         try {
+            if (Array.isArray(nextSummaryFilterParams)) {
+                nextSummaryFilterParams.forEach(param => {
+                    params += `${param ?? ""},`;
+                });
+            }
             filter?.forEach((item, index) => {
                 const key = item.id;
                 let serviceParam = sqlServiceParams[key];
@@ -350,9 +692,61 @@ export default function DataListTableById(props) {
         return params;
     };
 
-    async function getDatalistData(form_id, item_id) {
+    async function loadSummaryCardValues(cards) {
+        const sqlCards = Array.isArray(cards)
+            ? cards.filter(card => getSummaryCardSql(card))
+            : [];
+
+        if (sqlCards.length === 0) {
+            setSummaryCardValues({});
+            setSummaryCardsLoaded(true);
+            return;
+        }
+
+        const dataSource = selectedItem?.datasource || selectedForm?.datasource;
+        const url =
+            API_URL +
+            "?service.key=analytics.sqlData" +
+            (dataSource ? `&datasource=${dataSource}` : "");
+        const request = {
+            dataKeys: sqlCards.map((card, index) => ({
+                serviceParams: getSummaryCardSqlParams(card),
+                dataKey: `summary_${card?.id ?? index}`,
+                sql: getSummaryCardSql(card),
+                mode: "formData",
+            })),
+        };
+
+        try {
+            const response = await axios.post(url, request);
+            if (response.data.C_STATUS === "SUCCESS") {
+                const data = response.data.C_DATA ?? {};
+                const nextValues = {};
+                sqlCards.forEach((card, index) => {
+                    const dataKey = `summary_${card?.id ?? index}`;
+                    nextValues[card?.id] = data[dataKey];
+                });
+                setSummaryCardValues(nextValues);
+            }
+        } catch (error) {
+            console.error("loadSummaryCardValues:" + error);
+        } finally {
+            setSummaryCardsLoaded(true);
+        }
+    }
+
+    async function getDatalistData(
+        form_id,
+        item_id,
+        nextSummaryFilterParams,
+        nextSummaryFilterCondition = summaryFilterCondition,
+    ) {
         setApiResponse("pending");
         let dataRequest = {};
+        const filterCondition = mergeFilterCondition(
+            selectedItem.filter_condition,
+            nextSummaryFilterCondition,
+        );
         let fk_column =
             selectedItem.datasource === "" && fkColumn !== "id"
                 ? fkColumn
@@ -375,7 +769,7 @@ export default function DataListTableById(props) {
                             businessKey: "_all",
                             mode: "formData",
                             type: "", //form or sql
-                            filterCondition: selectedItem.filter_condition,
+                            filterCondition,
                             fkColumn: fk_column,
                             fkValue,
                             serviceParams,
@@ -393,7 +787,7 @@ export default function DataListTableById(props) {
                             mode: "formData",
                             type: "", //form or sql
                             serviceParams,
-                            filterCondition: selectedItem.filter_condition,
+                            filterCondition,
                         },
                     ],
                 };
@@ -411,7 +805,7 @@ export default function DataListTableById(props) {
                                 ? `c_${fkColumn}`
                                 : fkColumn,
                         fkValue,
-                        serviceParams: getParams(),
+                        serviceParams: getParams(nextSummaryFilterParams),
                     },
                 ];
             } else {
@@ -424,7 +818,7 @@ export default function DataListTableById(props) {
                             limit: "_all",
                             fkColumn: fk_column,
                             fkValue,
-                            serviceParams: getParams(),
+                            serviceParams: getParams(nextSummaryFilterParams),
                         },
                     ];
                 } else {
@@ -434,7 +828,7 @@ export default function DataListTableById(props) {
                             dataListId: selectedItem.id,
                             mode: "formData",
                             limit: "_all",
-                            serviceParams: getParams(),
+                            serviceParams: getParams(nextSummaryFilterParams),
                         },
                     ];
                 }
@@ -1863,6 +2257,10 @@ export default function DataListTableById(props) {
 
         return className;
     }
+    const handleSummaryCardClick = card => {
+        requestDatalistWithSummaryCard(card);
+    };
+
     if (show)
         return (
             <SqlServiceParams.Provider
@@ -2007,6 +2405,18 @@ export default function DataListTableById(props) {
                                                         />
                                                     )}
 
+                                                    <DatalistSummaryCards
+                                                        cards={summaryCards}
+                                                        values={
+                                                            summaryCardValues
+                                                        }
+                                                        activeCards={
+                                                            activeSummaryCards
+                                                        }
+                                                        onCardClick={
+                                                            handleSummaryCardClick
+                                                        }
+                                                    />
                                                     <DatalistSqlFilters
                                                         selectedItem={selectedItem}
                                                         setFilter={setFilter}
@@ -2307,6 +2717,87 @@ function DatalistHeader(_props) {
                     </button> */}
                 </div>
             )}
+        </div>
+    );
+}
+
+function DatalistSummaryCards(props) {
+    const { cards = [], values = {}, activeCards = {}, onCardClick } = props;
+    const summaryCardGroups = buildSummaryCardGroups(cards, values);
+
+    if (!Array.isArray(summaryCardGroups) || summaryCardGroups.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="s2a-summary-card-groups">
+            {summaryCardGroups.map(group => (
+                <div
+                    className="s2a-summary-cards"
+                    role="list"
+                    key={group.id}>
+                    {group.cards.map(card => {
+                const groupId = getSummaryGroupId(card);
+                const isActive = activeCards?.[groupId] === card?.id;
+                const classes = [
+                    "s2a-summary-card",
+                    isActive ? "is-active" : "",
+                    card?.classes ?? "",
+                ]
+                    .filter(Boolean)
+                    .join(" ");
+                const cardValue =
+                    values?.[card?.id] !== undefined &&
+                    !Array.isArray(values?.[card?.id])
+                        ? values?.[card?.id]
+                        : card?.value;
+                const formattedCardValue = formatSummaryCardValue(cardValue);
+                const valueLabel = getSummaryValueLabel(card);
+
+                return (
+                    <button
+                        key={card?.id ?? card?.label}
+                        type="button"
+                        className={classes}
+                        role="listitem"
+                        onClick={() => onCardClick(card)}>
+                        <span className="s2a-summary-card-label">
+                            {card?.label}
+                        </span>
+                        {formattedCardValue !== "" && (
+                            <span className="s2a-summary-card-value">
+                                {valueLabel && (
+                                    <span className="s2a-summary-card-value-label">
+                                        {valueLabel}
+                                    </span>
+                                )}
+                                <span className="s2a-summary-card-value-count">
+                                    {formattedCardValue}
+                                </span>
+                            </span>
+                        )}
+                        {Array.isArray(card?.__summaryMetrics) &&
+                            card.__summaryMetrics.length > 0 && (
+                                <span className="s2a-summary-card-metrics">
+                                    {card.__summaryMetrics.map(metric => (
+                                        <span
+                                            className="s2a-summary-card-metric"
+                                            key={metric.label}>
+                                            <span className="s2a-summary-card-metric-label">
+                                                {metric.label}
+                                            </span>
+                                            <span className="s2a-summary-card-metric-value">
+                                                {metric.value}
+                                            </span>
+                                        </span>
+                                    ))}
+                                </span>
+                            )}
+                    </button>
+                );
+                    })}
+                </div>
+            ))}
         </div>
     );
 }
