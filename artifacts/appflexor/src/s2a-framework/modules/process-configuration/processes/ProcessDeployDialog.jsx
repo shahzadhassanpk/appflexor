@@ -12,11 +12,32 @@ import { PropertyEditorModal } from "./PropertyEditorModal";
 const DB_TABLE = "process";
 const STATUS   = { none: "NONE", create: "CREATE", update: "UPDATE" };
 const INITIAL_ITEM = { id: "", title: "", process_def_key: "", process_file: "", file_url: "" };
+const APP_SERVICE_TOPICS = {
+    "get.formData": "app.service.getData",
+    "update.formData": "app.service.updateForData",
+    "send.email": "app.service.sendEmail",
+};
+const LEGACY_APP_SERVICE_TOPICS = new Set(["appflexor.app.service", "app.service.api"]);
+const APP_SERVICE_TOPIC_TO_KEY = Object.fromEntries(
+    Object.entries(APP_SERVICE_TOPICS).map(([key, topic]) => [topic, key]),
+);
 const ELEM_TABS = [
     { key: "userTasks",    label: "User Tasks",     icon: "fa-user-check" },
     { key: "serviceTasks", label: "Service Tasks",  icon: "fa-gear" },
     { key: "variables",    label: "Variables",      icon: "fa-database" },
 ];
+
+function getAppServiceTopic(serviceKey = "get.formData") {
+    return APP_SERVICE_TOPICS[serviceKey] || APP_SERVICE_TOPICS["get.formData"];
+}
+
+function getAppServiceKeyFromTopic(topic) {
+    return APP_SERVICE_TOPIC_TO_KEY[topic] || "";
+}
+
+function isAppServiceTopic(topic) {
+    return LEGACY_APP_SERVICE_TOPICS.has(topic) || Boolean(getAppServiceKeyFromTopic(topic));
+}
 
 /**
  * Self-contained Process Deployment dialog.
@@ -236,8 +257,9 @@ export function ProcessDeployDialog({
             const taskKey = meta.taskKey || inputParams.s2aTaskKey || attrs.s2aTaskKey;
             return [!agentKey && "AI agent", !taskKey && "AI task"].filter(Boolean);
         }
-        if (topic === "appflexor.app.service" || topic === "app.service.api") {
-            const service = meta.service || inputParams.s2aAppServiceKey || attrs.s2aAppServiceKey;
+        if (isAppServiceTopic(topic)) {
+            const service = meta.service || inputParams.s2aAppServiceKey || attrs.s2aAppServiceKey ||
+                getAppServiceKeyFromTopic(topic);
             let config = meta.serviceConfig || {};
             if (!Object.keys(config).length && (inputParams.s2aAppServiceConfig || attrs.s2aAppServiceConfig)) {
                 try { config = JSON.parse(inputParams.s2aAppServiceConfig || attrs.s2aAppServiceConfig); } catch { return ["valid app service configuration"]; }
@@ -742,9 +764,9 @@ export function ProcessDeployDialog({
                     .map(([key, value]) => ({ key, value }));
                 init = { serviceType: "ai", workerTitle, workerDescription, agentKey, taskKey, result, params };
 
-            } else if (topic === "appflexor.app.service") {
+            } else if (isAppServiceTopic(topic)) {
                 // New App Service format
-                const appServiceKey = meta.service || "get.formData";
+                const appServiceKey = meta.service || getAppServiceKeyFromTopic(topic) || "get.formData";
                 const appConfig     = meta.serviceConfig || {};
                 const reserved = new Set(["appflexor.worker.meta"]);
                 const params = Object.entries(ip)
@@ -890,7 +912,7 @@ export function ProcessDeployDialog({
                 });
 
             } else if (propForm.serviceType === "app") {
-                bo.topic = "appflexor.app.service";
+                bo.topic = getAppServiceTopic(propForm.appServiceKey);
                 meta.service       = propForm.appServiceKey || "get.formData";
                 meta.serviceConfig = propForm.appConfig || {};
                 setInputParams(bo, {
@@ -1242,8 +1264,9 @@ export function ProcessDeployDialog({
                                                             ) : <span className="proc-elem-type">AI Agent</span>;
                                                         }
                                                         // App Service — new & legacy topics
-                                                        if (topic === "appflexor.app.service" || topic === "app.service.api") {
-                                                            const svcKey = meta.service || ip["s2aAppServiceKey"] || bo2?.$attrs?.["s2aAppServiceKey"] || "";
+                                                        if (isAppServiceTopic(topic)) {
+                                                            const svcKey = meta.service || ip["s2aAppServiceKey"] || bo2?.$attrs?.["s2aAppServiceKey"] ||
+                                                                getAppServiceKeyFromTopic(topic) || "";
                                                             return (
                                                                 <div>
                                                                     <span className="proc-app-svc-chip">

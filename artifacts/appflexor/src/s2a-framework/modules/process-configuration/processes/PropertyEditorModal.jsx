@@ -2,6 +2,12 @@ import React from "react";
 import { Modal } from "react-bootstrap";
 import { SearchableSelect } from "./SearchableSelect";
 
+const APP_SERVICE_TOPICS = {
+    "get.formData": "app.service.getData",
+    "update.formData": "app.service.updateForData",
+    "send.email": "app.service.sendEmail",
+};
+
 /**
  * Property editor modal — shown when the user clicks Assign or Configure on a
  * BPMN element in the element-tabs panel.
@@ -196,6 +202,7 @@ export function PropertyEditorModal({
 
             const cfg    = propForm.appConfig    || {};
             const svcKey = propForm.appServiceKey || "get.formData";
+            const appServiceTopic = APP_SERVICE_TOPICS[svcKey] || APP_SERVICE_TOPICS["get.formData"];
 
             /* Shared user-defined input parameters table — same for all tabs */
             function renderParamsTable() {
@@ -559,7 +566,7 @@ export function PropertyEditorModal({
                             {renderParamsTable()}
                             <p className="proc-payload-hint mb-0 mt-2 d-flex align-items-center gap-1">
                                 <i className="fa-solid fa-circle-info" />
-                                Worker topic: <code>appflexor.app.service</code>
+                                Worker topic: <code>{appServiceTopic}</code>
                             </p>
                         </>
                     )}
