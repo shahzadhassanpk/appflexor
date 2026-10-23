@@ -18,8 +18,8 @@ const getColor = i => PALETTE[i % PALETTE.length];
 
 /* ── pre-defined providers ──────────────────────────────────────────────── */
 const PROVIDERS = [
-    { name: "AppFlexor AI", key: "appflexor", api_url: "" },
-    // { name: "Open AI", key: "openai", api_url: "https://api.openai.com/v1/chat/completions" },
+    // { name: "AppFlexor AI", key: "appflexor", api_url: "" },
+    { name: "Open AI", key: "openai", api_url: "https://api.openai.com/v1/chat/completions" },
     // { name: "Ollama", key: "ollama", api_url: "" },
     // { name: "Anthropic",                key: "anthropic",   api_url: "https://api.anthropic.com/v1/messages" },
     // { name: "Google AI Studio (Gemini)",key: "googleai",    api_url: "https://generativelanguage.googleapis.com/v1beta/models" },
@@ -172,9 +172,10 @@ function AiServices() {
                 case "openai": {
                     const r = await fetch("https://api.openai.com/v1/models", { headers: bearer });
                     const d = await r.json();
-                    models = (d.data || []).map(m => m.id)
+                    let _models = (d.data || []).map(m => m.id)
                         .filter(id => /^(gpt|o1|o3|o4)/.test(id))
                         .sort();
+                    models = _models.map(id => ({ name: id, id }));
                     break;
                 }
                 case "groq": {
@@ -249,6 +250,7 @@ function AiServices() {
                     fallbackMsg = "Model list not available for this provider. Enter the model name manually.";
             }
             if (models.length > 0) {
+                debugger;
                 setModelOptions(models);
             } else if (!fallbackMsg) {
                 fallbackMsg = "No models returned. Check your API key or enter the model name manually.";

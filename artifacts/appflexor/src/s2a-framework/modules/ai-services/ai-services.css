@@ -647,6 +647,9 @@
 .ai-modal-lg {
     max-width: 720px;
 }
+.ai-modal-xl {
+    max-width: 1040px;
+}
 
 .ai-modal-header {
     display: flex;
@@ -773,4 +776,33 @@
     max-height: 400px;
     white-space: pre;
     line-height: 1.5;
+}
+
+.ai-agent-test-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 1rem;
+}
+
+.ai-agent-test-output {
+    min-height: 300px !important;
+    resize: vertical;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+.ai-agent-test-preview {
+    max-height: 180px;
+    margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    .ai-agent-test-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ai-modal-xl {
+        max-width: 100%;
+    }
 }

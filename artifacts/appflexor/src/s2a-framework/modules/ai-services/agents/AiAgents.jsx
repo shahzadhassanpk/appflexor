@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable react/prop-types */
+import { useEffect, useState } from "react";
 import { API_URL } from "../../../Config";
 import { getData, handleSave, handleDelete } from "../../../components/CrudApiCall";
 import { toastEmitter } from "../../../components/Toastify/Toastify";
@@ -23,6 +24,15 @@ const EMPTY = {
     category: "",
     default_vector_query: JSON.stringify(EMPTY_VQ),
 };
+const EMPTY_AGENT_TEST = {
+    agent: null,
+    businessKey: "",
+    taskKey: "",
+    message: "",
+    response: null,
+    error: "",
+};
+const AI_AGENT_WEBHOOK_URL = "/webhook/ai-agent";
 
 function parseVQ(raw) {
     try { return JSON.parse(raw) || EMPTY_VQ; } catch { return { ...EMPTY_VQ }; }
@@ -48,6 +58,11 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
     const [errors, setErrors] = useState({});
     const [saving, setSaving] = useState(false);
     const [showJson, setShowJson] = useState(null);
+    const [testAgent, setTestAgent] = useState(EMPTY_AGENT_TEST);
+    const [testTasks, setTestTasks] = useState([]);
+    const [testLoadingTasks, setTestLoadingTasks] = useState(false);
+    const [testingAgent, setTestingAgent] = useState(false);
+    const [testErrors, setTestErrors] = useState({});
 
     /* ── filtered agents ────────────────────────────────────────────────── */
     const q = searchTerm.toLowerCase().trim();
@@ -112,6 +127,36 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
         setShowForm(true);
     }
 
+    function openAgentTest(a) {
+        setTestAgent({
+            ...EMPTY_AGENT_TEST,
+            agent: a,
+        });
+        setTestTasks([]);
+        setTestErrors({});
+        setTestLoadingTasks(true);
+
+        getData({
+            keys: [{ params: a.id, dataKey: "tasks", serviceKey: "ai.task.by.agent", mode: "formData" }],
+        }).then(res => {
+            const tasks = res?.data?.C_DATA?.tasks || [];
+            setTestTasks(tasks);
+        }).catch(error => {
+            console.error(error);
+            setTestAgent(prev => ({
+                ...prev,
+                error: "Could not load tasks for this agent.",
+            }));
+        }).finally(() => setTestLoadingTasks(false));
+    }
+
+    function closeAgentTest() {
+        if (testingAgent) return;
+        setTestAgent(EMPTY_AGENT_TEST);
+        setTestTasks([]);
+        setTestErrors({});
+    }
+
     /* ── field handlers ─────────────────────────────────────────────────── */
     function handleInput(e) {
         const { name, value } = e.target;
@@ -171,6 +216,94 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
         const link = document.createElement("a");
         link.href = url;
         link.download = `${a.agent_key}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function buildAgentTestRequest() {
+        return {
+            agentKey: testAgent.agent?.agent_key || "",
+            taskKey: testAgent.taskKey,
+            payload: {
+                businessKey: testAgent.businessKey,
+                message: testAgent.message,
+            },
+        };
+    }
+
+    function formatAgentTestTranscript() {
+        if (!testAgent.message && !testAgent.response && !testAgent.error) return "";
+        const responseText = typeof testAgent.response === "string"
+            ? testAgent.response
+            : JSON.stringify(testAgent.response, null, 2);
+
+        return [
+            testAgent.message ? `User Prompt:\n${testAgent.message}` : "",
+            testAgent.response ? `Agent Response:\n${responseText}` : "",
+            testAgent.error ? `Error:\n${testAgent.error}` : "",
+        ].filter(Boolean).join("\n\n");
+    }
+
+    function validateAgentTest() {
+        const errs = {};
+        if (!testAgent.taskKey) errs.taskKey = "Task is required";
+        if (!testAgent.message?.trim()) errs.message = "User prompt is required";
+        setTestErrors(errs);
+        return Object.keys(errs).length === 0;
+    }
+
+    async function submitAgentTest() {
+        if (!validateAgentTest()) return;
+
+        const request = buildAgentTestRequest();
+        setTestingAgent(true);
+        setTestAgent(prev => ({ ...prev, response: null, error: "" }));
+
+        try {
+            const response = await fetch(AI_AGENT_WEBHOOK_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(request),
+            });
+            const contentType = response.headers.get("content-type") || "";
+            const responseBody = contentType.includes("application/json")
+                ? await response.json()
+                : await response.text();
+
+            if (!response.ok) {
+                throw new Error(
+                    typeof responseBody === "string"
+                        ? responseBody
+                        : JSON.stringify(responseBody, null, 2),
+                );
+            }
+
+            setTestAgent(prev => ({ ...prev, response: responseBody, error: "" }));
+            toastEmitter("Agent test completed", true);
+        } catch (error) {
+            setTestAgent(prev => ({
+                ...prev,
+                error: error?.message || "Agent test failed.",
+            }));
+            toastEmitter("Agent test failed", true, "warning");
+        } finally {
+            setTestingAgent(false);
+        }
+    }
+
+    function exportAgentTestChat() {
+        const payload = {
+            request: buildAgentTestRequest(),
+            response: testAgent.response,
+            error: testAgent.error,
+            exportedAt: new Date().toISOString(),
+        };
+
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${testAgent.agent?.agent_key || "ai-agent"}-test-chat.json`;
         link.click();
         URL.revokeObjectURL(url);
     }
@@ -270,6 +403,9 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
                                         {/* <button type="button" className="ais-icon-btn" title="Preview JSON definition" onClick={() => setShowJson(a)}>
                                             <i className="fa-solid fa-code" aria-hidden="true" />
                                         </button> */}
+                                        <button type="button" className="ais-icon-btn" title="Test agent" onClick={() => openAgentTest(a)}>
+                                            <i className="fa-solid fa-vial" aria-hidden="true" />
+                                        </button>
                                         <button type="button" className="ais-icon-btn" title="Edit agent" onClick={() => openEdit(a)}>
                                             <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
                                         </button>
@@ -471,6 +607,121 @@ function AiAgents({ agents = [], providers = [], categories = [], onAgentsChange
                                 <i className="fa-solid fa-download me-1" /> Download JSON
                             </button>
                             <button className="btn btn-secondary btn-sm ms-auto" onClick={() => setShowJson(null)}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {testAgent.agent && (
+                <div className="ai-modal-overlay" onClick={e => e.target === e.currentTarget && closeAgentTest()}>
+                    <div className="ai-modal ai-modal-xl">
+                        <div className="ai-modal-header">
+                            <h5>
+                                <i className="fa-solid fa-vial me-2" />
+                                Test AI Agent
+                            </h5>
+                            <button className="ai-modal-close" onClick={closeAgentTest} disabled={testingAgent}>
+                                <i className="fa-solid fa-xmark" />
+                            </button>
+                        </div>
+                        <div className="ai-modal-body">
+                            <div className="ai-agent-test-grid">
+                                <div>
+                                    <div className="mb-3">
+                                        <label className="ai-label">Agent Name</label>
+                                        <input
+                                            className="form-control"
+                                            value={`${testAgent.agent.agent_name || testAgent.agent.agent_key} (${testAgent.agent.agent_key})`}
+                                            disabled
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="ai-label">
+                                            Task <span className="text-danger">*</span>
+                                        </label>
+                                        <select
+                                            className={`form-control form-select ${testErrors.taskKey ? "is-invalid" : ""}`}
+                                            value={testAgent.taskKey}
+                                            onChange={e => {
+                                                setTestAgent(prev => ({ ...prev, taskKey: e.target.value }));
+                                                if (testErrors.taskKey) setTestErrors(prev => ({ ...prev, taskKey: "" }));
+                                            }}
+                                            disabled={testLoadingTasks}>
+                                            <option value="">
+                                                {testLoadingTasks ? "Loading tasks..." : "Select task"}
+                                            </option>
+                                            {testTasks.map(task => (
+                                                <option key={task.id || task.task_key} value={task.task_key}>
+                                                    {task.task_name || task.task_key}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {testErrors.taskKey && <div className="invalid-feedback">{testErrors.taskKey}</div>}
+                                        {!testLoadingTasks && testTasks.length === 0 && (
+                                            <small className="text-muted">No tasks are configured for this agent.</small>
+                                        )}
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="ai-label">Business Key</label>
+                                        <input
+                                            className="form-control"
+                                            value={testAgent.businessKey}
+                                            onChange={e => setTestAgent(prev => ({ ...prev, businessKey: e.target.value }))}
+                                            placeholder="Optional business key"
+                                        />
+                                    </div>
+                                    
+                                    <div className="mb-3">
+                                        <label className="ai-label">
+                                            User Prompt <span className="text-danger">*</span>
+                                        </label>
+                                        <textarea
+                                            className={`form-control ${testErrors.message ? "is-invalid" : ""}`}
+                                            rows={3}
+                                            value={testAgent.message}
+                                            onChange={e => {
+                                                setTestAgent(prev => ({ ...prev, message: e.target.value }));
+                                                if (testErrors.message) setTestErrors(prev => ({ ...prev, message: "" }));
+                                            }}
+                                            placeholder="Enter prompt to send to this agent"
+                                        />
+                                        {testErrors.message && <div className="invalid-feedback">{testErrors.message}</div>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="mb-3">
+                                        <label className="ai-label">Prompt and Response</label>
+                                        <textarea
+                                            className="form-control ai-agent-test-output"
+                                            value={formatAgentTestTranscript()}
+                                            readOnly
+                                            placeholder="Run the test to see the user prompt and agent response."
+                                        />
+                                    </div>
+                                    {/* <div className="ai-section-divider">Request Preview</div>
+                                    <pre className="ai-json-preview ai-agent-test-preview">{JSON.stringify(buildAgentTestRequest(), null, 2)}</pre> */}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="ai-modal-footer">
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary btn-sm"
+                                onClick={exportAgentTestChat}
+                                disabled={!testAgent.message && !testAgent.response && !testAgent.error}>
+                                <i className="fa-solid fa-download me-1" /> Export Chat JSON
+                            </button>
+                            <button className="btn btn-secondary btn-sm ms-auto" onClick={closeAgentTest} disabled={testingAgent}>
+                                Close
+                            </button>
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={submitAgentTest}
+                                disabled={testingAgent || testLoadingTasks || testTasks.length === 0}>
+                                {testingAgent
+                                    ? <><i className="fa-solid fa-spinner fa-spin me-1" />Testing...</>
+                                    : <><i className="fa-solid fa-paper-plane me-1" />Send Test</>}
+                            </button>
                         </div>
                     </div>
                 </div>

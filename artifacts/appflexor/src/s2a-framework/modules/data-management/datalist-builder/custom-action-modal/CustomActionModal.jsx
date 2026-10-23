@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
@@ -129,6 +129,10 @@ export default function CustomActionModal(props) {
         { title: "Delete", code: "delete" },
     ];
     const [action, setAction] = useState(initialCustomActions);
+    const [postJsonDraft, setPostJsonDraft] = useState(
+        initialCustomActions.post_json,
+    );
+    const [postJsonError, setPostJsonError] = useState("");
     const [filteredProcess, setFilteredProcess] = useState([]);
     const [requestMethods, setRequestMethods] = useState([]);
     const [apiServices] = useState([
@@ -178,6 +182,56 @@ export default function CustomActionModal(props) {
     const restApi = () => {
         return {};
     };
+
+    const getJsonErrorPosition = useCallback((value, error) => {
+        const positionMatch = error.message.match(/position\s+(\d+)/i);
+
+        if (!positionMatch) {
+            return null;
+        }
+
+        const position = Number(positionMatch[1]);
+
+        if (!Number.isFinite(position)) {
+            return null;
+        }
+
+        const linesBeforeError = value
+            .slice(0, position)
+            .split(/\r\n|\r|\n/);
+
+        return {
+            line: linesBeforeError.length,
+            column: linesBeforeError[linesBeforeError.length - 1].length + 1,
+        };
+    }, []);
+
+    const getJsonValidationError = useCallback(value => {
+        if (!value?.trim()) {
+            return "";
+        }
+
+        try {
+            JSON.parse(value);
+        } catch (error) {
+            const position = getJsonErrorPosition(value, error);
+
+            if (position) {
+                return `Post Json must be valid JSON. Line ${position.line}, column ${position.column}.`;
+            }
+
+            return "Post Json must be valid JSON.";
+        }
+
+        return "";
+    }, [getJsonErrorPosition]);
+
+    useEffect(() => {
+        const nextPostJson = action.post_json || "";
+
+        setPostJsonDraft(nextPostJson);
+        setPostJsonError(getJsonValidationError(nextPostJson));
+    }, [action.post_json, getJsonValidationError]);
 
     useEffect(() => {
         if (action && action.api_service) {
@@ -271,6 +325,11 @@ export default function CustomActionModal(props) {
     const handleSubmit = event => {
         event.preventDefault();
         event.stopPropagation();
+
+        if (postJsonError) {
+            setValidated(true);
+            return;
+        }
 
         const form = event.currentTarget;
         if (form.checkValidity() === false) {
@@ -416,7 +475,15 @@ export default function CustomActionModal(props) {
     };
 
     const handleDesignJsonChange = value => {
-        // let value = e.target.value;
+        const validationError = getJsonValidationError(value);
+
+        setPostJsonDraft(value);
+        setPostJsonError(validationError);
+
+        if (validationError) {
+            return;
+        }
+
         setAction(prev => ({
             ...prev,
             post_json: value,
@@ -1253,7 +1320,7 @@ export default function CustomActionModal(props) {
                                                     </span>
                                                 </Form.Label>
                                                 <CodeMirror
-                                                    value={action.post_json}
+                                                    value={postJsonDraft}
                                                     height="100%"
                                                     theme={"dark"}
                                                     extensions={[
@@ -1261,10 +1328,7 @@ export default function CustomActionModal(props) {
                                                             jsx: true,
                                                         }),
                                                     ]}
-                                                    onChange={(
-                                                        value,
-                                                        viewUpdate,
-                                                    ) => {
+                                                    onChange={value => {
                                                         handleDesignJsonChange(
                                                             value,
                                                         );
@@ -1280,6 +1344,13 @@ export default function CustomActionModal(props) {
                                                     //         : false
                                                     // }
                                                 />
+                                                {postJsonError && (
+                                                    <Form.Control.Feedback
+                                                        type="invalid"
+                                                        className="d-block">
+                                                        {postJsonError}
+                                                    </Form.Control.Feedback>
+                                                )}
                                             </Form.Group>
                                         </Row>
                                     </>
@@ -1568,6 +1639,7 @@ export default function CustomActionModal(props) {
                             <div className="custom-btns">
                                 <Button
                                     className="btn-sm button-theme me-2"
+                                    disabled={Boolean(postJsonError)}
                                     type="submit">
                                     Ok
                                 </Button>
