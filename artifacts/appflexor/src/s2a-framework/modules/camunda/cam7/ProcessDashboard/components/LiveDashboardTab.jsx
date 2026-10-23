@@ -55,35 +55,48 @@ export default function LiveDashboardTab({ config, dashboardState }) {
                     {config.show_activity_status && (
                         <SectionCard
                             title="Activity Status"
-                            subtitle="Current steps grouped by process definition."
+                            subtitle="Live work in progress by process and step."
                             icon="fa-solid fa-diagram-project">
                             {dashboardState.activityRows.length ? (
-                                <div className="process-dashboard__stack space-y-3">
+                                <div className="process-dashboard__activity-stack space-y-3">
                                     {dashboardState.activityRows.map(row => (
                                         <article
                                             key={row.key}
-                                            className="process-dashboard__list-item rounded-xl border p-3">
-                                            <div className="mb-2 flex items-start justify-between gap-3">
+                                            className="process-dashboard__activity-card process-dashboard__list-item rounded-xl border p-3">
+                                            <div className="process-dashboard__activity-card-header mb-3 flex items-start justify-between gap-3">
                                                 <div className="process-dashboard__item-copy min-w-0">
-                                                    <p className="process-dashboard__item-title mb-1 truncate text-sm font-semibold">
+                                                    <p className="process-dashboard__item-title mb-1 truncate text-sm font-bold">
                                                         {row.title}
                                                     </p>
-                                                    <p className="process-dashboard__item-key mb-0 text-xs">
+                                                    <p className="process-dashboard__activity-key process-dashboard__item-key mb-0 text-xs">
+                                                        <i className="fa-solid fa-fingerprint me-1" aria-hidden="true" />
                                                         {row.processKey || row.key}
                                                     </p>
                                                 </div>
-                                                <span className="process-dashboard__count-badge rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ring-slate-200">
-                                                    {row.activeInstances} active
+                                                <span className="process-dashboard__activity-total inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset">
+                                                    <i className="fa-solid fa-play" aria-hidden="true" />
+                                                    {row.activeInstances}
+                                                    <span className="font-semibold">active</span>
                                                 </span>
                                             </div>
-                                            <div className="process-dashboard__chip-row flex flex-wrap gap-2">
+                                            <div className="process-dashboard__activity-list grid gap-2">
                                                 {row.activities.slice(0, 4).map(activity => (
-                                                    <span
-                                                        key={`${row.key}-${activity.name}`}
-                                                        className="process-dashboard__chip rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-medium text-indigo-700">
-                                                        {activity.name} - {activity.count}
-                                                    </span>
+                                                    <div
+                                                        key={`${row.key}-${activity.id || activity.name}`}
+                                                        className="process-dashboard__activity-step flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs">
+                                                        <span className="min-w-0 truncate font-semibold">
+                                                            {activity.name}
+                                                        </span>
+                                                        <span className="process-dashboard__activity-step-count inline-flex min-w-8 shrink-0 items-center justify-center rounded-full px-2 py-0.5 font-bold">
+                                                            {activity.count}
+                                                        </span>
+                                                    </div>
                                                 ))}
+                                                {row.activities.length > 4 && (
+                                                    <div className="process-dashboard__activity-more px-3 text-xs font-semibold">
+                                                        +{row.activities.length - 4} more active step{row.activities.length - 4 === 1 ? "" : "s"}
+                                                    </div>
+                                                )}
                                             </div>
                                         </article>
                                     ))}

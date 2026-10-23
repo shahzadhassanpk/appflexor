@@ -52,6 +52,21 @@ function normalizeVariableName(name = "") {
     return String(name).replaceAll("_", "").toLowerCase();
 }
 
+function getDefinitionKey(definition = {}, definitionId = "") {
+    if (definition?.key) return definition.key;
+    return String(definitionId || "").split(":")[0] || "";
+}
+
+function getProcessCatalogTitle(item = {}) {
+    return (
+        item.title ||
+        item.process_title ||
+        item.name ||
+        item.process_name ||
+        item.process_key
+    );
+}
+
 function parseJsonVariableValue(value) {
     let parsed = value;
     while (typeof parsed === "string") {
@@ -311,6 +326,7 @@ export default function ProcessDashboard(props) {
         maxActivityRows,
         maxIncidentRows,
         maxSlaRows,
+        processList,
     ]);
 
     useEffect(() => {
@@ -371,7 +387,7 @@ export default function ProcessDashboard(props) {
                     failedJobs,
                     incidents,
                     runningHistory,
-                    selectedProcessCatalog,
+                    processCatalog,
                 ] = await Promise.all([
                     camundaApi.getProcessDefinitions().catch(() => []),
                     camundaApi.getProcessInstances().catch(() => []),
@@ -379,9 +395,9 @@ export default function ProcessDashboard(props) {
                     camundaApi.getFailedJobs().catch(() => []),
                     camundaApi.getIncidents().catch(() => []),
                     camundaApi.getRunningHistoricInstances().catch(() => []),
-                    selectedProcessKeys.length
-                        ? fetchProcessCatalog().catch(() => [])
-                        : Promise.resolve([]),
+                    processList.length
+                        ? Promise.resolve(processList)
+                        : fetchProcessCatalog().catch(() => []),
                 ]);
 
                 let scopedDefinitions = Array.isArray(latestDefinitions)
@@ -389,9 +405,9 @@ export default function ProcessDashboard(props) {
                     : [];
                 let allowedDefinitionIds = null;
                 const titleByProcessKey = Object.fromEntries(
-                    (Array.isArray(selectedProcessCatalog) ? selectedProcessCatalog : [])
+                    (Array.isArray(processCatalog) ? processCatalog : [])
                         .filter(item => item?.process_key)
-                        .map(item => [String(item.process_key), item.title || item.process_key]),
+                        .map(item => [String(item.process_key), getProcessCatalogTitle(item)]),
                 );
 
                 if (selectedProcessKeys.length) {
@@ -468,16 +484,17 @@ export default function ProcessDashboard(props) {
                             rawVariables,
                         );
                         const definition = definitionMap[instance.definitionId] || {};
+                        const definitionKey = getDefinitionKey(definition, instance.definitionId);
                         const startTime = historyMap[instance.id]?.startTime || null;
                         const activities = flattenLeafActivities(activity);
                         return {
                             ...instance,
                             definition,
-                            definitionKey: definition?.key || instance?.definitionId || "",
+                            definitionKey,
                             definitionName:
+                                titleByProcessKey[definitionKey] ||
                                 definition?.name ||
-                                titleByProcessKey[definition?.key] ||
-                                definition?.key ||
+                                definitionKey ||
                                 instance?.definitionId ||
                                 "Unknown process",
                             variables,
@@ -506,7 +523,9 @@ export default function ProcessDashboard(props) {
                     if (!activityRowsMap[groupKey]) {
                         activityRowsMap[groupKey] = {
                             key: groupKey,
-                            title: instance.definitionName,
+                            title:
+                                titleByProcessKey[instance.definitionKey] ||
+                                instance.definitionName,
                             processKey: instance.definitionKey,
                             activeInstances: 0,
                             activityCounts: {},
@@ -514,23 +533,37 @@ export default function ProcessDashboard(props) {
                     }
                     activityRowsMap[groupKey].activeInstances += 1;
                     if (!instance.activities.length) {
-                        activityRowsMap[groupKey].activityCounts["No active step"] =
-                            (activityRowsMap[groupKey].activityCounts["No active step"] || 0) + 1;
+                        const fallbackActivityKey = `${groupKey}::no-active-step`;
+                        const currentActivity =
+                            activityRowsMap[groupKey].activityCounts[fallbackActivityKey] ||
+                            { id: "no-active-step", name: "No active step", count: 0 };
+                        activityRowsMap[groupKey].activityCounts[fallbackActivityKey] = {
+                            ...currentActivity,
+                            count: currentActivity.count + 1,
+                        };
                     }
                     instance.activities.forEach(activityItem => {
-                        const name =
-                            activityItem.name || activityItem.id || "Unknown activity";
-                        activityRowsMap[groupKey].activityCounts[name] =
-                            (activityRowsMap[groupKey].activityCounts[name] || 0) + 1;
+                        const activityId = activityItem.id || activityItem.name || "unknown-activity";
+                        const activityKey = `${groupKey}::${activityId}`;
+                        const currentActivity =
+                            activityRowsMap[groupKey].activityCounts[activityKey] ||
+                            {
+                                id: activityId,
+                                name: activityItem.name || activityId || "Unknown activity",
+                                count: 0,
+                            };
+                        activityRowsMap[groupKey].activityCounts[activityKey] = {
+                            ...currentActivity,
+                            count: currentActivity.count + 1,
+                        };
                     });
                 });
 
                 const activityRows = Object.values(activityRowsMap)
                     .map(item => ({
                         ...item,
-                        activities: Object.entries(item.activityCounts)
-                            .sort((left, right) => right[1] - left[1])
-                            .map(([name, count]) => ({ name, count })),
+                        activities: Object.values(item.activityCounts)
+                            .sort((left, right) => right.count - left.count),
                     }))
                     .sort((left, right) => right.activeInstances - left.activeInstances)
                     .slice(0, Math.max(1, currentConfig.max_activity_rows));
@@ -548,8 +581,8 @@ export default function ProcessDashboard(props) {
                         incidentRowsMap[groupKey] = {
                             key: groupKey,
                             title:
-                                definition?.name ||
                                 titleByProcessKey[definition?.key] ||
+                                definition?.name ||
                                 definition?.key ||
                                 fallbackProcessKey ||
                                 "Unknown process",
@@ -700,6 +733,7 @@ export default function ProcessDashboard(props) {
         maxActivityRows,
         maxIncidentRows,
         maxSlaRows,
+        processList,
     ]);
 
     useEffect(() => {

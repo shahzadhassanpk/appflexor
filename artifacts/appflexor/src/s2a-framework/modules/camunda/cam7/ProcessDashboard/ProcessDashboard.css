@@ -206,6 +206,53 @@
     /* color: var(--process-dashboard-accent); */
 }
 
+.process-dashboard__activity-card {
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--process-dashboard-accent) 8%, var(--process-dashboard-surface)) 0%,
+            var(--process-dashboard-surface) 100%
+        );
+    border-color: color-mix(in srgb, var(--process-dashboard-accent) 18%, var(--process-dashboard-border));
+}
+
+.process-dashboard__activity-card:hover {
+    border-color: color-mix(in srgb, var(--process-dashboard-accent) 34%, var(--process-dashboard-border));
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--font-color, #0f172a) 10%, transparent);
+    transform: translateY(-1px);
+}
+
+.process-dashboard__activity-card-header {
+    min-width: 0;
+}
+
+.process-dashboard__activity-key {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.process-dashboard__activity-total {
+    background-color: color-mix(in srgb, #16a34a 12%, var(--process-dashboard-surface));
+    border-color: color-mix(in srgb, #16a34a 24%, var(--process-dashboard-border));
+    color: color-mix(in srgb, #166534 82%, var(--process-dashboard-strong));
+}
+
+.process-dashboard__activity-step {
+    background-color: color-mix(in srgb, var(--process-dashboard-accent) 8%, var(--process-dashboard-surface));
+    color: var(--process-dashboard-strong);
+}
+
+.process-dashboard__activity-step-count {
+    background-color: var(--process-dashboard-surface);
+    color: var(--process-dashboard-accent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--process-dashboard-accent) 22%, var(--process-dashboard-border));
+}
+
+.process-dashboard__activity-more {
+    color: var(--process-dashboard-muted);
+}
+
 .process-dashboard__quick-filter.button-theme {
     color: white;
     border-color: color-mix(in srgb, var(--process-dashboard-accent) 28%, var(--process-dashboard-border));

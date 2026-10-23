@@ -68,7 +68,10 @@ export const camundaApi = {
     getSuspendedProcessInstances: () => getAllPages("/process-instance", { suspended: true }),
     getProcessInstance: instanceId => camundaRequest(`/process-instance/${instanceId}`),
     deleteProcessInstance: instanceId => camundaRequest(`/process-instance/${instanceId}${query({ skipCustomListeners: true, skipIoMappings: true })}`, { method: "DELETE" }),
-    getProcessInstancesByDefinition: definitionId => getAllPages("/process-instance", { processDefinitionId: definitionId, active: true }),
+    getProcessInstancesByDefinition: (definitionId, params = { active: true }) => getAllPages("/process-instance", {
+        processDefinitionId: definitionId,
+        ...params,
+    }),
     getProcessInstancesByDefinitionKey: (definitionKey, tenantId, params = {}) => getAllPages("/process-instance", {
         processDefinitionKey: definitionKey,
         tenantIdIn: tenantId || undefined,
@@ -92,6 +95,16 @@ export const camundaApi = {
                 ...(tenantId
                     ? { processDefinitionTenantId: tenantId }
                     : { processDefinitionWithoutTenantId: true }),
+            },
+        },
+    ),
+    setProcessInstancesSuspendedByDefinition: (definitionId, suspended) => camundaRequest(
+        "/process-instance/suspended",
+        {
+            method: "PUT",
+            data: {
+                suspended,
+                processDefinitionId: definitionId,
             },
         },
     ),

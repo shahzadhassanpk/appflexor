@@ -62,7 +62,10 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const [auditError, setAuditError] = useState("");
     const [suspensionAction, setSuspensionAction] = useState({ scope: "", targetId: "", suspended: null });
     const [suspensionError, setSuspensionError] = useState("");
-    const processInstances = useMemo(() => runtimeState.instances, [runtimeState.instances]);
+    const processInstances = useMemo(
+        () => runtimeState.instances.filter(item => item.definitionId === viewDefinition.id),
+        [runtimeState.instances, viewDefinition.id],
+    );
     const activeProcessInstances = useMemo(
         () => processInstances.filter(item => !item.suspended),
         [processInstances],
@@ -71,16 +74,22 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         () => processInstances.filter(item => item.suspended),
         [processInstances],
     );
+    const versionCountInstances = useMemo(() => {
+        const instanceMap = new Map();
+        (instances || []).forEach(item => instanceMap.set(item.id, item));
+        runtimeState.instances.forEach(item => instanceMap.set(item.id, item));
+        return [...instanceMap.values()].filter(item => !item.suspended);
+    }, [instances, runtimeState.instances]);
     const runningCountsByDefinitionId = useMemo(
-        () => activeProcessInstances.reduce((counts, item) => {
+        () => versionCountInstances.reduce((counts, item) => {
             counts[item.definitionId] = (counts[item.definitionId] || 0) + 1;
             return counts;
         }, {}),
-        [activeProcessInstances],
+        [versionCountInstances],
     );
     const definitionInstances = useMemo(
-        () => runtimeState.instances.filter(item => item.definitionId === viewDefinition.id && !item.suspended),
-        [runtimeState.instances, viewDefinition.id],
+        () => processInstances.filter(item => !item.suspended),
+        [processInstances],
     );
     const definitionTasks = useMemo(() => runtimeState.tasks.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.tasks, viewDefinition.id]);
     const definitionJobs = useMemo(() => runtimeState.jobs.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.jobs, viewDefinition.id]);
@@ -105,26 +114,14 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                     (instances || []).map(item => [item.id, item]),
                 );
                 const [latestActiveInstances, latestSuspendedInstances, latestTasks, latestJobs, latestHistoryGroups] = await Promise.all([
-                    camundaApi.getProcessInstancesByDefinitionKey(
-                        viewDefinition.key,
-                        viewDefinition.tenantId,
-                        { active: true },
-                    ),
-                    camundaApi.getProcessInstancesByDefinitionKey(
-                        viewDefinition.key,
-                        viewDefinition.tenantId,
-                        { suspended: true },
-                    ),
+                    camundaApi.getProcessInstancesByDefinition(viewDefinition.id, { active: true }),
+                    camundaApi.getProcessInstancesByDefinition(viewDefinition.id, { suspended: true }),
                     camundaApi.getTasksByDefinition(viewDefinition.id),
                     camundaApi.getJobsByDefinition(viewDefinition.id),
-                    Promise.all(
-                        (versions?.length ? versions : [definition]).map(item =>
-                            camundaApi.getHistoricInstancesByDefinition(item.id).catch(() => []),
-                        ),
-                    ),
+                    camundaApi.getHistoricInstancesByDefinition(viewDefinition.id).catch(() => []),
                 ]);
                 const historyByInstanceId = Object.fromEntries(
-                    latestHistoryGroups.flat().map(item => [item.id, item]),
+                    latestHistoryGroups.map(item => [item.id, item]),
                 );
                 const combinedInstances = [
                     ...(latestActiveInstances || []),
@@ -177,8 +174,6 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         runtimeRefresh,
         versions,
         viewDefinition.id,
-        viewDefinition.key,
-        viewDefinition.tenantId,
     ]);
 
     async function createDeleteAudit(instance) {
@@ -262,11 +257,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         });
         setSuspensionError("");
         try {
-            await camundaApi.setProcessInstancesSuspendedByDefinitionKey(
-                viewDefinition.key,
-                viewDefinition.tenantId,
-                suspended,
-            );
+            await camundaApi.setProcessInstancesSuspendedByDefinition(viewDefinition.id, suspended);
             setRuntimeRefresh(value => value + 1);
         } catch (error) {
             setSuspensionError(
