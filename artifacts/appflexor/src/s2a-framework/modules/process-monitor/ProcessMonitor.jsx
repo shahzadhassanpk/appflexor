@@ -33,7 +33,7 @@ async function mapWithConcurrency(items, concurrency, mapper) {
     return results;
 }
 
-export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
+export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialProcessKey = "", onDefinitionClose }) {
     const appContext = useContext(AppContext);
     const tenantId = appContext?.tenantSubscription?.tenant_id || "";
     const [state, setState] = useState({ definitions: [], instances: [], tasks: [], jobs: [], history: [] });
@@ -41,6 +41,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
     const [error, setError] = useState("");
     const [selected, setSelected] = useState({ instanceId: "", taskId: "" });
     const [selectedDefinition, setSelectedDefinition] = useState(null);
+    const focusedProcessKey = String(initialProcessKey || "").toLowerCase().trim();
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -65,12 +66,17 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
                 return { ...instance, startTime, history: historyMap[instance.id], definition, definitionName: definition?.name || definition?.key, variables, activity, sla: calculateSla(variables, new Date(), startTime), tasks: (tasks || []).filter(task => task.processInstanceId === instance.id) };
             });
             setState({ definitions: definitions || [], instances: details, tasks: tasks || [], jobs: jobs || [], history: history || [] });
+            if (focusedProcessKey) {
+                setSelectedDefinition((definitions || []).find(item =>
+                    String(item.key || "").toLowerCase().trim() === focusedProcessKey,
+                ) || null);
+            }
         } catch (requestError) {
             setError(requestError.response?.data?.message || requestError.message || "Unable to load process engine monitor data.");
         } finally {
             setLoading(false);
         }
-    }, [tenantId]);
+    }, [tenantId, focusedProcessKey]);
 
     async function refreshInstance(instanceId) {
         const [rawInstance, rawVariables, activity, instanceTasks, instanceJobs] = await Promise.all([
@@ -116,6 +122,12 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
     useEffect(() => { if (activeTab === "PROCESS_MONITOR") load(); }, [activeTab, load]);
     const instanceMap = useMemo(() => Object.fromEntries(state.instances.map(item => [item.id, item])), [state.instances]);
     const selectedInstance = instanceMap[selected.instanceId];
+    const visibleDefinitions = useMemo(
+        () => focusedProcessKey
+            ? state.definitions.filter(item => String(item.key || "").toLowerCase().trim() === focusedProcessKey)
+            : state.definitions,
+        [focusedProcessKey, state.definitions],
+    );
 
     return (
         <main className="process-theme-surface min-h-full bg-slate-50 p-3 text-slate-900 sm:p-5">
@@ -127,7 +139,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
                 {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
                 {loading ? <div className="grid place-items-center rounded-2xl border border-slate-200 bg-white py-20"><div className="text-center"><i className="fa-solid fa-circle-notch fa-spin text-2xl text-indigo-600" /><p className="mt-3 text-sm text-slate-500">Loading process operations…</p></div></div> : <>
                     <Dashboard {...state} tenantId={tenantId} />
-                    <DeployedProcesses definitions={state.definitions} instances={state.instances} jobs={state.jobs} onSelectDefinition={setSelectedDefinition} />
+                    <DeployedProcesses definitions={visibleDefinitions} instances={state.instances} jobs={state.jobs} onSelectDefinition={setSelectedDefinition} />
                     {/* <div className="grid gap-5 xl:grid-cols-[1.3fr_.9fr]">
                         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 p-4"><h2 className="mb-0 text-lg font-bold">Running instances</h2></div><div className="divide-y divide-slate-100">{state.instances.map(instance => <button key={instance.id} type="button" onClick={() => setSelected({ instanceId: instance.id, taskId: "" })} className="block w-full p-4 text-left hover:bg-slate-50"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="mb-1 truncate font-semibold">{instance.definitionName || instance.definitionId}</p><p className="mb-0 truncate text-xs text-slate-500">{instance.businessKey || instance.id} · Tenant {instance.tenantId || "none"}</p></div><SlaBadge instance={instance} /></div></button>)}{!state.instances.length && <div className="p-10 text-center text-sm text-slate-500">No running instances in this tenant.</div>}</div></section>
                         <TaskList tasks={state.tasks} currentUser={currentUser} instanceMap={instanceMap} onSelectInstance={(instanceId, taskId) => setSelected({ instanceId, taskId })} />
@@ -136,7 +148,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR" }) {
             </div>
             {selectedDefinition && (
                 <div className="fixed inset-0 z-[1070] overflow-y-auto bg-slate-50 p-3 sm:p-5">
-                    <ProcessExecutionView definition={selectedDefinition} instances={state.instances} tasks={state.tasks} jobs={state.jobs} onBack={() => setSelectedDefinition(null)} onSelectInstance={instanceId => setSelected({ instanceId, taskId: "" })} onInstanceDeleted={removeInstance} />
+                    <ProcessExecutionView definition={selectedDefinition} instances={state.instances} tasks={state.tasks} jobs={state.jobs} onBack={() => { setSelectedDefinition(null); if (onDefinitionClose) onDefinitionClose(); }} onSelectInstance={instanceId => setSelected({ instanceId, taskId: "" })} onInstanceDeleted={removeInstance} />
                 </div>
             )}
             <InstanceDetail instance={selectedInstance} selectedTaskId={selected.taskId} jobs={state.jobs} onRefresh={() => refreshInstance(selected.instanceId)} onClose={() => setSelected({ instanceId: "", taskId: "" })} />

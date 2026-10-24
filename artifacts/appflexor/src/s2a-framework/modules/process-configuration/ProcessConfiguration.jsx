@@ -84,6 +84,11 @@ const PROC_INIT = {
     process_gov: "",
     is_active: "YES", allow_draft: "YES",
 };
+const WORKSPACE_TABS = [
+    { key: "deploy", label: "Deploy", icon: "fa-rocket" },
+    { key: "configure", label: "Govern", icon: "fa-gears" },
+    { key: "monitor", label: "Monitor", icon: "fa-chart-line" },
+];
 
 /* ── full-screen overlay for ProcessMap / Monitor / Deploy ──────────────── */
 function FullScreenDialog({ title, icon, onClose, children }) {
@@ -104,6 +109,53 @@ function FullScreenDialog({ title, icon, onClose, children }) {
                 </button>
             </div>
             <div className="orch-fullscreen-body">
+                {children}
+            </div>
+        </div>
+    );
+}
+
+function ProcessWorkspaceDialog({ activeTab, process, onClose, onTabChange, children }) {
+    const title = process?.title || "Process Workspace";
+    const processKey = process?.processKey || "";
+    return (
+        <div className="orch-fullscreen-overlay orch-workspace-overlay">
+            <div className="orch-workspace-header">
+                <div className="orch-workspace-title-wrap">
+                    <span className="orch-workspace-icon">
+                        <i className="fa-solid fa-diagram-project" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                        <div className="orch-workspace-title">{title}</div>
+                        <div className="orch-workspace-subtitle">
+                            {processKey ? `Process key: ${processKey}` : "Select or manage processes across deploy, configure, and monitor."}
+                        </div>
+                    </div>
+                </div>
+                <div className="orch-workspace-tabs" role="tablist" aria-label="Process workspace sections">
+                    {WORKSPACE_TABS.map(tab => (
+                        <button
+                            key={tab.key}
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === tab.key}
+                            className={`orch-workspace-tab ${activeTab === tab.key ? "active" : ""}`}
+                            onClick={() => onTabChange(tab.key)}>
+                            <i className={`fa-solid ${tab.icon}`} aria-hidden="true" />
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+                <button
+                    type="button"
+                    className="orch-fullscreen-close"
+                    onClick={onClose}
+                    aria-label="Close workspace">
+                    <i className="fa-solid fa-xmark" aria-hidden="true" />
+                    Close
+                </button>
+            </div>
+            <div className="orch-workspace-body">
                 {children}
             </div>
         </div>
@@ -159,13 +211,75 @@ function ProcessConfiguration() {
     const [showSimulator, setShowSimulator] = useState(false);
     const [showBPMN, setShowBPMN] = useState(false);
     const [urlBPMN, setUrlBPMN] = useState("");
+    const [workspace, setWorkspace] = useState({
+        show: false,
+        activeTab: "deploy",
+        process: null,
+    });
+    const [focusedConfigProcess, setFocusedConfigProcess] = useState(null);
+    const [focusedMonitorProcess, setFocusedMonitorProcess] = useState(null);
 
-    function openProcessMonitor() {
+    function getWorkspaceProcess(proc) {
+        if (!proc) return null;
+        const tenantProcess = proc.tenantProcess || getTPForProcess(proc, tenantProcs);
+        const processKey = proc.process_key || tenantProcess?.process_def_key || "";
+        return {
+            ...proc,
+            processKey,
+            title: proc.title || tenantProcess?.title || tenantProcess?.name || processKey || "Untitled process",
+            configId: proc.isUnconfigured ? "" : proc.id,
+            deployId: tenantProcess?.id || "",
+            tenantProcess,
+        };
+    }
+
+    function getWorkspaceProcessFromTenantProcess(item, fallback = null) {
+        return {
+            ...(fallback || {}),
+            processKey: item.process_def_key || fallback?.processKey || "",
+            title: item.title || fallback?.title || item.process_def_key || "Untitled process",
+            deployId: item.id || fallback?.deployId || "",
+            tenantProcess: item,
+        };
+    }
+
+    function openProcessConfigDialog(proc) {
+        setFocusedConfigProcess(getWorkspaceProcess(proc));
+        setFocusedMonitorProcess(null);
+        setShowBPMN(false);
+    }
+
+    function openTenantProcessConfigDialog(item, fallback = null) {
+        setFocusedConfigProcess(getWorkspaceProcessFromTenantProcess(item, fallback));
+        setFocusedMonitorProcess(null);
+        setShowBPMN(false);
+    }
+
+    function openProcessMonitorDialog(proc) {
+        setFocusedMonitorProcess(getWorkspaceProcess(proc));
+        setFocusedConfigProcess(null);
+        setShowBPMN(false);
+    }
+
+    function openTenantProcessMonitorDialog(item, fallback = null) {
+        setFocusedMonitorProcess(getWorkspaceProcessFromTenantProcess(item, fallback));
+        setFocusedConfigProcess(null);
+        setShowBPMN(false);
+    }
+
+    function openProcessWorkspace(activeTab = "deploy", proc = null) {
+        setWorkspace({
+            show: true,
+            activeTab,
+            process: getWorkspaceProcess(proc),
+        });
         setShowProcessMap(false);
         setShowDeploy(false);
+        setShowMonitor(false);
         setShowSimulator(false);
         setShowBPMN(false);
-        setShowMonitor(true);
+        setFocusedConfigProcess(null);
+        setFocusedMonitorProcess(null);
     }
 
     /* ── Business Area modal ────────────────────────────────────────────── */
@@ -469,6 +583,62 @@ function ProcessConfiguration() {
 
             {/* ══════════ FULL-SCREEN DIALOGS (conditionally mounted) ════ */}
 
+            {workspace.show && (
+                <ProcessWorkspaceDialog
+                    activeTab={workspace.activeTab}
+                    process={workspace.process}
+                    onTabChange={activeTab => setWorkspace(prev => ({ ...prev, activeTab }))}
+                    onClose={() => { setWorkspace(prev => ({ ...prev, show: false })); getData(); }}>
+                    {workspace.activeTab === "deploy" && (
+                        <Processes
+                            activeTab="PROCESSES"
+                            embedded
+                            initialProcessKey={workspace.process?.processKey || ""}
+                            onOpenConfigure={item => openTenantProcessConfigDialog(item, workspace.process)}
+                            onOpenMonitor={item => openTenantProcessMonitorDialog(item, workspace.process)}
+                        />
+                    )}
+                    {workspace.activeTab === "configure" && (
+                        <ProcessMap
+                            activeTab="PROCESS_MAP"
+                            embedded
+                            initialProcessKey={workspace.process?.processKey || ""}
+                            autoOpenInitial={Boolean(workspace.process?.processKey)}
+                        />
+                    )}
+                    {workspace.activeTab === "monitor" && (
+                        <ProcessMonitor
+                            activeTab="PROCESS_MONITOR"
+                            embedded
+                            initialProcessKey={workspace.process?.processKey || ""}
+                        />
+                    )}
+                </ProcessWorkspaceDialog>
+            )}
+
+            {focusedConfigProcess && (
+                <ProcessMap
+                    activeTab="PROCESS_MAP"
+                    initialProcessKey={focusedConfigProcess.processKey || ""}
+                    autoOpenInitial
+                    dialogOnly
+                    onDialogClose={() => setFocusedConfigProcess(null)}
+                />
+            )}
+
+            {focusedMonitorProcess && (
+                <FullScreenDialog
+                    title={`Monitor: ${focusedMonitorProcess.title || focusedMonitorProcess.processKey || "Process"}`}
+                    icon="fa-chart-line"
+                    onClose={() => setFocusedMonitorProcess(null)}>
+                    <ProcessMonitor
+                        activeTab="PROCESS_MONITOR"
+                        initialProcessKey={focusedMonitorProcess.processKey || ""}
+                        onDefinitionClose={() => setFocusedMonitorProcess(null)}
+                    />
+                </FullScreenDialog>
+            )}
+
             {showProcessMap && (
                 <FullScreenDialog
                     title="Orchestrate > Govern Processes"
@@ -543,23 +713,9 @@ function ProcessConfiguration() {
                                 <button
                                     type="button"
                                     className="group btn button-theme btn-sm d-inline-flex align-items-center gap-2 !border-blue-600 !bg-blue-600 !text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:!border-blue-700 hover:!bg-blue-700 hover:shadow-lg hover:shadow-blue-200/70 active:translate-y-0 active:shadow-sm focus:!ring-2 focus:!ring-blue-300"
-                                    onClick={() => setShowDeploy(true)}>
-                                    <i className="fa-solid fa-rocket transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
-                                    Deploy
-                                </button>
-                                <button
-                                    type="button"
-                                    className="group btn button-theme btn-sm d-inline-flex align-items-center gap-2 !border-violet-600 !bg-violet-600 !text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:!border-violet-700 hover:!bg-violet-700 hover:shadow-lg hover:shadow-violet-200/70 active:translate-y-0 active:shadow-sm focus:!ring-2 focus:!ring-violet-300"
-                                    onClick={() => setShowProcessMap(true)}>
-                                    <i className="fa-solid fa-gears transition-transform duration-300 group-hover:rotate-45" aria-hidden="true" />
-                                    Govern
-                                </button>
-                                <button
-                                    type="button"
-                                    className="group btn button-theme btn-sm d-inline-flex align-items-center gap-2 !border-emerald-600 !bg-emerald-600 !text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:!border-emerald-700 hover:!bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200/70 active:translate-y-0 active:shadow-sm focus:!ring-2 focus:!ring-emerald-300"
-                                    onClick={openProcessMonitor}>
-                                    <i className="fa-solid fa-chart-line transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
-                                    Monitor
+                                    onClick={() => openProcessWorkspace("deploy")}>
+                                    <i className="fa-solid fa-diagram-project transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+                                    Process Workspace
                                 </button>
                             </div>
                         </div>
@@ -695,7 +851,7 @@ function ProcessConfiguration() {
                                                             <div key={proc.id} className="orch-tree-proc-row">
                                                                 <span className="orch-proc-indent" aria-hidden="true" />
                                                                 <i className="fa-solid fa-diagram-project orch-proc-icon" aria-hidden="true" />
-                                                                <a href="#" className="orch-proc-title" title={proc.title} onClick={() => { setUrlBPMN(url); setShowBPMN(true); setBpmnTitle(proc.title) }}>{proc.title} {proc.def_key}</a>
+                                                                <a href="#" className="orch-proc-title" title={proc.title} onClick={event => { event.preventDefault(); setUrlBPMN(url); setShowBPMN(true); setBpmnTitle(proc.title); }}>{proc.title} {proc.def_key}</a>
                                                                 {proc.isUnconfigured && <span className="orch-gb-badge" style={{ background: "#fef3c7", color: "#b45309", border: "1px solid #fcd34d" }}>Needs configuration</span>}
 
 
@@ -713,6 +869,17 @@ function ProcessConfiguration() {
                                                                         {pc.title}
                                                                     </span>
                                                                 )}
+                                                                <div className="orch-proc-actions">
+                                                                    <button type="button" className="orch-icon-btn" title="Deploy process" onClick={() => openProcessWorkspace("deploy", proc)}>
+                                                                        <i className="fa-solid fa-rocket" aria-hidden="true" />
+                                                                    </button>
+                                                                    <button type="button" className="orch-icon-btn" title="Configure process" onClick={() => openProcessConfigDialog(proc)}>
+                                                                        <i className="fa-solid fa-gears" aria-hidden="true" />
+                                                                    </button>
+                                                                    <button type="button" className="orch-icon-btn" title="Monitor process" onClick={() => openProcessMonitorDialog(proc)}>
+                                                                        <i className="fa-solid fa-chart-line" aria-hidden="true" />
+                                                                    </button>
+                                                                </div>
                                                                 {/* <div className="orch-proc-actions">
                                                                 <button type="button" className="orch-icon-btn" title="Edit" onClick={() => openEditProc(proc)}>
                                                                     <i className="fa-regular fa-pen-to-square" aria-hidden="true" />

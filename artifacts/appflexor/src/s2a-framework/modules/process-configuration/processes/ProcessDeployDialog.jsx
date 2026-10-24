@@ -1298,6 +1298,7 @@ export function ProcessDeployDialog({
                                                 {isUserTasks ? (
                                                     <div className="d-flex gap-1 min-w-50">
                                                         <button
+                                                            type="button"
                                                             className="btn btn-outline-secondary btn-sm proc-elem-edit-btn no-wrap"
                                                             title="Assign User/Group"
                                                             aria-label="Assign user or group"
@@ -1305,6 +1306,7 @@ export function ProcessDeployDialog({
                                                             <i className="fa-solid fa-user-pen" />
                                                         </button>
                                                         <button
+                                                            type="button"
                                                             className="btn btn-outline-secondary btn-sm proc-elem-edit-btn no-wrap"
                                                             title="Configure Form"
                                                             aria-label="Configure form"
@@ -1312,6 +1314,7 @@ export function ProcessDeployDialog({
                                                             <i className="fa-solid fa-file-lines" />
                                                         </button>
                                                         <button
+                                                            type="button"
                                                             className="btn btn-outline-danger btn-sm proc-elem-edit-btn no-wrap"
                                                             title="Clear assignment and form configuration"
                                                             aria-label="Clear assignment and form configuration"
@@ -1322,6 +1325,7 @@ export function ProcessDeployDialog({
                                                 ) : (
                                                     <div className="d-flex gap-1 min-w-30">
                                                         <button
+                                                            type="button"
                                                             className="btn btn-outline-secondary btn-sm proc-elem-edit-btn no-wrap"
                                                             title="Configure"
                                                             aria-label={`Configure ${elemDisplayName(elem)}`}
@@ -1330,6 +1334,7 @@ export function ProcessDeployDialog({
                                                         </button>
                                                         {activeElemTab === "serviceTasks" && (
                                                             <button
+                                                                type="button"
                                                                 className="btn btn-outline-danger btn-sm proc-elem-edit-btn no-wrap"
                                                                 title="Clear service task configuration"
                                                                 aria-label="Clear service task configuration"

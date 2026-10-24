@@ -19,6 +19,18 @@
     color: var(--text-primary, var(--font-color)) !important;
 }
 
+.process-theme-modal.modal {
+    z-index: 1085;
+}
+
+.process-property-editor-modal.modal {
+    z-index: 1100;
+}
+
+.process-property-editor-backdrop.modal-backdrop {
+    z-index: 1095;
+}
+
 .process-theme-surface .bg-slate-50,
 .process-theme-surface.bg-slate-50,
 .process-theme-modal .bg-light,

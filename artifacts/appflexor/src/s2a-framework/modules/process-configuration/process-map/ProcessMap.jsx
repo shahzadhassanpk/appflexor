@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { Table, Tbody, Td, Th, Thead, Tr } from "react-super-responsive-table";
 import "react-super-responsive-table/dist/SuperResponsiveTableStyle.css";
 import { AppContext } from "../../../../AppContext";
@@ -15,6 +15,7 @@ import { MultiSelect } from "react-multi-select-component";
 import ProcessesContext from "../../camunda/ProcessesContext";
 import { toastEmitter } from "../../../components/Toastify/Toastify";
 import ProcessWorkspaceList from "../components/ProcessWorkspaceList";
+import "../process-theme.css";
 
 const DEFAULT_URGENCY_LEVELS = {
     High: { slaValue: 24, slaUnit: "hours" },
@@ -52,7 +53,7 @@ function normalizeUrgencyLevels(value) {
     }, {});
 }
 
-function ProcessMap({ activeTab }) {
+function ProcessMap({ activeTab, initialProcessKey = "", autoOpenInitial = false, dialogOnly = false, onDialogClose }) {
     let initialState = {
         id: "",
         title: "",
@@ -87,11 +88,16 @@ function ProcessMap({ activeTab }) {
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [selectedChannels, setSelectedChannels] = useState([]);
     const [showPreview, setShowPreview] = useState(false);
-    const handleClose = () => setFormShow(false);
+    const autoOpenedProcessRef = useRef("");
+    const handleClose = () => {
+        setFormShow(false);
+        if (dialogOnly && onDialogClose) onDialogClose();
+    };
     const handleShow = () => setFormShow(true);
     const appContext = useContext(AppContext);
     const channel = appContext.channel;
     const tenantId = appContext?.tenantSubscription?.tenant_id;
+    const focusedProcessKey = String(initialProcessKey || "").toLowerCase().trim();
     const getPaginateData = (current, pageSize) => {
         const data = getFilteredItems();
         if (data) {
@@ -101,9 +107,13 @@ function ProcessMap({ activeTab }) {
     };
 
     function getFilteredItems() {
-        if (!searchTerm || searchTerm.trim() === "") return items;
+        const scopedItems = focusedProcessKey
+            ? items.filter(item => String(item.process_key || "").toLowerCase().trim() === focusedProcessKey)
+            : items;
+        if (focusedProcessKey) return scopedItems;
+        if (!searchTerm || searchTerm.trim() === "") return scopedItems;
         const q = searchTerm.trim().toLowerCase();
-        return items.filter(it => {
+        return scopedItems.filter(it => {
             const title = (it.title || "").toString().toLowerCase();
             const key = (it.process_key || "").toString().toLowerCase();
             const category = (it.category || "").toString().toLowerCase();
@@ -135,6 +145,29 @@ function ProcessMap({ activeTab }) {
     useEffect(() => {
         if (selectedItem?.id) getAuth(selectedItem);
     }, [selectedItem?.id, groups, channels]); // Rehydrate after async reference data arrives.
+
+    useEffect(() => {
+        if (!autoOpenInitial || activeTab !== "PROCESS_MAP" || !focusedProcessKey) return;
+        if (autoOpenedProcessRef.current === focusedProcessKey) return;
+        if (!items.length && !processList.length) return;
+
+        autoOpenedProcessRef.current = focusedProcessKey;
+        const existingConfig = items.find(item =>
+            String(item.process_key || "").toLowerCase().trim() === focusedProcessKey,
+        );
+
+        if (existingConfig) {
+            editItem(existingConfig);
+            return;
+        }
+
+        setSelectedItem(getInitialItem());
+        setSelectedGroups([]);
+        setSelectedChannels([]);
+        setSaveIsDisabled(true);
+        setShowPreview(false);
+        handleShow();
+    }, [activeTab, autoOpenInitial, focusedProcessKey, items, processList]);
 
     useEffect(() => {
         if (
@@ -265,8 +298,20 @@ function ProcessMap({ activeTab }) {
         }));
     }
 
+    function getInitialItem() {
+        if (!focusedProcessKey) return initialState;
+        const selectedProcess = processList.find(
+            process => String(process.process_def_key || "").toLowerCase().trim() === focusedProcessKey,
+        );
+        return {
+            ...initialState,
+            process_key: initialProcessKey,
+            title: selectedProcess ? selectedProcess.title : "",
+        };
+    }
+
     function addNewItem() {
-        setSelectedItem(initialState);
+        setSelectedItem(getInitialItem());
         setSelectedGroups([]);
         setSelectedChannels([]);
         setSaveIsDisabled(true);
@@ -275,7 +320,7 @@ function ProcessMap({ activeTab }) {
     }
 
     function clearFields() {
-        setSelectedItem(initialState);
+        setSelectedItem(getInitialItem());
         setSaveIsDisabled(true);
         setShowPreview(false);
     }
@@ -645,7 +690,7 @@ function ProcessMap({ activeTab }) {
                 setState={setDeleteConfig}
                 modalType="deleteModal"
             />
-            <ProcessWorkspaceList title="Configure Processes" description="Configure process access, ownership, forms, and SLA policies." items={getFilteredItems()} loading={loading} onRefresh={getData} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, key, category, or business area" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add configuration" stats={[
+            {!dialogOnly && <ProcessWorkspaceList title={focusedProcessKey ? "Configure Process" : "Process Governance"} description={focusedProcessKey ? "Configure access, ownership, forms, and SLA policies for this process." : "Configure process access, ownership, forms, and SLA policies."} items={getFilteredItems()} loading={loading} onRefresh={getData} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, key, category, or business area" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel={focusedProcessKey ? "Add configuration for this process" : "Add configuration"} stats={[
                 { label: "Configurations", value: items.length, icon: "fa-solid fa-diagram-project", tone: "bg-indigo-50 text-indigo-600" },
                 { label: "Active", value: items.filter(item => item.is_active === "YES").length, icon: "fa-solid fa-circle-check", tone: "bg-emerald-50 text-emerald-600" },
                 { label: "Inactive", value: items.filter(item => item.is_active !== "YES").length, icon: "fa-solid fa-circle-pause", tone: "bg-slate-100 text-slate-600" },
@@ -656,8 +701,8 @@ function ProcessMap({ activeTab }) {
                 { key: "urgency_levels", label: "SLA", sortValue: item => normalizeUrgencyLevels(item.urgency_levels).High.slaValue, render: item => <div className="flex flex-wrap gap-1">{URGENCY_LEVELS.map(level => { const sla = normalizeUrgencyLevels(item.urgency_levels)[level]; return <span key={level} className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">{level}: {sla.slaValue}{sla.slaUnit === "hours" ? "h" : "d"}</span>; })}</div> },
                 { key: "business_area", label: "Business Area", render: item => getBusinessAreaById(item.business_area) || "—" },
                 { key: "process_gov", label: "Governing Body", render: item => getGoverningBodyById(item.process_gov) || "—" },
-            ]} renderActions={item => <><button type="button" className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600" title="Edit configuration" onClick={() => editItem(item)}><i className="fa-regular fa-edit" /></button><button type="button" className="grid h-9 w-9 place-items-center rounded-lg bg-red-50 text-red-600" title="Delete configuration" onClick={() => deleteData(item)}><i className="fa-regular fa-trash-can" /></button></>} />
-            <div className="proc-list-wrap" style={{ display: "none" }}>
+            ]} renderActions={item => <><button type="button" className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600" title="Edit configuration" onClick={() => editItem(item)}><i className="fa-regular fa-edit" /></button><button type="button" className="grid h-9 w-9 place-items-center rounded-lg bg-red-50 text-red-600" title="Delete configuration" onClick={() => deleteData(item)}><i className="fa-regular fa-trash-can" /></button></>} />}
+            {!dialogOnly && <div className="proc-list-wrap" style={{ display: "none" }}>
                 {/* ── Search bar ── */}
                 <div className="proc-list-search">
                     <span className="proc-list-search-icon"><i className="fa fa-search" /></span>
@@ -752,7 +797,8 @@ function ProcessMap({ activeTab }) {
                         tableData={getFilteredItems()}
                     />
                 </div>
-                <ModuleFormViewer
+            </div>}
+            <ModuleFormViewer
                     className="process-theme-modal"
                     handleClose={handleClose}
                     showModal={formShow}
@@ -1189,8 +1235,7 @@ function ProcessMap({ activeTab }) {
                             </button>
                         </div>
                     </>
-                </ModuleFormViewer>
-            </div>
+            </ModuleFormViewer>
         </div>
     );
 }

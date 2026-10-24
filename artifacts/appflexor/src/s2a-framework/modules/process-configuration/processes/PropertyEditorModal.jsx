@@ -31,7 +31,7 @@ export function PropertyEditorModal({
     onSave,         // () => void  (savePropChanges)
     onAgentChange,  // (agentKey) => void
     onRefreshReferenceData,
-    zIndex = 1060,
+    zIndex = 1100,
 }) {
     if (!propModal) return null;
     const { type, subType } = propModal;
@@ -677,9 +677,10 @@ export function PropertyEditorModal({
             show={!!propModal}
             onHide={onClose}
             backdrop="static"
+            backdropClassName="process-property-editor-backdrop"
             size="lg"
             style={{ zIndex }}
-            className="s2a-modal process-theme-modal">
+            className="s2a-modal process-theme-modal process-property-editor-modal">
             <Modal.Header>
                 <Modal.Title className="h4" style={{ fontSize: "0.9rem" }}>
                     <i className="fa-solid fa-sliders me-2" />

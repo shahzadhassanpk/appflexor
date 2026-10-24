@@ -310,7 +310,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
             `}</style>
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <nav className="flex flex-wrap items-center gap-2 text-sm" aria-label="Breadcrumb">
-                    <button type="button" onClick={onBack} className="font-semibold text-indigo-600 hover:underline">Dashboard</button><i className="fa-solid fa-angle-right text-slate-400" /><span className="text-slate-500">Processes</span><i className="fa-solid fa-angle-right text-slate-400" /><span className="font-medium text-slate-800">{viewDefinition.name || viewDefinition.key}: Version {viewDefinition.version}</span>
+                    <span className="font-semibold text-slate-600">Dashboard</span><i className="fa-solid fa-angle-right text-slate-400" /><span className="text-slate-500">Processes</span><i className="fa-solid fa-angle-right text-slate-400" /><span className="font-medium text-slate-800">{viewDefinition.name || viewDefinition.key}: Version {viewDefinition.version}</span>
                 </nav>
                 <div className="flex flex-wrap items-center gap-2">
                     <button
@@ -332,13 +332,20 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                     <button type="button" onClick={() => setRuntimeRefresh(value => value + 1)} disabled={refreshing} className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
                         <i className={`fa-solid fa-rotate mr-2 ${refreshing ? "fa-spin" : ""}`} />Refresh
                     </button>
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
+                        aria-label="Close process monitor">
+                        <i className="fa-solid fa-xmark mr-2" aria-hidden="true" />
+                        Close
+                    </button>
                 </div>
             </div>
             {auditError && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{auditError}</div>}
             {suspensionError && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{suspensionError}</div>}
             <div className="grid min-h-[500px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[260px_1fr]">
                 <aside className="border-b border-slate-200 bg-slate-50 p-4 lg:border-b-0 lg:border-r">
-                    <button type="button" onClick={onBack} className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600"><i className="fa-solid fa-arrow-left" />All processes</button>
                     <dl className="space-y-4 text-sm">
                         {viewDefinition?.id ? (
                             <>

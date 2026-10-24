@@ -97,7 +97,7 @@ function getProcessEnginePayload(response) {
 /* ═══════════════════════════════════════════════════════════════════════════
    Processes — list + orchestrator
 ═══════════════════════════════════════════════════════════════════════════ */
-function Processes({ activeTab }) {
+function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenMonitor }) {
     const appContext = useContext(AppContext);
 
     /* ── List state ──────────────────────────────────────────────────── */
@@ -152,13 +152,19 @@ function Processes({ activeTab }) {
     /* ═══════════════════════════════════════════════════════════════════
        List helpers
     ═══════════════════════════════════════════════════════════════════ */
+    const focusedProcessKey = String(initialProcessKey || "").toLowerCase().trim();
+
     function getFilteredItems() {
-        const statusFilteredItems = items.filter(item => showArchived
+        const statusFilteredItems = (focusedProcessKey ? items : items.filter(item => showArchived
             ? getDeploymentStatus(item) === "ARCHIVED"
-            : getDeploymentStatus(item) !== "ARCHIVED");
+            : getDeploymentStatus(item) !== "ARCHIVED"));
+        const focusedItems = focusedProcessKey
+            ? statusFilteredItems.filter(item => String(item.process_def_key || "").toLowerCase().trim() === focusedProcessKey)
+            : statusFilteredItems;
+        if (focusedProcessKey) return focusedItems;
         if (!searchTerm || !searchTerm.trim()) return statusFilteredItems;
         const q = searchTerm.trim().toLowerCase();
-        return statusFilteredItems.filter(it =>
+        return focusedItems.filter(it =>
             (it.title || "").toLowerCase().includes(q) ||
             (it.process_def_key || "").toLowerCase().includes(q) ||
             (it.process_file || "").toLowerCase().includes(q),
@@ -360,6 +366,8 @@ function Processes({ activeTab }) {
         const busy = actionItemId === item.id;
         return <>
             <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600 disabled:opacity-50" title="Edit process" onClick={() => editItem(item)}><i className="fa-regular fa-edit" /></button>
+            {onOpenConfigure && <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-violet-50 text-violet-600 disabled:opacity-50" title="Configure process" aria-label={`Configure ${item.title || item.process_def_key}`} onClick={() => onOpenConfigure(item)}><i className="fa-solid fa-gears" /></button>}
+            {onOpenMonitor && <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-50 text-emerald-600 disabled:opacity-50" title="Monitor process" aria-label={`Monitor ${item.title || item.process_def_key}`} onClick={() => onOpenMonitor(item)}><i className="fa-solid fa-chart-line" /></button>}
             {status === "DEPLOYED" && item.deployment && <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-amber-50 text-amber-700 disabled:opacity-50" title="Undeploy from process engine" aria-label={`Undeploy ${item.title || item.process_def_key}`} onClick={() => undeployData(item)}><i className={`fa-solid ${busy ? "fa-spinner fa-spin" : "fa-cloud-arrow-down"}`} /></button>}
             {status === "UNDEPLOYED" && <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-amber-50 text-amber-700 disabled:opacity-50" title="Archive process" aria-label={`Archive ${item.title || item.process_def_key}`} onClick={() => archiveData(item)}><i className={`fa-solid ${busy ? "fa-spinner fa-spin" : "fa-box-archive"}`} /></button>}
             {status === "DRAFT" && <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-red-50 text-red-600 disabled:opacity-50" title="Delete draft" aria-label={`Delete draft ${item.title || item.process_def_key}`} onClick={() => deleteDraft(item)}><i className={`fa-solid ${busy ? "fa-spinner fa-spin" : "fa-trash-can"}`} /></button>}
@@ -374,7 +382,7 @@ function Processes({ activeTab }) {
             <ModalBox state={undeployConfig} message="Undeploy this process from the process engine? Running and historical process data associated with this deployment may be removed." operation={undeployData} header="Undeploy Process" setState={setUndeployConfig} modalType="deleteModal" />
             <ModalBox state={archiveConfig} message="Archive this undeployed process? It will be hidden from the active process list." operation={archiveData} header="Archive Process" setState={setArchiveConfig} modalType="deleteModal" />
             <ModalBox state={draftDeleteConfig} message="Permanently delete this draft process from AppFlexor?" operation={deleteDraft} header="Delete Draft Process" setState={setDraftDeleteConfig} modalType="deleteModal" />
-            <ProcessWorkspaceList title="Deploy Processes" description="Manage BPMN files, deployed versions, and process definitions." items={getFilteredItems()} loading={loading} onRefresh={getData} showArchived={showArchived} setShowArchived={setShowArchived} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, definition key, or file" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add process" stats={[
+            <ProcessWorkspaceList title={focusedProcessKey ? "Deploy Process" : "Process Deployments"} description={focusedProcessKey ? "Manage the BPMN file, deployment, and versions for this process." : "Manage BPMN files, deployed versions, and process definitions."} items={getFilteredItems()} loading={loading} onRefresh={getData} showArchived={!focusedProcessKey && showArchived} setShowArchived={focusedProcessKey ? null : setShowArchived} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, definition key, or file" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add process" stats={[
                 { label: "Process files", value: items.length, icon: "fa-solid fa-file-code", tone: "bg-indigo-50 text-indigo-600" },
                 { label: "Deployed", value: items.filter(item => getDeploymentStatus(item) === "DEPLOYED").length, icon: "fa-solid fa-rocket", tone: "bg-emerald-50 text-emerald-600" },
                 { label: "Drafts", value: items.filter(item => getDeploymentStatus(item) === "DRAFT").length, icon: "fa-solid fa-pen-ruler", tone: "bg-amber-50 text-amber-600" },
