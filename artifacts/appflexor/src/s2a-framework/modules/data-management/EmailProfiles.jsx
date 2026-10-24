@@ -1,5 +1,7 @@
+/* eslint-disable react/prop-types */
+/* eslint-disable react-hooks/exhaustive-deps */
 import axios from "axios";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Table, Tbody, Td, Th, Thead, Tr } from "react-super-responsive-table";
 // import useKeyboardShortcut from "../../utils/useKeyboardShortcut";
 import { API_URL } from "../../Config";
@@ -17,14 +19,31 @@ import {
 import { getData as globalGetData } from "../../components/CrudApiCall";
 import { toastEmitter } from "../../components/Toastify/Toastify";
 
-function EmailProfiles({ activeTab }) {
-    let initialState = {
-        id: "",
-        email: "",
-        host: "",
-        sslport: "",
-        emailpassword: "",
+const INITIAL_STATE = {
+    id: "",
+    type: "smtp",
+    email: "",
+    host: "",
+    sslport: "",
+    emailpassword: "",
+    api_key: "",
+};
+
+function getProfileType(item = {}) {
+    const value = String(item?.type || "smtp").toLowerCase().replace(/[\s_-]/g, "");
+    return value === "sendgrid" ? "sendgrid" : "smtp";
+}
+
+function normalizeEmailProfile(item = {}) {
+    return {
+        ...INITIAL_STATE,
+        ...item,
+        type: getProfileType(item),
     };
+}
+
+function EmailProfiles({ activeTab }) {
+    const initialState = INITIAL_STATE;
     const [items, setItems] = useState([]);
     const [filteredItems, setFilteredItems] = useState([]);
     const [saveIsDisabled, setSaveIsDisabled] = useState(true);
@@ -37,6 +56,7 @@ function EmailProfiles({ activeTab }) {
     const handleShow = () => setShow(true);
     const [showPassword, setShowPassword] = useState({
         emailpassword: false,
+        api_key: false,
     });
     const [deleteConfig, setDeleteConfig] = useState({
         show: false,
@@ -49,15 +69,21 @@ function EmailProfiles({ activeTab }) {
             current * pageSize,
         );
     };
-    const fields = ["id", "email", "host", "sslport", "emailpassword"];
+    const fields = ["id", "type", "email", "host", "sslport", "emailpassword", "api_key"];
 
     useEffect(() => {
         if (
             selectedItem &&
             selectedItem?.email?.length > 0 &&
-            selectedItem?.host?.length > 0 &&
-            selectedItem?.sslport?.length > 0 &&
-            selectedItem?.emailpassword?.length > 0
+            (
+                getProfileType(selectedItem) === "sendgrid"
+                    ? selectedItem?.api_key?.length > 0
+                    : (
+                        selectedItem?.host?.length > 0 &&
+                        selectedItem?.sslport?.length > 0 &&
+                        selectedItem?.emailpassword?.length > 0
+                    )
+            )
         ) {
             setSaveIsDisabled(false);
         } else {
@@ -85,7 +111,7 @@ function EmailProfiles({ activeTab }) {
         });
         if (res.data.C_DATA.emailProfile) {
             item = res.data.C_DATA.emailProfile[0];
-            setSelectedItem(item);
+            setSelectedItem(normalizeEmailProfile(item));
         } else {
             toastEmitter("item not found", true, "error");
         }
@@ -93,7 +119,7 @@ function EmailProfiles({ activeTab }) {
     }
 
     function addNewItem() {
-        setSelectedItem(initialState);
+        setSelectedItem(normalizeEmailProfile());
         setSaveIsDisabled(true);
         handleShow();
     }
@@ -102,13 +128,13 @@ function EmailProfiles({ activeTab }) {
         addNewItem();
     }
 
-    function handleInputField(event, id) {
+    function handleInputField(event) {
         let value = event.target.value;
         let name = event.target.name;
 
         setSelectedItem(prev => ({
             ...prev,
-            [name]: value,
+            [name]: name === "type" ? getProfileType({ type: value }) : value,
         }));
     }
     function handleSearch(event) {
@@ -126,7 +152,7 @@ function EmailProfiles({ activeTab }) {
         }
     }
 
-    function saveData(callback) {
+    function saveData() {
         var url = API_URL + "?service.key=update.formData";
         var request = {};
         request.data = [];
@@ -136,18 +162,23 @@ function EmailProfiles({ activeTab }) {
         entityForm.entity = "email_profile"; //Db- "table name"
         entityForm.action = "update";
 
+        const formData = {
+            ...selectedItem,
+            type: getProfileType(selectedItem),
+        };
+
         if (
             !selectedItem.id ||
             selectedItem.id == "" ||
             selectedItem.id == "new"
         ) {
             entityForm.id = "new";
-            selectedItem.id = "new";
+            formData.id = "new";
         } else {
             entityForm.id = selectedItem.id;
         }
 
-        entityForm.formData = selectedItem;
+        entityForm.formData = formData;
         request.data.push(entityForm);
         try {
             axios.post(url, request).then(function (response) {
@@ -299,12 +330,20 @@ function EmailProfiles({ activeTab }) {
                     <Table className="s2a-table table-bordered table-hover mb-0">
                         <Thead className="thead">
                             <Tr className="tableHeader">
-                                <Th className="col-sm-4 table-row text-left">
+                                <Th className="col-sm-3 table-row text-left">
                                     <TableSorting
                                         state={filteredItems}
                                         setState={setFilteredItems}
                                         fieldName={"email"}
                                         headerTitle={"Email"}
+                                    />
+                                </Th>
+                                <Th className="col-sm-2 table-row text-left">
+                                    <TableSorting
+                                        state={filteredItems}
+                                        setState={setFilteredItems}
+                                        fieldName={"type"}
+                                        headerTitle={"Type"}
                                     />
                                 </Th>
                                 <Th className="col-sm-3 table-row text-left">
@@ -315,7 +354,7 @@ function EmailProfiles({ activeTab }) {
                                         headerTitle={"Host"}
                                     />
                                 </Th>
-                                <Th className="col-sm-3 table-row text-left">
+                                <Th className="col-sm-2 table-row text-left">
                                     <TableSorting
                                         state={filteredItems}
                                         setState={setFilteredItems}
@@ -327,7 +366,7 @@ function EmailProfiles({ activeTab }) {
                             </Tr>
                         </Thead>
                         <Tbody>
-                            {getPaginateData(current, size).map((item, i) => {
+                            {getPaginateData(current, size).map(item => {
                                 return (
                                     <Tr
                                         key={item.id}
@@ -336,14 +375,17 @@ function EmailProfiles({ activeTab }) {
                                                 ? "selected-cell"
                                                 : " "
                                         }`}>
-                                        <Td className="col-sm-4 table-row text-left">
+                                        <Td className="col-sm-3 table-row text-left">
                                             {item.email}
                                         </Td>
-                                        <Td className="col-sm-3 table-row text-left">
-                                            {item.host}
+                                        <Td className="col-sm-2 table-row text-left">
+                                            {getProfileType(item) === "sendgrid" ? "SendGrid" : "SMTP"}
                                         </Td>
                                         <Td className="col-sm-3 table-row text-left">
-                                            {item.sslport}
+                                            {getProfileType(item) === "sendgrid" ? "API key configured" : item.host}
+                                        </Td>
+                                        <Td className="col-sm-2 table-row text-left">
+                                            {getProfileType(item) === "sendgrid" ? "-" : item.sslport}
                                         </Td>
                                         <Td className="col-sm-2 table-row text-left">
                                             <div className="data-cell d-flex">
@@ -414,6 +456,26 @@ function EmailProfiles({ activeTab }) {
                                         />
                                     </div>
                                 </div>
+                                <div className="col-sm-12">
+                                    <div className="form-group">
+                                        <label className="mt-1 fw-bold">
+                                            Type&nbsp;
+                                            <span className="text-danger">
+                                                *
+                                            </span>
+                                        </label>
+                                        <select
+                                            className="form-control"
+                                            name="type"
+                                            value={getProfileType(selectedItem)}
+                                            onChange={handleInputField}>
+                                            <option value="smtp">SMTP</option>
+                                            <option value="sendgrid">SendGrid</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                {getProfileType(selectedItem) === "smtp" && (
+                                    <>
                                 <div className="col-sm-12">
                                     <div className="form-group">
                                         <label className="mt-1 fw-bold">
@@ -489,6 +551,49 @@ function EmailProfiles({ activeTab }) {
                                         </div>
                                     </div>
                                 </div>
+                                    </>
+                                )}
+                                {getProfileType(selectedItem) === "sendgrid" && (
+                                    <div className="col-sm-12">
+                                        <div className="form-group">
+                                            <label className="mt-1 fw-bold">
+                                                API Key&nbsp;
+                                                <span className="text-danger">
+                                                    *
+                                                </span>
+                                            </label>
+                                            <div className="s2a-passfield position-relative">
+                                                <input
+                                                    type={
+                                                        showPassword.api_key
+                                                            ? "text"
+                                                            : "password"
+                                                    }
+                                                    className="form-control"
+                                                    name="api_key"
+                                                    value={selectedItem.api_key}
+                                                    onChange={handleInputField}
+                                                />
+                                                <span
+                                                    className="show-pass"
+                                                    onClick={() =>
+                                                        setShowPassword({
+                                                            ...showPassword,
+                                                            api_key:
+                                                                !showPassword.api_key,
+                                                        })
+                                                    }>
+                                                    {showPassword &&
+                                                    showPassword.api_key ? (
+                                                        <i className="fa-regular fa-eye"></i>
+                                                    ) : (
+                                                        <i className="fa-regular fa-eye-slash"></i>
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="modal-footer pe-0">
