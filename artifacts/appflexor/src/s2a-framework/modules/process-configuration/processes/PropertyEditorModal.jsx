@@ -2,11 +2,7 @@ import React from "react";
 import { Modal } from "react-bootstrap";
 import { SearchableSelect } from "./SearchableSelect";
 
-const APP_SERVICE_TOPICS = {
-    "get.formData": "app.service.getData",
-    "update.formData": "app.service.updateForData",
-    "send.email": "app.service.sendEmail",
-};
+const APP_SERVICE_TOPIC = "app.service";
 
 /**
  * Property editor modal — shown when the user clicks Assign or Configure on a
@@ -35,6 +31,19 @@ export function PropertyEditorModal({
 }) {
     if (!propModal) return null;
     const { type, subType } = propModal;
+
+    function hasDuplicateAppServiceResults() {
+        if (type !== "serviceTasks" || propForm.serviceType !== "app") return false;
+        const rows = Array.isArray(propForm.appConfig?.dataKeys)
+            ? propForm.appConfig.dataKeys
+            : [];
+        const counts = rows.reduce((result, row) => {
+            const dataKey = String(row?.dataKey || row?.result || row?.resultVariable || "").trim().toLowerCase();
+            if (dataKey) result[dataKey] = (result[dataKey] || 0) + 1;
+            return result;
+        }, {});
+        return Object.values(counts).some(count => count > 1);
+    }
 
     /* ── Form content ────────────────────────────────────────────────────── */
     function renderForm() {
@@ -185,24 +194,188 @@ export function PropertyEditorModal({
             /* Default config shapes per app-service key */
             function defaultAppConfig(key) {
                 if (key === "update.formData")
-                    return { formId: "", entity: "", action: "update", id: "", formData: [] };
+                    return {
+                        dataKeys: [{ serviceKey: "", serviceParams: "", dataKey: "result", mode: "formData" }],
+                    };
                 if (key === "send.email")
-                    return { emailKey: "", serviceParams: "" };
+                    return {
+                        dataKeys: [{ serviceKey: "", serviceParams: "", dataKey: "result", mode: "formData" }],
+                    };
                 /* get.formData default */
-                return { serviceKey: "", serviceParams: "", dataKey: "result", mode: "formData" };
-            }
-
-            /* Shallow-merge helper for appConfig */
-            function setCfg(patch) {
-                onFormChange(p => ({
-                    ...p,
-                    appConfig: { ...(p.appConfig || {}), ...patch },
-                }));
+                return {
+                    dataKeys: [{ serviceKey: "", serviceParams: "", dataKey: "result", mode: "formData" }],
+                };
             }
 
             const cfg    = propForm.appConfig    || {};
             const svcKey = propForm.appServiceKey || "get.formData";
-            const appServiceTopic = APP_SERVICE_TOPICS[svcKey] || APP_SERVICE_TOPICS["get.formData"];
+
+            function setCfg(patch) {
+                onFormChange(p => ({
+                    ...p,
+                    appConfig: { dataKeys: normalizeServiceRows({ ...(p.appConfig || {}), ...patch }) },
+                }));
+            }
+
+            function emptyServiceRow() {
+                return { serviceKey: "", serviceParams: "", dataKey: "", mode: "formData" };
+            }
+
+            function defaultServiceRow() {
+                return { serviceKey: "", serviceParams: "", dataKey: "result", mode: "formData" };
+            }
+
+            function normalizeServiceRows(config) {
+                const rawRows = Array.isArray(config.dataKeys)
+                    ? config.dataKeys
+                    : Array.isArray(config.services)
+                        ? config.services
+                        : [];
+
+                if (rawRows.length) {
+                    return rawRows.map(row => ({
+                        serviceKey: row.serviceKey || row.emailKey || row.formId || "",
+                        serviceParams: row.serviceParams || "",
+                        dataKey: row.dataKey || row.result || row.resultVariable || "result",
+                        mode: row.mode || "formData",
+                    }));
+                }
+
+                const serviceKey = svcKey === "send.email"
+                    ? (config.emailKey || config.serviceKey || "")
+                    : (config.serviceKey || config.formId || "");
+                const serviceParams = config.serviceParams || "";
+                const dataKey = config.dataKey || config.result || config.resultVariable || "result";
+
+                if (serviceKey || serviceParams || dataKey) {
+                    return [{ serviceKey, serviceParams, dataKey, mode: config.mode || "formData" }];
+                }
+
+                return [defaultServiceRow()];
+            }
+
+            const serviceRows = normalizeServiceRows(cfg);
+            const resultCounts = serviceRows.reduce((counts, row) => {
+                const dataKey = String(row.dataKey || "").trim().toLowerCase();
+                if (dataKey) counts[dataKey] = (counts[dataKey] || 0) + 1;
+                return counts;
+            }, {});
+            const hasDuplicateResult = Object.values(resultCounts).some(count => count > 1);
+
+            function setServiceRows(rows) {
+                const normalizedRows = (rows.length ? rows : [emptyServiceRow()]).map(row => ({
+                    serviceKey: row.serviceKey || "",
+                    serviceParams: row.serviceParams || "",
+                    dataKey: row.dataKey || "",
+                    mode: row.mode || "formData",
+                }));
+                onFormChange(p => ({
+                    ...p,
+                    appConfig: { dataKeys: normalizedRows },
+                }));
+            }
+
+            function updateServiceRow(index, patch) {
+                const rows = serviceRows.map((row, i) => (i === index ? { ...row, ...patch } : row));
+                setServiceRows(rows);
+            }
+
+            function updateServiceResult(index, dataKey) {
+                const normalizedDataKey = String(dataKey || "").trim().toLowerCase();
+                const alreadyUsed = Boolean(normalizedDataKey && serviceRows.some((row, i) =>
+                    i !== index &&
+                    String(row.dataKey || "").trim().toLowerCase() === normalizedDataKey,
+                ));
+                if (alreadyUsed) return;
+                updateServiceRow(index, { dataKey });
+            }
+
+            function renderAppServiceRows() {
+                const keyLabel = svcKey === "send.email" ? "Email Key" : "Service Key";
+                const keyPlaceholder = svcKey === "send.email"
+                    ? "e.g. welcome_email"
+                    : svcKey === "update.formData"
+                        ? "e.g. update.user"
+                        : "e.g. sys.user.list";
+
+                return (
+                    <div className="mb-2">
+                        <label className="ai-label">{keyLabel}, Params and Result Variables</label>
+                        <table className="proc-payload-table">
+                            <thead>
+                                <tr>
+                                    <th>{keyLabel}</th>
+                                    <th>Service Params</th>
+                                    <th>
+                                        <div>Result Variable {hasDuplicateResult && (
+                                            <span className="text-danger small text-none mt-1" role="alert">
+                                               - must be unique.
+                                            </span>
+                                        )}</div>
+                                        
+                                    </th>
+                                    <th style={{ width: "2rem" }} />
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {serviceRows.map((row, i) => (
+                                    <tr key={i}>
+                                        <td>
+                                            <input
+                                                className="form-control form-control-sm font-monospace proc-payload-key-input"
+                                                value={row.serviceKey}
+                                                onChange={e => updateServiceRow(i, { serviceKey: e.target.value })}
+                                                placeholder={keyPlaceholder}
+                                            />
+                                        </td>
+                                        <td>
+                                            <input
+                                                className="form-control form-control-sm font-monospace proc-payload-val-input"
+                                                value={row.serviceParams}
+                                                onChange={e => updateServiceRow(i, { serviceParams: e.target.value })}
+                                                placeholder="static value or ${expression}"
+                                            />
+                                        </td>
+                                        <td>
+                                            {(() => {
+                                                const normalizedDataKey = String(row.dataKey || "").trim().toLowerCase();
+                                                const isDuplicateResult = Boolean(normalizedDataKey && resultCounts[normalizedDataKey] > 1);
+                                                return (
+                                            <input
+                                                className={`form-control form-control-sm font-monospace proc-payload-val-input ${isDuplicateResult ? "is-invalid" : ""}`}
+                                                value={row.dataKey}
+                                                onChange={e => updateServiceResult(i, e.target.value)}
+                                                placeholder="e.g. result"
+                                                aria-invalid={isDuplicateResult}
+                                            />
+                                                );
+                                            })()}
+                                        </td>
+                                        <td>
+                                            <button
+                                                className="btn btn-outline-danger btn-sm proc-payload-del-btn"
+                                                onClick={() => setServiceRows(serviceRows.filter((_, j) => j !== i))}
+                                                disabled={serviceRows.length === 1}
+                                                title="Remove service config row"
+                                                aria-label="Remove service config row">
+                                                <i className="fa fa-times" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <button
+                            className="btn btn-outline-secondary btn-sm proc-payload-add-btn mt-2"
+                            onClick={() => setServiceRows([...serviceRows, emptyServiceRow()])}>
+                            <i className="fa fa-plus me-1" />Add Service
+                        </button>
+                        <p className="proc-payload-hint mt-1 mb-0">
+                            Saved in <code>serviceConfig.dataKeys</code> as a JSON array. Values support process engine expressions.
+                        </p>
+                    </div>
+                );
+            }
 
             /* Shared user-defined input parameters table — same for all tabs */
             function renderParamsTable() {
@@ -285,12 +458,16 @@ export function PropertyEditorModal({
                     return "AI Agent";
                 }
                 if (isApp) {
-                    const svcName = svcKey === "get.formData"     ? "Fetch/Read"
-                                  : svcKey === "update.formData"  ? "Create/Update/Delete"
+                    const legacyKeyCount = svcKey === "send.email"
+                        ? (cfg.emailKey ? 1 : 0)
+                        : (cfg.serviceKey || cfg.formId ? 1 : 0);
+                    const serviceKeyCount = serviceRows.filter(row => row.serviceKey?.trim()).length || legacyKeyCount;
+                    const svcName = svcKey === "get.formData"     ? "API Query"
+                                  : svcKey === "update.formData"  ? "API Trigger"
                                   : "Send Email";
-                    const detail  = svcKey === "get.formData"     ? (cfg.serviceKey || "")
-                                  : svcKey === "update.formData"  ? (cfg.formId     || "")
-                                  : (cfg.emailKey || "");
+                    const detail = serviceKeyCount
+                        ? `${serviceKeyCount} service key${serviceKeyCount === 1 ? "" : "s"}`
+                        : "";
                     return detail ? `App Service (${svcName}: ${detail})` : `App Service (${svcName})`;
                 }
                 // AppFlexor Connector
@@ -385,54 +562,16 @@ export function PropertyEditorModal({
                                             appConfig:     defaultAppConfig(key),
                                         }));
                                     }}>
-                                    <option value="get.formData">Fetch / Read data</option>
-                                    <option value="update.formData">Create / Update / Delete</option>
+                                    <option value="get.formData">API Query</option>
+                                    <option value="update.formData">API Trigger</option>
                                     <option value="send.email">Send Email</option>
                                 </select>
                             </div>
 
-                            {/* get.formData */}
-                            {svcKey === "get.formData" && (
-                                <>
-                                    <div className="mb-2">
-                                        <label className="ai-label">Service Key</label>
-                                        <input
-                                            className="form-control form-control-sm font-monospace"
-                                            value={cfg.serviceKey || ""}
-                                            onChange={e => setCfg({ serviceKey: e.target.value })}
-                                            placeholder="e.g. sys.user.list"
-                                        />
-                                        <p className="proc-payload-hint mt-1 mb-0">
-                                            The service key to call, e.g.{" "}
-                                            <code>sys.user.list</code> or <code>get.formData</code>
-                                        </p>
-                                    </div>
-                                    <div className="mb-2">
-                                        <label className="ai-label">Service Params</label>
-                                        <input
-                                            className="form-control form-control-sm font-monospace"
-                                            value={cfg.serviceParams || ""}
-                                            onChange={e => setCfg({ serviceParams: e.target.value })}
-                                            placeholder="static value or ${expression}"
-                                        />
-                                    </div>
-                                    <div className="mb-2">
-                                        <label className="ai-label">Result Variable</label>
-                                        <input
-                                            className="form-control form-control-sm font-monospace"
-                                            value={cfg.dataKey || ""}
-                                            onChange={e => setCfg({ dataKey: e.target.value })}
-                                            placeholder="e.g. result"
-                                        />
-                                        <p className="proc-payload-hint mt-1 mb-0">
-                                            Process variable where the response will be stored
-                                        </p>
-                                    </div>
-                                </>
-                            )}
+                            {renderAppServiceRows()}
 
                             {/* update.formData */}
-                            {svcKey === "update.formData" && (
+                            {false && svcKey === "update.formData" && (
                                 <>
                                     <div className="mb-2">
                                         <label className="ai-label">Table (formId)</label>
@@ -533,40 +672,10 @@ export function PropertyEditorModal({
                                 </>
                             )}
 
-                            {/* send.email */}
-                            {svcKey === "send.email" && (
-                                <>
-                                    <div className="mb-2">
-                                        <label className="ai-label">Email Key</label>
-                                        <input
-                                            className="form-control form-control-sm font-monospace"
-                                            value={cfg.emailKey || ""}
-                                            onChange={e => setCfg({ emailKey: e.target.value })}
-                                            placeholder="e.g. welcome_email"
-                                        />
-                                        <p className="proc-payload-hint mt-1 mb-0">
-                                            Email template key registered in the platform
-                                        </p>
-                                    </div>
-                                    <div className="mb-2">
-                                        <label className="ai-label">Context Params</label>
-                                        <input
-                                            className="form-control form-control-sm font-monospace"
-                                            value={cfg.serviceParams || ""}
-                                            onChange={e => setCfg({ serviceParams: e.target.value })}
-                                            placeholder="static value or ${expression}"
-                                        />
-                                        <p className="proc-payload-hint mt-1 mb-0">
-                                            Passed as <code>serviceParams</code> to the email service
-                                        </p>
-                                    </div>
-                                </>
-                            )}
-
-                            {renderParamsTable()}
+                            {/* {renderParamsTable()} */}
                             <p className="proc-payload-hint mb-0 mt-2 d-flex align-items-center gap-1">
                                 <i className="fa-solid fa-circle-info" />
-                                Worker topic: <code>{appServiceTopic}</code>
+                                Worker topic: <code>{APP_SERVICE_TOPIC}</code>
                             </p>
                         </>
                     )}
@@ -698,7 +807,7 @@ export function PropertyEditorModal({
                 <button
                     className="btn button-theme btn-sm"
                     onClick={onSave}
-                    disabled={propLoading}>
+                    disabled={propLoading || hasDuplicateAppServiceResults()}>
                     <i className="fa-solid fa-check pe-1" />Apply
                 </button>
             </Modal.Footer>

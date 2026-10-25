@@ -425,7 +425,6 @@ function RuntimeTable({ rows, onSelect, onDelete, onToggleSuspension, actionStat
     if (!rows.length) {
         return <p className="p-8 text-center text-sm text-slate-500">No process instances for this process.</p>;
     }
-
     return (
         <div className="overflow-x-auto">
             <table className="mt-2 w-full min-w-[920px] text-left text-sm">
@@ -463,7 +462,7 @@ function RuntimeTable({ rows, onSelect, onDelete, onToggleSuspension, actionStat
                                 <td className="p-3">
                                     <button
                                         type="button"
-                                        onClick={() => onSelect(item.id)}
+                                        onClick={() => onSelect(item.id, item)}
                                         className="font-medium text-indigo-600 hover:underline">
                                         {item.id}
                                     </button>

@@ -156,6 +156,8 @@ export const camundaApi = {
     getIncidents: () => getAllPages("/incident", {}),
     setJobRetries: (jobId, retries) => camundaRequest(`/job/${jobId}/retries`, { method: "PUT", data: { retries } }),
     getExternalTasksByInstance: instanceId => camundaRequest(`/external-task${query({ processInstanceId: instanceId, firstResult: 0, maxResults: 100 })}`),
+    unlockExternalTask: taskId => camundaRequest(`/external-task/${taskId}/unlock`, { method: "POST" }),
+    setExternalTaskRetries: (taskId, retries) => camundaRequest(`/external-task/${taskId}/retries`, { method: "PUT", data: { retries } }),
 
     getInstanceVariables: instanceId => camundaRequest(`/process-instance/${instanceId}/variables?deserializeValue=true`),
     getInstanceVariable: (instanceId, name) => camundaRequest(`/process-instance/${instanceId}/variables/${encodeURIComponent(name)}?deserializeValue=true`),

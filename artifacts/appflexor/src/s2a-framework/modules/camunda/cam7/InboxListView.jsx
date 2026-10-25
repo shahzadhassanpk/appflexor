@@ -14,6 +14,7 @@ import { Interweave } from "interweave";
 import { BPM_API_URL } from "../CamundaConfig";
 
 const PROCESS_URGENCY_LEVELS = ["High", "Medium", "Low"];
+const DEFAULT_PROCESS_SLA_LEVEL = "Low";
 
 function getProcessUrgencyLevels(value) {
     let parsedValue = value;
@@ -47,6 +48,13 @@ function getProcessUrgencyLevels(value) {
     return Object.keys(normalizedLevels).length > 0
         ? normalizedLevels
         : null;
+}
+
+function getDefaultProcessSlaLevel(urgencyLevels) {
+    if (!urgencyLevels) return "";
+    return urgencyLevels[DEFAULT_PROCESS_SLA_LEVEL]
+        ? DEFAULT_PROCESS_SLA_LEVEL
+        : PROCESS_URGENCY_LEVELS.find(level => urgencyLevels[level]) || "";
 }
 
 function RenderListView({
@@ -938,10 +946,11 @@ function RenderListView({
     }
 
     function handleProcessSelection(process) {
+        const urgencyLevels = getProcessUrgencyLevels(process?.urgency_levels);
         setSelectedPendingDraft(null);
         setPendingDraftsView(false);
         setSelectedProcessId(process.id);
-        setSelectedStartSlaLevel("");
+        setSelectedStartSlaLevel(getDefaultProcessSlaLevel(urgencyLevels));
         setCurrentProcessState({
             initial: false,
             start: true,
@@ -1180,12 +1189,13 @@ function RenderListView({
         setSelectedPendingDraft(draft);
         setSelectedTask(taskInitState);
         setSelectedProcessId(processId);
+        const urgencyLevels = getProcessUrgencyLevels(process?.urgency_levels);
         const draftVariables = getDraftVariables(draft);
         const draftPriority = draftVariables?.priority?.value ?? draftVariables?.priority;
         setSelectedStartSlaLevel(
             PROCESS_URGENCY_LEVELS.find(
                 level => level.toLowerCase() === String(draftPriority || "").toLowerCase(),
-            ) || "",
+            ) || getDefaultProcessSlaLevel(urgencyLevels),
         );
         setCurrentProcessState({
             initial: false,
@@ -1689,7 +1699,7 @@ function RenderListView({
                             <div className="border-top mt-3 pt-3">
                                 <div className="fw-semibold mb-2">
                                     <i className="fa-regular fa-clock me-1"></i>
-                                    Service Level Agreements
+                                    Urgency
                                 </div>
                                 {selectedStartUrgencyLevels ? (
                                     <fieldset className="d-grid gap-2">

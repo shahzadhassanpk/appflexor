@@ -39,7 +39,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
     const [state, setState] = useState({ definitions: [], instances: [], tasks: [], jobs: [], history: [] });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [selected, setSelected] = useState({ instanceId: "", taskId: "" });
+    const [selected, setSelected] = useState({ instanceId: "", taskId: "", instance: null });
     const [selectedDefinition, setSelectedDefinition] = useState(null);
     const focusedProcessKey = String(initialProcessKey || "").toLowerCase().trim();
 
@@ -79,6 +79,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
     }, [tenantId, focusedProcessKey]);
 
     async function refreshInstance(instanceId) {
+        if (!instanceId) return;
         const [rawInstance, rawVariables, activity, instanceTasks, instanceJobs] = await Promise.all([
             camundaApi.getProcessInstance(instanceId),
             camundaApi.getInstanceVariables(instanceId),
@@ -89,24 +90,33 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
         const variables = await hydrateJsonVariables(instanceId, rawVariables);
         setState(previous => {
             const existing = previous.instances.find(item => item.id === instanceId);
-            const definition = previous.definitions.find(item => item.id === rawInstance.definitionId) || existing?.definition;
+            const definition = previous.definitions.find(item => item.id === rawInstance.definitionId) ||
+                existing?.definition ||
+                selected.instance?.definition;
             const updated = {
                 ...existing,
+                ...(selected.instance?.id === instanceId ? selected.instance : {}),
                 ...rawInstance,
                 definition,
                 definitionName: definition?.name || definition?.key,
                 variables,
                 activity,
                 tasks: instanceTasks || [],
-                sla: calculateSla(variables, new Date(), existing?.startTime),
+                sla: calculateSla(variables, new Date(), existing?.startTime || selected.instance?.startTime),
             };
             return {
                 ...previous,
-                instances: previous.instances.map(item => item.id === instanceId ? updated : item),
+                instances: existing
+                    ? previous.instances.map(item => item.id === instanceId ? updated : item)
+                    : [updated, ...previous.instances],
                 tasks: [...previous.tasks.filter(item => item.processInstanceId !== instanceId), ...(instanceTasks || [])],
                 jobs: [...previous.jobs.filter(item => item.processInstanceId !== instanceId), ...(instanceJobs || [])],
             };
         });
+    }
+
+    function selectInstance(instanceId, taskId = "", instance = null) {
+        setSelected({ instanceId, taskId, instance });
     }
 
     function removeInstance(instanceId) {
@@ -116,12 +126,12 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
             tasks: previous.tasks.filter(item => item.processInstanceId !== instanceId),
             jobs: previous.jobs.filter(item => item.processInstanceId !== instanceId),
         }));
-        setSelected(current => current.instanceId === instanceId ? { instanceId: "", taskId: "" } : current);
+        setSelected(current => current.instanceId === instanceId ? { instanceId: "", taskId: "", instance: null } : current);
     }
 
     useEffect(() => { if (activeTab === "PROCESS_MONITOR") load(); }, [activeTab, load]);
     const instanceMap = useMemo(() => Object.fromEntries(state.instances.map(item => [item.id, item])), [state.instances]);
-    const selectedInstance = instanceMap[selected.instanceId];
+    const selectedInstance = instanceMap[selected.instanceId] || selected.instance;
     const visibleDefinitions = useMemo(
         () => focusedProcessKey
             ? state.definitions.filter(item => String(item.key || "").toLowerCase().trim() === focusedProcessKey)
@@ -148,10 +158,10 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
             </div>
             {selectedDefinition && (
                 <div className="fixed inset-0 z-[1070] overflow-y-auto bg-slate-50 p-3 sm:p-5">
-                    <ProcessExecutionView definition={selectedDefinition} instances={state.instances} tasks={state.tasks} jobs={state.jobs} onBack={() => { setSelectedDefinition(null); if (onDefinitionClose) onDefinitionClose(); }} onSelectInstance={instanceId => setSelected({ instanceId, taskId: "" })} onInstanceDeleted={removeInstance} />
+                    <ProcessExecutionView definition={selectedDefinition} instances={state.instances} tasks={state.tasks} jobs={state.jobs} onBack={() => { setSelectedDefinition(null); if (onDefinitionClose) onDefinitionClose(); }} onSelectInstance={(instanceId, instance) => selectInstance(instanceId, "", instance)} onInstanceDeleted={removeInstance} />
                 </div>
             )}
-            <InstanceDetail instance={selectedInstance} selectedTaskId={selected.taskId} jobs={state.jobs} onRefresh={() => refreshInstance(selected.instanceId)} onClose={() => setSelected({ instanceId: "", taskId: "" })} />
+            <InstanceDetail instance={selectedInstance} selectedTaskId={selected.taskId} jobs={state.jobs} onRefresh={() => refreshInstance(selected.instanceId)} onClose={() => setSelected({ instanceId: "", taskId: "", instance: null })} />
         </main>
     );
 }

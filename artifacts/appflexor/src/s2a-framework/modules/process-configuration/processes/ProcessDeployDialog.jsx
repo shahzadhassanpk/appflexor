@@ -12,14 +12,14 @@ import { PropertyEditorModal } from "./PropertyEditorModal";
 const DB_TABLE = "process";
 const STATUS   = { none: "NONE", create: "CREATE", update: "UPDATE" };
 const INITIAL_ITEM = { id: "", title: "", process_def_key: "", process_file: "", file_url: "" };
-const APP_SERVICE_TOPICS = {
+const APP_SERVICE_TOPIC = "app.service";
+const LEGACY_APP_SERVICE_TOPICS = {
     "get.formData": "app.service.getData",
     "update.formData": "app.service.updateForData",
     "send.email": "app.service.sendEmail",
 };
-const LEGACY_APP_SERVICE_TOPICS = new Set(["appflexor.app.service", "app.service.api"]);
 const APP_SERVICE_TOPIC_TO_KEY = Object.fromEntries(
-    Object.entries(APP_SERVICE_TOPICS).map(([key, topic]) => [topic, key]),
+    Object.entries(LEGACY_APP_SERVICE_TOPICS).map(([key, topic]) => [topic, key]),
 );
 const ELEM_TABS = [
     { key: "userTasks",    label: "User Tasks",     icon: "fa-user-check" },
@@ -27,8 +27,8 @@ const ELEM_TABS = [
     { key: "variables",    label: "Variables",      icon: "fa-database" },
 ];
 
-function getAppServiceTopic(serviceKey = "get.formData") {
-    return APP_SERVICE_TOPICS[serviceKey] || APP_SERVICE_TOPICS["get.formData"];
+function getAppServiceTopic() {
+    return APP_SERVICE_TOPIC;
 }
 
 function getAppServiceKeyFromTopic(topic) {
@@ -36,7 +36,61 @@ function getAppServiceKeyFromTopic(topic) {
 }
 
 function isAppServiceTopic(topic) {
-    return LEGACY_APP_SERVICE_TOPICS.has(topic) || Boolean(getAppServiceKeyFromTopic(topic));
+    return topic === APP_SERVICE_TOPIC ||
+        topic === "appflexor.app.service" ||
+        topic === "app.service.api" ||
+        Boolean(getAppServiceKeyFromTopic(topic));
+}
+
+function getAppServiceConfigRows(config = {}, service = "") {
+    const rawRows = Array.isArray(config.dataKeys)
+        ? config.dataKeys
+        : Array.isArray(config.services)
+            ? config.services
+            : [];
+
+    if (rawRows.length) {
+        return rawRows.map(row => ({
+            serviceKey: row.serviceKey || row.emailKey || row.formId || "",
+            serviceParams: row.serviceParams || "",
+            dataKey: row.dataKey || row.result || row.resultVariable || "",
+            mode: row.mode || "formData",
+        }));
+    }
+
+    const serviceKey = service === "send.email"
+        ? (config.emailKey || config.serviceKey || "")
+        : (config.serviceKey || config.formId || "");
+
+    return [{
+        serviceKey,
+        serviceParams: config.serviceParams || "",
+        dataKey: config.dataKey || config.result || config.resultVariable || "",
+        mode: config.mode || "formData",
+    }];
+}
+
+function getAppServiceConfig(config = {}, service = "") {
+    return {
+        dataKeys: getAppServiceConfigRows(config, service).map(row => ({
+            serviceKey: row.serviceKey || "",
+            serviceParams: row.serviceParams || "",
+            dataKey: row.dataKey || "result",
+            mode: row.mode || "formData",
+        })),
+    };
+}
+
+function getFirstAppServiceKey(config = {}, service = "") {
+    return getAppServiceConfigRows(config, service).find(row => row.serviceKey?.trim())?.serviceKey || "";
+}
+
+function getAppServiceKeyCount(config = {}, service = "") {
+    return getAppServiceConfigRows(config, service).filter(row => row.serviceKey?.trim()).length;
+}
+
+function hasAppServiceConfig(config = {}, service = "") {
+    return Boolean(getFirstAppServiceKey(config, service));
 }
 
 /**
@@ -264,8 +318,9 @@ export function ProcessDeployDialog({
             if (!Object.keys(config).length && (inputParams.s2aAppServiceConfig || attrs.s2aAppServiceConfig)) {
                 try { config = JSON.parse(inputParams.s2aAppServiceConfig || attrs.s2aAppServiceConfig); } catch { return ["valid app service configuration"]; }
             }
-            const requiredField = service === "update.formData" ? "formId" : service === "send.email" ? "emailKey" : "serviceKey";
-            return [!service && "app service", service && !config?.[requiredField] && requiredField].filter(Boolean);
+            const hasRequiredConfig = hasAppServiceConfig(config, service);
+            const requiredField = service === "send.email" ? "emailKey" : "serviceKey";
+            return [!service && "app service", service && !hasRequiredConfig && requiredField].filter(Boolean);
         }
         if (topic === "appflexor.connector" || topic === "kafka.connector") {
             const connectorTopic = meta["connector.topic"] || inputParams["kafka.topic"];
@@ -769,9 +824,11 @@ export function ProcessDeployDialog({
                 const appServiceKey = meta.service || getAppServiceKeyFromTopic(topic) || "get.formData";
                 const appConfig     = meta.serviceConfig || {};
                 const reserved = new Set(["appflexor.worker.meta"]);
-                const params = Object.entries(ip)
-                    .filter(([k]) => !reserved.has(k))
-                    .map(([key, value]) => ({ key, value }));
+                const params = Array.isArray(meta.params)
+                    ? meta.params
+                    : Object.entries(ip)
+                        .filter(([k]) => !reserved.has(k))
+                        .map(([key, value]) => ({ key, value }));
                 init = { serviceType: "app", workerTitle, workerDescription, appServiceKey, appConfig, params };
 
             } else if (topic === "appflexor.connector" && ip["appflexor.worker.meta"]) {
@@ -874,12 +931,13 @@ export function ProcessDeployDialog({
                     return "AI Agent";
                 }
                 if (propForm.serviceType === "app") {
-                    const svcName = svcKey === "get.formData"    ? "Fetch/Read"
-                                  : svcKey === "update.formData" ? "Create/Update/Delete"
+                    const svcName = svcKey === "get.formData"    ? "API Query"
+                                  : svcKey === "update.formData" ? "API Trigger"
                                   : "Send Email";
-                    const detail  = svcKey === "get.formData"    ? (cfg.serviceKey || "")
-                                  : svcKey === "update.formData" ? (cfg.formId     || "")
-                                  : (cfg.emailKey || "");
+                    const serviceKeyCount = getAppServiceKeyCount(cfg, svcKey);
+                    const detail = serviceKeyCount
+                        ? `${serviceKeyCount} service key${serviceKeyCount === 1 ? "" : "s"}`
+                        : "";
                     return detail ? `App Service (${svcName}: ${detail})` : `App Service (${svcName})`;
                 }
                 // AppFlexor Connector
@@ -912,12 +970,13 @@ export function ProcessDeployDialog({
                 });
 
             } else if (propForm.serviceType === "app") {
-                bo.topic = getAppServiceTopic(propForm.appServiceKey);
-                meta.service       = propForm.appServiceKey || "get.formData";
-                meta.serviceConfig = propForm.appConfig || {};
+                bo.topic = getAppServiceTopic();
+                meta.service = propForm.appServiceKey || "get.formData";
+                meta.serviceConfig = getAppServiceConfig(propForm.appConfig || {}, meta.service);
+                const appParams = (propForm.params || []).filter(param => param.key?.trim());
+                if (appParams.length) meta.params = appParams;
                 setInputParams(bo, {
                     "appflexor.worker.meta": JSON.stringify(meta),
-                    ...extraParams,
                 });
 
             } else {
