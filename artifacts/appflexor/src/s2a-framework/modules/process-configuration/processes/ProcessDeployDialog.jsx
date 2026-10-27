@@ -115,7 +115,7 @@ export function ProcessDeployDialog({
     /* ── Record + form state ──────────────────────────────────────────── */
     const [selectedItem,      setSelectedItem]      = useState(INITIAL_ITEM);
     const [formStatus,        setFormStatus]        = useState(STATUS.create);
-    const [saveIsDisabled,    setSaveIsDisabled]    = useState(true);
+    const [saveIsDisabled,    setSaveIsDisabled]    = useState(false);
     const [processes,         setProcesses]         = useState([]); // [{id,name}] from BPMN
     const [fileStatus,        setFileStatus]        = useState("");
     const [showDiscardModal,  setShowDiscardModal]  = useState(false);
@@ -180,7 +180,7 @@ export function ProcessDeployDialog({
         const item = initialItem || INITIAL_ITEM;
         setSelectedItem(item);
         setFormStatus(initialFormStatus || STATUS.create);
-        setSaveIsDisabled(true);
+        // setSaveIsDisabled(true);
         setXmlDirty(false);
         currentXmlRef.current  = null;
         allElementsRef.current = [];

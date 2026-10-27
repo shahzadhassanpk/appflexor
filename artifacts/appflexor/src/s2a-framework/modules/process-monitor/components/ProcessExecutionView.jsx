@@ -23,6 +23,20 @@ function collectActivityIds(activity, result = []) {
     return result;
 }
 
+function findActivityIdByExecution(activity, executionId) {
+    if (!activity || !executionId) return "";
+    if ((activity.executionIds || []).includes(executionId) && activity.activityId) {
+        return activity.activityId;
+    }
+    const childActivityMatch = (activity.childActivityInstances || [])
+        .map(child => findActivityIdByExecution(child, executionId))
+        .find(Boolean);
+    if (childActivityMatch) return childActivityMatch;
+    return (activity.childTransitionInstances || [])
+        .find(child => child.executionId === executionId)
+        ?.activityId || "";
+}
+
 function activityCounts(instances, tasks) {
     const treeCounts = instances.flatMap(item => collectActivityIds(item.activity)).reduce((counts, activityId) => {
         counts[activityId] = (counts[activityId] || 0) + 1;
@@ -36,6 +50,17 @@ function activityCounts(instances, tasks) {
     return treeCounts;
 }
 
+function failedJobActivityCounts(jobs, instances) {
+    const instanceById = Object.fromEntries(instances.map(item => [item.id, item]));
+    return jobs.reduce((counts, job) => {
+        const activityId =
+            job.activityId ||
+            findActivityIdByExecution(instanceById[job.processInstanceId]?.activity, job.executionId);
+        if (activityId) counts[activityId] = (counts[activityId] || 0) + 1;
+        return counts;
+    }, {});
+}
+
 function createCountBadge(count) {
     const badge = document.createElement("span");
     badge.className = "process-monitor-activity-count";
@@ -43,6 +68,19 @@ function createCountBadge(count) {
     badge.title = `${count} active activity instance${count === 1 ? "" : "s"}`;
     badge.setAttribute("aria-label", badge.title);
     return badge;
+}
+
+function createFailedJobBadge(count) {
+    const badge = document.createElement("span");
+    badge.className = "process-monitor-failed-job-count";
+    badge.textContent = String(count);
+    badge.title = `${count} failed job${count === 1 ? "" : "s"}`;
+    badge.setAttribute("aria-label", badge.title);
+    return badge;
+}
+
+function isFailedJob(job) {
+    return Boolean(job?.exceptionMessage || job?.retries === 0);
 }
 
 export default function ProcessExecutionView({ definition, instances, tasks, jobs, onBack, onSelectInstance, onInstanceDeleted }) {
@@ -93,7 +131,15 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     );
     const definitionTasks = useMemo(() => runtimeState.tasks.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.tasks, viewDefinition.id]);
     const definitionJobs = useMemo(() => runtimeState.jobs.filter(item => item.processDefinitionId === viewDefinition.id), [runtimeState.jobs, viewDefinition.id]);
-    const incidents = useMemo(() => definitionJobs.filter(item => item.exceptionMessage || item.retries === 0), [definitionJobs]);
+    const incidents = useMemo(() => definitionJobs.filter(isFailedJob), [definitionJobs]);
+    const failedJobsByInstanceId = useMemo(
+        () => incidents.reduce((groups, job) => {
+            if (!job.processInstanceId) return groups;
+            groups[job.processInstanceId] = [...(groups[job.processInstanceId] || []), job];
+            return groups;
+        }, {}),
+        [incidents],
+    );
 
     useEffect(() => {
         setViewDefinition(definition);
@@ -290,6 +336,14 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                         html: createCountBadge(count),
                     });
                 });
+                Object.entries(failedJobActivityCounts(incidents, definitionInstances)).forEach(([id, count]) => {
+                    if (!elementRegistry.get(id)) return;
+                    canvas.addMarker(id, "process-monitor-failed");
+                    overlays.add(id, {
+                        position: { top: -11, right: -11 },
+                        html: createFailedJobBadge(count),
+                    });
+                });
             } catch (error) {
                 if (!disposed) setDiagramError(error.message || "Unable to load BPMN diagram.");
             }
@@ -300,13 +354,15 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
             viewerRef.current?.destroy();
             viewerRef.current = null;
         };
-    }, [definitionInstances, definitionTasks, viewDefinition.id]);
+    }, [definitionInstances, definitionTasks, incidents, viewDefinition.id]);
 
     return (
         <div className="space-y-4">
             <style>{`
                 .process-monitor-active .djs-visual > :first-child { stroke: #0284c7 !important; stroke-width: 4px !important; fill: #e0f2fe !important; }
+                .process-monitor-failed .djs-visual > :first-child { stroke: #dc2626 !important; stroke-width: 4px !important; fill: #fee2e2 !important; }
                 .process-monitor-activity-count { display: grid; place-items: center; min-width: 25px; height: 25px; padding: 0 6px; border: 2px solid #0369a1; border-radius: 9999px; background: #7dd3fc; color: #0c4a6e; font: 700 13px/1 sans-serif; box-shadow: 0 1px 3px rgba(15, 23, 42, .25); }
+                .process-monitor-failed-job-count { display: grid; place-items: center; min-width: 25px; height: 25px; padding: 0 6px; border: 2px solid #b91c1c; border-radius: 9999px; background: #fecaca; color: #7f1d1d; font: 700 13px/1 sans-serif; box-shadow: 0 1px 3px rgba(15, 23, 42, .25); }
             `}</style>
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <nav className="flex flex-wrap items-center gap-2 text-sm" aria-label="Breadcrumb">
@@ -398,6 +454,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                         {activeTab === "Process Instances" && (
                             <RuntimeTable
                                 rows={processInstances}
+                                failedJobsByInstanceId={failedJobsByInstanceId}
                                 onSelect={onSelectInstance}
                                 onDelete={setDeleteTarget}
                                 onToggleSuspension={updateInstanceSuspension}
@@ -421,7 +478,7 @@ function RuntimeTableLegacy({ rows, onSelect, onDelete, onToggleSuspension, acti
 }
 
 */
-function RuntimeTable({ rows, onSelect, onDelete, onToggleSuspension, actionState }) {
+function RuntimeTable({ rows, failedJobsByInstanceId, onSelect, onDelete, onToggleSuspension, actionState }) {
     if (!rows.length) {
         return <p className="p-8 text-center text-sm text-slate-500">No process instances for this process.</p>;
     }
@@ -443,19 +500,34 @@ function RuntimeTable({ rows, onSelect, onDelete, onToggleSuspension, actionStat
                         const rowActionBusy =
                             actionState.scope === "single" &&
                             actionState.targetId === item.id;
+                        const failedJobs = failedJobsByInstanceId[item.id] || [];
+                        const hasFailedJobs = failedJobs.length > 0;
+                        const statusLabel = hasFailedJobs
+                            ? `${failedJobs.length} failed job${failedJobs.length === 1 ? "" : "s"}`
+                            : item.suspended
+                                ? "Suspended"
+                                : "Running";
 
                         return (
                             <tr key={item.id}>
-                                <td className="p-3">
-                                    {item.suspended ? (
+                                <td className="p-3" title={statusLabel}>
+                                    {hasFailedJobs ? (
+                                        <span className="inline-flex items-center gap-2 text-red-600">
+                                            <i
+                                                className="fa-solid fa-circle-exclamation"
+                                                aria-label={statusLabel}
+                                            />
+                                            <span className="text-xs font-semibold"></span>
+                                        </span>
+                                    ) : item.suspended ? (
                                         <i
                                             className="fa-solid fa-circle-pause text-amber-500"
-                                            aria-label="Suspended"
+                                            aria-label={statusLabel}
                                         />
                                     ) : (
                                         <i
                                             className="fa-solid fa-circle-check text-emerald-500"
-                                            aria-label="Running"
+                                            aria-label={statusLabel}
                                         />
                                     )}
                                 </td>

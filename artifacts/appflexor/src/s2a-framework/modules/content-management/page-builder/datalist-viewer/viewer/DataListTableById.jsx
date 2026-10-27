@@ -220,12 +220,12 @@ function buildSummaryCardItems(cards, values) {
             const label = labelField
                 ? row?.[labelField]
                 : getSummaryRowField(row, [
-                      "city",
-                      "c_city",
-                      "label",
-                      "name",
-                      "title",
-                  ]);
+                    "city",
+                    "c_city",
+                    "label",
+                    "name",
+                    "title",
+                ]);
             const value = valueField
                 ? row?.[valueField]
                 : extractSummaryCardValue(row);
@@ -1412,24 +1412,19 @@ export default function DataListTableById(props) {
                                         {customActions?.map((item, i) => {
                                             const params = returnParams(item, cell.row.original, appContext);
                                             const content = (
-                                                <div
-                                                    className="datalist-actions-cell datalist-custom-font dropdown-item"
-                                                    title={item?.title??item?.label}>
-                                                        {}
-                                                    <RenderCustomActions
-                                                        item={item}
-                                                        params={params}
-                                                        record={cell.row.original}
-                                                        handleActions={handleActions}
-                                                        i={i}
-                                                        formDetails={formDetails}
-                                                        processDetail={processDetail}
-                                                        getData={getDatalistData}
-                                                        selectedItem={selectedItem}
-                                                        setFormAndModalConfig={setFormAndModalConfig}
-                                                        moveAsideForm={moveAsideForm}
-                                                    />
-                                                </div>
+                                                <RenderCustomActions
+                                                    item={item}
+                                                    params={params}
+                                                    record={cell.row.original}
+                                                    handleActions={handleActions}
+                                                    i={i}
+                                                    formDetails={formDetails}
+                                                    processDetail={processDetail}
+                                                    getData={getDatalistData}
+                                                    selectedItem={selectedItem}
+                                                    setFormAndModalConfig={setFormAndModalConfig}
+                                                    moveAsideForm={moveAsideForm}
+                                                />
                                             );
                                             return (
                                                 <React.Fragment key={item?.id}>
@@ -2737,64 +2732,64 @@ function DatalistSummaryCards(props) {
                     role="list"
                     key={group.id}>
                     {group.cards.map(card => {
-                const groupId = getSummaryGroupId(card);
-                const isActive = activeCards?.[groupId] === card?.id;
-                const classes = [
-                    "s2a-summary-card",
-                    isActive ? "is-active" : "",
-                    card?.classes ?? "",
-                ]
-                    .filter(Boolean)
-                    .join(" ");
-                const cardValue =
-                    values?.[card?.id] !== undefined &&
-                    !Array.isArray(values?.[card?.id])
-                        ? values?.[card?.id]
-                        : card?.value;
-                const formattedCardValue = formatSummaryCardValue(cardValue);
-                const valueLabel = getSummaryValueLabel(card);
+                        const groupId = getSummaryGroupId(card);
+                        const isActive = activeCards?.[groupId] === card?.id;
+                        const classes = [
+                            "s2a-summary-card",
+                            isActive ? "is-active" : "",
+                            card?.classes ?? "",
+                        ]
+                            .filter(Boolean)
+                            .join(" ");
+                        const cardValue =
+                            values?.[card?.id] !== undefined &&
+                                !Array.isArray(values?.[card?.id])
+                                ? values?.[card?.id]
+                                : card?.value;
+                        const formattedCardValue = formatSummaryCardValue(cardValue);
+                        const valueLabel = getSummaryValueLabel(card);
 
-                return (
-                    <button
-                        key={card?.id ?? card?.label}
-                        type="button"
-                        className={classes}
-                        role="listitem"
-                        onClick={() => onCardClick(card)}>
-                        <span className="s2a-summary-card-label">
-                            {card?.label}
-                        </span>
-                        {formattedCardValue !== "" && (
-                            <span className="s2a-summary-card-value">
-                                {valueLabel && (
-                                    <span className="s2a-summary-card-value-label">
-                                        {valueLabel}
+                        return (
+                            <button
+                                key={card?.id ?? card?.label}
+                                type="button"
+                                className={classes}
+                                role="listitem"
+                                onClick={() => onCardClick(card)}>
+                                <span className="s2a-summary-card-label">
+                                    {card?.label}
+                                </span>
+                                {formattedCardValue !== "" && (
+                                    <span className="s2a-summary-card-value">
+                                        {valueLabel && (
+                                            <span className="s2a-summary-card-value-label">
+                                                {valueLabel}
+                                            </span>
+                                        )}
+                                        <span className="s2a-summary-card-value-count">
+                                            {formattedCardValue}
+                                        </span>
                                     </span>
                                 )}
-                                <span className="s2a-summary-card-value-count">
-                                    {formattedCardValue}
-                                </span>
-                            </span>
-                        )}
-                        {Array.isArray(card?.__summaryMetrics) &&
-                            card.__summaryMetrics.length > 0 && (
-                                <span className="s2a-summary-card-metrics">
-                                    {card.__summaryMetrics.map(metric => (
-                                        <span
-                                            className="s2a-summary-card-metric"
-                                            key={metric.label}>
-                                            <span className="s2a-summary-card-metric-label">
-                                                {metric.label}
-                                            </span>
-                                            <span className="s2a-summary-card-metric-value">
-                                                {metric.value}
-                                            </span>
+                                {Array.isArray(card?.__summaryMetrics) &&
+                                    card.__summaryMetrics.length > 0 && (
+                                        <span className="s2a-summary-card-metrics">
+                                            {card.__summaryMetrics.map(metric => (
+                                                <span
+                                                    className="s2a-summary-card-metric"
+                                                    key={metric.label}>
+                                                    <span className="s2a-summary-card-metric-label">
+                                                        {metric.label}
+                                                    </span>
+                                                    <span className="s2a-summary-card-metric-value">
+                                                        {metric.value}
+                                                    </span>
+                                                </span>
+                                            ))}
                                         </span>
-                                    ))}
-                                </span>
-                            )}
-                    </button>
-                );
+                                    )}
+                            </button>
+                        );
                     })}
                 </div>
             ))}

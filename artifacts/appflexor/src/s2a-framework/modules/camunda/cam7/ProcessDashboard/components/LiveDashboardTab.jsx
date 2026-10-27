@@ -68,15 +68,15 @@ export default function LiveDashboardTab({ config, dashboardState }) {
                                                     <p className="process-dashboard__item-title mb-1 truncate text-sm font-bold">
                                                         {row.title}
                                                     </p>
-                                                    <p className="process-dashboard__activity-key process-dashboard__item-key mb-0 text-xs">
+                                                    {/* <p className="process-dashboard__activity-key process-dashboard__item-key mb-0 text-xs">
                                                         <i className="fa-solid fa-fingerprint me-1" aria-hidden="true" />
                                                         {row.processKey || row.key}
-                                                    </p>
+                                                    </p> */}
                                                 </div>
-                                                <span className="process-dashboard__activity-total inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset">
-                                                    <i className="fa-solid fa-play" aria-hidden="true" />
+                                                <span className="process-dashboard__activity-total process-dashboard__metric-value inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset">
+                                                    {/* <i className="fa-solid fa-play" aria-hidden="true" /> */}
                                                     {row.activeInstances}
-                                                    <span className="font-semibold">active</span>
+                                                    <span className="font-semibold">Active</span>
                                                 </span>
                                             </div>
                                             <div className="process-dashboard__activity-list grid gap-2">
@@ -87,7 +87,7 @@ export default function LiveDashboardTab({ config, dashboardState }) {
                                                         <span className="min-w-0 truncate font-semibold">
                                                             {activity.name}
                                                         </span>
-                                                        <span className="process-dashboard__activity-step-count inline-flex min-w-8 shrink-0 items-center justify-center rounded-full px-2 py-0.5 font-bold">
+                                                        <span className="process-dashboard__activity-step-count process-dashboard__metric-value inline-flex min-w-8 shrink-0 items-center justify-center rounded-full px-2 py-0.5 font-bold">
                                                             {activity.count}
                                                         </span>
                                                     </div>
@@ -154,15 +154,15 @@ export default function LiveDashboardTab({ config, dashboardState }) {
                                                         <div
                                                             key={`${row.key}-${sample.type}-${index}`}
                                                             className="process-dashboard__sample rounded-lg p-2 text-xs ring-1 ring-inset ring-slate-200">
-                                                            <p className="process-dashboard__value mb-1 font-semibold">
+                                                            <p title={sample.message} className="process-dashboard__value mb-1 font-semibold">
                                                                 {sample.type}
                                                                 {sample.retries !== null
                                                                     ? ` - retries ${sample.retries}`
                                                                     : ""}
                                                             </p>
-                                                            <p className="process-dashboard__meta mb-0">
+                                                            {/* <p className="process-dashboard__meta mb-0">
                                                                 {sample.message}
-                                                            </p>
+                                                            </p> */}
                                                         </div>
                                                     ))}
                                                 </div>
