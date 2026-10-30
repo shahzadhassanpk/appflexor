@@ -6,6 +6,7 @@ import TextPropsEditor from "../../props-editors/TextPropsEditor";
 import { evaluateExpression } from "../../../../../content-management/page-builder/datalist-viewer/datalist-filter-helpers/DatalistFilters";
 import useGlobalData from "../../../../../../components/useGlobal";
 import {
+    formatDateForFormView,
     formatDateTimeForDataBase,
     detectDeviceType,
 } from "../../../../../../utils/utils";
@@ -19,6 +20,50 @@ function isValidIanaTimezone(value) {
         return false;
     }
 }
+
+function formatDateTimeForTimezone(value, timeZone) {
+    if (!value || typeof value === "boolean") return "";
+
+    try {
+        const rawValue = String(value).trim();
+
+        // Database values are always UTC.
+        const normalizedValue = rawValue.includes("T")
+            ? rawValue
+            : rawValue.replace(" ", "T");
+
+        const date = moment.utc(normalizedValue);
+
+        if (!date.isValid()) return "";
+
+        // Use browser timezone when no timezone is provided.
+        const targetTimezone =
+            timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        const parts = new Intl.DateTimeFormat("en-GB", {
+            timeZone: targetTimezone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+        }).formatToParts(date.toDate());
+
+        const values = {};
+
+        parts.forEach(({ type, value }) => {
+            if (type !== "literal") {
+                values[type] = value;
+            }
+        });
+
+        return `${values.year}-${values.month}-${values.day}`;
+
+    } catch (e) {
+        console.error("Timezone conversion error:", e);
+        return "";
+    }
+}
+
+
 
 function normalizeTimezoneValue(value) {
     const timezone = String(value || "").trim();
@@ -105,7 +150,10 @@ function DateField(props) {
 
     function resolveTimezone() {
         const configuredTimezone = String(componentData.timezone || "").trim();
-        const expressionData = { ...data, ...(props.formData || {}) };
+        const expressionData = {
+            ...data,
+            ...(props.formData || {}),
+        };
 
         if (configuredTimezone) {
             const evaluated = evaluateExpression(
@@ -120,15 +168,33 @@ function DateField(props) {
             if (literalTimezone) return literalTimezone;
         }
 
-        return (
-            normalizeTimezoneValue(
-                expressionData.timezone || expressionData.time_zone || "",
-            ) || getBrowserTimezone()
-        );
+        // An empty timezone property means display DB values in the browser's
+        // timezone. Form data is only consulted when explicitly referenced by
+        // the configured timezone expression above.
+        return getBrowserTimezone();
     }
 
     function getInputValue(value) {
-        return formatDateForTimezone(value, resolveTimezone());
+        const key = componentData?.db_column;
+
+        const storedValue = [
+            value,
+            props.formData?.[key],
+            componentData?.value,
+        ].find(
+            candidate =>
+                candidate !== null &&
+                candidate !== undefined &&
+                candidate !== "" &&
+                typeof candidate !== "boolean"
+        );
+
+        if (storedValue === undefined) return "";
+
+        return formatDateTimeForTimezone(
+            storedValue,
+            resolveTimezone()
+        );
     }
 
     useEffect(() => {
@@ -184,20 +250,33 @@ function DateField(props) {
     const handleChange = e => {
         const key = e.target.id;
         const value = e.target.value;
-        let isValid = !(
-            componentData.required === "YES" && value.trim().length === 0
+
+        const isValid = !(
+            componentData.required === "YES" &&
+            value.trim().length === 0
         );
+
         setIsValidField(isValid);
 
-        const utcDate = localDateToUtc(value, resolveTimezone());
+        const utcDate = localDateToUtc(
+            value,
+            resolveTimezone()
+        );
+
         const dbFormat = utcDate
             ? formatDateTimeForDataBase(moment.utc(utcDate))
             : "";
 
+        // Update UI immediately.
+        setObj(prev => ({
+            ...prev,
+            [key]: dbFormat
+        }));
+
+        // Update parent form data.
         if (props.handleInputFields) {
             props.handleInputFields(key, dbFormat, isValid);
         }
-        setObj(prev => ({ ...prev, [key]: dbFormat }));
     };
 
     const handleOnBlur = event => {
@@ -274,11 +353,13 @@ function DateField(props) {
                                     value={getInputValue(
                                         obj[componentData.db_column],
                                     )}
+                                    data={formatDateForFormView(obj[componentData.db_column], resolveTimezone(), componentData?.date_format)}
+                                    name={componentData.db_column}
                                     // value={obj[componentData.db_column] || ""}
                                     className={`form-control date-time-picker form-control-sm ${componentData.required === "YES" &&
-                                            !isValidField
-                                            ? "form-control-danger"
-                                            : ""
+                                        !isValidField
+                                        ? "form-control-danger"
+                                        : ""
                                         }`}
                                     id={componentData.db_column}
                                     onChange={handleChange}
@@ -313,9 +394,9 @@ function DateField(props) {
                                         obj[componentData.db_column],
                                     )}
                                     className={`form-control date-time-picker form-control-sm ${componentData.required === "YES" &&
-                                            !isValidField
-                                            ? "form-control-danger"
-                                            : ""
+                                        !isValidField
+                                        ? "form-control-danger"
+                                        : ""
                                         }`}
                                     id={componentData.db_column}
                                     onChange={handleChange}

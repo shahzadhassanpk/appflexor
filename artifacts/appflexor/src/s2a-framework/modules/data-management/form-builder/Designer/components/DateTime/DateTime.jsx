@@ -10,7 +10,6 @@ import {
     formatDateTimeToISO,
     formatDateTimeForDataBase,
     formatDateTimeForDataBaseLocal,
-    parseDBDateTime,
     detectDeviceType,
 } from "../../../../../../utils/utils";
 import TextPropsEditor from "../../props-editors/TextPropsEditor";
@@ -90,39 +89,47 @@ function localDateTimeToUtc(value, timeZone) {
 
 function formatDateTimeForTimezone(value, timeZone) {
     if (!value || typeof value === "boolean") return "";
-    const rawValue = String(value).trim();
-    const normalizedValue = rawValue.includes(" ")
-        ? rawValue.replace(" ", "T")
-        : rawValue;
-    let date = moment.utc(normalizedValue);
 
-    if (!date.isValid()) {
-        date = moment.utc(rawValue, [
-            "YYYY-MM-DD HH:mm:ss",
-            "YYYY-MM-DD HH:mm:ss.SSS",
-            "YYYY-MM-DDTHH:mm:ss",
-            "YYYY-MM-DDTHH:mm",
-            "ddd DD, MMM YYYY hh:mm a",
-            "ddd DD, MMM YYYY h:mm a",
-        ], true);
+    try {
+        const rawValue = String(value).trim();
+
+        // Database values are always UTC.
+        const normalizedValue = rawValue.includes("T")
+            ? rawValue
+            : rawValue.replace(" ", "T");
+
+        const date = moment.utc(normalizedValue);
+
+        if (!date.isValid()) return "";
+
+        // Use browser timezone when no timezone is provided.
+        const targetTimezone =
+            timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        const parts = new Intl.DateTimeFormat("en-GB", {
+            timeZone: targetTimezone,
+            hourCycle: "h23",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+        }).formatToParts(date.toDate());
+
+        const values = {};
+
+        parts.forEach(({ type, value }) => {
+            if (type !== "literal") {
+                values[type] = value;
+            }
+        });
+
+        return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`;
+
+    } catch (e) {
+        console.error("Timezone conversion error:", e);
+        return "";
     }
-
-    if (!date.isValid()) return "";
-
-    const parts = new Intl.DateTimeFormat("en-US", {
-        timeZone,
-        hourCycle: "h23",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).formatToParts(date.toDate()).reduce((result, part) => {
-        if (part.type !== "literal") result[part.type] = part.value;
-        return result;
-    }, {});
-
-    return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
 
 function normalizeDateTimeValue(value) {
@@ -152,6 +159,48 @@ function DateTime(props) {
     const deviceType = detectDeviceType();
     const formDataSnapshot = JSON.stringify(props.formData || {});
 
+    function utcToTimezone(date, timezone) {
+        if (!date) return null;
+    
+        try {
+            const utcDate = new Date(date);
+    
+            if (isNaN(utcDate.getTime())) return null;
+    
+            const targetTimezone =
+                timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+            const parts = new Intl.DateTimeFormat("en-GB", {
+                timeZone: targetTimezone,
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hourCycle: "h23"
+            }).formatToParts(utcDate);
+    
+            const values = {};
+            parts.forEach(({ type, value }) => {
+                values[type] = value;
+            });
+    
+            // Construct a Date representing the target timezone's wall-clock values.
+            return new Date(
+                Number(values.year),
+                Number(values.month) - 1,
+                Number(values.day),
+                Number(values.hour),
+                Number(values.minute),
+                Number(values.second)
+            );
+    
+        } catch (e) {
+            return null;
+        }
+    };
+
     function resolveTimezone() {
         const configuredTimezone = String(componentData.timezone || "").trim();
         const expressionData = {
@@ -177,23 +226,33 @@ function DateTime(props) {
         // the configured timezone expression above.
         return getBrowserTimezone();
     }
-
+    
     function getInputValue(value) {
-        const key = componentData.db_column;
+        const key = componentData?.db_column;
+
+        const formValue = props.formData?.[key];
+
+        // Ignore null, undefined and empty values when selecting source
         const storedValue = [
+            formValue,
             value,
-            props.formData?.[key],
-            componentData.value,
+            componentData?.value,
         ].find(
             candidate =>
                 candidate !== null &&
                 candidate !== undefined &&
-                typeof candidate !== "boolean",
+                candidate !== "" &&
+                typeof candidate !== "boolean"
         );
-        let normalizedValue = normalizeDateTimeValue(storedValue);
-        let resolvedTimezone = resolveTimezone();
-        let timezoeValue = formatDateTimeForTimezone(normalizedValue, resolvedTimezone);
-        return timezoeValue;
+
+        if (storedValue === undefined) return "";
+
+        const timeZoneValue = formatDateTimeForTimezone(
+            storedValue,
+            resolveTimezone()
+        );
+
+        return timeZoneValue;
     }
 
     useEffect(() => {
@@ -394,79 +453,78 @@ function DateTime(props) {
                 {(props.mode === props.modeType.preview ||
                     props.mode === props.modeType.render ||
                     props.mode === props.modeType.readonly) && (
-                    <>
-                        {/* date-picker */}
-                        {visible && (
-                            <>
-                                {deviceType !== "mobile" ? (
-                                    <input
-                                        type="datetime-local"
-                                        className={`form-control date-time-picker form-control-sm ${
-                                            componentData.required &&
-                                            componentData.required === "YES"
+                        <>
+                            {/* date-picker */}
+                            {visible && (
+                                <>
+                                    {deviceType !== "mobile" ? (
+                                        <input
+                                            type="datetime-local"
+                                            className={`form-control date-time-picker form-control-sm ${componentData.required &&
+                                                componentData.required === "YES"
                                                 ? !isValidField
                                                     ? "form-control-danger"
                                                     : ""
                                                 : ""
-                                        } `}
-                                        value={getInputValue(
-                                            obj[componentData.db_column],
-                                        )}
-                                        name={componentData.db_column}
-                                        // value={parseDBDateTime(obj[componentData.db_column])}
-                                        onChange={e => handleChange(e)}
-                                        // onBlur={handleOnBlur}
-                                        disabled={
-                                            props.mode ===
-                                                props.modeType.design ||
-                                            props.mode ===
-                                                props.modeType.readonly ||
-                                            props.mode ===
-                                                props.modeType.preview
-                                                ? true
-                                                : componentData.readonly ===
+                                                } `}
+                                            value={getInputValue(
+                                                obj[componentData.db_column],
+                                            )}
+                                            data={formatDateTimeForUserView(obj[componentData.db_column], resolveTimezone())}
+                                            name={componentData.db_column}
+                                            
+                                            onChange={e => handleChange(e)}
+                                            // onBlur={handleOnBlur}
+                                            disabled={
+                                                props.mode ===
+                                                    props.modeType.design ||
+                                                    props.mode ===
+                                                    props.modeType.readonly ||
+                                                    props.mode ===
+                                                    props.modeType.preview
+                                                    ? true
+                                                    : componentData.readonly ===
                                                         "YES" || disable
-                                                  ? true
-                                                  : false
-                                        }
-                                    />
-                                ) : (
-                                    <input
-                                        type="datetime-local"
-                                        className={`form-control date-time-picker form-control-sm ${
-                                            componentData.required &&
-                                            componentData.required === "YES"
+                                                        ? true
+                                                        : false
+                                            }
+                                        />
+                                    ) : (
+                                        <input
+                                            type="datetime-local"
+                                            className={`form-control date-time-picker form-control-sm ${componentData.required &&
+                                                componentData.required === "YES"
                                                 ? !isValidField
                                                     ? "form-control-danger"
                                                     : ""
                                                 : ""
-                                        } `}
-                                        value={getInputValue(
-                                            obj[componentData.db_column],
-                                        )}
-                                        name={componentData.db_column}
-                                        // value={parseDBDateTime(obj[componentData.db_column])}
-                                        onChange={e => handleChange(e)}
-                                        // onBlur={handleOnBlur}
-                                        disabled={
-                                            props.mode ===
-                                                props.modeType.design ||
-                                            props.mode ===
-                                                props.modeType.readonly ||
-                                            props.mode ===
-                                                props.modeType.preview
-                                                ? true
-                                                : componentData.readonly ===
+                                                } `}
+                                            value={getInputValue(
+                                                obj[componentData.db_column],
+                                            )}
+                                            name={componentData.db_column}
+                                            // value={parseDBDateTime(obj[componentData.db_column])}
+                                            onChange={e => handleChange(e)}
+                                            // onBlur={handleOnBlur}
+                                            disabled={
+                                                props.mode ===
+                                                    props.modeType.design ||
+                                                    props.mode ===
+                                                    props.modeType.readonly ||
+                                                    props.mode ===
+                                                    props.modeType.preview
+                                                    ? true
+                                                    : componentData.readonly ===
                                                         "YES" || disable
-                                                  ? true
-                                                  : false
-                                        }
-                                    />
-                                )}
-                            </>
-                        )}
-                    </>
-                )}
+                                                        ? true
+                                                        : false
+                                            }
+                                        />
+                                    )}
+                                </>
+                            )}
+                        </>
+                    )}
             </div>
             <Modal
                 className="s2a-modal"
@@ -482,22 +540,20 @@ function DateTime(props) {
                         <span>Edit DateTime</span>
                         <div className="d-flex">
                             <div
-                                className={`${
-                                    toggleModalWindow === "maximize"
-                                        ? "visually-hidden"
-                                        : ""
-                                } `}
+                                className={`${toggleModalWindow === "maximize"
+                                    ? "visually-hidden"
+                                    : ""
+                                    } `}
                                 onClick={() => setToggleModalWindow("maximize")}
                                 data-bs-toggle="tooltip"
                                 data-bs-title="Maximize window">
                                 <i className="fa-regular fa-window-maximize modal-resize"></i>
                             </div>
                             <div
-                                className={`${
-                                    toggleModalWindow === "restore"
-                                        ? "visually-hidden"
-                                        : ""
-                                } `}
+                                className={`${toggleModalWindow === "restore"
+                                    ? "visually-hidden"
+                                    : ""
+                                    } `}
                                 onClick={() => setToggleModalWindow("restore")}
                                 data-bs-toggle="tooltip"
                                 data-bs-title="Restore Window">

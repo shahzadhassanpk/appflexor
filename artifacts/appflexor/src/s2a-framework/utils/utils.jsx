@@ -66,28 +66,28 @@ let formatDateForUserViewLocale = date => {
 
 // utils/deviceDetector.js
 const detectDeviceType = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  const width = window.innerWidth;
+    const userAgent = navigator.userAgent.toLowerCase();
+    const width = window.innerWidth;
 
-  if (/mobile/i.test(userAgent)) {
-    return "mobile";
-  }
-  if (/tablet|ipad|playbook|silk/i.test(userAgent)) {
-    return "tablet";
-  }
-  // fallback to screen width breakpoints
-  if (width < 768) {
-    return "mobile";
-  }
-  if (width >= 768 && width <= 1024) {
-    return "tablet";
-  }
-  return "desktop";
+    if (/mobile/i.test(userAgent)) {
+        return "mobile";
+    }
+    if (/tablet|ipad|playbook|silk/i.test(userAgent)) {
+        return "tablet";
+    }
+    // fallback to screen width breakpoints
+    if (width < 768) {
+        return "mobile";
+    }
+    if (width >= 768 && width <= 1024) {
+        return "tablet";
+    }
+    return "desktop";
 }
 
 
 let formatDateForUserView = (date, format) => {
-    
+
     let formatedDate = "";
     let currentFormatedDate = moment(new Date()).format(
         format ? format : DATE_FORMAT_FOR_USER_VIEW,
@@ -253,30 +253,82 @@ let formatTimeForDataBase = date => {
     // return tempTime;
 };
 
-let formatDateTimeForUserView = date => {
-    let formatedDate = "";
+let formatDateTimeForUserView = (date, timezone = null) => {
+
+    if (typeof date === "boolean" || !date) return "";
     try {
-        let currentFormatedDate = moment(date).format(
-            DATE_TIME_FORMAT_FOR_USER_VIEW,
+        const targetTimezone =
+            timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        const utcDate = moment.utc(date);
+
+        if (!utcDate.isValid()) return "";
+
+        const parts = new Intl.DateTimeFormat("en-GB", {
+            timeZone: targetTimezone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hourCycle: "h23"
+        }).formatToParts(utcDate.toDate());
+
+        const values = {};
+        parts.forEach(({ type, value }) => {
+            values[type] = value;
+        });
+
+        // Build a timezone-adjusted date string for Moment formatting.
+        const timezoneDate = moment.utc(
+            `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}:${values.second}`
         );
-        if (date) {
-            formatedDate = moment(date);
-            let local = moment.utc(date).local();
-            if (moment(formatedDate).isValid()) {
-                formatedDate = moment(local).format(
-                    DATE_TIME_FORMAT_FOR_USER_VIEW,
-                );
-            } else {
-                formatedDate = currentFormatedDate;
-            }
-        } else {
-            return "";
-        }
+
+        return timezoneDate.format(DATE_TIME_FORMAT_FOR_USER_VIEW);
+
     } catch (e) {
         return "";
     }
+};
 
-    return formatedDate;
+let formatDateForFormView = (date, timezone = null, dateFormat=DATE_FORMAT_FOR_USER_VIEW) => {
+
+    if (typeof date === "boolean" || !date) return "";
+    try {
+        const targetTimezone =
+            timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        const utcDate = moment.utc(date);
+
+        if (!utcDate.isValid()) return "";
+
+        const parts = new Intl.DateTimeFormat("en-GB", {
+            timeZone: targetTimezone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hourCycle: "h23"
+        }).formatToParts(utcDate.toDate());
+
+        const values = {};
+        parts.forEach(({ type, value }) => {
+            values[type] = value;
+        });
+
+        // Build a timezone-adjusted date string for Moment formatting.
+        const timezoneDate = moment.utc(
+            `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}:${values.second}`
+        );
+
+        return timezoneDate.format(dateFormat);
+
+    } catch (e) {
+        return "";
+    }
 };
 
 let localToUTCDateTime = date => {
@@ -494,7 +546,7 @@ function tryParseJSONObject(jsonString, defaultValue) {
         if (o && typeof o === "object") {
             return o;
         }
-    } catch (e) {}
+    } catch (e) { }
 
     return defaultValue;
 }
@@ -558,9 +610,8 @@ function checkJsonOrNot(value) {
 
 function JsonToCsv(dbData, titles) {
     if (dbData !== undefined && dbData.length > 0) {
-        const filename = `${
-            titles ? titles + "_" + formatDate() : "" + "_" + formatDate()
-        }.json`;
+        const filename = `${titles ? titles + "_" + formatDate() : "" + "_" + formatDate()
+            }.json`;
         const jsonStr = JSON.stringify(dbData);
 
         let element = document.createElement("a");
@@ -632,7 +683,7 @@ const CSVToJSON = json => {
     if (json) {
         try {
             json = JSON.parse(json);
-        } catch (error) {}
+        } catch (error) { }
 
         return json;
     } else {
@@ -1065,6 +1116,7 @@ export {
     formatDateTimeForUserView,
     formatDateTimeForUserViewDatalist,
     formatDateForUserViewLocale,
+    formatDateForFormView,
     formatDateTimeToISO,
     formatTimeForDataBase,
     formatTimeForUserView,
