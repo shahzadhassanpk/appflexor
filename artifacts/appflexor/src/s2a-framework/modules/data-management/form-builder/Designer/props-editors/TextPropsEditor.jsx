@@ -435,6 +435,26 @@ export default function TextPropsEditor({ setShow }) {
                         </div>
                     </div>
                 )}
+                {(context.selectedComponent.type === "date" ||
+                    context.selectedComponent.type === "time" ||
+                    context.selectedComponent.type === "datetime") && (
+                    <div className="row">
+                        <div className="col-sm-6 mb-3">
+                            <label className="form-label">IANA Timezone</label>
+                            <input
+                                type="text"
+                                name="timezone"
+                                className="form-control form-control-sm"
+                                placeholder="Asia/Karachi or data.timezone"
+                                onChange={e => handleInputField(e)}
+                                value={inputField.timezone || ""}
+                            />
+                            <div className="form-text">
+                                Literal IANA timezone or expression returning one.
+                            </div>
+                        </div>
+                    </div>
+                )}
                 <div className="row">
                     {context.selectedComponent.type !== "date" &&
                         context.selectedComponent.type !== "time" &&

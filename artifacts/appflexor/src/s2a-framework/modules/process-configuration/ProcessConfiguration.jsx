@@ -84,6 +84,7 @@ const PROC_INIT = {
     process_gov: "",
     is_active: "YES", allow_draft: "YES",
 };
+const APPFLEXOR_LOGO_URL = `${import.meta.env.BASE_URL}theme/images/appflexor-logo.png`;
 const WORKSPACE_TABS = [
     { key: "deploy", label: "Deploy", icon: "fa-rocket" },
     { key: "configure", label: "Govern", icon: "fa-gears" },
@@ -123,17 +124,21 @@ function ProcessWorkspaceDialog({ activeTab, process, onClose, onTabChange, chil
             <div className="orch-workspace-header">
                 <div className="orch-workspace-title-wrap">
                     <span className="orch-workspace-icon">
-                        <i className="fa-solid fa-diagram-project" aria-hidden="true" />
+                        <img src={APPFLEXOR_LOGO_URL} alt="AppFlexor" />
                     </span>
                     <div className="min-w-0">
                         <div className="orch-workspace-title">{title}</div>
                         <div className="orch-workspace-subtitle">
-                            {processKey ? `Process key: ${processKey}` : "Select or manage processes across deploy, configure, and monitor."}
+                            {processKey ? `Process key: ${processKey}` : "Deploy, Govern, and Monitor Processes"}
                         </div>
                     </div>
                 </div>
-                <div className="orch-workspace-tabs" role="tablist" aria-label="Process workspace sections">
+                {/* <div className="orch-workspace-tabs" role="tablist" aria-label="Process workspace sections">
                     {WORKSPACE_TABS.map(tab => (
+                        <>
+                        <div key={tab.key} className="orch-workspace-tab">
+                            <i className={`fa-solid ${tab.icon}`} aria-hidden="true" />{tab.label}
+                            </div>
                         <button
                             key={tab.key}
                             type="button"
@@ -144,8 +149,9 @@ function ProcessWorkspaceDialog({ activeTab, process, onClose, onTabChange, chil
                             <i className={`fa-solid ${tab.icon}`} aria-hidden="true" />
                             {tab.label}
                         </button>
+                        </>
                     ))}
-                </div>
+                </div> */}
                 <button
                     type="button"
                     className="orch-fullscreen-close"
@@ -1025,7 +1031,7 @@ function ProcessConfiguration() {
                                 ))}
                             </div>
                         </div>
-                        
+
                     </div>{/* end orch-right */}
                 </div>{/* end orch-layout */}
 

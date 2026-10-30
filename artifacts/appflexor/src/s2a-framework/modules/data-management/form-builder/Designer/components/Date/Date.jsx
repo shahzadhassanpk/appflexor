@@ -1,3 +1,4 @@
+import moment from "moment";
 import React, { useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
 import { ErrorBoundary } from "../../../../../../utils/ErrorBoundry";
@@ -5,13 +6,86 @@ import TextPropsEditor from "../../props-editors/TextPropsEditor";
 import { evaluateExpression } from "../../../../../content-management/page-builder/datalist-viewer/datalist-filter-helpers/DatalistFilters";
 import useGlobalData from "../../../../../../components/useGlobal";
 import {
-    formatDateForUserView,
-    localToUTCDateTime,
-    formatDateTimeToISO,
     formatDateTimeForDataBase,
     detectDeviceType,
-    parseDBDateTime,
 } from "../../../../../../utils/utils";
+
+function isValidIanaTimezone(value) {
+    if (!value || typeof value !== "string") return false;
+    try {
+        new Intl.DateTimeFormat("en-US", { timeZone: value }).format(new Date());
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function normalizeTimezoneValue(value) {
+    const timezone = String(value || "").trim();
+    if (isValidIanaTimezone(timezone)) return timezone;
+    const rawTimezone = timezone.split(" (")[0].trim();
+    return isValidIanaTimezone(rawTimezone) ? rawTimezone : "";
+}
+
+function getBrowserTimezone() {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return isValidIanaTimezone(timezone) ? timezone : "UTC";
+}
+
+function getTimezoneOffsetMs(date, timeZone) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        hourCycle: "h23",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+    }).formatToParts(date).reduce((result, part) => {
+        if (part.type !== "literal") result[part.type] = Number(part.value);
+        return result;
+    }, {});
+
+    return (
+        Date.UTC(
+            parts.year,
+            parts.month - 1,
+            parts.day,
+            parts.hour,
+            parts.minute,
+            parts.second,
+        ) - date.getTime()
+    );
+}
+
+function localDateToUtc(value, timeZone) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+    if (!match) return null;
+    const [, year, month, day] = match;
+    const wallClockAsUtc = Date.UTC(Number(year), Number(month) - 1, Number(day));
+    const firstOffset = getTimezoneOffsetMs(new Date(wallClockAsUtc), timeZone);
+    let utc = wallClockAsUtc - firstOffset;
+    const secondOffset = getTimezoneOffsetMs(new Date(utc), timeZone);
+    if (secondOffset !== firstOffset) utc = wallClockAsUtc - secondOffset;
+    return new Date(utc);
+}
+
+function formatDateForTimezone(value, timeZone) {
+    if (!value) return "";
+    const date = moment.utc(value);
+    if (!date.isValid()) return "";
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).formatToParts(date.toDate()).reduce((result, part) => {
+        if (part.type !== "literal") result[part.type] = part.value;
+        return result;
+    }, {});
+    return `${parts.year}-${parts.month}-${parts.day}`;
+}
 
 function DateField(props) {
     const [obj, setObj] = useState({});
@@ -27,6 +101,35 @@ function DateField(props) {
     const dbColumnAsClass = componentData?.db_column ?? "";
     const expressionProps = useGlobalData();
     const deviceType = detectDeviceType();
+    const formDataSnapshot = JSON.stringify(props.formData || {});
+
+    function resolveTimezone() {
+        const configuredTimezone = String(componentData.timezone || "").trim();
+        const expressionData = { ...data, ...(props.formData || {}) };
+
+        if (configuredTimezone) {
+            const evaluated = evaluateExpression(
+                { expression: configuredTimezone },
+                expressionData,
+                ...expressionProps,
+            );
+            const evaluatedTimezone = normalizeTimezoneValue(evaluated);
+            if (evaluatedTimezone) return evaluatedTimezone;
+
+            const literalTimezone = normalizeTimezoneValue(configuredTimezone);
+            if (literalTimezone) return literalTimezone;
+        }
+
+        return (
+            normalizeTimezoneValue(
+                expressionData.timezone || expressionData.time_zone || "",
+            ) || getBrowserTimezone()
+        );
+    }
+
+    function getInputValue(value) {
+        return formatDateForTimezone(value, resolveTimezone());
+    }
 
     useEffect(() => {
         if (props.component?.data) {
@@ -76,7 +179,7 @@ function DateField(props) {
         const key = props.component.data.db_column;
         setObj(prev => ({ ...prev, [key]: props.formData[key] }));
         setData(props.formData);
-    }, [props.formData, props.component.data]);
+    }, [formDataSnapshot, props.component.data]);
 
     const handleChange = e => {
         const key = e.target.id;
@@ -86,14 +189,15 @@ function DateField(props) {
         );
         setIsValidField(isValid);
 
-        const localISO = formatDateTimeToISO(value);
-        const utc = localToUTCDateTime(localISO);
-        const dbFormat = formatDateTimeForDataBase(utc);
+        const utcDate = localDateToUtc(value, resolveTimezone());
+        const dbFormat = utcDate
+            ? formatDateTimeForDataBase(moment.utc(utcDate))
+            : "";
 
         if (props.handleInputFields) {
-            props.handleInputFields(key, value, isValid);
+            props.handleInputFields(key, dbFormat, isValid);
         }
-        setObj(prev => ({ ...prev, [key]: value }));
+        setObj(prev => ({ ...prev, [key]: dbFormat }));
     };
 
     const handleOnBlur = event => {
@@ -139,6 +243,7 @@ function DateField(props) {
                                 className="form-label"
                                 title={componentData?.date_format}>
                                 {componentData.label || "Date"}
+                                {resolveTimezone() && ` (${resolveTimezone()})`}
                                 {componentData.required === "YES" && (
                                     <span className="text-danger"> *</span>
                                 )}
@@ -152,7 +257,7 @@ function DateField(props) {
                         type="date"
                         title={componentData?.date_format}
                         className="form-control form-control-sm"
-                        value={obj[componentData.db_column]}
+                        value={getInputValue(obj[componentData.db_column])}
                         disabled
                     />
                 )}
@@ -166,7 +271,7 @@ function DateField(props) {
                                 <input
                                     type="date"
                                     title={componentData?.date_format}
-                                    data={formatDateForUserView(
+                                    value={getInputValue(
                                         obj[componentData.db_column],
                                     )}
                                     // value={obj[componentData.db_column] || ""}
@@ -204,7 +309,9 @@ function DateField(props) {
                                         obj[componentData.db_column],
                                     )}
                                     // data={obj[componentData.db_column] || ""}
-                                    value={obj[componentData.db_column] || ""}
+                                    value={getInputValue(
+                                        obj[componentData.db_column],
+                                    )}
                                     className={`form-control date-time-picker form-control-sm ${componentData.required === "YES" &&
                                             !isValidField
                                             ? "form-control-danger"

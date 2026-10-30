@@ -175,6 +175,9 @@ export const SIDEBAR_ITEMS = [
             type: "date",
             title: "Date",
             icon: "fa-solid fa-calendar",
+            data: {
+                timezone: "",
+            },
         },
     },
 
@@ -184,6 +187,12 @@ export const SIDEBAR_ITEMS = [
             type: "time",
             title: "Time",
             icon: "fa-regular fa-clock",
+            data: {
+                label: "",
+                db_column: "",
+                value: "",
+                timezone: "",
+            },
         },
     },
     {
@@ -192,6 +201,9 @@ export const SIDEBAR_ITEMS = [
             type: "datetime",
             title: "Datetime",
             icon: "fa-solid fa-calendar-day",
+            data: {
+                timezone: "",
+            },
         },
     },
     {

@@ -801,6 +801,9 @@ importers:
       react-bpmn:
         specifier: ^0.2.0
         version: 0.2.0
+      react-clock:
+        specifier: ^6.0.0
+        version: 6.0.0(@types/react@18.3.31)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       react-cookie-consent:
         specifier: ^9.0.0
         version: 9.0.0(react@18.2.0)
@@ -885,6 +888,9 @@ importers:
       react-tag-autocomplete:
         specifier: ^6.3.0
         version: 6.3.0(prop-types@15.8.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      react-time-picker:
+        specifier: ^8.1.0
+        version: 8.1.0(@types/react@18.3.31)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       react-toastify:
         specifier: ^8.2.0
         version: 8.2.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -6847,6 +6853,16 @@ packages:
       '@types/react':
         optional: true
 
+  react-clock@6.0.0:
+    resolution: {integrity: sha512-qYYrCT9HwDmj5Y2jFGPLc0ktQAZnm+1h2e429/8KBic69PuP1Cp2u0U8k5m3G8A09cOmikQFQitnX6STeGmTpA==}
+    peerDependencies:
+      '@types/react': ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react: 19.1.0
+      react-dom: 19.1.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
   react-cookie-consent@10.0.1:
     resolution: {integrity: sha512-qgU7Kr+x9/feKZxaIJbMT+R/xD1lnAQy9MzD4yLooVrkhoUR7XFc8Xv8M+GDQYcjoYh6uszslLGo1k+eU2VLtw==}
     engines: {node: '>=20.16'}
@@ -6992,6 +7008,7 @@ packages:
   react-intl-tel-input@8.2.0:
     resolution: {integrity: sha512-fuIrd+rk2GTXj9Ff1qnSAIjwKkOb37xcTHjsQ4CcJZUma533pOOFtQxIhPYFA0qFRmblzclhP+Pn7EfiA38Eqg==}
     engines: {node: '>=6.14.14'}
+    deprecated: This package is deprecated and no longer maintained. Please migrate to the official @intl-tel-input/react or react-phone-number-input.
     peerDependencies:
       react: 19.1.0
       react-dom: 19.1.0
@@ -7251,6 +7268,16 @@ packages:
     engines: {node: '>= 16.12.0'}
     peerDependencies:
       react: 19.1.0
+
+  react-time-picker@8.1.0:
+    resolution: {integrity: sha512-tUNJ6EKOMOD5qEmqDdvY1DcxBn5hpAWh6AecC9KgPup1KjZlvUZ0Ttp+/VOqkrgBtQQdzD+DBqhoJwX6MYCSaQ==}
+    peerDependencies:
+      '@types/react': ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react: 19.1.0
+      react-dom: 19.1.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   react-toastify@11.1.0:
     resolution: {integrity: sha512-e9h23x3phN0wbFeB6yovmWp7lobzV4CaCH0LO8nVP6H7Y+3GbcLpIzMm9dJhcp1RXbpyfvjgpfXqO80QAmn7sg==}
@@ -8150,6 +8177,9 @@ packages:
 
   update-input-width@1.4.2:
     resolution: {integrity: sha512-/p0XLhrQQQ4bMWD7bL9duYObwYCO1qGr8R19xcMmoMSmXuQ7/1//veUnCObQ7/iW6E2pGS6rFkS4TfH4ur7e/g==}
+
+  update-input-width@2.0.0:
+    resolution: {integrity: sha512-Ri49Yv+QEwaf/nZEKxuOeD+M65NE+WLau4rGyHTUBCNKNN+jtKT36vUpOugt0lIrEb8l9ZkEgY+Sg+I+zO/3PA==}
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
@@ -15251,6 +15281,16 @@ snapshots:
     optionalDependencies:
       '@types/react': 18.3.31
 
+  react-clock@6.0.0(@types/react@18.3.31)(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
+    dependencies:
+      '@wojtekmaj/date-utils': 2.0.2
+      clsx: 2.1.1
+      get-user-locale: 3.0.0
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    optionalDependencies:
+      '@types/react': 18.3.31
+
   react-cookie-consent@10.0.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       js-cookie: 3.0.8
@@ -15923,6 +15963,20 @@ snapshots:
   react-tag-autocomplete@7.5.1(react@19.1.0):
     dependencies:
       react: 19.1.0
+
+  react-time-picker@8.1.0(@types/react@18.3.31)(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
+    dependencies:
+      '@wojtekmaj/date-utils': 2.0.2
+      clsx: 2.1.1
+      get-user-locale: 3.0.0
+      make-event-props: 2.0.0
+      react: 18.2.0
+      react-clock: 6.0.0(@types/react@18.3.31)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      react-dom: 18.2.0(react@18.2.0)
+      react-fit: 3.0.0(@types/react@18.3.31)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      update-input-width: 2.0.0
+    optionalDependencies:
+      '@types/react': 18.3.31
 
   react-toastify@11.1.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
@@ -17114,6 +17168,8 @@ snapshots:
   update-diff@1.1.0: {}
 
   update-input-width@1.4.2: {}
+
+  update-input-width@2.0.0: {}
 
   uri-js@4.4.1:
     dependencies:

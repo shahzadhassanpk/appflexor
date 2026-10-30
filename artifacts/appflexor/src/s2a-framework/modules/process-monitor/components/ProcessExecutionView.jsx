@@ -95,7 +95,9 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const [runtimeRefresh, setRuntimeRefresh] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleteAllTarget, setDeleteAllTarget] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [deletingAll, setDeletingAll] = useState(false);
     const [deleteError, setDeleteError] = useState("");
     const [auditError, setAuditError] = useState("");
     const [suspensionAction, setSuspensionAction] = useState({ scope: "", targetId: "", suspended: null });
@@ -274,6 +276,53 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         }
     }
 
+    async function deleteAllInstances() {
+        const targets = deleteAllTarget?.instances || [];
+        if (!targets.length) return;
+        setDeletingAll(true);
+        setDeleteError("");
+        setAuditError("");
+        const deletedIds = [];
+        const deleteFailures = [];
+        const auditFailures = [];
+
+        for (const instance of targets) {
+            try {
+                await camundaApi.deleteProcessInstance(instance.id);
+                deletedIds.push(instance.id);
+                try {
+                    await createDeleteAudit(instance);
+                } catch (error) {
+                    auditFailures.push(error.message || instance.id);
+                }
+            } catch (error) {
+                deleteFailures.push(error.message || instance.id);
+            }
+        }
+
+        if (deletedIds.length) {
+            const deleted = new Set(deletedIds);
+            setRuntimeState(previous => ({
+                instances: previous.instances.filter(item => !deleted.has(item.id)),
+                tasks: previous.tasks.filter(item => !deleted.has(item.processInstanceId)),
+                jobs: previous.jobs.filter(item => !deleted.has(item.processInstanceId)),
+            }));
+            deletedIds.forEach(id => onInstanceDeleted?.(id));
+        }
+
+        if (auditFailures.length) {
+            setAuditError(`${deletedIds.length} process instance${deletedIds.length === 1 ? "" : "s"} deleted, but ${auditFailures.length} audit record${auditFailures.length === 1 ? "" : "s"} could not be saved.`);
+        }
+        if (deleteFailures.length) {
+            setDeleteError(`${deleteFailures.length} process instance${deleteFailures.length === 1 ? "" : "s"} could not be deleted. ${deletedIds.length} deleted successfully.`);
+            const deleted = new Set(deletedIds);
+            setDeleteAllTarget({ instances: targets.filter(item => !deleted.has(item.id)) });
+        } else {
+            setDeleteAllTarget(null);
+        }
+        setDeletingAll(false);
+    }
+
     async function updateInstanceSuspension(instance, suspended) {
         if (!instance?.id) return;
         setSuspensionAction({
@@ -385,6 +434,14 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                         <i className={`fa-solid ${suspensionAction.scope === "bulk" && suspensionAction.suspended === false ? "fa-spinner fa-spin" : "fa-play"} mr-2`} />
                         Resume All Suspended
                     </button>
+                    <button
+                        type="button"
+                        onClick={() => { setDeleteError(""); setDeleteAllTarget({ instances: processInstances }); }}
+                        disabled={!processInstances.length || deletingAll || deleting}
+                        className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 disabled:opacity-50">
+                        <i className={`fa-solid ${deletingAll ? "fa-spinner fa-spin" : "fa-trash-can"} mr-2`} />
+                        Delete All Instances
+                    </button>
                     <button type="button" onClick={() => setRuntimeRefresh(value => value + 1)} disabled={refreshing} className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
                         <i className={`fa-solid fa-rotate mr-2 ${refreshing ? "fa-spin" : ""}`} />Refresh
                     </button>
@@ -400,6 +457,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
             </div>
             {auditError && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{auditError}</div>}
             {suspensionError && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{suspensionError}</div>}
+            {deleteAllTarget && <div className="fixed inset-0 z-[1100] grid place-items-center bg-slate-950/50 p-4" role="presentation" onMouseDown={() => !deletingAll && setDeleteAllTarget(null)}><section className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="delete-all-instances-title" onMouseDown={event => event.stopPropagation()}><div className="flex items-start gap-3 p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-red-100 text-red-600"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /></span><div className="min-w-0"><h2 id="delete-all-instances-title" className="mb-1 text-base font-bold text-slate-900">Delete all process instances?</h2><p className="mb-1 text-sm text-slate-600">This permanently deletes all {deleteAllTarget.instances.length} instance{deleteAllTarget.instances.length === 1 ? "" : "s"} shown for version {viewDefinition.version}, including active tasks and jobs.</p><p className="mb-0 break-all text-xs font-medium text-slate-500">{viewDefinition.name || viewDefinition.key}</p></div></div>{deleteError && <div role="alert" className="mx-5 mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{deleteError}</div>}<div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3"><button type="button" disabled={deletingAll} onClick={() => setDeleteAllTarget(null)} className="!rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Cancel</button><button type="button" disabled={deletingAll} onClick={deleteAllInstances} className="!rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"><i className={`fa-solid ${deletingAll ? "fa-spinner fa-spin" : "fa-trash-can"} mr-2`} />{deletingAll ? "Deleting..." : "Delete all"}</button></div></section></div>}
             <div className="grid min-h-[500px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[260px_1fr]">
                 <aside className="border-b border-slate-200 bg-slate-50 p-4 lg:border-b-0 lg:border-r">
                     <dl className="space-y-4 text-sm">

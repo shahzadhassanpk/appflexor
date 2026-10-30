@@ -63,6 +63,7 @@ export const camundaApi = {
     getProcessDefinitions: () => camundaRequest(`/process-definition${query({
         latestVersion: true,
     })}`),
+    getAllProcessDefinitions: () => getAllPages("/process-definition"),
 
     getProcessInstances: () => getAllPages("/process-instance", { active: true }),
     getSuspendedProcessInstances: () => getAllPages("/process-instance", { suspended: true }),

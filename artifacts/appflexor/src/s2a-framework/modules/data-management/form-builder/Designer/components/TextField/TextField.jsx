@@ -29,6 +29,10 @@ function TextField(props) {
     const expressionProps = useGlobalData();
     var key = props.component.data.db_column;
 
+    function normalizeTextValue(value) {
+        return typeof value === "boolean" || value == null ? "" : value;
+    }
+
     // useEffect(() => {
     //     if(props?.formData){
     //         console.log("*************** Text Field form data > "+JSON.stringify(props?.formData));
@@ -109,7 +113,7 @@ function TextField(props) {
                             ...expressionProps,
                         );
 
-                        setDefaultValue(_d);
+                        setDefaultValue(normalizeTextValue(_d));
                     }
                 } else if (data.id === "new") {
                     let defaultExp = props.component.data.value;
@@ -130,9 +134,9 @@ function TextField(props) {
                                 ...expressionProps,
                             );
 
-                            setDefaultValue(_d);
+                            setDefaultValue(normalizeTextValue(_d));
                         }else {
-                            setDefaultValue(defaultExp);
+                            setDefaultValue(normalizeTextValue(defaultExp));
                         }
                     }
                 }
@@ -174,7 +178,7 @@ function TextField(props) {
 
             setObj(prev => ({
                 ...prev,
-                [key]: props.formData[key],
+                [key]: normalizeTextValue(props.formData[key]),
             }));
             if (
                 props.isFormSaved ||
@@ -453,7 +457,9 @@ function TextField(props) {
                                         required
                                         // value={obj[obj.key] ? obj[obj.key] : ""}
 
-                                        value={obj[componentData.db_column]}
+                                        value={normalizeTextValue(
+                                            obj[componentData.db_column],
+                                        )}
                                         onChange={handleChange}
                                         onFocus={handleChange}
                                         onBlur={e => handleOnBlur(e)}

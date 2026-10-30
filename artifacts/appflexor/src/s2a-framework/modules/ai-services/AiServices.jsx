@@ -250,7 +250,6 @@ function AiServices() {
                     fallbackMsg = "Model list not available for this provider. Enter the model name manually.";
             }
             if (models.length > 0) {
-                debugger;
                 setModelOptions(models);
             } else if (!fallbackMsg) {
                 fallbackMsg = "No models returned. Check your API key or enter the model name manually.";

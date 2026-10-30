@@ -166,13 +166,19 @@ function Number(props) {
             componentData?.required !== "YES" &&
             (!valueToCheck || valueToCheck === "")
         ) {
+            setIsValidField(true);
             return true;
         }
 
+        const minValue = props.component.data?.min_decimals;
+        const maxValue = props.component.data?.max_decimals;
         if (
-            props.component.data?.min_decimals=="" ||
-            props.component.data?.max_decimals==""
+            minValue == null ||
+            maxValue == null ||
+            minValue === "" ||
+            maxValue === ""
         ) {
+            setIsValidField(true);
             return true;
         }
 
@@ -316,9 +322,9 @@ function Number(props) {
                                     <input
                                         type="number"
                                         className={`form-control form-control-sm ${
-                                            message == ""
-                                                ? ""
-                                                : "form-control-danger"
+                                            !isValidField
+                                                ? "form-control-danger"
+                                                : ""
                                         } `}
                                         id={
                                             componentData.db_column &&

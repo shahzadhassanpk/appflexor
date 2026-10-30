@@ -1621,29 +1621,20 @@ function RowEditDialogue({
     const [title, setTitle] = useState("");
 
     useEffect(() => {
-        if (selectedRow.id) {
-            formContext.layout.forEach(row => {
-                if (row) {
-                    if (row.id === selectedRow.id) {
-                        if (row["enableTabView"]) {
-                            let _enableTabView = row.enableTabView;
-                            setEnableTabView(_enableTabView);
-                        } else {
-                            setEnableTabView("NO");
-                        }
-                        if (row["visibilityExpression"] !== undefined) {
-                            setVisibilityExpression(row.visibilityExpression);
-                        } else {
-                            setVisibilityExpression("");
-                        }
-                    }
-                }
-            });
+        const row = selectedRow.id
+            ? formContext.layout.find(item => item?.id === selectedRow.id)
+            : null;
+
+        if (row) {
+            setTitle(row.title || "");
+            setVisibilityExpression(row.visibilityExpression || "");
+            setEnableTabView(row.enableTabView || "NO");
         } else {
+            setTitle("");
             setVisibilityExpression("");
             setEnableTabView("NO");
         }
-    }, [selectedRow.id]);
+    }, [selectedRow, formContext.layout]);
 
     function handleLayoutUpdate() {
         let _layout = structuredClone(formContext.layout);

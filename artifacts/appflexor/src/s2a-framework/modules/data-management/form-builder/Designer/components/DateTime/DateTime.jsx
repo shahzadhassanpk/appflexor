@@ -17,6 +17,117 @@ import TextPropsEditor from "../../props-editors/TextPropsEditor";
 import useGlobalData from "../../../../../../components/useGlobal";
 import { evaluateExpression } from "../../../../../content-management/page-builder/datalist-viewer/datalist-filter-helpers/DatalistFilters";
 import { DateTimeHTML } from "../../../../../../components/DatePicker/DatePicker";
+
+function isValidIanaTimezone(value) {
+    if (!value || typeof value !== "string") return false;
+    try {
+        new Intl.DateTimeFormat("en-US", { timeZone: value }).format(new Date());
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function normalizeTimezoneValue(value) {
+    const timezone = String(value || "").trim();
+    if (isValidIanaTimezone(timezone)) return timezone;
+    const rawTimezone = timezone.split(" (")[0].trim();
+    return isValidIanaTimezone(rawTimezone) ? rawTimezone : "";
+}
+
+function getBrowserTimezone() {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return isValidIanaTimezone(timezone) ? timezone : "UTC";
+}
+
+function getTimezoneOffsetMs(date, timeZone) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        hourCycle: "h23",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+    }).formatToParts(date).reduce((result, part) => {
+        if (part.type !== "literal") result[part.type] = Number(part.value);
+        return result;
+    }, {});
+
+    return (
+        Date.UTC(
+            parts.year,
+            parts.month - 1,
+            parts.day,
+            parts.hour,
+            parts.minute,
+            parts.second,
+        ) - date.getTime()
+    );
+}
+
+function localDateTimeToUtc(value, timeZone) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(
+        String(value || ""),
+    );
+    if (!match) return null;
+
+    const [, year, month, day, hour, minute] = match;
+    const wallClockAsUtc = Date.UTC(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+    );
+    const firstOffset = getTimezoneOffsetMs(new Date(wallClockAsUtc), timeZone);
+    let utc = wallClockAsUtc - firstOffset;
+    const secondOffset = getTimezoneOffsetMs(new Date(utc), timeZone);
+    if (secondOffset !== firstOffset) utc = wallClockAsUtc - secondOffset;
+    return new Date(utc);
+}
+
+function formatDateTimeForTimezone(value, timeZone) {
+    if (!value || typeof value === "boolean") return "";
+    const rawValue = String(value).trim();
+    const normalizedValue = rawValue.includes(" ")
+        ? rawValue.replace(" ", "T")
+        : rawValue;
+    let date = moment.utc(normalizedValue);
+
+    if (!date.isValid()) {
+        date = moment.utc(rawValue, [
+            "YYYY-MM-DD HH:mm:ss",
+            "YYYY-MM-DD HH:mm:ss.SSS",
+            "YYYY-MM-DDTHH:mm:ss",
+            "YYYY-MM-DDTHH:mm",
+            "ddd DD, MMM YYYY hh:mm a",
+            "ddd DD, MMM YYYY h:mm a",
+        ], true);
+    }
+
+    if (!date.isValid()) return "";
+
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        hourCycle: "h23",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).formatToParts(date.toDate()).reduce((result, part) => {
+        if (part.type !== "literal") result[part.type] = part.value;
+        return result;
+    }, {});
+
+    return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+function normalizeDateTimeValue(value) {
+    return typeof value === "boolean" || value == null ? "" : value;
+}
 /**
  *
  * @param {mode, label, handleChangeEvent} props
@@ -39,13 +150,65 @@ function DateTime(props) {
 
     const expressionProps = useGlobalData();
     const deviceType = detectDeviceType();
+    const formDataSnapshot = JSON.stringify(props.formData || {});
+
+    function resolveTimezone() {
+        const configuredTimezone = String(componentData.timezone || "").trim();
+        const expressionData = {
+            ...data,
+            ...(props.formData || {}),
+        };
+
+        if (configuredTimezone) {
+            const evaluated = evaluateExpression(
+                { expression: configuredTimezone },
+                expressionData,
+                ...expressionProps,
+            );
+            const evaluatedTimezone = normalizeTimezoneValue(evaluated);
+            if (evaluatedTimezone) return evaluatedTimezone;
+
+            const literalTimezone = normalizeTimezoneValue(configuredTimezone);
+            if (literalTimezone) return literalTimezone;
+        }
+
+        // An empty timezone property means display DB values in the browser's
+        // timezone. Form data is only consulted when explicitly referenced by
+        // the configured timezone expression above.
+        return getBrowserTimezone();
+    }
+
+    function getInputValue(value) {
+        const key = componentData.db_column;
+        const storedValue = [
+            value,
+            props.formData?.[key],
+            componentData.value,
+        ].find(
+            candidate =>
+                candidate !== null &&
+                candidate !== undefined &&
+                typeof candidate !== "boolean",
+        );
+        let normalizedValue = normalizeDateTimeValue(storedValue);
+        let resolvedTimezone = resolveTimezone();
+        let timezoeValue = formatDateTimeForTimezone(normalizedValue, resolvedTimezone);
+        return timezoeValue;
+    }
 
     useEffect(() => {
         if (props.component && props.component.data) {
             setComponentData(props.component.data);
 
             let key = props.component.data.db_column;
-            let value = props.component.data.value;
+            const formValue = props.formData?.[key];
+            const hasFormValue =
+                formValue !== undefined &&
+                formValue !== null &&
+                formValue !== "";
+            let value = hasFormValue
+                ? formValue
+                : props.component.data.value;
 
             // if (
             //     props.component.data.regex &&
@@ -63,7 +226,7 @@ function DateTime(props) {
             // }
 
             setObj({
-                [key]: value,
+                [key]: normalizeDateTimeValue(value),
             });
 
             // this will set default value and overwrite parents default value
@@ -72,7 +235,7 @@ function DateTime(props) {
             //     props.handleInputFields(key, value);
             // }
         }
-    }, [props.component.data]);
+    }, [props.component.data, formDataSnapshot]);
 
     useEffect(() => {
         if (props.mode !== props.modeType.design) {
@@ -115,11 +278,11 @@ function DateTime(props) {
 
         setObj(prev => ({
             ...prev,
-            [key]: props.formData[key],
+            [key]: normalizeDateTimeValue(props.formData[key]),
         }));
 
-        setData(props.formData);
-    }, [props.formData, props.component.data]);
+        setData({ ...props.formData });
+    }, [formDataSnapshot, props.component.data]);
 
     function handleChange(e) {
         let key = e.target.name;
@@ -133,15 +296,15 @@ function DateTime(props) {
         ) {
             isValid = false;
         }
-        // Changes set locale date to input and utc to db
-        let local = formatDateTimeToISO(value);
-        let utc = localToUTCDateTime(local);
-        // let dbFormat = formatDateTimeForDataBase(utc);
+        const utcDate = localDateTimeToUtc(value, resolveTimezone());
+        const utc = utcDate
+            ? formatDateTimeForDataBase(moment.utc(utcDate))
+            : "";
         setIsValidField(isValid);
-        // setObj(prev => ({
-        //     ...prev,
-        //     [key]: utc,
-        // }));
+        setObj(prev => ({
+            ...prev,
+            [key]: utc,
+        }));
 
         if (props.handleInputFields) {
             props.handleInputFields(componentData.db_column, utc, isValid);
@@ -207,6 +370,7 @@ function DateTime(props) {
                                 {componentData.label
                                     ? componentData.label
                                     : "Date Time"}
+                                {resolveTimezone() && ` (${resolveTimezone()})`}
                                 {componentData.required &&
                                     componentData.required === "YES" && (
                                         <span className="text-danger">
@@ -222,7 +386,7 @@ function DateTime(props) {
                     <input
                         type="datetime-local"
                         className="form-control  form-control-sm"
-                        value={obj[componentData.db_column]}
+                        value={getInputValue(obj[componentData.db_column])}
                         disabled
                     />
                 )}
@@ -245,7 +409,7 @@ function DateTime(props) {
                                                     : ""
                                                 : ""
                                         } `}
-                                        data={formatDateTimeForUserView(
+                                        value={getInputValue(
                                             obj[componentData.db_column],
                                         )}
                                         name={componentData.db_column}
@@ -277,7 +441,9 @@ function DateTime(props) {
                                                     : ""
                                                 : ""
                                         } `}
-                                        value={obj[componentData.db_column] && parseDBDateTime(obj[componentData.db_column])}
+                                        value={getInputValue(
+                                            obj[componentData.db_column],
+                                        )}
                                         name={componentData.db_column}
                                         // value={parseDBDateTime(obj[componentData.db_column])}
                                         onChange={e => handleChange(e)}

@@ -13,6 +13,7 @@ import {
 } from "../../../utils/utils";
 import { ProcessDeployDialog } from "./ProcessDeployDialog";
 import ProcessWorkspaceList from "../components/ProcessWorkspaceList";
+import { camundaApi } from "../../process-monitor/services/camundaApi";
 import { toastEmitter } from "../../../components/Toastify/Toastify";
 import "./processes.css";
 
@@ -27,6 +28,11 @@ function getDeploymentStatus(item) {
     if (status === "UNDEPLOYED") return "UNDEPLOYED";
     if (status === "DEPLOYED" || item?.deployment || item?.version || item?.process_id) return "DEPLOYED";
     return "DRAFT";
+}
+
+function getDefinitionKeyFromId(definitionId = "") {
+    const value = String(definitionId || "");
+    return value ? value.split(":")[0] || value : "";
 }
 
 function isMissingDeployment(errorOrResponse) {
@@ -111,6 +117,8 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
     const [draftDeleteConfig, setDraftDeleteConfig] = useState({ show: false, item: {} });
     const [undeployConfig, setUndeployConfig] = useState({ show: false, item: {} });
     const [actionItemId, setActionItemId] = useState("");
+    const [runningInstanceCounts, setRunningInstanceCounts] = useState({});
+    const [failedInstanceCounts, setFailedInstanceCounts] = useState({});
 
     /* ── Dialog state ────────────────────────────────────────────────── */
     const [formShow, setFormShow] = useState(false);
@@ -122,7 +130,10 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
        Data
     ═══════════════════════════════════════════════════════════════════ */
     useEffect(() => {
-        if (activeTab === "PROCESSES") getData();
+        if (activeTab === "PROCESSES") {
+            getData();
+            getRunningInstanceCounts();
+        }
     }, [activeTab]);
 
     function getData() {
@@ -149,6 +160,47 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
             .finally(() => setLoading(false));
     }
 
+    async function getRunningInstanceCounts() {
+        try {
+            const [definitions, instances, failedJobs] = await Promise.all([
+                camundaApi.getAllProcessDefinitions().catch(() => []),
+                camundaApi.getProcessInstances().catch(() => []),
+                camundaApi.getFailedJobs().catch(() => []),
+            ]);
+            const definitionKeyById = definitions.reduce((acc, definition) => {
+                if (definition?.id && definition?.key) acc[definition.id] = definition.key;
+                return acc;
+            }, {});
+            const counts = instances.reduce((acc, instance) => {
+                const key = instance?.definitionKey || instance?.processDefinitionKey || definitionKeyById[instance?.definitionId] || definitionKeyById[instance?.processDefinitionId];
+                if (key) acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+            const failedInstanceSets = failedJobs.reduce((acc, job) => {
+                if (!(job?.exceptionMessage || job?.retries === 0)) return acc;
+                const key = job?.definitionKey || job?.processDefinitionKey || definitionKeyById[job?.processDefinitionId] || getDefinitionKeyFromId(job?.processDefinitionId);
+                if (!key) return acc;
+                if (!acc[key]) acc[key] = new Set();
+                acc[key].add(job.processInstanceId || `${key}:${job.id}`);
+                return acc;
+            }, {});
+            const failedCounts = Object.fromEntries(
+                Object.entries(failedInstanceSets).map(([key, instanceIds]) => [key, instanceIds.size]),
+            );
+            setRunningInstanceCounts(counts);
+            setFailedInstanceCounts(failedCounts);
+        } catch (error) {
+            console.error("Unable to load running instance counts", error);
+            setRunningInstanceCounts({});
+            setFailedInstanceCounts({});
+        }
+    }
+
+    function refreshWorkspaceData() {
+        getData();
+        getRunningInstanceCounts();
+    }
+
     /* ═══════════════════════════════════════════════════════════════════
        List helpers
     ═══════════════════════════════════════════════════════════════════ */
@@ -166,8 +218,7 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
         const q = searchTerm.trim().toLowerCase();
         return focusedItems.filter(it =>
             (it.title || "").toLowerCase().includes(q) ||
-            (it.process_def_key || "").toLowerCase().includes(q) ||
-            (it.process_file || "").toLowerCase().includes(q),
+            (it.process_def_key || "").toLowerCase().includes(q),
         );
     }
 
@@ -365,8 +416,8 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
         const status = getDeploymentStatus(item);
         const busy = actionItemId === item.id;
         return <>
-            <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600 disabled:opacity-50" title="Edit process" onClick={() => editItem(item)}><i className="fa-regular fa-edit" /></button>
-            {onOpenConfigure && <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-violet-50 text-violet-600 disabled:opacity-50" title="Configure process" aria-label={`Configure ${item.title || item.process_def_key}`} onClick={() => onOpenConfigure(item)}><i className="fa-solid fa-gears" /></button>}
+            <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600 disabled:opacity-50" title="Deploy process" onClick={() => editItem(item)}><i className="fa-solid fa-rocket" /></button>
+            {onOpenConfigure && <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-violet-50 text-violet-600 disabled:opacity-50" title="Govern process" aria-label={`Configure ${item.title || item.process_def_key}`} onClick={() => onOpenConfigure(item)}><i className="fa-solid fa-gears" /></button>}
             {onOpenMonitor && <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-50 text-emerald-600 disabled:opacity-50" title="Monitor process" aria-label={`Monitor ${item.title || item.process_def_key}`} onClick={() => onOpenMonitor(item)}><i className="fa-solid fa-chart-line" /></button>}
             {status === "DEPLOYED" && item.deployment && <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-amber-50 text-amber-700 disabled:opacity-50" title="Undeploy from process engine" aria-label={`Undeploy ${item.title || item.process_def_key}`} onClick={() => undeployData(item)}><i className={`fa-solid ${busy ? "fa-spinner fa-spin" : "fa-cloud-arrow-down"}`} /></button>}
             {status === "UNDEPLOYED" && <button type="button" disabled={busy} className="grid h-9 w-9 place-items-center rounded-lg bg-amber-50 text-amber-700 disabled:opacity-50" title="Archive process" aria-label={`Archive ${item.title || item.process_def_key}`} onClick={() => archiveData(item)}><i className={`fa-solid ${busy ? "fa-spinner fa-spin" : "fa-box-archive"}`} /></button>}
@@ -382,15 +433,17 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
             <ModalBox state={undeployConfig} message="Undeploy this process from the process engine? Running and historical process data associated with this deployment may be removed." operation={undeployData} header="Undeploy Process" setState={setUndeployConfig} modalType="deleteModal" />
             <ModalBox state={archiveConfig} message="Archive this undeployed process? It will be hidden from the active process list." operation={archiveData} header="Archive Process" setState={setArchiveConfig} modalType="deleteModal" />
             <ModalBox state={draftDeleteConfig} message="Permanently delete this draft process from AppFlexor?" operation={deleteDraft} header="Delete Draft Process" setState={setDraftDeleteConfig} modalType="deleteModal" />
-            <ProcessWorkspaceList title={focusedProcessKey ? "Deploy Process" : "Process Deployments"} description={focusedProcessKey ? "Manage the BPMN file, deployment, and versions for this process." : "Manage BPMN files, deployed versions, and process definitions."} items={getFilteredItems()} loading={loading} onRefresh={getData} showArchived={!focusedProcessKey && showArchived} setShowArchived={focusedProcessKey ? null : setShowArchived} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title, definition key, or file" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add process" stats={[
+            <ProcessWorkspaceList title={focusedProcessKey ? "Deploy Process" : "Processes"} description={focusedProcessKey ? "Manage the BPMN file, deployment, and versions for this process." : "Manage BPMN files, deployed versions, and process definitions."} items={getFilteredItems()} loading={loading} onRefresh={refreshWorkspaceData} showArchived={!focusedProcessKey && showArchived} setShowArchived={focusedProcessKey ? null : setShowArchived} searchTerm={searchTerm} setSearchTerm={setSearchTerm} searchPlaceholder="Search title or definition key" page={current} setPage={setCurrent} pageSize={size} setPageSize={setSize} onAdd={addNewItem} addLabel="Add process" stats={[
                 { label: "Process files", value: items.length, icon: "fa-solid fa-file-code", tone: "bg-indigo-50 text-indigo-600" },
                 { label: "Deployed", value: items.filter(item => getDeploymentStatus(item) === "DEPLOYED").length, icon: "fa-solid fa-rocket", tone: "bg-emerald-50 text-emerald-600" },
+                { label: "Failed Instances", value: Object.values(failedInstanceCounts).reduce((total, count) => total + count, 0), icon: "fa-solid fa-triangle-exclamation", tone: "bg-red-50 text-red-600" },
                 { label: "Drafts", value: items.filter(item => getDeploymentStatus(item) === "DRAFT").length, icon: "fa-solid fa-pen-ruler", tone: "bg-amber-50 text-amber-600" },
                 { label: "Latest version", value: Math.max(0, ...items.map(item => Number(item.version) || 0)), icon: "fa-solid fa-code-branch", tone: "bg-sky-50 text-sky-600" },
             ]} columns={[
                 { key: "title", label: "Process Title" },
                 { key: "process_def_key", label: "Definition Key", render: item => <span className="font-medium text-indigo-600">{item.process_def_key || "—"}</span> },
-                { key: "process_file", label: "BPMN File" },
+                { key: "running_instances", label: "Running Instances", sortValue: item => runningInstanceCounts[item.process_def_key] || 0, render: item => <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{runningInstanceCounts[item.process_def_key] || 0}</span> },
+                { key: "failed_instances", label: "Failed Instances", sortValue: item => failedInstanceCounts[item.process_def_key] || 0, render: item => { const count = failedInstanceCounts[item.process_def_key] || 0; return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${count ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-600"}`}>{count}</span>; } },
                 { key: "version", label: "Deployment", sortValue: item => Number(item.version) || 0, render: item => item.version ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">v{item.version}</span> : <span className="text-slate-400">—</span> },
                 { key: "status", label: "Status", sortValue: getDeploymentStatus, render: item => { const status = getDeploymentStatus(item); const tone = status === "DEPLOYED" ? "bg-emerald-50 text-emerald-700" : status === "UNDEPLOYED" ? "bg-amber-50 text-amber-700" : status === "ARCHIVED" ? "bg-slate-200 text-slate-700" : "bg-slate-100 text-slate-600"; return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>{status === "UNDEPLOYED" ? "Undeployed" : status === "DEPLOYED" ? "Deployed" : status === "ARCHIVED" ? "Archived" : "Draft"}</span>; } },
                 { key: "datemodified", label: "Last Updated", render: item => formatDateTimeForUserView(item.datemodified) },
@@ -419,7 +472,8 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
                             <Tr>
                                 <Th><TableSorting state={items} setState={setItems} fieldName="title" headerTitle="Process Title" /></Th>
                                 <Th><TableSorting state={items} setState={setItems} fieldName="process_def_key" headerTitle="Def Key" /></Th>
-                                <Th><TableSorting state={items} setState={setItems} fieldName="process_file" headerTitle="File" /></Th>
+                                <Th>Running Instances</Th>
+                                <Th>Failed Instances</Th>
                                 <Th><TableSorting state={items} setState={setItems} fieldName="version" headerTitle="Deployment" /></Th>
                                 <Th><TableSorting state={items} setState={setItems} fieldName="datemodified" headerTitle="Last Updated" /></Th>
                                 <Th style={{ width: "7rem" }} />
@@ -432,7 +486,8 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
                                     className={item.id === selectedItemId ? "proc-row-selected" : ""}>
                                     <Td>{item.title}</Td>
                                     <Td><span className="proc-list-file">{item.process_def_key}</span></Td>
-                                    <Td><span className="proc-list-file">{item.process_file}</span></Td>
+                                    <Td><span className="proc-list-badge proc-list-badge-version">{runningInstanceCounts[item.process_def_key] || 0}</span></Td>
+                                    <Td><span className="proc-list-badge proc-list-badge-version">{failedInstanceCounts[item.process_def_key] || 0}</span></Td>
                                     <Td>
                                         {item?.version
                                             ? <span className="proc-list-badge proc-list-badge-version">v{item.version}</span>

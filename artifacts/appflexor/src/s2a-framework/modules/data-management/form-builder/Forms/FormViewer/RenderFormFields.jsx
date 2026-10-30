@@ -58,6 +58,9 @@ function RenderFormFields({
                                             <div
                                                 className="row"
                                                 key={row.id}>
+                                                {row.title && (
+                                                    <div className="col-sm-12 row-title">{row.title}</div>
+                                                )}
                                                 <Row
                                                     key={row.id}
                                                     rowData={row}
@@ -84,7 +87,7 @@ function RenderFormFields({
                                                     fkColumn={fkColumn}
                                                     fkValue={fkValue}
                                                     appContext={appContext}
-                                                    ></Row>
+                                                ></Row>
                                             </div>
                                         );
                                     })}
@@ -115,27 +118,24 @@ function RenderFormFields({
                                                 className="nav-item"
                                                 role="presentation">
                                                 <button
-                                                    className={`nav-link ${
-                                                        i == firstTab
-                                                            ? "active"
-                                                            : ""
-                                                    } `}
+                                                    className={`nav-link ${i == firstTab
+                                                        ? "active"
+                                                        : ""
+                                                        } `}
                                                     data-bs-toggle="tab"
                                                     data-bs-target={`#${multiFormId}-${form.id}`}
                                                     type="button"
 
-                                                    // onClick={event =>
-                                                    //     handleTabsChange(event)
-                                                    // }
+                                                // onClick={event =>
+                                                //     handleTabsChange(event)
+                                                // }
                                                 >
                                                     <span
-                                                        className={`${
-                                                            form.icon
-                                                        } ${
-                                                            form.icon
+                                                        className={`${form.icon
+                                                            } ${form.icon
                                                                 ? "me-1"
                                                                 : ""
-                                                        }`}></span>{" "}
+                                                            }`}></span>{" "}
                                                     {form.title}
                                                 </button>
                                             </li>
@@ -153,16 +153,18 @@ function RenderFormFields({
                                         return (
                                             <div
                                                 id={`${multiFormId}-${form.id}`}
-                                                className={`tab-pane fade ${
-                                                    i == firstTab
-                                                        ? "show active"
-                                                        : ""
-                                                } `}>
+                                                className={`tab-pane fade ${i == firstTab
+                                                    ? "show active"
+                                                    : ""
+                                                    } `}>
                                                 {form.design.layout.map(row => {
                                                     return (
                                                         <div
                                                             className="row"
                                                             key={row.id}>
+                                                            {row.title && (
+                                                                <div className="col-sm-12 row-title">{row.title}</div>
+                                                            )}
                                                             <Row
                                                                 key={row.id}
                                                                 rowData={row}
@@ -232,29 +234,26 @@ function RenderFormFields({
                                                 // className="nav-item"
                                                 role="presentation">
                                                 <div
-                                                    className={`s2a-form-menu-item nav-link ${
-                                                        i == firstTab
-                                                            ? "active"
-                                                            : ""
-                                                    } `}
+                                                    className={`s2a-form-menu-item nav-link ${i == firstTab
+                                                        ? "active"
+                                                        : ""
+                                                        } `}
                                                     data-bs-toggle="tab"
                                                     data-bs-target={`#${form.id}`}
                                                     type="button"
 
-                                                    // onClick={event =>
-                                                    //     handleTabsChange(event)
-                                                    // }
+                                                // onClick={event =>
+                                                //     handleTabsChange(event)
+                                                // }
                                                 >
                                                     {" "}
                                                     <div className="d-flex">
                                                         <span
-                                                            className={`${
-                                                                form.icon
-                                                            } ${
-                                                                form.icon
+                                                            className={`${form.icon
+                                                                } ${form.icon
                                                                     ? "me-1"
                                                                     : ""
-                                                            }`}></span>{" "}
+                                                                }`}></span>{" "}
                                                         {form.title}
                                                     </div>
                                                 </div>
@@ -276,11 +275,10 @@ function RenderFormFields({
                                             <>
                                                 <div
                                                     id={`${form.id}`}
-                                                    className={`tab-pane fade ${
-                                                        i == firstTab
-                                                            ? "show active"
-                                                            : ""
-                                                    } `}>
+                                                    className={`tab-pane fade ${i == firstTab
+                                                        ? "show active"
+                                                        : ""
+                                                        } `}>
                                                     <div className="col-sm-12 s2a-form-title">
                                                         {form.title}
                                                     </div>
@@ -293,6 +291,9 @@ function RenderFormFields({
                                                                         key={
                                                                             row.id
                                                                         }>
+                                                                        {row.title && (
+                                                                            <div className="col-sm-12 row-title">{row.title}</div>
+                                                                        )}
                                                                         <Row
                                                                             key={
                                                                                 row.id
@@ -405,10 +406,12 @@ function RenderFormFields({
                         } else {
                             return (
                                 <div
-                                    className={` ${
-                                        row.classes ? row.classes : ""
-                                    } row`}
+                                    className={` ${row.classes ? row.classes : ""
+                                        } row`}
                                     key={row.id}>
+                                    {row.title && (
+                                        <div className="col-sm-12 row-title">{row.title}</div>
+                                    )}
                                     <Row
                                         key={row.id}
                                         rowData={row}
@@ -527,9 +530,8 @@ function RenderTabs({
     return (
         <React.Fragment>
             <ul
-                className={` ${
-                    rowData.classes ? rowData.classes : ""
-                } nav nav-tabs pt-2`}
+                className={` ${rowData.classes ? rowData.classes : ""
+                    } nav nav-tabs pt-2`}
                 key={rowData.id}>
                 {/* {JSON.stringify(rowData)} */}
                 {rowData.children.map((tab, index) => {
@@ -548,9 +550,8 @@ function RenderTabs({
                                         ref={el =>
                                             (tabRefs.current[tab.id] = el)
                                         }
-                                        className={`nav-link ${
-                                            index === 0 ? "active" : null
-                                        }`}
+                                        className={`nav-link ${index === 0 ? "active" : null
+                                            }`}
                                         data-bs-toggle="tab"
                                         data-bs-target={`#${tab.id}${uniqueFormId}`}
                                         type="button"
@@ -579,9 +580,8 @@ function RenderTabs({
                     if (!_visible) return null;
                     return (
                         <div
-                            className={`tab-pane fade ${
-                                index === 0 ? "show active" : ""
-                            }`}
+                            className={`tab-pane fade ${index === 0 ? "show active" : ""
+                                }`}
                             id={`${tab.id}${uniqueFormId}`}>
                             {_visible && (
                                 <Tab
@@ -679,9 +679,9 @@ function Row({
                 data,
                 appContext?.channel,
                 appContext?.userGroups,
-                appContext?.profile,                
-                    appContext?.tenantSubscription,
-                
+                appContext?.profile,
+                appContext?.tenantSubscription,
+
             );
             setVisible(_visible);
         }
@@ -700,6 +700,7 @@ function Row({
                     //SHA
                     <div
                         className={`${column.classes} col-style p-0 ${column.className ? column.className : ""}`}>
+
                         <Column
                             key={column.id}
                             columnData={column}
@@ -768,9 +769,8 @@ function Column({
                 {/* <code>{JSON.stringify(components[component.id].data.code)}</code> */}
                 {visible && (
                     <div
-                        className={`col-wrapper ${
-                            columnData.classNames ? columnData.classNames : ""
-                        }`}>
+                        className={`col-wrapper ${columnData.classNames ? columnData.classNames : ""
+                            }`}>
                         <Component
                             key={component.id}
                             componentData={component}
@@ -869,8 +869,13 @@ function CreateComponent(
     fkValue,
 ) {
     if (typeof componentList[component.type] !== "undefined") {
+        const componentKey =
+            component.type === "time"
+                ? `${component.id}-${JSON.stringify(formData || {})}`
+                : component.id;
+
         return React.createElement(componentList[component.type], {
-            key: component.id,
+            key: componentKey,
             component,
             images,
             htmlCollection,

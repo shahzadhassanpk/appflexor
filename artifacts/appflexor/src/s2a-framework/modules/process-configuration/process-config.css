@@ -474,9 +474,17 @@
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 0.55rem;
-  background: color-mix(in srgb, var(--link-active-color, #2563eb) 12%, transparent);
-  color: var(--link-active-color, #2563eb);
+  background: #fff;
+  border: 1px solid var(--border-default, rgba(148, 163, 184, 0.32));
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
   flex-shrink: 0;
+}
+
+.orch-workspace-icon img {
+  display: block;
+  width: 1.45rem;
+  height: 1.45rem;
+  object-fit: contain;
 }
 
 .orch-workspace-title {
