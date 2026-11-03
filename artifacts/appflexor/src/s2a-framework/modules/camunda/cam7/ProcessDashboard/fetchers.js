@@ -1,5 +1,27 @@
 import axios from "axios";
 import { API_URL } from "../../../../Config";
+import { BPM_API_URL } from "../../CamundaConfig";
+
+export async function fetchBpmData(dataKeys) {
+    const response = await axios.post(
+        BPM_API_URL + "?service.key=bpm.multiKey.data",
+        { dataKeys },
+    );
+    const status = response?.data?.C_STATUS || response?.data?.status;
+    if (["FAILED", "FAILURE", "ERROR", "UNAUTHORIZED"].includes(status)) {
+        throw new Error(
+            response?.data?.C_MESSAGE ||
+            response?.data?.message ||
+            "Unable to load process dashboard data.",
+        );
+    }
+    return response?.data?.C_DATA || response?.data?.data || response?.data || {};
+}
+
+export function readBpmData(payload, key, fallback = []) {
+    const value = payload?.[key];
+    return value?.data ?? value?.C_DATA ?? value ?? fallback;
+}
 
 export async function fetchTenantData(dataKeys) {
     const response = await axios.post(

@@ -2,6 +2,7 @@ import axios from "axios";
 import { BPM_API_URL } from "../../camunda/CamundaConfig";
 
 const proxyUrl = `${BPM_API_URL}?service.key=bpm.data`;
+const batchProxyUrl = `${BPM_API_URL}?service.key=bpm.multiKey.data`;
 
 function unwrap(response) {
     if (response.data?.C_STATUS === "UNAUTHORIZED") {
@@ -31,6 +32,17 @@ export async function camundaRequest(path, options = {}) {
     throw lastError;
 }
 
+export async function camundaBatchRequest(dataKeys = []) {
+    const response = await axios.post(batchProxyUrl, { dataKeys });
+    if (response.data?.C_STATUS === "UNAUTHORIZED") {
+        throw new Error("Your AppFlexor session has expired. Please sign in again.");
+    }
+    if (["FAILED", "FAILURE", "ERROR"].includes(response.data?.C_STATUS) || response.data?.status === "ERROR") {
+        throw new Error(response.data?.C_MESSAGE || response.data?.message || "Process engine request failed.");
+    }
+    return response.data?.data ?? response.data;
+}
+
 function query(params = {}) {
     const search = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -48,7 +60,7 @@ async function getAllPages(path, params = {}, pageSize = 100) {
     let firstResult = 0;
     let hasMore = true;
     while (hasMore) {
-        const page = await camundaRequest(`${path}${query({ ...params, firstResult, maxResults: pageSize })}`);
+        const page = await camundaRequest(`${path}${query({ ...params, firstResult })}`);
         const items = Array.isArray(page) ? page : [];
         const newItems = items.filter(item => !seenIds.has(item.id));
         newItems.forEach(item => seenIds.add(item.id));
@@ -68,11 +80,35 @@ export const camundaApi = {
     getProcessInstances: () => getAllPages("/process-instance", { active: true }),
     getSuspendedProcessInstances: () => getAllPages("/process-instance", { suspended: true }),
     getProcessInstance: instanceId => camundaRequest(`/process-instance/${instanceId}`),
+    getInstanceDetails: instanceId => camundaBatchRequest([
+        { key: "instance", request: { path: `/process-instance/${instanceId}`, method: "GET", data: {} } },
+        { key: "activity", request: { path: `/process-instance/${instanceId}/activity-instances`, method: "GET", data: {} } },
+        { key: "tasks", request: { path: `/task${query({ processInstanceId: instanceId, active: true, firstResult: 0 })}`, method: "GET", data: {} } },
+        { key: "jobs", request: { path: `/job${query({ processInstanceId: instanceId, firstResult: 0 })}`, method: "GET", data: {} } },
+    ]),
     deleteProcessInstance: instanceId => camundaRequest(`/process-instance/${instanceId}${query({ skipCustomListeners: true, skipIoMappings: true })}`, { method: "DELETE" }),
+    deleteProcessInstances: instanceIds => camundaRequest("/process-instance/delete", {
+        method: "POST",
+        data: {
+            processInstanceIds: instanceIds,
+            deleteReason: "Deleted from process monitor",
+            skipCustomListeners: true,
+            skipIoMappings: true,
+            skipSubprocesses: false,
+            failIfNotExists: true,
+        },
+    }),
     getProcessInstancesByDefinition: (definitionId, params = { active: true }) => getAllPages("/process-instance", {
         processDefinitionId: definitionId,
         ...params,
     }),
+    getDefinitionRuntime: definitionKey => camundaBatchRequest([
+        { key: "activeInstances", request: { path: `/process-instance${query({ processDefinitionKey: definitionKey, active: true, firstResult: 0 })}`, method: "GET", data: {} } },
+        { key: "suspendedInstances", request: { path: `/process-instance${query({ processDefinitionKey: definitionKey, suspended: true, firstResult: 0 })}`, method: "GET", data: {} } },
+        { key: "tasks", request: { path: `/task${query({ processDefinitionKey: definitionKey, active: true, firstResult: 0 })}`, method: "GET", data: {} } },
+        { key: "jobs", request: { path: `/job${query({ processDefinitionKey: definitionKey, firstResult: 0 })}`, method: "GET", data: {} } },
+        { key: "history", request: { path: `/history/process-instance${query({ processDefinitionKey: definitionKey, unfinished: true, sortBy: "startTime", sortOrder: "desc", firstResult: 0 })}`, method: "GET", data: {} } },
+    ]),
     getProcessInstancesByDefinitionKey: (definitionKey, tenantId, params = {}) => getAllPages("/process-instance", {
         processDefinitionKey: definitionKey,
         tenantIdIn: tenantId || undefined,
@@ -115,16 +151,14 @@ export const camundaApi = {
         sortBy: "created",
         sortOrder: "desc",
         firstResult: 0,
-        maxResults: 200,
     })}`),
-    getTasksByDefinition: definitionId => camundaRequest(`/task${query({ processDefinitionId: definitionId, active: true, firstResult: 0, maxResults: 200 })}`),
-    getTasksByInstance: instanceId => camundaRequest(`/task${query({ processInstanceId: instanceId, active: true, firstResult: 0, maxResults: 200 })}`),
+    getTasksByDefinition: definitionId => camundaRequest(`/task${query({ processDefinitionId: definitionId, active: true, firstResult: 0 })}`),
+    getTasksByInstance: instanceId => camundaRequest(`/task${query({ processInstanceId: instanceId, active: true, firstResult: 0 })}`),
 
     getHistoricInstances: () => camundaRequest(`/history/process-instance${query({
         sortBy: "startTime",
         sortOrder: "desc",
         firstResult: 0,
-        maxResults: 20,
     })}`),
     getRunningHistoricInstances: () => getAllPages(
         "/history/process-instance",
@@ -147,16 +181,15 @@ export const camundaApi = {
     getJobs: () => camundaRequest(`/job${query({
         withException: false,
         firstResult: 0,
-        maxResults: 100,
     })}`),
     getFailedJobs: () => getAllPages("/job", {
         withException: true,
     }),
-    getJobsByDefinition: definitionId => camundaRequest(`/job${query({ processDefinitionId: definitionId, firstResult: 0, maxResults: 100 })}`),
-    getJobsByInstance: instanceId => camundaRequest(`/job${query({ processInstanceId: instanceId, firstResult: 0, maxResults: 100 })}`),
+    getJobsByDefinition: definitionId => camundaRequest(`/job${query({ processDefinitionId: definitionId, firstResult: 0 })}`),
+    getJobsByInstance: instanceId => camundaRequest(`/job${query({ processInstanceId: instanceId, firstResult: 0 })}`),
     getIncidents: () => getAllPages("/incident", {}),
     setJobRetries: (jobId, retries) => camundaRequest(`/job/${jobId}/retries`, { method: "PUT", data: { retries } }),
-    getExternalTasksByInstance: instanceId => camundaRequest(`/external-task${query({ processInstanceId: instanceId, firstResult: 0, maxResults: 100 })}`),
+    getExternalTasksByInstance: instanceId => camundaRequest(`/external-task${query({ processInstanceId: instanceId, firstResult: 0 })}`),
     unlockExternalTask: taskId => camundaRequest(`/external-task/${taskId}/unlock`, { method: "POST" }),
     setExternalTaskRetries: (taskId, retries) => camundaRequest(`/external-task/${taskId}/retries`, { method: "PUT", data: { retries } }),
 
@@ -173,5 +206,12 @@ export const camundaApi = {
     getTask: taskId => camundaRequest(`/task/${taskId}`),
     getTaskForm: taskId => camundaRequest(`/task/${taskId}/form`),
     getTaskIdentityLinks: taskId => camundaRequest(`/task/${taskId}/identity-links`),
+    getInstanceTaskDetails: (instanceId, tasks = []) => camundaBatchRequest([
+        ...tasks.map((task, index) => ({
+            key: `identityLinks_${index}`,
+            request: { path: `/task/${task.id}/identity-links`, method: "GET", data: {} },
+        })),
+        { key: "externalTasks", request: { path: `/external-task${query({ processInstanceId: instanceId, firstResult: 0 })}`, method: "GET", data: {} } },
+    ]),
     getProcessDefinitionVersions: (key, tenantId) => camundaRequest(`/process-definition${query({ key, tenantIdIn: tenantId || undefined, withoutTenantId: tenantId ? undefined : true, sortBy: "version", sortOrder: "desc" })}`),
 };

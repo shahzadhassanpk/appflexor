@@ -118,6 +118,7 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
     const [undeployConfig, setUndeployConfig] = useState({ show: false, item: {} });
     const [actionItemId, setActionItemId] = useState("");
     const [runningInstanceCounts, setRunningInstanceCounts] = useState({});
+    const [suspendedInstanceCounts, setSuspendedInstanceCounts] = useState({});
     const [failedInstanceCounts, setFailedInstanceCounts] = useState({});
 
     /* ── Dialog state ────────────────────────────────────────────────── */
@@ -162,9 +163,10 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
 
     async function getRunningInstanceCounts() {
         try {
-            const [definitions, instances, failedJobs] = await Promise.all([
+            const [definitions, instances, suspendedInstances, failedJobs] = await Promise.all([
                 camundaApi.getAllProcessDefinitions().catch(() => []),
                 camundaApi.getProcessInstances().catch(() => []),
+                camundaApi.getSuspendedProcessInstances().catch(() => []),
                 camundaApi.getFailedJobs().catch(() => []),
             ]);
             const definitionKeyById = definitions.reduce((acc, definition) => {
@@ -172,6 +174,11 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
                 return acc;
             }, {});
             const counts = instances.reduce((acc, instance) => {
+                const key = instance?.definitionKey || instance?.processDefinitionKey || definitionKeyById[instance?.definitionId] || definitionKeyById[instance?.processDefinitionId];
+                if (key) acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+            const suspendedCounts = suspendedInstances.reduce((acc, instance) => {
                 const key = instance?.definitionKey || instance?.processDefinitionKey || definitionKeyById[instance?.definitionId] || definitionKeyById[instance?.processDefinitionId];
                 if (key) acc[key] = (acc[key] || 0) + 1;
                 return acc;
@@ -188,10 +195,12 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
                 Object.entries(failedInstanceSets).map(([key, instanceIds]) => [key, instanceIds.size]),
             );
             setRunningInstanceCounts(counts);
+            setSuspendedInstanceCounts(suspendedCounts);
             setFailedInstanceCounts(failedCounts);
         } catch (error) {
             console.error("Unable to load running instance counts", error);
             setRunningInstanceCounts({});
+            setSuspendedInstanceCounts({});
             setFailedInstanceCounts({});
         }
     }
@@ -443,6 +452,7 @@ function Processes({ activeTab, initialProcessKey = "", onOpenConfigure, onOpenM
                 { key: "title", label: "Process Title" },
                 { key: "process_def_key", label: "Definition Key", render: item => <span className="font-medium text-indigo-600">{item.process_def_key || "—"}</span> },
                 { key: "running_instances", label: "Running Instances", sortValue: item => runningInstanceCounts[item.process_def_key] || 0, render: item => <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{runningInstanceCounts[item.process_def_key] || 0}</span> },
+                { key: "suspended_instances", label: "Suspended Instances", sortValue: item => suspendedInstanceCounts[item.process_def_key] || 0, render: item => <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${suspendedInstanceCounts[item.process_def_key] ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}>{suspendedInstanceCounts[item.process_def_key] || 0}</span> },
                 { key: "failed_instances", label: "Failed Instances", sortValue: item => failedInstanceCounts[item.process_def_key] || 0, render: item => { const count = failedInstanceCounts[item.process_def_key] || 0; return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${count ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-600"}`}>{count}</span>; } },
                 { key: "version", label: "Deployment", sortValue: item => Number(item.version) || 0, render: item => item.version ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">v{item.version}</span> : <span className="text-slate-400">—</span> },
                 { key: "status", label: "Status", sortValue: getDeploymentStatus, render: item => { const status = getDeploymentStatus(item); const tone = status === "DEPLOYED" ? "bg-emerald-50 text-emerald-700" : status === "UNDEPLOYED" ? "bg-amber-50 text-amber-700" : status === "ARCHIVED" ? "bg-slate-200 text-slate-700" : "bg-slate-100 text-slate-600"; return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>{status === "UNDEPLOYED" ? "Undeployed" : status === "DEPLOYED" ? "Deployed" : status === "ARCHIVED" ? "Archived" : "Draft"}</span>; } },

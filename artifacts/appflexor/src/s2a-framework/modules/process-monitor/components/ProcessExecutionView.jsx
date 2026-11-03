@@ -90,6 +90,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const [activeTab, setActiveTab] = useState("Process Instances");
     const [diagramError, setDiagramError] = useState("");
     const [versions, setVersions] = useState([definition]);
+    const versionsRef = useRef([definition]);
     const [viewDefinition, setViewDefinition] = useState(definition);
     const [runtimeState, setRuntimeState] = useState({ instances, tasks, jobs });
     const [runtimeRefresh, setRuntimeRefresh] = useState(0);
@@ -102,6 +103,10 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const [auditError, setAuditError] = useState("");
     const [suspensionAction, setSuspensionAction] = useState({ scope: "", targetId: "", suspended: null });
     const [suspensionError, setSuspensionError] = useState("");
+
+    useEffect(() => {
+        versionsRef.current = versions;
+    }, [versions]);
 
     useEffect(() => {
         setRuntimeState(previous => {
@@ -135,7 +140,14 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     }, [instances, runtimeState.instances]);
     const runningCountsByDefinitionId = useMemo(
         () => versionCountInstances.reduce((counts, item) => {
-            counts[item.definitionId] = (counts[item.definitionId] || 0) + 1;
+            if (!item.suspended) counts[item.definitionId] = (counts[item.definitionId] || 0) + 1;
+            return counts;
+        }, {}),
+        [versionCountInstances],
+    );
+    const suspendedCountsByDefinitionId = useMemo(
+        () => versionCountInstances.reduce((counts, item) => {
+            if (item.suspended) counts[item.definitionId] = (counts[item.definitionId] || 0) + 1;
             return counts;
         }, {}),
         [versionCountInstances],
@@ -169,18 +181,20 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
             setRefreshing(true);
             try {
                 const definitionsById = Object.fromEntries(
-                    (versions?.length ? versions : [definition]).map(item => [item.id, item]),
+                    (versionsRef.current?.length ? versionsRef.current : [definition]).map(item => [item.id, item]),
                 );
                 const seededInstancesById = Object.fromEntries(
                     (instances || []).map(item => [item.id, item]),
                 );
-                const [latestActiveInstances, latestSuspendedInstances, latestTasks, latestJobs, latestHistoryGroups] = await Promise.all([
-                    camundaApi.getProcessInstancesByDefinition(viewDefinition.id, { active: true }),
-                    camundaApi.getProcessInstancesByDefinition(viewDefinition.id, { suspended: true }),
-                    camundaApi.getTasksByDefinition(viewDefinition.id),
-                    camundaApi.getJobsByDefinition(viewDefinition.id),
-                    camundaApi.getHistoricInstancesByDefinition(viewDefinition.id).catch(() => []),
-                ]);
+                const runtime = await camundaApi.getDefinitionRuntime(viewDefinition.key);
+                const batchData = runtime?.C_DATA ?? runtime;
+                const activeInstances = batchData?.activeInstances?.data ?? batchData?.activeInstances ?? [];
+                const suspendedInstances = batchData?.suspendedInstances?.data ?? batchData?.suspendedInstances ?? [];
+                const latestActiveInstances = activeInstances;
+                const latestSuspendedInstances = suspendedInstances;
+                const latestTasks = batchData?.tasks?.data ?? batchData?.tasks ?? [];
+                const latestJobs = batchData?.jobs?.data ?? batchData?.jobs ?? [];
+                const latestHistoryGroups = batchData?.history?.data ?? batchData?.history ?? [];
                 const historyByInstanceId = Object.fromEntries(
                     latestHistoryGroups.map(item => [item.id, item]),
                 );
@@ -238,7 +252,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         definition,
         instances,
         runtimeRefresh,
-        versions,
+        viewDefinition.key,
         viewDefinition.id,
     ]);
 
@@ -300,25 +314,11 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         setDeletingAll(true);
         setDeleteError("");
         setAuditError("");
-        const deletedIds = [];
-        const deleteFailures = [];
-        const auditFailures = [];
-
-        for (const instance of targets) {
-            try {
-                await camundaApi.deleteProcessInstance(instance.id);
-                deletedIds.push(instance.id);
-                try {
-                    await createDeleteAudit(instance);
-                } catch (error) {
-                    auditFailures.push(error.message || instance.id);
-                }
-            } catch (error) {
-                deleteFailures.push(error.message || instance.id);
-            }
-        }
-
-        if (deletedIds.length) {
+        try {
+            await camundaApi.deleteProcessInstances(targets.map(instance => instance.id));
+            const auditResults = await Promise.allSettled(targets.map(instance => createDeleteAudit(instance)));
+            const auditFailures = auditResults.filter(result => result.status === "rejected");
+            const deletedIds = targets.map(instance => instance.id);
             const deleted = new Set(deletedIds);
             setRuntimeState(previous => ({
                 instances: previous.instances.filter(item => !deleted.has(item.id)),
@@ -326,17 +326,12 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                 jobs: previous.jobs.filter(item => !deleted.has(item.processInstanceId)),
             }));
             deletedIds.forEach(id => onInstanceDeleted?.(id));
-        }
-
-        if (auditFailures.length) {
-            setAuditError(`${deletedIds.length} process instance${deletedIds.length === 1 ? "" : "s"} deleted, but ${auditFailures.length} audit record${auditFailures.length === 1 ? "" : "s"} could not be saved.`);
-        }
-        if (deleteFailures.length) {
-            setDeleteError(`${deleteFailures.length} process instance${deleteFailures.length === 1 ? "" : "s"} could not be deleted. ${deletedIds.length} deleted successfully.`);
-            const deleted = new Set(deletedIds);
-            setDeleteAllTarget({ instances: targets.filter(item => !deleted.has(item.id)) });
-        } else {
+            if (auditFailures.length) {
+                setAuditError(`${deletedIds.length} process instance${deletedIds.length === 1 ? "" : "s"} deleted, but ${auditFailures.length} audit record${auditFailures.length === 1 ? "" : "s"} could not be saved.`);
+            }
             setDeleteAllTarget(null);
+        } catch (error) {
+            setDeleteError(error.message || "Unable to delete process instances for this version.");
         }
         setDeletingAll(false);
     }
@@ -490,7 +485,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                                             className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900">
                                             {versions.map(item => (
                                                 <option key={item.id} value={item.id}>
-                                                    {`Version ${item.version} (${runningCountsByDefinitionId[item.id] || 0} running)${item.versionTag ? ` - ${item.versionTag}` : ""}`}
+                                                    {`v${item.version} (${runningCountsByDefinitionId[item.id] || 0} running, ${suspendedCountsByDefinitionId[item.id] || 0} suspended)${item.versionTag ? ` - ${item.versionTag}` : ""}`}
                                                 </option>
                                             ))}
                                         </select>

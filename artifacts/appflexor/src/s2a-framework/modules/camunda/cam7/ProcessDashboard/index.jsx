@@ -14,7 +14,7 @@ import {
     INITIAL_DASHBOARD_STATE,
     INITIAL_HISTORY_STATE,
 } from "./constants";
-import { fetchProcessCatalog, fetchTenantData } from "./fetchers";
+import { fetchBpmData, fetchProcessCatalog, fetchTenantData, readBpmData } from "./fetchers";
 import DashboardHeader from "./components/DashboardHeader";
 import DesignPlaceholder from "./components/DesignPlaceholder";
 import HistoryDashboardTab from "./components/HistoryDashboardTab";
@@ -65,6 +65,15 @@ function getProcessCatalogTitle(item = {}) {
         item.process_name ||
         item.process_key
     );
+}
+
+function bpmPath(path, params = {}) {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") query.set(key, String(value));
+    });
+    const suffix = query.toString();
+    return suffix ? `${path}?${suffix}` : path;
 }
 
 function parseJsonVariableValue(value) {
@@ -380,25 +389,25 @@ export default function ProcessDashboard(props) {
                     ? currentConfig.process_keys
                     : [];
 
-                const [
-                    latestDefinitions,
-                    activeInstances,
-                    suspendedInstances,
-                    failedJobs,
-                    incidents,
-                    runningHistory,
-                    processCatalog,
-                ] = await Promise.all([
-                    camundaApi.getProcessDefinitions().catch(() => []),
-                    camundaApi.getProcessInstances().catch(() => []),
-                    camundaApi.getSuspendedProcessInstances().catch(() => []),
-                    camundaApi.getFailedJobs().catch(() => []),
-                    camundaApi.getIncidents().catch(() => []),
-                    camundaApi.getRunningHistoricInstances().catch(() => []),
+                const [runtimeData, processCatalog] = await Promise.all([
+                    fetchBpmData([
+                        { key: "definitions", request: { path: bpmPath("/process-definition", { latestVersion: true }), method: "GET", data: {} } },
+                        { key: "activeInstances", request: { path: bpmPath("/process-instance", { active: true, firstResult: 0 }), method: "GET", data: {} } },
+                        { key: "suspendedInstances", request: { path: bpmPath("/process-instance", { suspended: true, firstResult: 0 }), method: "GET", data: {} } },
+                        { key: "failedJobs", request: { path: bpmPath("/job", { withException: true, firstResult: 0 }), method: "GET", data: {} } },
+                        { key: "incidents", request: { path: bpmPath("/incident", { firstResult: 0 }), method: "GET", data: {} } },
+                        { key: "runningHistory", request: { path: bpmPath("/history/process-instance", { unfinished: true, firstResult: 0 }), method: "GET", data: {} } },
+                    ]).catch(() => ({})),
                     processList.length
                         ? Promise.resolve(processList)
                         : fetchProcessCatalog().catch(() => []),
                 ]);
+                const latestDefinitions = readBpmData(runtimeData, "definitions");
+                const activeInstances = readBpmData(runtimeData, "activeInstances");
+                const suspendedInstances = readBpmData(runtimeData, "suspendedInstances");
+                const failedJobs = readBpmData(runtimeData, "failedJobs");
+                const incidents = readBpmData(runtimeData, "incidents");
+                const runningHistory = readBpmData(runtimeData, "runningHistory");
 
                 let scopedDefinitions = Array.isArray(latestDefinitions)
                     ? latestDefinitions
@@ -471,14 +480,20 @@ export default function ProcessDashboard(props) {
                     Array.isArray(incidents) ? incidents : []
                 ).filter(filterByScope);
 
+                const instanceDetailData = filteredActiveInstances.length
+                    ? await fetchBpmData(
+                        filteredActiveInstances.flatMap(instance => [
+                            { key: `variables_${instance.id}`, request: { path: `/process-instance/${instance.id}/variables?deserializeValue=true`, method: "GET", data: {} } },
+                            { key: `activity_${instance.id}`, request: { path: `/process-instance/${instance.id}/activity-instances`, method: "GET", data: {} } },
+                        ]),
+                    ).catch(() => ({}))
+                    : {};
                 const detailedInstances = await mapWithConcurrency(
                     filteredActiveInstances,
                     8,
                     async instance => {
-                        const [rawVariables, activity] = await Promise.all([
-                            camundaApi.getInstanceVariables(instance.id).catch(() => ({})),
-                            camundaApi.getActivityInstances(instance.id).catch(() => null),
-                        ]);
+                        const rawVariables = readBpmData(instanceDetailData, `variables_${instance.id}`, {});
+                        const activity = readBpmData(instanceDetailData, `activity_${instance.id}`, null);
                         const variables = await hydrateSlaJsonVariables(
                             instance.id,
                             rawVariables,

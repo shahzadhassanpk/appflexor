@@ -9,30 +9,6 @@ import { camundaApi } from "./services/camundaApi";
 import { calculateSla } from "./utils/sla";
 import "../process-configuration/process-theme.css";
 
-async function hydrateJsonVariables(instanceId, variables) {
-    const hydrated = { ...(variables || {}) };
-    await Promise.all(Object.entries(hydrated).map(async ([name, variable]) => {
-        if (variable?.type !== "Json") return;
-        const raw = await camundaApi.getSerializedInstanceVariable(instanceId, name).catch(() => null);
-        if (!raw) return;
-        let value = raw.value;
-        if (typeof value === "string") {
-            try { value = JSON.parse(value); } catch { /* Keep malformed engine value visible as-is. */ }
-        }
-        hydrated[name] = { ...variable, ...raw, value };
-    }));
-    return hydrated;
-}
-
-async function mapWithConcurrency(items, concurrency, mapper) {
-    const results = [];
-    for (let index = 0; index < items.length; index += concurrency) {
-        const batch = items.slice(index, index + concurrency);
-        results.push(...await Promise.all(batch.map(mapper)));
-    }
-    return results;
-}
-
 export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialProcessKey = "", onDefinitionClose }) {
     const appContext = useContext(AppContext);
     const tenantId = appContext?.tenantSubscription?.tenant_id || "";
@@ -48,26 +24,8 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
         setLoading(true);
         setError("");
         try {
-            const [definitions, rawInstances, tasks, history, jobs] = await Promise.all([
-                camundaApi.getProcessDefinitions(tenantId), camundaApi.getProcessInstances(tenantId),
-                camundaApi.getTasks(tenantId),
-                camundaApi.getHistoricInstances(tenantId).catch(() => []),
-                camundaApi.getJobs(tenantId).catch(() => []),
-            ]);
-            const definitionMap = Object.fromEntries((definitions || []).map(item => [item.id, item]));
-            const historyMap = Object.fromEntries((history || []).map(item => [item.id, item]));
-            const details = await mapWithConcurrency(rawInstances || [], 8, async instance => {
-                const [rawVariables, activity] = await Promise.all([
-                    camundaApi.getInstanceVariables(instance.id).catch(() => ({})),
-                    camundaApi.getActivityInstances(instance.id).catch(() => null),
-                ]);
-                const variables = await hydrateJsonVariables(instance.id, rawVariables);
-                const definition = definitionMap[instance.definitionId];
-                const startTime = instance.startTime || historyMap[instance.id]?.startTime;
-                return { ...instance, startTime, history: historyMap[instance.id], definition, definitionName: definition?.name || definition?.key, variables, activity, sla: calculateSla(variables, new Date(), startTime), tasks: (tasks || []).filter(task => task.processInstanceId === instance.id) };
-            });
-            const hydratedTasks = (tasks || []).map(task => ({ ...task, formKey: taskFormKeys[task.id] || task.formKey }));
-            setState({ definitions: definitions || [], instances: details.map(instance => ({ ...instance, tasks: hydratedTasks.filter(task => task.processInstanceId === instance.id) })), tasks: hydratedTasks, jobs: jobs || [], history: history || [] });
+            const definitions = await camundaApi.getProcessDefinitions(tenantId);
+            setState(previous => ({ ...previous, definitions: definitions || [] }));
             if (focusedProcessKey) {
                 setSelectedDefinition((definitions || []).find(item =>
                     String(item.key || "").toLowerCase().trim() === focusedProcessKey,
@@ -78,18 +36,16 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
         } finally {
             setLoading(false);
         }
-    }, [tenantId, focusedProcessKey, taskFormKeys]);
+    }, [tenantId, focusedProcessKey]);
 
     async function refreshInstance(instanceId) {
         if (!instanceId) return;
-        const [rawInstance, rawVariables, activity, instanceTasks, instanceJobs] = await Promise.all([
-            camundaApi.getProcessInstance(instanceId),
-            camundaApi.getInstanceVariables(instanceId),
-            camundaApi.getActivityInstances(instanceId),
-            camundaApi.getTasksByInstance(instanceId),
-            camundaApi.getJobsByInstance(instanceId),
-        ]);
-        const variables = await hydrateJsonVariables(instanceId, rawVariables);
+        const details = await camundaApi.getInstanceDetails(instanceId);
+        const batchData = details?.C_DATA ?? details;
+        const rawInstance = batchData?.instance?.data ?? batchData?.instance;
+        const activity = batchData?.activity?.data ?? batchData?.activity;
+        const instanceTasks = batchData?.tasks?.data ?? batchData?.tasks ?? [];
+        const instanceJobs = batchData?.jobs?.data ?? batchData?.jobs ?? [];
         setState(previous => {
             const refreshedTasks = (instanceTasks || []).map(task => ({ ...task, formKey: taskFormKeys[task.id] || task.formKey }));
             const existing = previous.instances.find(item => item.id === instanceId);
@@ -102,10 +58,10 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
                 ...rawInstance,
                 definition,
                 definitionName: definition?.name || definition?.key,
-                variables,
+                variables: existing?.variables || selected.instance?.variables,
                 activity,
                 tasks: refreshedTasks,
-                sla: calculateSla(variables, new Date(), existing?.startTime || selected.instance?.startTime),
+                sla: calculateSla(existing?.variables || selected.instance?.variables, new Date(), existing?.startTime || selected.instance?.startTime),
             };
             return {
                 ...previous,

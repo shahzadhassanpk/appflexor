@@ -25,11 +25,18 @@ function definitionKeyFromId(definitionId = "") {
     return value ? value.split(":")[0] || value : "";
 }
 
-function buildMonitorStats(definitions = [], instances = [], tasks = [], failedJobs = []) {
+function buildMonitorStats(definitions = [], instances = [], suspendedInstances = [], tasks = [], failedJobs = []) {
     const displayedDefinitionIds = new Set(definitions.map(item => item.id).filter(Boolean));
+    const definitionKeyById = Object.fromEntries(definitions.filter(item => item.id && item.key).map(item => [item.id, item.key]));
+    const displayedDefinitionKeys = new Set(definitions.map(item => item.key).filter(Boolean));
+    const belongsToDisplayedDefinition = instance => displayedDefinitionIds.has(instance.definitionId) || displayedDefinitionKeys.has(instance.definitionKey || instance.processDefinitionKey || definitionKeyById[instance.definitionId] || definitionKeyFromId(instance.definitionId));
     const deployments = new Set(definitions.map(item => item.deploymentId).filter(Boolean)).size;
     const runningInstanceCount = new Set(instances
-        .filter(instance => displayedDefinitionIds.has(instance.definitionId))
+        .filter(belongsToDisplayedDefinition)
+        .map(instance => instance.id)
+        .filter(Boolean)).size;
+    const suspendedInstanceCount = new Set(suspendedInstances
+        .filter(belongsToDisplayedDefinition)
         .map(instance => instance.id)
         .filter(Boolean)).size;
     const failedInstanceCount = new Set(failedJobs
@@ -47,6 +54,7 @@ function buildMonitorStats(definitions = [], instances = [], tasks = [], failedJ
         { icon: "fa-solid fa-diagram-project", label: "Process Definitions", value: definitions.length, tone: "bg-indigo-100 text-indigo-700" },
         { icon: "fa-solid fa-rocket", label: "Deployments", value: deployments, tone: "bg-sky-100 text-sky-700" },
         { icon: "fa-solid fa-play", label: "Running Instances", value: runningInstanceCount, tone: "bg-emerald-100 text-emerald-700" },
+        { icon: "fa-solid fa-pause", label: "Suspended Instances", value: suspendedInstanceCount, tone: suspendedInstanceCount ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600" },
         { icon: "fa-solid fa-triangle-exclamation", label: "Failed Instances", value: failedInstanceCount, tone: failedInstanceCount ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-600" },
         { icon: "fa-solid fa-clock", label: "Overdue Tasks", value: overdue, tone: overdue ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700" },
     ];
@@ -69,13 +77,14 @@ export default function ProcessWorkspaceList({ title, description, stats, items,
     async function loadMonitorStats() {
         setMonitorStatsLoading(true);
         try {
-            const [definitions, instances, tasks, failedJobs] = await Promise.all([
+            const [definitions, instances, suspendedInstances, tasks, failedJobs] = await Promise.all([
                 camundaApi.getProcessDefinitions().catch(() => []),
                 camundaApi.getProcessInstances().catch(() => []),
+                camundaApi.getSuspendedProcessInstances().catch(() => []),
                 camundaApi.getTasks().catch(() => []),
                 camundaApi.getFailedJobs().catch(() => []),
             ]);
-            setMonitorStats(buildMonitorStats(definitions, instances, tasks, failedJobs));
+            setMonitorStats(buildMonitorStats(definitions, instances, suspendedInstances, tasks, failedJobs));
         } catch {
             setMonitorStats(null);
         } finally {
@@ -94,10 +103,11 @@ export default function ProcessWorkspaceList({ title, description, stats, items,
         Promise.all([
             camundaApi.getProcessDefinitions().catch(() => []),
             camundaApi.getProcessInstances().catch(() => []),
+            camundaApi.getSuspendedProcessInstances().catch(() => []),
             camundaApi.getTasks().catch(() => []),
             camundaApi.getFailedJobs().catch(() => []),
-        ]).then(([definitions, instances, tasks, failedJobs]) => {
-            if (!cancelled) setMonitorStats(buildMonitorStats(definitions, instances, tasks, failedJobs));
+        ]).then(([definitions, instances, suspendedInstances, tasks, failedJobs]) => {
+            if (!cancelled) setMonitorStats(buildMonitorStats(definitions, instances, suspendedInstances, tasks, failedJobs));
         }).catch(() => {
             if (!cancelled) setMonitorStats(null);
         }).finally(() => {
@@ -201,7 +211,7 @@ export default function ProcessWorkspaceList({ title, description, stats, items,
 
     return <div className="process-theme-surface min-h-full bg-slate-50 p-3 sm:p-5"><div className="mx-auto max-w-7xl space-y-5">
         <header className="flex flex-wrap items-center justify-between gap-3"><p className="mb-0 text-sm text-slate-500">{description}</p><div className="flex items-center gap-2"><button type="button" onClick={handleRefresh} disabled={loading || monitorStatsLoading} className="!rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Refresh process list"><i className={`fa-solid fa-rotate mr-2 ${loading || monitorStatsLoading ? "fa-spin" : ""}`} aria-hidden="true" />Refresh</button><button type="button" onClick={onAdd} className="!rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"><i className="fa-solid fa-plus mr-2" />{addLabel}</button></div></header>
-        <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-5">{displayStats.map(stat => <Stat key={stat.label} {...stat} />)}</section>
+        <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-6">{displayStats.map(stat => <Stat key={stat.label} {...stat} />)}</section>
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-busy={loading}>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4"><div><h2 className="mb-0 text-lg font-bold text-slate-900">{title}</h2><p className="mb-0 text-xs text-slate-500">{items.length} matching records</p></div><div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">{setShowArchived && <label className="mb-0 inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-600"><input type="checkbox" checked={showArchived} onChange={event => { setShowArchived(event.target.checked); setPage(1); }} className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /><span className="ms-2">Show archived</span></label>}<label className="relative w-full sm:w-80"><span className="sr-only">Search</span><i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={searchTerm} onChange={event => { setSearchTerm(event.target.value); setPage(1); }} placeholder={searchPlaceholder} className="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-9 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />{searchTerm && <button type="button" onClick={() => { setSearchTerm(""); setPage(1); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"><i className="fa-solid fa-xmark" /></button>}</label></div></div>
             {loading ? <div className="grid min-h-[280px] place-items-center p-8" role="status"><div className="text-center"><span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-indigo-50 text-indigo-600"><i className="fa-solid fa-circle-notch fa-spin text-xl" aria-hidden="true" /></span><p className="mb-0 mt-3 text-sm font-semibold text-slate-700">Loading processes…</p><p className="mb-0 mt-1 text-xs text-slate-500">Fetching the latest process list</p></div></div> : <>

@@ -27,6 +27,7 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
     const [tab, setTab] = useState(selectedTaskId ? "User Tasks" : "Variables");
     const [diagramError, setDiagramError] = useState("");
     const [variables, setVariables] = useState({});
+    const [variablesLoaded, setVariablesLoaded] = useState(false);
     const [tasks, setTasks] = useState([]);
     const [taskForm, setTaskForm] = useState(null);
     const [taskFormKey, setTaskFormKey] = useState("");
@@ -51,36 +52,44 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
         if (instance) {
             setTab(selectedTaskId ? "User Tasks" : "Variables");
             setVariables(instance.variables || {});
+            setVariablesLoaded(Boolean(instance.variables));
             setTasks(instance.tasks || []);
             setExternalTasksLoading(true);
             let active = true;
-            Promise.all([
-                Promise.all((instance.tasks || []).map(async task => {
-                    const [links, taskFormDetails] = await Promise.all([
-                        camundaApi.getTaskIdentityLinks(task.id).catch(() => []),
-                        camundaApi.getTaskForm(task.id).catch(() => null),
-                    ]);
-                    const candidateGroups = links.filter(link => link.type === "candidate" && link.groupId).map(link => link.groupId);
-                    return {
-                        ...task,
-                        ...(taskFormDetails || {}),
-                        formKey: task.formKey || task.form_key || taskFormDetails?.key || taskFormDetails?.formKey,
-                        candidateGroups,
-                        candidateGroup: candidateGroups.join(", "),
-                    };
-                })),
-                camundaApi.getExternalTasksByInstance(instance.id).catch(() => []),
-            ]).then(([enrichedTasks, latestExternalTasks]) => {
+            camundaApi.getInstanceTaskDetails(instance.id, instance.tasks || []).then(details => {
+                const batchData = details?.C_DATA ?? details;
+                const enrichedTasks = (instance.tasks || []).map((task, index) => {
+                    const links = batchData?.[`identityLinks_${index}`]?.data ?? batchData?.[`identityLinks_${index}`] ?? [];
+                    const candidateGroups = (Array.isArray(links) ? links : []).filter(link => link.type === "candidate" && link.groupId).map(link => link.groupId);
+                    return { ...task, candidateGroups, candidateGroup: candidateGroups.join(", ") };
+                });
+                const latestExternalTasks = batchData?.externalTasks?.data ?? batchData?.externalTasks ?? [];
                 if (active) {
                     setTasks(enrichedTasks);
                     setExternalTasks(latestExternalTasks || []);
                     setExternalTasksLoading(false);
                 }
-            });
+            }).catch(() => { if (active) setExternalTasksLoading(false); });
             return () => { active = false; };
         }
         return undefined;
     }, [instance, selectedTaskId]);
+
+    useEffect(() => {
+        if (!instance || tab !== "Variables" || variablesLoaded) return undefined;
+        let active = true;
+        camundaApi.getInstanceVariables(instance.id)
+            .then(value => {
+                if (active) {
+                    setVariables(value || {});
+                    setVariablesLoaded(true);
+                }
+            })
+            .catch(error => {
+                if (active) setOperationError(error.message || "Unable to load process variables.");
+            });
+        return () => { active = false; };
+    }, [instance, tab, variablesLoaded]);
 
     function typedValue(value, type) {
         if (type === "Boolean") return value === "true";
