@@ -102,6 +102,19 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const [auditError, setAuditError] = useState("");
     const [suspensionAction, setSuspensionAction] = useState({ scope: "", targetId: "", suspended: null });
     const [suspensionError, setSuspensionError] = useState("");
+
+    useEffect(() => {
+        setRuntimeState(previous => {
+            const previousFormKeys = Object.fromEntries(
+                previous.tasks.filter(task => task.formKey).map(task => [task.id, task.formKey]),
+            );
+            return {
+                instances,
+                tasks: (tasks || []).map(task => ({ ...task, formKey: task.formKey || previousFormKeys[task.id] })),
+                jobs,
+            };
+        });
+    }, [instances, tasks, jobs]);
     const processInstances = useMemo(
         () => runtimeState.instances.filter(item => item.definitionId === viewDefinition.id),
         [runtimeState.instances, viewDefinition.id],
@@ -203,10 +216,15 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                             };
                         }),
                 );
-                if (!disposed) setRuntimeState({
-                    instances: hydratedInstances,
-                    tasks: latestTasks || [],
-                    jobs: latestJobs || [],
+                if (!disposed) setRuntimeState(previous => {
+                    const previousFormKeys = Object.fromEntries(
+                        previous.tasks.filter(task => task.formKey).map(task => [task.id, task.formKey]),
+                    );
+                    return {
+                        instances: hydratedInstances,
+                        tasks: (latestTasks || []).map(task => ({ ...task, formKey: task.formKey || previousFormKeys[task.id] })),
+                        jobs: latestJobs || [],
+                    };
                 });
             } catch {
                 // Preserve the parent snapshot when a runtime refresh is temporarily unavailable.

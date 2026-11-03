@@ -108,6 +108,10 @@ function Processes(props) {
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
 
+    useEffect(()=>{
+        console.log(JSON.stringify(selectedTask));
+    },[selectedTask])
+
     useEffect(() => {
         try {
             localStorage.setItem(

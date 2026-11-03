@@ -168,8 +168,10 @@ export const camundaApi = {
     setInstanceVariable: (instanceId, name, variable) => camundaRequest(`/process-instance/${instanceId}/variables/${encodeURIComponent(name)}`, { method: "PUT", data: variable }),
     deleteInstanceVariable: (instanceId, name) => camundaRequest(`/process-instance/${instanceId}/variables/${encodeURIComponent(name)}`, { method: "DELETE" }),
     assignTaskUser: (taskId, userId) => camundaRequest(`/task/${taskId}/assignee`, { method: "POST", data: { userId } }),
+    updateTask: (taskId, task) => camundaRequest(`/task/${taskId}`, { method: "PUT", data: task }),
     addTaskCandidateGroup: (taskId, groupId) => camundaRequest(`/task/${taskId}/identity-links`, { method: "POST", data: { groupId, type: "candidate" } }),
     getTask: taskId => camundaRequest(`/task/${taskId}`),
+    getTaskForm: taskId => camundaRequest(`/task/${taskId}/form`),
     getTaskIdentityLinks: taskId => camundaRequest(`/task/${taskId}/identity-links`),
     getProcessDefinitionVersions: (key, tenantId) => camundaRequest(`/process-definition${query({ key, tenantIdIn: tenantId || undefined, withoutTenantId: tenantId ? undefined : true, sortBy: "version", sortOrder: "desc" })}`),
 };

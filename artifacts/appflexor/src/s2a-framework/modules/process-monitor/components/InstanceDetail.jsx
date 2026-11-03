@@ -1,9 +1,12 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 import BpmnViewer from "bpmn-js/lib/NavigatedViewer";
 import SlaBadge from "./SlaBadge";
+import { API_URL } from "../../../Config";
 import { camundaApi } from "../services/camundaApi";
 import { TaskManager, VariableManager } from "./RuntimeEditors";
+import { SearchableSelect } from "../../process-configuration/processes/SearchableSelect";
 
 const TABS = ["Variables", "Incidents", "User Tasks", "Jobs", "External Tasks"];
 function leafIds(activity, result = []) { (activity?.childActivityInstances || []).forEach(child => { const nested = child.childActivityInstances || []; if (!nested.length && child.activityId) result.push(child.activityId); else leafIds(child, result); }); return result; }
@@ -18,13 +21,17 @@ function counts(activity, tasks = []) {
 }
 function countBadge(count) { const node = document.createElement("span"); node.className = "process-monitor-activity-count"; node.textContent = String(count); node.title = `${count} active activity instance${count === 1 ? "" : "s"}`; return node; }
 
-export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose, onRefresh }) {
+export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose, onRefresh, onTaskFormKeyChanged }) {
     const containerRef = useRef(null);
     const viewerRef = useRef(null);
     const [tab, setTab] = useState(selectedTaskId ? "User Tasks" : "Variables");
     const [diagramError, setDiagramError] = useState("");
     const [variables, setVariables] = useState({});
     const [tasks, setTasks] = useState([]);
+    const [taskForm, setTaskForm] = useState(null);
+    const [taskFormKey, setTaskFormKey] = useState("");
+    const [formList, setFormList] = useState([]);
+    const [formListLoading, setFormListLoading] = useState(false);
     const [externalTasks, setExternalTasks] = useState([]);
     const [externalTasksLoading, setExternalTasksLoading] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -49,9 +56,18 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
             let active = true;
             Promise.all([
                 Promise.all((instance.tasks || []).map(async task => {
-                    const links = await camundaApi.getTaskIdentityLinks(task.id).catch(() => []);
+                    const [links, taskFormDetails] = await Promise.all([
+                        camundaApi.getTaskIdentityLinks(task.id).catch(() => []),
+                        camundaApi.getTaskForm(task.id).catch(() => null),
+                    ]);
                     const candidateGroups = links.filter(link => link.type === "candidate" && link.groupId).map(link => link.groupId);
-                    return { ...task, candidateGroups, candidateGroup: candidateGroups.join(", ") };
+                    return {
+                        ...task,
+                        ...(taskFormDetails || {}),
+                        formKey: task.formKey || task.form_key || taskFormDetails?.key || taskFormDetails?.formKey,
+                        candidateGroups,
+                        candidateGroup: candidateGroups.join(", "),
+                    };
                 })),
                 camundaApi.getExternalTasksByInstance(instance.id).catch(() => []),
             ]).then(([enrichedTasks, latestExternalTasks]) => {
@@ -123,6 +139,56 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
             await onRefresh?.();
         } catch (error) { setOperationError(error.message || "Unable to assign task."); throw error; }
         finally { setBusy(false); }
+    }
+
+    async function changeTaskFormKey(formKey) {
+        const nextFormKey = String(formKey || "").trim();
+        if (!nextFormKey) {
+            setOperationError("Form key is required.");
+            return;
+        }
+
+        setBusy(true);
+        setOperationError("");
+        try {
+            const updatedTask = await camundaApi.updateTask(taskForm.id, { formKey: nextFormKey });
+            const [persistedTask, persistedForm] = await Promise.all([
+                camundaApi.getTask(taskForm.id),
+                camundaApi.getTaskForm(taskForm.id).catch(() => null),
+            ]);
+            const storedFormKey = String(persistedTask?.formKey || persistedForm?.key || persistedForm?.formKey || updatedTask?.formKey || "");
+            if (storedFormKey !== nextFormKey) {
+                throw new Error("The task form key was not persisted by the process engine.");
+            }
+            setTasks(previous => previous.map(task => task.id === taskForm.id ? { ...task, ...(updatedTask || {}), formKey: storedFormKey } : task));
+            setTaskForm(previous => previous ? { ...previous, ...(updatedTask || {}), formKey: storedFormKey } : previous);
+            setTaskFormKey(storedFormKey);
+            onTaskFormKeyChanged?.(taskForm.id, storedFormKey);
+            setTaskForm(null);
+        } catch (error) {
+            setOperationError(error.message || "Unable to change the task form key.");
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function loadFormList() {
+        setFormListLoading(true);
+        try {
+            const response = await axios.post(API_URL + "?service.key=masterKey.tenantData", {
+                dataKeys: [{ serviceParams: "", dataKey: "formList", serviceKey: "sys.list.forms", mode: "formData" }],
+            });
+            if (response.data?.C_STATUS === "SUCCESS") {
+                setFormList((response.data.C_DATA?.formList || []).map(form => ({
+                    value: form.form_key,
+                    label: form.name,
+                })));
+            }
+        } catch (error) {
+            setOperationError(error.message || "Unable to load forms.");
+        } finally {
+            setFormListLoading(false);
+        }
     }
 
     async function refreshInstance() {
@@ -229,11 +295,12 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
             <aside className="border-b border-slate-200 bg-white p-4 lg:border-b-0 lg:border-r"><div className="mb-5"><SlaBadge instance={instance} /></div><dl className="space-y-4 text-sm"><Meta label="Instance ID" value={instance.id} /><Meta label="Business Key" value={instance.businessKey || "—"} /><Meta label="Definition Version" value={instance.definition?.version || "—"} /><Meta label="Definition ID" value={instance.definitionId} /><Meta label="Definition Key" value={instance.definition?.key || "—"} /><Meta label="Definition Name" value={instance.definitionName || "—"} /><Meta label="Tenant ID" value={instance.tenantId || "—"} /><Meta label="Deployment ID" value={instance.definition?.deploymentId || "—"} /></dl></aside>
             <main className="min-w-0 bg-white"><div className="h-[360px] border-b border-slate-200 sm:h-[460px]">{diagramError ? <div className="grid h-full place-items-center text-sm text-red-600">{diagramError}</div> : <div ref={containerRef} className="h-full w-full" />}</div>
                 <div className="sticky top-[65px] z-10 flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3" role="tablist">{TABS.map(item => <button key={item} type="button" onClick={() => setTab(item)} className={`shrink-0 border-b-2 px-4 py-3 text-sm font-semibold ${tab === item ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500"}`}>{item}</button>)}</div>
-                <div className="p-4">{operationError && <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{operationError}</div>}{tab === "Variables" && <VariableManager variables={variables} busy={busy} onSave={saveVariable} onDelete={deleteVariable} />}{tab === "Incidents" && <List rows={incidents} empty="No open incidents." render={item => item.exceptionMessage || "Job retries exhausted"} />}{tab === "User Tasks" && <TaskManager tasks={tasks} busy={busy} onAssign={assignTask} />}{tab === "Jobs" && <JobTable rows={instanceJobs} onRetry={job => { setRetryCount(1); setRetryTarget(job); }} />}{tab === "External Tasks" && <ExternalTaskTable rows={externalTasks} loading={externalTasksLoading} busyId={externalTaskBusyId} onReleaseLock={releaseExternalTaskLock} onRetry={task => { setExternalRetryCount(Math.max(1, Number(task.retries) || 1)); setExternalRetryTarget(task); }} />}</div>
+                <div className="p-4">{operationError && <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{operationError}</div>}{tab === "Variables" && <VariableManager variables={variables} busy={busy} onSave={saveVariable} onDelete={deleteVariable} />}{tab === "Incidents" && <List rows={incidents} empty="No open incidents." render={item => item.exceptionMessage || "Job retries exhausted"} />}{tab === "User Tasks" && <TaskManager tasks={tasks} busy={busy} onAssign={assignTask} onOpenForm={task => { setTaskForm(task); setTaskFormKey(task.formKey || task.form_key || ""); loadFormList(); }} />}{tab === "Jobs" && <JobTable rows={instanceJobs} onRetry={job => { setRetryCount(1); setRetryTarget(job); }} />}{tab === "External Tasks" && <ExternalTaskTable rows={externalTasks} loading={externalTasksLoading} busyId={externalTaskBusyId} onReleaseLock={releaseExternalTaskLock} onRetry={task => { setExternalRetryCount(Math.max(1, Number(task.retries) || 1)); setExternalRetryTarget(task); }} />}</div>
             </main>
         </div>
         {retryTarget && <div className="fixed inset-0 z-[1100] grid place-items-center bg-slate-950/50 p-4" role="presentation"><section className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="retry-job-title"><div className="flex items-start gap-3 p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700"><i className="fa-solid fa-rotate-right" aria-hidden="true" /></span><div className="min-w-0"><h2 id="retry-job-title" className="mb-1 text-base font-bold text-slate-900">Retry failed job?</h2><p className="mb-1 text-sm text-slate-600">Set the retry count to make this job executable again.</p><p className="mb-0 break-all text-xs text-slate-500">{retryTarget.id}</p></div></div><div className="px-5 pb-5"><label className="block text-sm font-semibold text-slate-700">Retries<input type="number" min="1" step="1" value={retryCount} onChange={event => setRetryCount(event.target.value)} className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" /></label></div><div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3"><button type="button" disabled={retryingJob} onClick={() => setRetryTarget(null)} className="!rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Cancel</button><button type="button" disabled={retryingJob} onClick={retryFailedJob} className="!rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60"><i className={`fa-solid ${retryingJob ? "fa-spinner fa-spin" : "fa-rotate-right"} mr-2`} />{retryingJob ? "Retrying…" : "Retry job"}</button></div></section></div>}
         {externalRetryTarget && <div className="fixed inset-0 z-[1100] grid place-items-center bg-slate-950/50 p-4" role="presentation"><section className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="retry-external-task-title"><div className="flex items-start gap-3 p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-700"><i className="fa-solid fa-rotate-right" aria-hidden="true" /></span><div className="min-w-0"><h2 id="retry-external-task-title" className="mb-1 text-base font-bold text-slate-900">Retry service task?</h2><p className="mb-1 text-sm text-slate-600">Set retries above zero so a worker can fetch and execute this service task again.</p><p className="mb-0 break-all text-xs text-slate-500">{externalRetryTarget.id}</p></div></div><div className="px-5 pb-5"><label className="block text-sm font-semibold text-slate-700">Retries<input type="number" min="1" step="1" value={externalRetryCount} onChange={event => setExternalRetryCount(event.target.value)} className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" /></label></div><div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3"><button type="button" disabled={retryingExternalTask} onClick={() => setExternalRetryTarget(null)} className="!rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Cancel</button><button type="button" disabled={retryingExternalTask} onClick={retryExternalTask} className="!rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"><i className={`fa-solid ${retryingExternalTask ? "fa-spinner fa-spin" : "fa-rotate-right"} mr-2`} />{retryingExternalTask ? "Retrying…" : "Retry service task"}</button></div></section></div>}
+        {taskForm && <div className="fixed inset-0 z-[1100] grid place-items-center bg-slate-950/50 p-2 sm:p-4" role="presentation"><section className="w-full max-w-4xl overflow-hidden rounded-xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="task-form-title"><div className="flex items-center justify-between border-b border-slate-200 px-4 py-3"><h2 id="task-form-title" className="mb-0 text-base font-semibold text-slate-900">Configure form for &quot;{taskForm.name || taskForm.taskDefinitionKey || "User task"}&quot;</h2><button type="button" onClick={() => setTaskForm(null)} className="grid h-8 w-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Close task form lookup"><i className="fa-solid fa-xmark" /></button></div><div className="p-4 sm:p-5"><div className="mb-3 flex flex-wrap gap-4 text-sm"><label className="inline-flex items-center gap-2"><input type="radio" name="runtime-form-type" checked readOnly />Form Key</label><label className="inline-flex items-center gap-2 text-slate-500"><input type="radio" name="runtime-form-type" disabled />Expression</label></div><a href="/app/data-management" target="_blank" rel="noreferrer" className="mb-4 inline-block text-sm text-indigo-600 underline">Create New Form</a><div className="mb-2 flex items-center justify-between"><label className="mb-0 text-sm font-semibold text-slate-700">Form Key</label><button type="button" onClick={loadFormList} disabled={formListLoading} className="rounded-full border border-slate-400 px-3 py-1 text-sm text-slate-600 disabled:opacity-50"><i className={`fa-solid ${formListLoading ? "fa-spinner fa-spin" : "fa-arrows-rotate"} mr-1.5`} />Refresh</button></div><div className={formListLoading ? "opacity-60" : ""}><SearchableSelect options={formList} value={taskFormKey} onChange={event => setTaskFormKey(event.target.value)} placeholder="Search forms..." /></div></div><div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:px-5"><button type="button" onClick={() => setTaskForm(null)} className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"><i className="fa-solid fa-xmark mr-1.5" />Cancel</button><button type="button" disabled={busy || formListLoading || !taskFormKey} onClick={() => changeTaskFormKey(taskFormKey)} className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 disabled:opacity-60"><i className="fa-solid fa-check mr-1.5" />Apply</button></div></section></div>}
     </aside>;
 }
 

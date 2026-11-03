@@ -57,6 +57,7 @@ export function TaskManager({ tasks, busy, onAssign }) {
     });
     const renderValue = (item, key) => {
         const value = valueFor(item, key);
+        if (key === "name") return value || "Unnamed activity";
         if (key === "assignee") return <span className="inline-flex items-center gap-1">
             {value || "Unassigned"}
             <button type="button" disabled={busy} onClick={() => setTask(item)}

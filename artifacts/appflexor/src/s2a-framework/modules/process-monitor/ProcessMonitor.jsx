@@ -40,6 +40,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [selected, setSelected] = useState({ instanceId: "", taskId: "", instance: null });
+    const [taskFormKeys, setTaskFormKeys] = useState({});
     const [selectedDefinition, setSelectedDefinition] = useState(null);
     const focusedProcessKey = String(initialProcessKey || "").toLowerCase().trim();
 
@@ -65,7 +66,8 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
                 const startTime = instance.startTime || historyMap[instance.id]?.startTime;
                 return { ...instance, startTime, history: historyMap[instance.id], definition, definitionName: definition?.name || definition?.key, variables, activity, sla: calculateSla(variables, new Date(), startTime), tasks: (tasks || []).filter(task => task.processInstanceId === instance.id) };
             });
-            setState({ definitions: definitions || [], instances: details, tasks: tasks || [], jobs: jobs || [], history: history || [] });
+            const hydratedTasks = (tasks || []).map(task => ({ ...task, formKey: taskFormKeys[task.id] || task.formKey }));
+            setState({ definitions: definitions || [], instances: details.map(instance => ({ ...instance, tasks: hydratedTasks.filter(task => task.processInstanceId === instance.id) })), tasks: hydratedTasks, jobs: jobs || [], history: history || [] });
             if (focusedProcessKey) {
                 setSelectedDefinition((definitions || []).find(item =>
                     String(item.key || "").toLowerCase().trim() === focusedProcessKey,
@@ -76,7 +78,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
         } finally {
             setLoading(false);
         }
-    }, [tenantId, focusedProcessKey]);
+    }, [tenantId, focusedProcessKey, taskFormKeys]);
 
     async function refreshInstance(instanceId) {
         if (!instanceId) return;
@@ -89,6 +91,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
         ]);
         const variables = await hydrateJsonVariables(instanceId, rawVariables);
         setState(previous => {
+            const refreshedTasks = (instanceTasks || []).map(task => ({ ...task, formKey: taskFormKeys[task.id] || task.formKey }));
             const existing = previous.instances.find(item => item.id === instanceId);
             const definition = previous.definitions.find(item => item.id === rawInstance.definitionId) ||
                 existing?.definition ||
@@ -101,7 +104,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
                 definitionName: definition?.name || definition?.key,
                 variables,
                 activity,
-                tasks: instanceTasks || [],
+                tasks: refreshedTasks,
                 sla: calculateSla(variables, new Date(), existing?.startTime || selected.instance?.startTime),
             };
             return {
@@ -109,10 +112,22 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
                 instances: existing
                     ? previous.instances.map(item => item.id === instanceId ? updated : item)
                     : [updated, ...previous.instances],
-                tasks: [...previous.tasks.filter(item => item.processInstanceId !== instanceId), ...(instanceTasks || [])],
+                tasks: [...previous.tasks.filter(item => item.processInstanceId !== instanceId), ...refreshedTasks],
                 jobs: [...previous.jobs.filter(item => item.processInstanceId !== instanceId), ...(instanceJobs || [])],
             };
         });
+    }
+
+    function updateTaskFormKey(taskId, formKey) {
+        setTaskFormKeys(previous => ({ ...previous, [taskId]: formKey }));
+        setState(previous => ({
+            ...previous,
+            tasks: previous.tasks.map(task => task.id === taskId ? { ...task, formKey } : task),
+            instances: previous.instances.map(instance => ({
+                ...instance,
+                tasks: (instance.tasks || []).map(task => task.id === taskId ? { ...task, formKey } : task),
+            })),
+        }));
     }
 
     function selectInstance(instanceId, taskId = "", instance = null) {
@@ -161,7 +176,7 @@ export default function ProcessMonitor({ activeTab = "PROCESS_MONITOR", initialP
                     <ProcessExecutionView definition={selectedDefinition} instances={state.instances} tasks={state.tasks} jobs={state.jobs} onBack={() => { setSelectedDefinition(null); if (onDefinitionClose) onDefinitionClose(); }} onSelectInstance={(instanceId, instance) => selectInstance(instanceId, "", instance)} onInstanceDeleted={removeInstance} />
                 </div>
             )}
-            <InstanceDetail instance={selectedInstance} selectedTaskId={selected.taskId} jobs={state.jobs} onRefresh={() => refreshInstance(selected.instanceId)} onClose={() => setSelected({ instanceId: "", taskId: "", instance: null })} />
+            <InstanceDetail instance={selectedInstance} selectedTaskId={selected.taskId} jobs={state.jobs} onTaskFormKeyChanged={updateTaskFormKey} onRefresh={() => refreshInstance(selected.instanceId)} onClose={() => setSelected({ instanceId: "", taskId: "", instance: null })} />
         </main>
     );
 }
