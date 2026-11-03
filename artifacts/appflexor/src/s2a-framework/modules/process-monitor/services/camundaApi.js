@@ -80,6 +80,13 @@ export const camundaApi = {
     getProcessInstances: () => getAllPages("/process-instance", { active: true }),
     getSuspendedProcessInstances: () => getAllPages("/process-instance", { suspended: true }),
     getProcessInstance: instanceId => camundaRequest(`/process-instance/${instanceId}`),
+    getWorkspaceMonitorStats: () => camundaBatchRequest([
+        { key: "definitions", request: { path: `/process-definition${query({ latestVersion: true })}`, method: "GET", data: {} } },
+        { key: "instances", request: { path: `/process-instance${query({ active: true, firstResult: 0 })}`, method: "GET", data: {} } },
+        { key: "suspendedInstances", request: { path: `/process-instance${query({ suspended: true, firstResult: 0 })}`, method: "GET", data: {} } },
+        { key: "tasks", request: { path: `/task${query({ active: true, firstResult: 0 })}`, method: "GET", data: {} } },
+        { key: "failedJobs", request: { path: `/job${query({ withException: true, firstResult: 0 })}`, method: "GET", data: {} } },
+    ]),
     getInstanceDetails: instanceId => camundaBatchRequest([
         { key: "instance", request: { path: `/process-instance/${instanceId}`, method: "GET", data: {} } },
         { key: "activity", request: { path: `/process-instance/${instanceId}/activity-instances`, method: "GET", data: {} } },

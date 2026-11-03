@@ -87,6 +87,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const appContext = useContext(AppContext);
     const containerRef = useRef(null);
     const viewerRef = useRef(null);
+    const bulkActionsRef = useRef(null);
     const [activeTab, setActiveTab] = useState("Process Instances");
     const [diagramError, setDiagramError] = useState("");
     const [versions, setVersions] = useState([definition]);
@@ -97,12 +98,31 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
     const [refreshing, setRefreshing] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleteAllTarget, setDeleteAllTarget] = useState(null);
+    const [deleteSuspendedTarget, setDeleteSuspendedTarget] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const [deletingAll, setDeletingAll] = useState(false);
+    const [deletingSuspended, setDeletingSuspended] = useState(false);
+    const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
     const [deleteError, setDeleteError] = useState("");
     const [auditError, setAuditError] = useState("");
     const [suspensionAction, setSuspensionAction] = useState({ scope: "", targetId: "", suspended: null });
     const [suspensionError, setSuspensionError] = useState("");
+
+    useEffect(() => {
+        if (!bulkActionsOpen) return undefined;
+        function closeOnOutsideClick(event) {
+            if (!bulkActionsRef.current?.contains(event.target)) setBulkActionsOpen(false);
+        }
+        function closeOnEscape(event) {
+            if (event.key === "Escape") setBulkActionsOpen(false);
+        }
+        document.addEventListener("mousedown", closeOnOutsideClick);
+        document.addEventListener("keydown", closeOnEscape);
+        return () => {
+            document.removeEventListener("mousedown", closeOnOutsideClick);
+            document.removeEventListener("keydown", closeOnEscape);
+        };
+    }, [bulkActionsOpen]);
 
     useEffect(() => {
         versionsRef.current = versions;
@@ -136,7 +156,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         const instanceMap = new Map();
         (instances || []).forEach(item => instanceMap.set(item.id, item));
         runtimeState.instances.forEach(item => instanceMap.set(item.id, item));
-        return [...instanceMap.values()].filter(item => !item.suspended);
+        return [...instanceMap.values()];
     }, [instances, runtimeState.instances]);
     const runningCountsByDefinitionId = useMemo(
         () => versionCountInstances.reduce((counts, item) => {
@@ -336,6 +356,34 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
         setDeletingAll(false);
     }
 
+    async function deleteSuspendedInstances() {
+        const targets = deleteSuspendedTarget?.instances || [];
+        if (!targets.length) return;
+        setDeletingSuspended(true);
+        setDeleteError("");
+        setAuditError("");
+        try {
+            await camundaApi.deleteProcessInstances(targets.map(instance => instance.id));
+            const auditResults = await Promise.allSettled(targets.map(instance => createDeleteAudit(instance)));
+            const auditFailures = auditResults.filter(result => result.status === "rejected");
+            const deletedIds = targets.map(instance => instance.id);
+            const deleted = new Set(deletedIds);
+            setRuntimeState(previous => ({
+                instances: previous.instances.filter(item => !deleted.has(item.id)),
+                tasks: previous.tasks.filter(item => !deleted.has(item.processInstanceId)),
+                jobs: previous.jobs.filter(item => !deleted.has(item.processInstanceId)),
+            }));
+            deletedIds.forEach(id => onInstanceDeleted?.(id));
+            if (auditFailures.length) {
+                setAuditError(`${deletedIds.length} suspended process instance${deletedIds.length === 1 ? "" : "s"} deleted, but ${auditFailures.length} audit record${auditFailures.length === 1 ? "" : "s"} could not be saved.`);
+            }
+            setDeleteSuspendedTarget(null);
+        } catch (error) {
+            setDeleteError(error.message || "Unable to delete suspended process instances for this version.");
+        }
+        setDeletingSuspended(false);
+    }
+
     async function updateInstanceSuspension(instance, suspended) {
         if (!instance?.id) return;
         setSuspensionAction({
@@ -431,30 +479,6 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                     <span className="font-semibold text-slate-600">Dashboard</span><i className="fa-solid fa-angle-right text-slate-400" /><span className="text-slate-500">Processes</span><i className="fa-solid fa-angle-right text-slate-400" /><span className="font-medium text-slate-800">{viewDefinition.name || viewDefinition.key}: Version {viewDefinition.version}</span>
                 </nav>
                 <div className="flex flex-wrap items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => updateProcessSuspension(true)}
-                        disabled={!activeProcessInstances.length || suspensionAction.scope === "bulk"}
-                        className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 disabled:opacity-50">
-                        <i className={`fa-solid ${suspensionAction.scope === "bulk" && suspensionAction.suspended ? "fa-spinner fa-spin" : "fa-pause"} mr-2`} />
-                        Suspend All Running
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => updateProcessSuspension(false)}
-                        disabled={!suspendedProcessInstances.length || suspensionAction.scope === "bulk"}
-                        className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 disabled:opacity-50">
-                        <i className={`fa-solid ${suspensionAction.scope === "bulk" && suspensionAction.suspended === false ? "fa-spinner fa-spin" : "fa-play"} mr-2`} />
-                        Resume All Suspended
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => { setDeleteError(""); setDeleteAllTarget({ instances: processInstances }); }}
-                        disabled={!processInstances.length || deletingAll || deleting}
-                        className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 disabled:opacity-50">
-                        <i className={`fa-solid ${deletingAll ? "fa-spinner fa-spin" : "fa-trash-can"} mr-2`} />
-                        Delete All Instances
-                    </button>
                     <button type="button" onClick={() => setRuntimeRefresh(value => value + 1)} disabled={refreshing} className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60">
                         <i className={`fa-solid fa-rotate mr-2 ${refreshing ? "fa-spin" : ""}`} />Refresh
                     </button>
@@ -466,11 +490,62 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                         <i className="fa-solid fa-xmark mr-2" aria-hidden="true" />
                         Close
                     </button>
+                    <div ref={bulkActionsRef} className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setBulkActionsOpen(value => !value)}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-100"
+                            aria-label="Bulk actions"
+                            aria-haspopup="menu"
+                            aria-expanded={bulkActionsOpen}>
+                            <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true" />
+                        </button>
+                        {bulkActionsOpen && <div className="absolute right-0 top-full z-30 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Bulk process actions">
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => { setBulkActionsOpen(false); updateProcessSuspension(true); }}
+                                disabled={!activeProcessInstances.length || suspensionAction.scope === "bulk"}
+                                className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50">
+                                <i className={`fa-solid ${suspensionAction.scope === "bulk" && suspensionAction.suspended ? "fa-spinner fa-spin" : "fa-pause"} mr-3 w-4`} />
+                                Suspend All Running
+                            </button>
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => { setBulkActionsOpen(false); updateProcessSuspension(false); }}
+                                disabled={!suspendedProcessInstances.length || suspensionAction.scope === "bulk"}
+                                className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50">
+                                <i className={`fa-solid ${suspensionAction.scope === "bulk" && suspensionAction.suspended === false ? "fa-spinner fa-spin" : "fa-play"} mr-3 w-4`} />
+                                Resume All Suspended
+                            </button>
+                            <div className="my-1 border-t border-slate-100" />
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => { setBulkActionsOpen(false); setDeleteError(""); setDeleteAllTarget({ instances: processInstances }); }}
+                                disabled={!processInstances.length || deletingAll || deleting || deletingSuspended}
+                                className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
+                                <i className={`fa-solid ${deletingAll ? "fa-spinner fa-spin" : "fa-trash-can"} mr-3 w-4`} />
+                                Delete All Instances
+                            </button>
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => { setBulkActionsOpen(false); setDeleteError(""); setDeleteSuspendedTarget({ instances: suspendedProcessInstances }); }}
+                                disabled={!suspendedProcessInstances.length || deletingAll || deletingSuspended || deleting}
+                                className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-orange-700 hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
+                                <i className={`fa-solid ${deletingSuspended ? "fa-spinner fa-spin" : "fa-trash-can"} mr-3 w-4`} />
+                                Delete All Suspended
+                            </button>
+                        </div>}
+                    </div>
                 </div>
             </div>
             {auditError && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{auditError}</div>}
             {suspensionError && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{suspensionError}</div>}
             {deleteAllTarget && <div className="fixed inset-0 z-[1100] grid place-items-center bg-slate-950/50 p-4" role="presentation" onMouseDown={() => !deletingAll && setDeleteAllTarget(null)}><section className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="delete-all-instances-title" onMouseDown={event => event.stopPropagation()}><div className="flex items-start gap-3 p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-red-100 text-red-600"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /></span><div className="min-w-0"><h2 id="delete-all-instances-title" className="mb-1 text-base font-bold text-slate-900">Delete all process instances?</h2><p className="mb-1 text-sm text-slate-600">This permanently deletes all {deleteAllTarget.instances.length} instance{deleteAllTarget.instances.length === 1 ? "" : "s"} shown for version {viewDefinition.version}, including active tasks and jobs.</p><p className="mb-0 break-all text-xs font-medium text-slate-500">{viewDefinition.name || viewDefinition.key}</p></div></div>{deleteError && <div role="alert" className="mx-5 mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{deleteError}</div>}<div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3"><button type="button" disabled={deletingAll} onClick={() => setDeleteAllTarget(null)} className="!rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Cancel</button><button type="button" disabled={deletingAll} onClick={deleteAllInstances} className="!rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"><i className={`fa-solid ${deletingAll ? "fa-spinner fa-spin" : "fa-trash-can"} mr-2`} />{deletingAll ? "Deleting..." : "Delete all"}</button></div></section></div>}
+            {deleteSuspendedTarget && <div className="fixed inset-0 z-[1100] grid place-items-center bg-slate-950/50 p-4" role="presentation" onMouseDown={() => !deletingSuspended && setDeleteSuspendedTarget(null)}><section className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="delete-suspended-instances-title" onMouseDown={event => event.stopPropagation()}><div className="flex items-start gap-3 p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange-100 text-orange-600"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /></span><div className="min-w-0"><h2 id="delete-suspended-instances-title" className="mb-1 text-base font-bold text-slate-900">Delete all suspended instances?</h2><p className="mb-1 text-sm text-slate-600">This permanently deletes all {deleteSuspendedTarget.instances.length} suspended instance{deleteSuspendedTarget.instances.length === 1 ? "" : "s"} shown for version {viewDefinition.version}.</p><p className="mb-0 break-all text-xs font-medium text-slate-500">{viewDefinition.name || viewDefinition.key}</p></div></div>{deleteError && <div role="alert" className="mx-5 mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{deleteError}</div>}<div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3"><button type="button" disabled={deletingSuspended} onClick={() => setDeleteSuspendedTarget(null)} className="!rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Cancel</button><button type="button" disabled={deletingSuspended} onClick={deleteSuspendedInstances} className="!rounded-full bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-60"><i className={`fa-solid ${deletingSuspended ? "fa-spinner fa-spin" : "fa-trash-can"} mr-2`} />{deletingSuspended ? "Deleting..." : "Delete suspended"}</button></div></section></div>}
             <div className="grid min-h-[500px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[260px_1fr]">
                 <aside className="border-b border-slate-200 bg-slate-50 p-4 lg:border-b-0 lg:border-r">
                     <dl className="space-y-4 text-sm">
@@ -485,32 +560,35 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                                             className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900">
                                             {versions.map(item => (
                                                 <option key={item.id} value={item.id}>
-                                                    {`v${item.version} (${runningCountsByDefinitionId[item.id] || 0} running, ${suspendedCountsByDefinitionId[item.id] || 0} suspended)${item.versionTag ? ` - ${item.versionTag}` : ""}`}
+                                                    {`v${item.version} (${runningCountsByDefinitionId[item.id] || 0} running, ${suspendedCountsByDefinitionId[item.id] || 0} suspended)`}
                                                 </option>
                                             ))}
                                         </select>
                                     </dd>
                                 </div>
-                                <div><dt className="font-semibold text-slate-500">Version Tag</dt><dd className="mt-1 text-slate-900">{viewDefinition.versionTag || "-"}</dd></div>
+                                <div>
+                                    <dt className="font-semibold text-slate-500">Instances</dt>
+                                    <dd className="mt-1 text-slate-900">
+                                        <span className="text-indigo-600">{activeProcessInstances.length} running</span>
+                                        <span className="mx-2 text-slate-400">·</span>
+                                        <span className="text-amber-600">{suspendedProcessInstances.length} suspended</span>
+                                    </dd>
+                                </div>
                                 <div><dt className="font-semibold text-slate-500">Definition ID</dt><dd className="mt-1 break-all text-slate-900">{viewDefinition.id}</dd></div>
                                 <div><dt className="font-semibold text-slate-500">Definition Key</dt><dd className="mt-1 text-slate-900">{viewDefinition.key}</dd></div>
                                 <div><dt className="font-semibold text-slate-500">Definition Name</dt><dd className="mt-1 text-slate-900">{viewDefinition.name || viewDefinition.key}</dd></div>
                                 <div><dt className="font-semibold text-slate-500">Tenant ID</dt><dd className="mt-1 text-slate-900">{viewDefinition.tenantId || "-"}</dd></div>
                                 <div><dt className="font-semibold text-slate-500">Deployment ID</dt><dd className="mt-1 break-all text-indigo-600">{viewDefinition.deploymentId || "-"}</dd></div>
-                                <div><dt className="font-semibold text-slate-500">Running Instances</dt><dd className="mt-1 text-xl font-bold text-indigo-600">{activeProcessInstances.length}</dd></div>
-                                <div><dt className="font-semibold text-slate-500">Suspended Instances</dt><dd className="mt-1 text-xl font-bold text-amber-600">{suspendedProcessInstances.length}</dd></div>
                             </>
                         ) : (
                             <>
-                        <div><dt className="font-semibold text-slate-500">Definition Version</dt><dd className="mt-1"><select value={viewDefinition.id} onChange={event => setViewDefinition(versions.find(item => item.id === event.target.value) || definition)} className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900">{versions.map(item => <option key={item.id} value={item.id}>Version {item.version}{item.versionTag ? ` · ${item.versionTag}` : ""}</option>)}</select></dd></div>
-                        <div><dt className="font-semibold text-slate-500">Version Tag</dt><dd className="mt-1 text-slate-900">{viewDefinition.versionTag || "—"}</dd></div>
+                        <div><dt className="font-semibold text-slate-500">Definition Version</dt><dd className="mt-1"><select value={viewDefinition.id} onChange={event => setViewDefinition(versions.find(item => item.id === event.target.value) || definition)} className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900">{versions.map(item => <option key={item.id} value={item.id}>{`v${item.version} (${runningCountsByDefinitionId[item.id] || 0} running, ${suspendedCountsByDefinitionId[item.id] || 0} suspended)`}</option>)}</select></dd></div>
+                        <div><dt className="font-semibold text-slate-500">Instances</dt><dd className="mt-1 text-slate-900"><span className="text-indigo-600">{activeProcessInstances.length} running</span><span className="mx-2 text-slate-400">·</span><span className="text-amber-600">{suspendedProcessInstances.length} suspended</span></dd></div>
                         <div><dt className="font-semibold text-slate-500">Definition ID</dt><dd className="mt-1 break-all text-slate-900">{viewDefinition.id}</dd></div>
                         <div><dt className="font-semibold text-slate-500">Definition Key</dt><dd className="mt-1 text-slate-900">{viewDefinition.key}</dd></div>
                         <div><dt className="font-semibold text-slate-500">Definition Name</dt><dd className="mt-1 text-slate-900">{viewDefinition.name || viewDefinition.key}</dd></div>
                         <div><dt className="font-semibold text-slate-500">Tenant ID</dt><dd className="mt-1 text-slate-900">{viewDefinition.tenantId || "—"}</dd></div>
                         <div><dt className="font-semibold text-slate-500">Deployment ID</dt><dd className="mt-1 break-all text-indigo-600">{viewDefinition.deploymentId || "—"}</dd></div>
-                        <div><dt className="font-semibold text-slate-500">Running Instances</dt><dd className="mt-1 text-xl font-bold text-indigo-600">{activeProcessInstances.length}</dd></div>
-                        <div><dt className="font-semibold text-slate-500">Suspended Instances</dt><dd className="mt-1 text-xl font-bold text-amber-600">{suspendedProcessInstances.length}</dd></div>
                             </>
                         )}
                     </dl>
@@ -518,7 +596,7 @@ export default function ProcessExecutionView({ definition, instances, tasks, job
                 <div className="min-w-0">
                     <div className="relative h-[330px] border-b border-slate-200 bg-white sm:h-[420px]">
                         {diagramError ? <div className="grid h-full place-items-center p-6 text-sm text-red-600">{diagramError}</div> : <div ref={containerRef} className="h-full w-full" />}
-                        <span className="absolute right-4 top-4 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700">Active activities highlighted</span>
+                        {/* <span className="absolute right-4 top-4 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700">Active activities highlighted</span> */}
                     </div>
                     <div className="p-4">
                         <div className="flex gap-1 overflow-x-auto border-b border-slate-200" role="tablist">{TABS.map(tab => <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`shrink-0 border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500"}`}>{tab}</button>)}</div>

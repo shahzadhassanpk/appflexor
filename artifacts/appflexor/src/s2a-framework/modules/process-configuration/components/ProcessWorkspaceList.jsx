@@ -77,13 +77,14 @@ export default function ProcessWorkspaceList({ title, description, stats, items,
     async function loadMonitorStats() {
         setMonitorStatsLoading(true);
         try {
-            const [definitions, instances, suspendedInstances, tasks, failedJobs] = await Promise.all([
-                camundaApi.getProcessDefinitions().catch(() => []),
-                camundaApi.getProcessInstances().catch(() => []),
-                camundaApi.getSuspendedProcessInstances().catch(() => []),
-                camundaApi.getTasks().catch(() => []),
-                camundaApi.getFailedJobs().catch(() => []),
-            ]);
+            const monitorData = await camundaApi.getWorkspaceMonitorStats();
+            const batchData = monitorData?.C_DATA ?? monitorData;
+            const read = key => batchData?.[key]?.data ?? batchData?.[key] ?? [];
+            const definitions = read("definitions");
+            const instances = read("instances");
+            const suspendedInstances = read("suspendedInstances");
+            const tasks = read("tasks");
+            const failedJobs = read("failedJobs");
             setMonitorStats(buildMonitorStats(definitions, instances, suspendedInstances, tasks, failedJobs));
         } catch {
             setMonitorStats(null);
@@ -100,14 +101,10 @@ export default function ProcessWorkspaceList({ title, description, stats, items,
     useEffect(() => {
         let cancelled = false;
         setMonitorStatsLoading(true);
-        Promise.all([
-            camundaApi.getProcessDefinitions().catch(() => []),
-            camundaApi.getProcessInstances().catch(() => []),
-            camundaApi.getSuspendedProcessInstances().catch(() => []),
-            camundaApi.getTasks().catch(() => []),
-            camundaApi.getFailedJobs().catch(() => []),
-        ]).then(([definitions, instances, suspendedInstances, tasks, failedJobs]) => {
-            if (!cancelled) setMonitorStats(buildMonitorStats(definitions, instances, suspendedInstances, tasks, failedJobs));
+        camundaApi.getWorkspaceMonitorStats().then(monitorData => {
+            const batchData = monitorData?.C_DATA ?? monitorData;
+            const read = key => batchData?.[key]?.data ?? batchData?.[key] ?? [];
+            if (!cancelled) setMonitorStats(buildMonitorStats(read("definitions"), read("instances"), read("suspendedInstances"), read("tasks"), read("failedJobs")));
         }).catch(() => {
             if (!cancelled) setMonitorStats(null);
         }).finally(() => {
