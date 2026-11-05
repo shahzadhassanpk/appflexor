@@ -333,6 +333,36 @@ export default function DataListForm(props) {
                             <label className="fw-bold ">Datalist Details</label>
                         </div>
                         <div className="row">
+                            
+                            <div className="col-sm-12 mb-1">
+                                <div className="form-group">
+                                    <div className="mt-1 d-flex">
+                                        <div className="col-sm-2 fw-bold">
+                                            Name&nbsp;
+                                            <span className="text-danger">
+                                                *
+                                            </span>
+                                        </div>
+                                        <div
+                                            className={`${
+                                                error.indexOf("name") === -1
+                                                    ? "visually-hidden col-sm-10"
+                                                    : "col-sm-10 error-msg"
+                                            }`}>
+                                            Name Required
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        name="name"
+                                        value={
+                                            selectedItem && selectedItem["name"]
+                                        }
+                                        onChange={e => handleInputField(e)}
+                                    />
+                                </div>
+                            </div>
                             <div className="col-sm-12 mb-1">
                                 <div className="form-group">
                                     <div className="mt-1 d-flex">
@@ -359,35 +389,6 @@ export default function DataListForm(props) {
                                         value={
                                             selectedItem &&
                                             selectedItem?.db_column
-                                        }
-                                        onChange={e => handleInputField(e)}
-                                    />
-                                </div>
-                            </div>
-                            <div className="col-sm-12 mb-1">
-                                <div className="form-group">
-                                    <div className="mt-1 d-flex">
-                                        <div className="col-sm-2 fw-bold">
-                                            Name&nbsp;
-                                            <span className="text-danger">
-                                                *
-                                            </span>
-                                        </div>
-                                        <div
-                                            className={`${
-                                                error.indexOf("name") === -1
-                                                    ? "visually-hidden col-sm-10"
-                                                    : "col-sm-10 error-msg"
-                                            }`}>
-                                            Name Required
-                                        </div>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        name="name"
-                                        value={
-                                            selectedItem && selectedItem["name"]
                                         }
                                         onChange={e => handleInputField(e)}
                                     />

@@ -21,14 +21,15 @@ function counts(activity, tasks = []) {
 }
 function countBadge(count) { const node = document.createElement("span"); node.className = "process-monitor-activity-count"; node.textContent = String(count); node.title = `${count} active activity instance${count === 1 ? "" : "s"}`; return node; }
 
-export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose, onRefresh, onTaskFormKeyChanged }) {
+export default function InstanceDetail({ instance, selectedTaskId, onClose, onRefresh, onTaskFormKeyChanged }) {
     const containerRef = useRef(null);
     const viewerRef = useRef(null);
     const [tab, setTab] = useState(selectedTaskId ? "User Tasks" : "Variables");
     const [diagramError, setDiagramError] = useState("");
     const [variables, setVariables] = useState({});
-    const [variablesLoaded, setVariablesLoaded] = useState(false);
     const [tasks, setTasks] = useState([]);
+    const [instanceJobs, setInstanceJobs] = useState([]);
+    const [tabRefresh, setTabRefresh] = useState(0);
     const [taskForm, setTaskForm] = useState(null);
     const [taskFormKey, setTaskFormKey] = useState("");
     const [formList, setFormList] = useState([]);
@@ -45,51 +46,57 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
     const [externalTaskBusyId, setExternalTaskBusyId] = useState("");
     const [retryingExternalTask, setRetryingExternalTask] = useState(false);
     const [operationError, setOperationError] = useState("");
-    const instanceJobs = jobs.filter(job => job.processInstanceId === instance?.id);
     const incidents = instanceJobs.filter(job => job.exceptionMessage || job.retries === 0);
 
     useEffect(() => {
-        if (instance) {
-            setTab(selectedTaskId ? "User Tasks" : "Variables");
-            setVariables(instance.variables || {});
-            setVariablesLoaded(Boolean(instance.variables));
-            setTasks(instance.tasks || []);
-            setExternalTasksLoading(true);
-            let active = true;
-            camundaApi.getInstanceTaskDetails(instance.id, instance.tasks || []).then(details => {
-                const batchData = details?.C_DATA ?? details;
-                const enrichedTasks = (instance.tasks || []).map((task, index) => {
-                    const links = batchData?.[`identityLinks_${index}`]?.data ?? batchData?.[`identityLinks_${index}`] ?? [];
-                    const candidateGroups = (Array.isArray(links) ? links : []).filter(link => link.type === "candidate" && link.groupId).map(link => link.groupId);
-                    return { ...task, candidateGroups, candidateGroup: candidateGroups.join(", ") };
-                });
-                const latestExternalTasks = batchData?.externalTasks?.data ?? batchData?.externalTasks ?? [];
-                if (active) {
-                    setTasks(enrichedTasks);
-                    setExternalTasks(latestExternalTasks || []);
-                    setExternalTasksLoading(false);
-                }
-            }).catch(() => { if (active) setExternalTasksLoading(false); });
-            return () => { active = false; };
-        }
-        return undefined;
+        setTab(selectedTaskId ? "User Tasks" : "Variables");
+        setVariables(instance?.variables || {});
+        setTasks([]);
+        setInstanceJobs([]);
+        setExternalTasks([]);
+        setExternalTasksLoading(false);
     }, [instance, selectedTaskId]);
 
     useEffect(() => {
-        if (!instance || tab !== "Variables" || variablesLoaded) return undefined;
+        if (!instance) return undefined;
         let active = true;
-        camundaApi.getInstanceVariables(instance.id)
-            .then(value => {
-                if (active) {
-                    setVariables(value || {});
-                    setVariablesLoaded(true);
+        async function loadActiveTab() {
+            setOperationError("");
+            if (tab === "External Tasks") setExternalTasksLoading(true);
+            try {
+                if (tab === "Variables") {
+                    const value = await camundaApi.getInstanceVariables(instance.id);
+                    if (active) {
+                        setVariables(value || {});
+                    }
+                } else if (tab === "User Tasks") {
+                    const latestTasks = await camundaApi.getTasksByInstance(instance.id);
+                    const enrichedTasks = await Promise.all((latestTasks || []).map(async task => {
+                        const links = await camundaApi.getTaskIdentityLinks(task.id).catch(() => []);
+                        const candidateGroups = (links || [])
+                            .filter(link => link.type === "candidate" && link.groupId)
+                            .map(link => link.groupId);
+                        return { ...task, candidateGroups, candidateGroup: candidateGroups.join(", ") };
+                    }));
+                    if (active) setTasks(enrichedTasks);
+                } else if (tab === "Jobs" || tab === "Incidents") {
+                    const latestJobs = await camundaApi.getJobsByInstance(instance.id);
+                    if (active) setInstanceJobs(latestJobs || []);
+                } else if (tab === "External Tasks") {
+                    const latestExternalTasks = await camundaApi.getExternalTasksByInstance(instance.id);
+                    if (active) setExternalTasks(latestExternalTasks || []);
                 }
-            })
-            .catch(error => {
-                if (active) setOperationError(error.message || "Unable to load process variables.");
-            });
+            } catch (error) {
+                if (active) setOperationError(error.message || `Unable to load ${tab.toLowerCase()}.`);
+            } finally {
+                if (active) {
+                    if (tab === "External Tasks") setExternalTasksLoading(false);
+                }
+            }
+        }
+        loadActiveTab();
         return () => { active = false; };
-    }, [instance, tab, variablesLoaded]);
+    }, [instance, tab, tabRefresh]);
 
     function typedValue(value, type) {
         if (type === "Boolean") return value === "true";
@@ -204,11 +211,8 @@ export default function InstanceDetail({ instance, selectedTaskId, jobs, onClose
         setRefreshing(true);
         setOperationError("");
         try {
-            const [, latestExternalTasks] = await Promise.all([
-                onRefresh?.(),
-                camundaApi.getExternalTasksByInstance(instance.id),
-            ]);
-            setExternalTasks(latestExternalTasks || []);
+            await onRefresh?.();
+            setTabRefresh(value => value + 1);
         }
         catch (error) { setOperationError(error.message || "Unable to refresh instance details."); }
         finally { setRefreshing(false); }
