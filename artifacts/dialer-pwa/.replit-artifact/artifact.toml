@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/dialer/"
+title = "Dialer PWA"
+description = "Mobile-first React PWA for Appflexor lead dialing tasks, authenticated login, native phone dialing and task completion."
+version = "1.0.0"
+id = "artifacts/dialer-pwa"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/dialer/" ]
+localPort = 23226
+
+[services.development]
+run = "pnpm --filter @workspace/dialer-pwa run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/dialer-pwa", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/dialer-pwa/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23226"
+BASE_PATH = "/dialer/"

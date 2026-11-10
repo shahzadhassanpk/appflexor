@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Appflexor Dialer",
+  "short_name": "Dialer",
+  "description": "Your assigned lead calling tasks, connected to Appflexor.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f8f7",
+  "theme_color": "#0b6e64",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

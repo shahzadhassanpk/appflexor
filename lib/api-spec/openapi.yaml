@@ -11,6 +11,92 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /dialer/login:
+    post:
+      operationId: dialerLogin
+      tags: [dialer]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DialerCredentials"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DialerSession"
+  /dialer/session:
+    get:
+      operationId: getDialerSession
+      tags: [dialer]
+      responses:
+        "200":
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DialerSession"
+  /dialer/logout:
+    post:
+      operationId: dialerLogout
+      tags: [dialer]
+      responses:
+        "204":
+          description: Signed out
+  /dialer/tasks:
+    get:
+      operationId: getDialerTasks
+      tags: [dialer]
+      responses:
+        "200":
+          description: Assigned dialing tasks containing phone numbers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DialerTaskList"
+  /dialer/tasks/{id}:
+    get:
+      operationId: getDialerTask
+      tags: [dialer]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DialerTask"
+  /dialer/tasks/{id}/complete:
+    post:
+      operationId: completeDialerTask
+      tags: [dialer]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DialerOutcome"
+      responses:
+        "200":
+          description: Task successfully completed upstream
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DialerCompletion"
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +112,79 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    DialerCredentials:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 200
+        password:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        taskDefinitionKey:
+          type: string
+          maxLength: 200
+    DialerSession:
+      type: object
+      required: [username, taskDefinitionKey]
+      properties:
+        username:
+          type: string
+        taskDefinitionKey:
+          type: string
+    DialerTask:
+      type: object
+      required: [id, name, phone, dueDate, status, comments, taskName, created]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        dueDate:
+          type: [string, "null"]
+        status:
+          type: string
+        comments:
+          type: string
+        taskName:
+          type: string
+        created:
+          type: [string, "null"]
+    DialerTaskList:
+      type: object
+      required: [tasks, hasMore, scannedCount]
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/DialerTask"
+        hasMore:
+          type: boolean
+        scannedCount:
+          type: integer
+    DialerOutcome:
+      type: object
+      required: [status, comments]
+      properties:
+        status:
+          type: string
+          enum: [HOT, RECALL, REJECTION]
+        comments:
+          type: string
+          maxLength: 10000
+    DialerCompletion:
+      type: object
+      required: [id, completed]
+      properties:
+        id:
+          type: string
+        completed:
+          type: boolean
     HealthStatus:
       type: object
       properties:
