@@ -14,7 +14,7 @@ const dialerUrl = moduleUrl(await readFile(new URL("../src/lib/dialer.ts", impor
 const source = (await readFile(new URL("../src/lib/crm.ts", import.meta.url), "utf8"))
   .replace('"@/lib/dialer"', JSON.stringify(dialerUrl))
   .replace("import.meta.env.BASE_URL", '"/dialer/"');
-const { getTaskList } = await import(moduleUrl(source));
+const { getTaskList, claimAvailableTask, saveDialerLog, completeDialerTask } = await import(moduleUrl(source));
 const session = { username: "agent", authKey: "synthetic-test-token", taskDefinitionKey: "" };
 const task = {
   id: "available-task", name: "Call Customer", assignee: null,
@@ -75,5 +75,76 @@ test("available task cards do not depend on phone variables", async (t) => {
         t.mock.restoreAll();
       }
     });
+  }
+});
+
+test("claim, save and complete use the confirmed CRM contracts", async (t) => {
+  const calls = [];
+  const ownedTask = { ...task, assignee: session.username, processInstanceId: "process-1" };
+  const variables = { name: { value: "Demo Lead" }, phone: { value: "" } };
+  let saveFails = false;
+  let completeFails = true;
+  let claimFails = true;
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    const body = JSON.parse(options.body);
+    const key = new URL(url, "http://example.test").searchParams.get("service.key");
+    calls.push({ key, body });
+    if (key === "update.formData") {
+      return Response.json(saveFails
+        ? { C_STATUS: "FAILED", C_MESSAGE: "Save rejected" }
+        : { C_STATUS: "SUCCESS", C_DATA: [{ formData: { id: "log-1" } }] });
+    }
+    if (key === "complete.task") {
+      return Response.json(completeFails
+        ? { data: { status: "FAIL", message: "Completion rejected" } }
+        : { status: "SUCCESS" });
+    }
+    if (body.path.endsWith("/claim")) {
+      if (claimFails) return Response.json({ message: "Already claimed" }, { status: 409 });
+      assert.deepEqual(body.data, { userId: session.username });
+      return new Response(null, { status: 204 });
+    }
+    if (body.path.includes("/variables?")) return Response.json({ status: "SUCCESS", data: variables });
+    if (body.path === "/process-instance/process-1") {
+      return Response.json({ status: "SUCCESS", data: { businessKey: "LEAD-001" } });
+    }
+    return Response.json({ status: "SUCCESS", data: ownedTask });
+  });
+  try {
+    await assert.rejects(claimAvailableTask(session, task.id), /Already claimed/);
+    assert.equal(calls.length, 1, "Failed claim must not load/dial a task");
+    claimFails = false;
+    const claimed = await claimAvailableTask(session, task.id);
+    assert.equal(claimed.name, "Demo Lead");
+    assert.equal(claimed.phone, "", "Tasks without phones can still be logged");
+
+    saveFails = true;
+    await assert.rejects(completeDialerTask(session, claimed, "HOT", "Interested"), /Save rejected/);
+    assert.equal(calls.filter(c => c.key === "complete.task").length, 0);
+
+    saveFails = false;
+    await saveDialerLog(session, claimed, "HOT", "Interested");
+    assert.equal(calls.filter(c => c.key === "complete.task").length, 0, "Save alone does not complete");
+    const saved = calls.filter(c => c.key === "update.formData").at(-1).body;
+    assert.deepEqual(saved, {
+      saveOrUpdate: "Yes",
+      data: [{
+        formId: "dialer_log", entity: "dialer_log", action: "update",
+        mode: "formData", id: "new", fileData: [],
+        formData: { name: "Demo Lead", phone: "", status: "HOT", comments: "Interested", business_key: "LEAD-001" },
+      }],
+    });
+    const successfulSaveCount = calls.filter(c => c.key === "update.formData").length;
+    await assert.rejects(completeDialerTask(session, claimed, "HOT", "Interested"), /log was saved, but task completion failed/);
+    completeFails = false;
+    assert.deepEqual(await completeDialerTask(session, claimed, "HOT", "Interested"), { id: task.id, completed: true });
+    assert.equal(calls.filter(c => c.key === "update.formData").length, successfulSaveCount,
+      "Completion retries reuse a confirmed identical save");
+    assert.deepEqual(calls.filter(c => c.key === "complete.task").at(-1).body, {
+      path: "/task/available-task/complete", method: "POST",
+      data: { businessKey: "LEAD-001", variables: { status: { value: "HOT" } } },
+    });
+  } finally {
+    t.mock.restoreAll();
   }
 });

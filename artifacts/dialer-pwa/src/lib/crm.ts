@@ -16,6 +16,8 @@ export type DialerTask = {
   taskName: string;
   created: string | null;
   detailsError?: string;
+  businessKey?: string;
+  processInstanceId?: string;
 };
 
 export type DialerTaskList = {
@@ -119,7 +121,17 @@ async function postService(
   } catch {
     throw new CrmError(502, "Appflexor returned an unreadable response.");
   }
-  const object = asObject(payload);
+  const envelopes = [asObject(payload)];
+  let inner = unwrap(payload);
+  for (let depth = 0; depth < 3 && inner && typeof inner === "object" && !Array.isArray(inner); depth++) {
+    envelopes.push(asObject(inner));
+    const next = unwrap(inner);
+    if (next === inner) break;
+    inner = next;
+  }
+  const failureStatuses = ["UNAUTHORIZED", "UNAUTHORISED", "FAIL", "FAILED", "FAILURE", "ERROR"];
+  const object = envelopes.find(item =>
+    failureStatuses.includes(String(item.C_STATUS ?? item.status ?? "").toUpperCase())) ?? envelopes[0];
   const statusText = String(object.C_STATUS ?? object.status ?? "").toUpperCase();
   const unauthorized = response.status === 401 || response.status === 403 ||
     statusText === "UNAUTHORIZED" || statusText === "UNAUTHORISED";
@@ -211,6 +223,9 @@ function mapTask(task: Record<string, unknown>, variables: Record<string, unknow
     comments: findField(variables, FIELD_ALIASES.comments).value,
     taskName: String(task.name ?? "Lead dialing"),
     created: typeof task.created === "string" ? task.created : null,
+    businessKey: findField(variables, ["business_key", "businessKey"], true).value ||
+      (typeof task.businessKey === "string" ? task.businessKey : ""),
+    processInstanceId: typeof task.processInstanceId === "string" ? task.processInstanceId : undefined,
   };
 }
 
@@ -269,7 +284,7 @@ export async function getTaskList(
       }
       const lead = mapTask(task, variables);
       if (kind === "available") return { ...lead, ...(detailsError ? { detailsError } : {}) };
-      return /^\+?[\d\s().-]+$/.test(lead.phone) && /\d/.test(lead.phone) ? lead : null;
+      return lead;
     }));
     tasks.push(...batch.filter((task): task is DialerTask => task !== null));
   }
@@ -287,42 +302,121 @@ export async function getAssignedTask(
       (session.taskDefinitionKey && raw.taskDefinitionKey !== session.taskDefinitionKey)) {
     throw new CrmError(403, "This dialing task is not assigned to you.");
   }
-  const task = mapTask(raw, await variablesFor(session, id, signal));
-  if (!task.phone || !/^\+?[\d\s().-]+$/.test(task.phone)) {
-    throw new CrmError(400, "This task does not contain a valid lead phone number.");
+  return mapTask(raw, await variablesFor(session, id, signal));
+}
+
+export async function claimAvailableTask(session: DialerSession, id: string): Promise<DialerTask> {
+  // Camunda's atomic claim operation arbitrates races between agents.
+  await bpmRequest(session, `/task/${encodeURIComponent(id)}/claim`, "POST", { userId: session.username });
+  try {
+    return await getAssignedTask(session, id);
+  } catch (error) {
+    if (error instanceof CrmError && error.status === 401) throw error;
+    throw new CrmError(502, `The task was claimed, but its details could not be loaded. Refresh Assigned to reopen it. ${error instanceof Error ? error.message : ""}`);
+  }
+}
+
+// Retain the last successful save in this browser session. Completion retries
+// must not create a second log after a confirmed save and a failed completion.
+const savedLogs = new Map<string, string>();
+
+function saveKey(session: DialerSession, task: DialerTask) {
+  return JSON.stringify([session.username, session.authKey, task.id]);
+}
+
+function validateLog(status: Outcome, comments: string) {
+  if (!isOutcome(status) || comments.length > 10000) {
+    throw new CrmError(400, "Choose HOT, RECALL or REJECTION and provide comments of up to 10000 characters.");
+  }
+}
+
+async function ownedTaskWithBusinessKey(session: DialerSession, id: string): Promise<DialerTask> {
+  const task = await getAssignedTask(session, id);
+  if (!task.businessKey && task.processInstanceId) {
+    const instance = asObject(await bpmRequest(session, `/process-instance/${encodeURIComponent(task.processInstanceId)}`));
+    task.businessKey = typeof instance.businessKey === "string" ? instance.businessKey : "";
+  }
+  if (!task.businessKey) {
+    throw new CrmError(400, "This task has no business key. Add business_key/businessKey to its variables or set the process instance business key before saving.");
   }
   return task;
 }
 
-export async function completeAssignedTask(
+export async function saveDialerLog(
   session: DialerSession,
-  id: string,
+  task: DialerTask,
+  status: Outcome,
+  comments: string,
+): Promise<void> {
+  validateLog(status, comments);
+  const current = await ownedTaskWithBusinessKey(session, task.id);
+  const fields = {
+    name: current.name,
+    phone: current.phone,
+    status,
+    comments,
+    business_key: current.businessKey,
+  };
+  const fingerprint = JSON.stringify(fields);
+  const key = saveKey(session, task);
+  if (savedLogs.get(key) === fingerprint) return;
+  const payload = await postService("app", "update.formData", {
+    saveOrUpdate: "Yes",
+    data: [{
+      formId: "dialer_log",
+      entity: "dialer_log",
+      action: "update",
+      mode: "formData",
+      id: "new",
+      fileData: [],
+      formData: fields,
+    }],
+  }, session.authKey);
+  const object = asObject(payload);
+  if (String(object.C_STATUS ?? object.status ?? "").toUpperCase() !== "SUCCESS") {
+    throw new CrmError(502, "Appflexor did not confirm that the dialer log was saved. The task was not completed.");
+  }
+  savedLogs.set(key, fingerprint);
+}
+
+export async function completeDialerTask(
+  session: DialerSession,
+  task: DialerTask,
   status: Outcome,
   comments: string,
 ): Promise<DialerCompletion> {
-  if (!isOutcome(status) || comments.length > 10000) {
-    throw new CrmError(400, "Choose HOT, RECALL or REJECTION and provide comments of up to 10000 characters.");
+  await saveDialerLog(session, task, status, comments);
+  try {
+    const current = await ownedTaskWithBusinessKey(session, task.id);
+    const payload = await postService("bpm", "complete.task", {
+      path: `/task/${encodeURIComponent(task.id)}/complete`,
+      method: "POST",
+      data: {
+        businessKey: current.businessKey,
+        variables: { status: { value: status } },
+      },
+    }, session.authKey);
+    const result = asObject(unwrap(payload));
+    if (typeof result.type === "string" && /exception|error/i.test(result.type)) {
+      throw new CrmError(502, String(result.message ?? "The process engine rejected completion."));
+    }
+  } catch (error) {
+    if (error instanceof CrmError && error.status === 401) throw error;
+    throw new CrmError(error instanceof CrmError ? error.status : 502,
+      `The dialer log was saved, but task completion failed. Your task remains assigned; retry Complete without changing the fields to reuse the saved log. ${error instanceof Error ? error.message : ""}`);
   }
-  const raw = asObject(await bpmRequest(session, `/task/${encodeURIComponent(id)}`, "GET"));
-  if (!raw.id) throw new CrmError(404, "This task is no longer available.");
-  if (raw.assignee !== session.username ||
-      (session.taskDefinitionKey && raw.taskDefinitionKey !== session.taskDefinitionKey)) {
-    throw new CrmError(403, "This dialing task is not assigned to you.");
-  }
-  const variables = await variablesFor(session, id);
-  if (!mapTask(raw, variables).phone) throw new CrmError(400, "This is not a lead dialing task.");
-  const statusKey = findField(variables, FIELD_ALIASES.status).key;
-  const commentsKey = findField(variables, FIELD_ALIASES.comments).key;
-  await bpmRequest(session, `/task/${encodeURIComponent(id)}/complete`, "POST", {
-    variables: {
-      [statusKey]: { value: status, type: "String" },
-      [commentsKey]: { value: comments, type: "String" },
-    },
-  });
-  return { id, completed: true };
+  savedLogs.delete(saveKey(session, task));
+  return { id: task.id, completed: true };
+}
+
+export async function completeAssignedTask(
+  session: DialerSession, id: string, status: Outcome, comments: string,
+): Promise<DialerCompletion> {
+  return completeDialerTask(session, await getAssignedTask(session, id), status, comments);
 }
 
 export async function logoutFromCrm(session: DialerSession): Promise<void> {
+  savedLogs.clear();
   try {
     await postService("app", "logout", {}, session.authKey);
   } catch {

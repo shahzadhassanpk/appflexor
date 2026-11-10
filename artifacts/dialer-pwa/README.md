@@ -34,23 +34,32 @@ The browser sends the following operations through Vite's CRM proxy:
 - Available tasks: same service,
   `{method:"GET",path:"/task?candidateGroup=DIALER_APP&unassigned=true",data:{}}`.
 - Lead variables: same service, `GET /task/{id}/variables?deserializeValues=false`.
-- Completion: same service, `POST /task/{id}/complete`,
-  `{variables:{status:{value:"HOT",type:"String"},comments:{value:"...",type:"String"}}}`.
-  Existing matching status/comment variable names are preserved.
+- Claim: `bpm.data`, `{method:"POST",path:"/task/{id}/claim",data:{userId:"<username>"}}`.
+- Save: `POST /app/service?service.key=update.formData`. A new `dialer_log`
+  entry (`id:"new"`, `action:"update"`, `mode:"formData"`, `saveOrUpdate:"Yes"`)
+  contains only name, phone, status, comments and business_key in its formData.
+- Completion: save first, then `POST /bpm/service?service.key=complete.task`,
+  `{method:"POST",path:"/task/{id}/complete",data:{businessKey:"...",variables:{status:{value:"HOT"}}}}`.
 - Logout: `POST /app/service?service.key=logout`.
 
-The Camunda 7 `bpm.data` completion contract is intentional: it matches
-Appflexor's active `StepProcessor7`, rather than the separate Camunda 8
-`complete.task` service.
+The user explicitly confirmed `update.formData` and `complete.task` for this flow.
+The business key comes from business_key/businessKey variables, falling back to
+the process instance businessKey. Missing keys block saving rather than creating
+an unlinked log. An identical confirmed save is reused for completion retries
+while this app instance remains open; a browser reload or an ambiguous network
+failure cannot guarantee exactly-once inserts without upstream idempotency.
 
 ## Lead tasks
 
-The **Assigned** list shows the signed-in user's tasks with a usable phone
-variable. The separate **Available** list shows unassigned tasks in the
+The **Assigned** list shows the signed-in user's tasks, including claimed tasks
+without a phone number. The separate **Available** list shows unassigned tasks in the
 `DIALER_APP` candidate group, including tasks without a recognized phone variable.
 If variable enrichment fails, the basic available card remains visible with an
-explicit details warning. Available tasks are read-only; they are not
-automatically claimed. Available tasks appear above the assigned list.
+explicit details warning. Each Available task has a Call action that claims it
+before opening the call dialog or native dialer. Failed/racing claims never
+start calls. Closing the dialog leaves the task assigned, accessible from Assigned.
+Save leaves it assigned; Complete saves first and only then completes. Available
+tasks appear above the assigned list.
 For this POC, each queue scans the first 100 returned tasks and indicates when
 more exist. Both lists refresh periodically, on focus, and with their refresh
 buttons.
@@ -65,7 +74,7 @@ Recognized variable aliases (case-insensitive):
 | Comments | `comments`, `comment`, `call_comments`, `callComments`, `notes` |
 | Due date | Engine task `due`, then `due_date`, `dueDate`, `due` |
 
-For a new status/comment variable, use `status` / `comments`. Only HOT, RECALL,
+Only HOT, RECALL,
 REJECTION are accepted. The client rechecks ownership immediately before completing;
 Appflexor remains responsible for enforcing access permissions on every request.
 Dialing opens a sanitized `tel:` link; the browser cannot observe whether a call
@@ -93,6 +102,7 @@ was placed, answered or ended. Completion is always a separate explicit action.
 ## Checks
 
 - `pnpm --filter @workspace/dialer-pwa run typecheck`
+- `node --test artifacts/dialer-pwa/tests/available-tasks.test.mjs`
 - `PORT=23226 BASE_PATH=/dialer/ pnpm --filter @workspace/dialer-pwa run build`
 - For browser checks, intercept the two CRM service paths with synthetic
   responses; do not complete live CRM tasks or use real credentials.
