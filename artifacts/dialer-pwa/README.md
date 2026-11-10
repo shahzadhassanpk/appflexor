@@ -35,12 +35,13 @@ The browser sends the following operations through Vite's CRM proxy:
   `{method:"GET",path:"/task?candidateGroup=DIALER_APP&unassigned=true",data:{}}`.
 - Lead variables: same service, `GET /task/{id}/variables?deserializeValues=false`.
 - Claim: `bpm.data`, `{method:"POST",path:"/task/{id}/claim",data:{userId:"<username>"}}`.
-- Save: `POST /app/service?service.key=update.formData`. A new `dialer_log`
-  entry (`id:"new"`, `action:"update"`, `mode:"formData"`, `saveOrUpdate:"Yes"`)
+- Save: `POST /app/service?service.key=update.formData`. Upsert a `dialer_log`
+  entry (`id:task.id`, `action:"update"`, `mode:"formData"`, `saveOrUpdate:"Yes"`)
   contains only name, phone, status, comments and business_key in its formData.
   After saving the record, `bpm.data` POST `/task/{id}/variables` sets
-  `{modifications:{status:{value:"HOT",type:"String"}}}` without completing.
-  A failed status update is reported explicitly; an unchanged retry reuses the
+  `{modifications:{status:{value:"HOT",type:"String"},comments:{value:"...",type:"String"}}}`
+  without completing. Both variables are read back before success is reported.
+  A failed variable update is reported explicitly; an unchanged retry reuses the
   confirmed log and retries the variable update.
 - Completion: save first, then `POST /bpm/service?service.key=complete.task`,
   `{method:"POST",path:"/task/{id}/complete",data:{businessKey:"...",variables:{status:{value:"HOT"}}}}`.
@@ -50,8 +51,9 @@ The user explicitly confirmed `update.formData` and `complete.task` for this flo
 The business key comes from business_key/businessKey variables, falling back to
 the process instance businessKey. Missing keys block saving rather than creating
 an unlinked log. An identical confirmed save is reused for completion retries
-while this app instance remains open; a browser reload or an ambiguous network
-failure cannot guarantee exactly-once inserts without upstream idempotency.
+while this app instance remains open. The stable task ID is sent on every
+changed save and after reloads, so CRM upserts target the same record instead of
+inserting a new log for each save.
 
 ## Lead tasks
 
@@ -59,11 +61,23 @@ The **Assigned** list shows the signed-in user's tasks, including claimed tasks
 without a phone number. The separate **Available** list shows unassigned tasks in the
 `DIALER_APP` candidate group, including tasks without a recognized phone variable.
 If variable enrichment fails, the basic available card remains visible with an
-explicit details warning. Each Available task has a Call action that claims it
-before opening the call dialog or native dialer. Failed/racing claims never
-start calls. Closing the dialog leaves the task assigned, accessible from Assigned.
-Save leaves it assigned; Complete saves first and only then completes. Available
-tasks appear above the assigned list.
+explicit details warning. Available and Assigned are separate tabs (Available
+opens by default). Available has individual selection checkboxes, Select all,
+and Claim selected; it has no Call buttons. Bulk claims use up to five concurrent
+atomic Camunda claim requests, report partial failures, and refresh both lists
+afterward. Claiming never opens the dialog or dialer. Select all covers the loaded
+batch, not unreturned upstream tasks. Call claimed tasks from Assigned.
+Closing the dialog leaves the task assigned, accessible from Assigned.
+Save leaves it assigned; Complete saves first and only then completes.
+The call dialog has Manual / Auto-dial next radios (Manual by default). With
+auto-dial enabled, only confirmed completion starts the next call: prefer the
+next assigned task with a dialable number, otherwise claim an available one
+before dialing. Save, failed completion, no dialable tasks, claim conflicts and
+offline errors never start another call. The preference lasts for the current
+queue session. Browsers may block automatic `tel:` navigation after an API
+request; the next task's dialog retains a direct Dial again link.
+Assigned cards show Pending until completed and display the saved comments below
+the task details, including after a refresh.
 For this POC, each queue scans the first 100 returned tasks and indicates when
 more exist. Both lists refresh periodically, on focus, and with their refresh
 buttons.

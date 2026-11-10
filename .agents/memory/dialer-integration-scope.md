@@ -25,10 +25,34 @@ reintroduce shared `/api/dialer` routes. Scope proxy URLs beneath the Dialer's
 preview path so they cannot be handled by the main Appflexor artifact.
 
 Agents must claim an Available task before opening its call dialog or dialing.
-Save creates a `dialer_log` record with only name, phone, status, comments and
+Available and Assigned must be tabs. Available has individual/all selection
+checkboxes and a Claim action, not Call buttons; refresh both queues after
+claiming. Bulk claiming must not open the dialer or call dialog.
+
+**Why:** the user changed the Available workflow to select-and-claim, while
+retaining calling from Assigned.
+
+Save upserts a `dialer_log` record with only name, phone, status, comments and
 business_key; it must not complete the task. Complete saves the log first, then
 completes the task. Name and phone are read-only in the dialog.
-Save must also update the task's status variable, as explicitly requested by the user.
+Use task.id as the dialer_log request record id with saveOrUpdate set to "Yes",
+not id "new".
+
+**Why:** the user explicitly changed repeated saves to update one log per task
+rather than create another log each time.
+
+Save must also update the task's status and comments variables. Display saved
+comments beneath Assigned task details, and label incomplete Assigned tasks
+Pending rather than Draft, as explicitly requested by the user.
+Assigned tasks must show a Call control that opens the native dialer with `tel:`,
+not only a navigation arrow.
+
+The call dialog must offer a radio choice to auto-dial the next task only after
+successful completion. Default to Manual, and still claim any Available task
+before dialing it.
+
+**Why:** the user requested an auto-dial-next-on-completion-success radio; Save
+and failed completion must not start another call.
 
 **Why:** the user requires claim-before-call to prevent two agents calling the
 same lead, and explicitly confirmed `/app/service?service.key=update.formData`
@@ -39,3 +63,11 @@ overrides the older choice to complete via `bpm.data`.
 `data.businessKey`, `data.variables.status.value`) even though Appflexor also has
 a different Camunda 8 caller using the same service key. Never complete after a
 failed save or open a call after a failed claim.
+
+Treat the persisted task variable and the displayed queue badge as one Save
+requirement, not separate follow-up work.
+
+**Why:** the user reported that the queue still showed Unset after a status save.
+
+**How to apply:** verify the variable readback before reporting success, then
+update the queue/detail state and filter counts without waiting for polling.

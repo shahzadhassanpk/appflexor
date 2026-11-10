@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTaskList, getAssignedTask, claimAvailableTask, assignedTasksKey, availableTasksKey, taskDetailKey, type DialerSession, type DialerTask, type DialerTaskList } from "@/lib/crm";
-import { AlertTriangle, ChevronRight, Loader2, Phone, PhoneOff, RefreshCw, Search, X } from "lucide-react";
+import { getTaskList, getAssignedTask, claimAvailableTask, claimTask, assignedTasksKey, availableTasksKey, taskDetailKey, type DialerSession, type DialerTask, type DialerTaskList } from "@/lib/crm";
+import { AlertTriangle, Loader2, Phone, PhoneOff, RefreshCw, Search, X } from "lucide-react";
 import { CallDialog } from "@/components/call-dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useOnline } from "@/hooks/use-device";
 import { telHref } from "@/lib/dialer";
 import { StatusPill } from "@/components/chrome";
-import { OUTCOMES, errMessage, formatDate, hasDraft, isOutcome, isOverdue, sanitizePhone } from "@/lib/dialer";
+import { OUTCOMES, errMessage, formatDate, isOutcome, isOverdue, sanitizePhone } from "@/lib/dialer";
 import { cn } from "@/lib/utils";
 
 type Filter = "ALL" | "HOT" | "RECALL" | "REJECTION" | "UNSET";
@@ -21,39 +23,122 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialHint, setDialHint] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [claimNotice, setClaimNotice] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("available");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const online = useOnline();
+  const availableIds = useMemo(() => available.data?.tasks.map(t => t.id) ?? [], [available.data]);
+  const selectedIds = availableIds.filter(id => selected.has(id));
+  const allSelected = availableIds.length > 0 && selectedIds.length === availableIds.length;
+  useEffect(() => {
+    setSelected(old => {
+      const next = new Set([...old].filter(id => availableIds.includes(id)));
+      return next.size === old.size ? old : next;
+    });
+  }, [availableIds]);
   const [openError, setOpenError] = useState<string | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [autoDialNext, setAutoDialNext] = useState(false);
+  const [nextNotice, setNextNotice] = useState<string | null>(null);
+  const [advancing, setAdvancing] = useState(false);
+  const advancingRef = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
-  const claim = useMutation({ mutationFn: (id: string) => claimAvailableTask(session, id) });
-
-  const onCall = (id: string) => {
-    if (claim.isPending) return;
-    setClaimError(null);
-    claim.mutate(id, {
-      onSuccess: (task) => {
-        qc.setQueryData<DialerTaskList>(availableTasksKey, (old) => old ? { ...old, tasks: old.tasks.filter((t) => t.id !== id) } : old);
-        qc.setQueryData<DialerTaskList>(assignedTasksKey, (old) => old ? { ...old, tasks: [task, ...old.tasks.filter((t) => t.id !== task.id)] } : old);
-        qc.invalidateQueries({ queryKey: availableTasksKey });
-        qc.invalidateQueries({ queryKey: assignedTasksKey });
-        const tel = telHref(task.phone);
-        setDialHint(tel ? "If your phone app did not open, tap Dial again." : null);
-        setDialogTask(task);
-        setDialogOpen(true);
-        if (tel) {
-          // Some browsers block navigation that is not tied to a user gesture; Dial again is the fallback.
-          try { window.location.href = tel; } catch { /* blocked: user can tap Dial again */ }
+  const onCompleted = async (completedId: string) => {
+    if (!autoDialNext || advancingRef.current) return;
+    advancingRef.current = true;
+    setAdvancing(true);
+    setNextNotice("Finding the next task to call…");
+    try {
+      if (!navigator.onLine) throw new Error("You are offline. Reconnect and select the next task manually.");
+      const assigned = await getTaskList(session, "assigned");
+      if (!mounted.current) return;
+      const nextAssigned = assigned.tasks.find(t => t.id !== completedId && telHref(t.phone));
+      let next: DialerTask;
+      if (nextAssigned) {
+        next = await getAssignedTask(session, nextAssigned.id);
+      } else {
+        const candidates = await getTaskList(session, "available");
+        if (!mounted.current) return;
+        const candidate = candidates.tasks.find(t => t.id !== completedId && telHref(t.phone));
+        if (!candidate) {
+          setNextNotice("No more tasks with dialable phone numbers. Auto-dial stopped.");
+          return;
         }
-      },
-      onError: (err) => {
-        setClaimError(errMessage(err, "Could not claim this task. It may have been taken by another agent."));
-        qc.invalidateQueries({ queryKey: availableTasksKey });
+        // Never dial an available lead before Camunda confirms the claim.
+        next = await claimAvailableTask(session, candidate.id);
+      }
+      if (!mounted.current) return;
+      const tel = telHref(next.phone);
+      if (!tel) throw new Error("The next task no longer has a dialable number. Select another task manually.");
+      qc.setQueryData<DialerTaskList>(availableTasksKey, old => old ? { ...old, tasks: old.tasks.filter(t => t.id !== next.id) } : old);
+      qc.setQueryData<DialerTaskList>(assignedTasksKey, old => old ? { ...old, tasks: [next, ...old.tasks.filter(t => t.id !== next.id)] } : old);
+      setDialogTask(next);
+      setDialogOpen(true);
+      setDialHint("Auto-dial next is enabled. If your phone app did not open, tap Dial again.");
+      setNextNotice(null);
+      try { window.location.href = tel; } catch { /* Dial again remains a direct user-gesture fallback. */ }
+    } catch (error) {
+      if (mounted.current) setNextNotice(`Auto-dial stopped: ${error instanceof Error ? error.message : "Could not open the next task."}`);
+    } finally {
+      advancingRef.current = false;
+      if (mounted.current) {
+        setAdvancing(false);
         qc.invalidateQueries({ queryKey: assignedTasksKey });
-      },
-    });
+        qc.invalidateQueries({ queryKey: availableTasksKey });
+      }
+    }
+  };
+
+  const claim = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const succeeded: string[] = [];
+      const failed: { id: string; message: string }[] = [];
+      for (let offset = 0; offset < ids.length; offset += 5) {
+        if (!mounted.current) break;
+        await Promise.all(ids.slice(offset, offset + 5).map(async id => {
+          try {
+            await claimTask(session, id);
+            succeeded.push(id);
+          } catch (error) {
+            failed.push({ id, message: errMessage(error, "Could not claim this task.") });
+          }
+        }));
+      }
+      return { succeeded, failed };
+    },
+    onSuccess: async ({ succeeded, failed }) => {
+      if (!mounted.current) return;
+      await qc.cancelQueries({ queryKey: availableTasksKey });
+      qc.setQueryData<DialerTaskList>(availableTasksKey, old => old ? {
+        ...old, tasks: old.tasks.filter(t => !succeeded.includes(t.id)),
+      } : old);
+      setSelected(new Set(failed.map(item => item.id)));
+      setClaimNotice(`${succeeded.length} task${succeeded.length === 1 ? "" : "s"} claimed.`);
+      setClaimError(failed.length
+        ? `${failed.length} task${failed.length === 1 ? "" : "s"} could not be claimed. ${failed.map(item => `${item.id}: ${item.message}`).join(" ")}`
+        : null);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: availableTasksKey }),
+        qc.invalidateQueries({ queryKey: assignedTasksKey }),
+      ]);
+    },
+    onError: error => setClaimError(errMessage(error, "Could not claim the selected tasks.")),
+  });
+
+  const claimSelected = () => {
+    if (!online || claim.isPending || advancingRef.current || selectedIds.length === 0) return;
+    setClaimError(null);
+    setClaimNotice(null);
+    claim.mutate([...selectedIds]);
   };
 
   const openAssigned = async (id: string) => {
-    if (openingId) return;
+    if (openingId || advancingRef.current) return;
     setOpenError(null);
     setOpeningId(id);
     try {
@@ -86,7 +171,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   }, [tasks, search, filter]);
 
   const assignedSection = (
-    <section aria-label="Assigned tasks" className="mt-10 border-t border-border pt-6">
+    <section aria-label="Assigned tasks">
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="tabnum text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Assigned tasks</p>
@@ -173,18 +258,18 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                 const phone = sanitizePhone(t.phone);
                 const due = formatDate(t.dueDate);
                 const overdue = isOverdue(t.dueDate);
-                const draft = hasDraft(session.username, t.id);
                 return (
                   <li key={t.id} className="rise" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
-                    <button type="button" onClick={() => openAssigned(t.id)} disabled={!!openingId} data-testid={`card-task-${t.id}`}
-                      className="press group flex w-full text-left disabled:opacity-70 items-center gap-3 rounded-2xl border border-card-border bg-card p-3.5 transition-shadow hover:shadow-[0_6px_20px_-12px_hsl(var(--primary)/.5)]">
+                    <div className="group flex w-full items-center gap-3 rounded-2xl border border-card-border bg-card p-3.5 transition-shadow hover:shadow-[0_6px_20px_-12px_hsl(var(--primary)/.5)]">
+                      <button type="button" onClick={() => openAssigned(t.id)} disabled={!!openingId || advancing} data-testid={`card-task-${t.id}`}
+                        className="press flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-70">
                       <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-sm font-bold text-primary">
                         {initials(t.name)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span data-testid={`text-name-${t.id}`} className="truncate font-bold">{t.name || "Unnamed lead"}</span>
-                          {draft && <span className="shrink-0 rounded bg-accent/15 px-1.5 text-[10px] font-bold uppercase text-accent">Draft</span>}
+                          <span data-testid={`text-pending-${t.id}`} className="shrink-0 rounded bg-accent/15 px-1.5 text-[10px] font-bold uppercase text-accent">Pending</span>
                         </div>
                         <div data-testid={`text-phone-${t.id}`} className={cn("tabnum truncate text-[13px]", phone ? "text-foreground/80" : "text-destructive")}>
                           {t.phone || "No phone"}{!phone && t.phone ? " (invalid)" : ""}
@@ -196,9 +281,33 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                           </span>
                           {t.taskName && <span className="truncate">· {t.taskName}</span>}
                         </div>
+                        {t.comments && (
+                          <p data-testid={`text-comments-${t.id}`} className="mt-2 whitespace-pre-wrap break-words text-xs text-muted-foreground">
+                            {t.comments}
+                          </p>
+                        )}
                       </div>
-                      {openingId === t.id ? <Loader2 className="h-5 w-5 shrink-0 animate-spin text-muted-foreground" /> : <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />}
-                    </button>
+                      </button>
+                      {phone ? (
+                        <a href={telHref(t.phone)!} data-testid={`button-call-assigned-${t.id}`}
+                          onClick={(event) => {
+                            if (advancingRef.current) { event.preventDefault(); return; }
+                            void openAssigned(t.id);
+                          }}
+                          aria-disabled={advancing}
+                          tabIndex={advancing ? -1 : undefined}
+                          aria-label={`Call ${t.name}`}
+                          className="press flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground">
+                          <Phone className="h-4 w-4" /> Call
+                        </a>
+                      ) : (
+                        <button type="button" disabled data-testid={`button-call-assigned-${t.id}`}
+                          title="No dialable phone number"
+                          className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground opacity-40">
+                          <PhoneOff className="h-4 w-4" /> Call
+                        </button>
+                      )}
+                    </div>
                   </li>
                 );
               })}
@@ -217,6 +326,17 @@ export default function QueuePage({ session }: { session: DialerSession }) {
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-5">
+      {nextNotice && <p role="status" data-testid="text-auto-dial-status" className="mb-4 rounded-xl border border-border bg-card px-4 py-3 text-sm">{nextNotice}</p>}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList aria-label="Task lists" className="mb-5 grid h-12 w-full grid-cols-2 rounded-xl">
+          <TabsTrigger value="available" data-testid="tab-available" className="h-10 rounded-lg">
+            Available <span className="tabnum ml-2">{available.data?.tasks.length ?? "…"}</span>
+          </TabsTrigger>
+          <TabsTrigger value="assigned" data-testid="tab-assigned" className="h-10 rounded-lg">
+            Assigned <span className="tabnum ml-2">{q.data?.tasks.length ?? "…"}</span>
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="available">
       <section aria-labelledby="available-heading">
         <div className="flex items-end justify-between gap-3">
           <div>
@@ -225,12 +345,32 @@ export default function QueuePage({ session }: { session: DialerSession }) {
               Available <span className="tabnum text-muted-foreground">{available.data?.tasks.length ?? ""}</span>
             </h2>
           </div>
-          <button data-testid="button-refresh-available" onClick={() => available.refetch()} disabled={available.isFetching}
+          <button data-testid="button-refresh-available" onClick={() => available.refetch()} disabled={available.isFetching || claim.isPending}
             className="press flex h-9 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-semibold hover:bg-secondary">
             <RefreshCw className={cn("h-3.5 w-3.5", available.isFetching && "animate-spin")} /> Refresh
           </button>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">Unassigned tasks available to the DIALER_APP candidate group.</p>
+        {availableIds.length > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-3">
+            <label className="flex min-h-10 cursor-pointer items-center gap-2 text-sm font-semibold">
+              <input ref={node => { if (node) node.indeterminate = selectedIds.length > 0 && !allSelected; }}
+                type="checkbox" data-testid="checkbox-select-all"
+                checked={allSelected} disabled={claim.isPending || advancing}
+                onChange={event => setSelected(event.target.checked ? new Set(availableIds) : new Set())}
+                className="h-5 w-5 accent-primary" />
+              {available.data?.hasMore ? "Select all loaded" : "Select all"} <span className="tabnum text-xs text-muted-foreground">({selectedIds.length}/{availableIds.length})</span>
+            </label>
+            <button type="button" data-testid="button-claim-selected" onClick={claimSelected}
+              disabled={!online || selectedIds.length === 0 || claim.isPending || advancing}
+              className="press flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-40">
+              {claim.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {claim.isPending ? "Claiming…" : `Claim selected (${selectedIds.length})`}
+            </button>
+          </div>
+        )}
+        {!online && <p className="mt-2 text-xs text-destructive">Reconnect to claim tasks.</p>}
+        {claimNotice && <p role="status" data-testid="text-claim-notice" className="mt-3 text-sm">{claimNotice}</p>}
 
         {claimError && (
           <div data-testid="text-claim-error" role="alert" className="mt-3 flex items-center gap-2 rounded-xl bg-destructive/8 px-3 py-2 text-xs text-destructive">
@@ -260,6 +400,15 @@ export default function QueuePage({ session }: { session: DialerSession }) {
               return (
                 <li key={task.id} data-testid={`card-available-${task.id}`} className="rise rounded-2xl border border-card-border bg-card p-3.5" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
                   <div className="flex items-start gap-3">
+                    <input type="checkbox" data-testid={`checkbox-task-${task.id}`}
+                      aria-label={`Select ${task.name || task.taskName}`}
+                      checked={selected.has(task.id)} disabled={claim.isPending || advancing}
+                      onChange={event => setSelected(old => {
+                        const next = new Set(old);
+                        if (event.target.checked) next.add(task.id); else next.delete(task.id);
+                        return next;
+                      })}
+                      className="mt-3 h-5 w-5 shrink-0 accent-primary" />
                     <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-sm font-bold text-primary">{initials(task.name)}</div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">{task.name || "Unnamed lead"}</p>
@@ -276,11 +425,6 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                       </div>
                       {task.comments && <p className="mt-2 line-clamp-2 whitespace-pre-wrap text-xs text-muted-foreground">{task.comments}</p>}
                     </div>
-                    <button type="button" data-testid={`button-call-${task.id}`} onClick={() => onCall(task.id)} disabled={claim.isPending}
-                      className="press flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground disabled:opacity-40">
-                      {claim.isPending && claim.variables === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />}
-                      {claim.isPending && claim.variables === task.id ? "Claiming" : "Call"}
-                    </button>
                   </div>
                 </li>
               );
@@ -293,8 +437,11 @@ export default function QueuePage({ session }: { session: DialerSession }) {
           </p>
         )}
       </section>
-      {assignedSection}
+        </TabsContent>
+        <TabsContent value="assigned">{assignedSection}</TabsContent>
+      </Tabs>
       <CallDialog session={session} task={dialogTask} open={dialogOpen} dialHint={dialHint}
+        autoDialNext={autoDialNext} onAutoDialNextChange={setAutoDialNext} onCompleted={onCompleted}
         onOpenChange={(o) => { setDialogOpen(o); if (!o) setDialHint(null); }} />
     </main>
   );

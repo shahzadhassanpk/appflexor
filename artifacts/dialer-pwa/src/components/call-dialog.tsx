@@ -17,9 +17,12 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   /** Shown when the automatic native dial after claim may have been blocked. */
   dialHint?: string | null;
+  autoDialNext: boolean;
+  onAutoDialNextChange: (enabled: boolean) => void;
+  onCompleted: (taskId: string) => void;
 };
 
-export function CallDialog({ session, task, open, onOpenChange, dialHint }: Props) {
+export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDialNext, onAutoDialNextChange, onCompleted }: Props) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const online = useOnline();
@@ -70,8 +73,16 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint }: Prop
     if (!task || !status || !canAct) return;
     setError(null); setSavedNote(null);
     save.mutate({ task, status, comments }, {
-      onSuccess: () => {
+      onSuccess: async () => {
         setSavedNote(`Call log saved as ${status}. Task stays assigned to you.`);
+        // Cancel older reads before applying the confirmed write, so an
+        // in-flight queue response cannot restore the previous Unset badge.
+        await qc.cancelQueries({ queryKey: assignedTasksKey });
+        qc.setQueryData<DialerTaskList>(assignedTasksKey, (old) => old ? {
+          ...old,
+          tasks: old.tasks.map(t => t.id === task.id ? { ...t, status, comments } : t),
+        } : old);
+        qc.setQueryData<DialerTask>(taskDetailKey(task.id), old => ({ ...(old ?? task), status, comments }));
         qc.invalidateQueries({ queryKey: assignedTasksKey });
         toast({ title: "Call log saved", description: `${task.name || "Lead"} remains in your assigned tasks.` });
       },
@@ -95,6 +106,7 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint }: Prop
         toast({ title: `${task.name || "Lead"} logged as ${OUTCOME_META[status].label}`, description: "Task completed in Appflexor." });
         initFor.current = null;
         onOpenChange(false);
+        onCompleted(task.id);
       },
       onError: (err) => setError(errMessage(err, "Could not complete the task. Your entries are kept.")),
     });
@@ -161,6 +173,22 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint }: Prop
                   onChange={(e) => { setComments(e.target.value); setSavedNote(null); }} placeholder="What was said, best time to call back, next step"
                   className="w-full resize-y rounded-xl border border-input bg-card px-3 py-2.5 text-[15px] outline-none focus:border-accent focus:ring-4 focus:ring-accent/15 disabled:opacity-60" />
               </div>
+
+              <fieldset disabled={busy} className="rounded-xl border border-border px-3 py-2.5">
+                <legend className="px-1 text-xs font-semibold text-muted-foreground">After successful completion</legend>
+                <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input type="radio" name="auto-dial-next" data-testid="radio-dial-manual"
+                      checked={!autoDialNext} onChange={() => onAutoDialNextChange(false)} />
+                    Manual
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input type="radio" name="auto-dial-next" data-testid="radio-dial-next"
+                      checked={autoDialNext} onChange={() => onAutoDialNextChange(true)} />
+                    Auto-dial next
+                  </label>
+                </div>
+              </fieldset>
 
               {!online && <p data-testid="status-call-offline" className="text-xs text-destructive">Offline. Entries are kept on this device; reconnect to save.</p>}
               {savedNote && !error && <p data-testid="text-call-saved" role="status" className="rounded-lg bg-secondary px-3 py-2 text-xs">{savedNote}</p>}

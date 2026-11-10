@@ -219,7 +219,7 @@ function mapTask(task: Record<string, unknown>, variables: Record<string, unknow
     name: findField(variables, FIELD_ALIASES.name, true).value || String(task.name ?? "Unnamed lead"),
     phone: findField(variables, FIELD_ALIASES.phone, true).value,
     dueDate: typeof task.due === "string" ? task.due : findField(variables, FIELD_ALIASES.due).value || null,
-    status: findField(variables, FIELD_ALIASES.status).value,
+    status: findField(variables, FIELD_ALIASES.status, true).value,
     comments: findField(variables, FIELD_ALIASES.comments).value,
     taskName: String(task.name ?? "Lead dialing"),
     created: typeof task.created === "string" ? task.created : null,
@@ -305,9 +305,13 @@ export async function getAssignedTask(
   return mapTask(raw, await variablesFor(session, id, signal));
 }
 
-export async function claimAvailableTask(session: DialerSession, id: string): Promise<DialerTask> {
+export async function claimTask(session: DialerSession, id: string): Promise<void> {
   // Camunda's atomic claim operation arbitrates races between agents.
   await bpmRequest(session, `/task/${encodeURIComponent(id)}/claim`, "POST", { userId: session.username });
+}
+
+export async function claimAvailableTask(session: DialerSession, id: string): Promise<DialerTask> {
+  await claimTask(session, id);
   try {
     return await getAssignedTask(session, id);
   } catch (error) {
@@ -367,7 +371,7 @@ export async function saveDialerLog(
         entity: "dialer_log",
         action: "update",
         mode: "formData",
-        id: "new",
+        id: task.id,
         fileData: [],
         formData: fields,
       }],
@@ -380,12 +384,22 @@ export async function saveDialerLog(
   }
   try {
     await bpmRequest(session, `/task/${encodeURIComponent(task.id)}/variables`, "POST", {
-      modifications: { status: { value: status, type: "String" } },
+      modifications: {
+        status: { value: status, type: "String" },
+        comments: { value: comments, type: "String" },
+      },
     });
+    const confirmed = await variablesFor(session, task.id);
+    if (findField(confirmed, ["status"], true).value !== status) {
+      throw new CrmError(502, "Appflexor did not return the saved status when the task variables were reloaded.");
+    }
+    if (findField(confirmed, ["comments"]).value !== comments) {
+      throw new CrmError(502, "Appflexor did not return the saved comments when the task variables were reloaded.");
+    }
   } catch (error) {
     if (error instanceof CrmError && error.status === 401) throw error;
     throw new CrmError(error instanceof CrmError ? error.status : 502,
-      `The dialer log was saved, but updating the task status failed. Retry Save to update the status without creating another identical log. The task was not completed. ${error instanceof Error ? error.message : ""}`);
+      `The dialer log was saved, but updating the task status or comments failed. Retry Save to update the variables without creating another identical log. The task was not completed. ${error instanceof Error ? error.message : ""}`);
   }
 }
 

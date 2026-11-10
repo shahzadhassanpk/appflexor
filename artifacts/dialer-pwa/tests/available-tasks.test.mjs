@@ -86,6 +86,8 @@ test("claim, save and complete use the confirmed CRM contracts", async (t) => {
   let completeFails = true;
   let claimFails = true;
   let statusFails = true;
+  let ignoreStatusWrite = true;
+  let ignoreCommentsWrite = true;
   t.mock.method(globalThis, "fetch", async (url, options) => {
     const body = JSON.parse(options.body);
     const key = new URL(url, "http://example.test").searchParams.get("service.key");
@@ -108,9 +110,13 @@ test("claim, save and complete use the confirmed CRM contracts", async (t) => {
     if (body.path.includes("/variables?")) return Response.json({ status: "SUCCESS", data: variables });
     if (body.path === "/task/available-task/variables") {
       assert.equal(body.method, "POST");
-      assert.deepEqual(body.data, { modifications: { status: { value: "HOT", type: "String" } } });
+      assert.deepEqual(body.data, { modifications: {
+        status: { value: "HOT", type: "String" },
+        comments: { value: "Interested", type: "String" },
+      } });
       if (statusFails) return Response.json({ status: "FAILED", message: "Status update rejected" });
-      variables.status = { value: body.data.modifications.status.value };
+      if (!ignoreStatusWrite) variables.status = { value: body.data.modifications.status.value };
+      if (!ignoreCommentsWrite) variables.comments = { value: body.data.modifications.comments.value };
       return new Response(null, { status: 204 });
     }
     if (body.path === "/process-instance/process-1") {
@@ -131,13 +137,20 @@ test("claim, save and complete use the confirmed CRM contracts", async (t) => {
     assert.equal(calls.filter(c => c.key === "complete.task").length, 0);
 
     saveFails = false;
-    await assert.rejects(completeDialerTask(session, claimed, "HOT", "Interested"), /log was saved, but updating the task status failed/);
+    await assert.rejects(completeDialerTask(session, claimed, "HOT", "Interested"), /log was saved, but updating the task status or comments failed/);
     assert.equal(calls.filter(c => c.key === "complete.task").length, 0,
       "A failed status update must block completion");
     const insertCountBeforeStatusRetry = calls.filter(c => c.key === "update.formData").length;
     statusFails = false;
+    await assert.rejects(saveDialerLog(session, claimed, "HOT", "Interested"), /did not return the saved status/);
+    assert.equal(calls.filter(c => c.key === "complete.task").length, 0,
+      "An acknowledged but unpersisted variable update must not report Save success or complete");
+    ignoreStatusWrite = false;
+    await assert.rejects(saveDialerLog(session, claimed, "HOT", "Interested"), /did not return the saved comments/);
+    ignoreCommentsWrite = false;
     await saveDialerLog(session, claimed, "HOT", "Interested");
     assert.equal(variables.status.value, "HOT", "Save updates the process status variable");
+    assert.equal(variables.comments.value, "Interested", "Save updates the process comments variable");
     assert.equal(calls.filter(c => c.key === "update.formData").length, insertCountBeforeStatusRetry,
       "Retrying the status update does not duplicate the confirmed log");
     assert.equal(calls.filter(c => c.key === "complete.task").length, 0, "Save alone does not complete");
@@ -146,7 +159,7 @@ test("claim, save and complete use the confirmed CRM contracts", async (t) => {
       saveOrUpdate: "Yes",
       data: [{
         formId: "dialer_log", entity: "dialer_log", action: "update",
-        mode: "formData", id: "new", fileData: [],
+        mode: "formData", id: task.id, fileData: [],
         formData: { name: "Demo Lead", phone: "", status: "HOT", comments: "Interested", business_key: "LEAD-001" },
       }],
     });
@@ -160,6 +173,44 @@ test("claim, save and complete use the confirmed CRM contracts", async (t) => {
       path: "/task/available-task/complete", method: "POST",
       data: { businessKey: "LEAD-001", variables: { status: { value: "HOT" } } },
     });
+  } finally {
+    t.mock.restoreAll();
+  }
+});
+
+test("changed saves upsert the same task-id dialer log", async (t) => {
+  const variables = {
+    name: { value: "Demo Lead" }, phone: { value: "+15550101001" },
+    business_key: { value: "LEAD-UPSERT" },
+  };
+  const records = new Map();
+  const requests = [];
+  const owned = { ...task, id: "upsert-task", assignee: session.username };
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    const body = JSON.parse(options.body);
+    if (url.includes("service.key=update.formData")) {
+      assert.equal(body.saveOrUpdate, "Yes");
+      const entry = body.data[0];
+      assert.equal(entry.id, owned.id);
+      requests.push(entry);
+      records.set(entry.id, entry.formData);
+      return Response.json({ C_STATUS: "SUCCESS" });
+    }
+    if (body.path.endsWith("/variables")) {
+      Object.assign(variables, body.data.modifications);
+      return new Response(null, { status: 204 });
+    }
+    if (body.path.includes("/variables?")) return Response.json({ status: "SUCCESS", data: variables });
+    assert.equal(body.path, `/task/${owned.id}`, "Saving must not call completion");
+    return Response.json({ status: "SUCCESS", data: owned });
+  });
+  try {
+    await saveDialerLog(session, owned, "HOT", "First call");
+    await saveDialerLog(session, owned, "RECALL", "Call tomorrow");
+    assert.equal(requests.length, 2);
+    assert.equal(records.size, 1);
+    assert.equal(records.get(owned.id).status, "RECALL");
+    assert.equal(records.get(owned.id).comments, "Call tomorrow");
   } finally {
     t.mock.restoreAll();
   }

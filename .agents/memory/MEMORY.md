@@ -4,3 +4,4 @@
 - [Inbox CSS location](inbox-css-location.md) — task inbox styles live in camunda/inbox-style.css; imported by both InboxListView.jsx and CommentBox.jsx.
 - [Login pillar alignment](login-pillar-alignment.md) — keep each responsive feature card centered below its matching process-flow circle.
 - [Dialer integration scope](dialer-integration-scope.md) — use Appflexor auth/tasks through browser calls and Vite proxy; no internal Dialer API server or separate accounts/lead storage.
+- [Tab checkbox initialization](tab-checkbox-initialization.md) — initialize native mixed state on DOM attachment; Radix tab remounts can occur after parent effects.
