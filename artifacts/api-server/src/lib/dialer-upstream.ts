@@ -1,5 +1,5 @@
-// Same Appflexor deployment as the existing Appflexor artifact's service proxy.
-const APPFLEXOR_ORIGIN = "https://demo.appflexor.com";
+// Match the Dialer Vite proxy; production API calls use the same CRM deployment.
+const APPFLEXOR_ORIGIN = "https://crm.step2agility.com";
 
 export class DialerError extends Error {
   constructor(public status: number, message: string) {

@@ -30,7 +30,7 @@ before(async () => {
   // Only the external Appflexor boundary is mocked; local routes and cookies are real.
   globalThis.fetch = async (input, init) => {
     const url = new URL(String(input));
-    assert.equal(url.origin, "https://demo.appflexor.com");
+    assert.equal(url.origin, "https://crm.step2agility.com");
     const request = JSON.parse(String(init?.body ?? "{}"));
     const key = url.searchParams.get("service.key");
     const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });

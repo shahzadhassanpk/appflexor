@@ -1,8 +1,21 @@
 # Appflexor Dialer PWA — proof of concept
 
 Separate mobile-first React web app, registered at `/dialer/`. It uses the existing
-Appflexor deployment (`https://demo.appflexor.com`), not a local task database.
+Appflexor CRM deployment (`https://crm.step2agility.com`), not a local task database.
 No example leads, passwords or accounts are seeded.
+
+## CRM proxy
+
+Vite proxies `/dialer/app/service` and `/dialer/bpm/service` to
+`https://crm.step2agility.com/app/service` and
+`https://crm.step2agility.com/bpm/service`, preserving query strings.
+These development proxy paths are scoped to the Dialer, so the main Appflexor
+artifact is unaffected.
+
+The UI continues to use `/api/dialer/*` for server-side session protection.
+That API now targets the same CRM host directly, including in production where
+Vite's development proxy does not run. Upstream authentication tokens remain
+server-side.
 
 ## API contracts reused from Appflexor
 
