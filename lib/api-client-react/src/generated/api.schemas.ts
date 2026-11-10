@@ -5,65 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface DialerCredentials {
-  /**
-     * @minLength 1
-     * @maxLength 200
-     */
-  username: string;
-  /**
-     * @minLength 1
-     * @maxLength 1000
-     */
-  password: string;
-  /** @maxLength 200 */
-  taskDefinitionKey?: string;
-}
-
-export interface DialerSession {
-  username: string;
-  taskDefinitionKey: string;
-}
-
-export interface DialerTask {
-  id: string;
-  name: string;
-  phone: string;
-  /** @nullable */
-  dueDate: string | null;
-  status: string;
-  comments: string;
-  taskName: string;
-  /** @nullable */
-  created: string | null;
-}
-
-export interface DialerTaskList {
-  tasks: DialerTask[];
-  hasMore: boolean;
-  scannedCount: number;
-}
-
-export type DialerOutcomeStatus = typeof DialerOutcomeStatus[keyof typeof DialerOutcomeStatus];
-
-
-export const DialerOutcomeStatus = {
-  HOT: 'HOT',
-  RECALL: 'RECALL',
-  REJECTION: 'REJECTION',
-} as const;
-
-export interface DialerOutcome {
-  status: DialerOutcomeStatus;
-  /** @maxLength 10000 */
-  comments: string;
-}
-
-export interface DialerCompletion {
-  id: string;
-  completed: boolean;
-}
-
 export interface HealthStatus {
   status: string;
 }

@@ -1,15 +1,13 @@
 import { useLocation } from "wouter";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDialerLogout, type DialerSession } from "@workspace/api-client-react";
+import { useMutation } from "@tanstack/react-query";
+import { logoutFromCrm, type DialerSession } from "@/lib/crm";
 import { Loader2, LogOut } from "lucide-react";
 import { InstallButton, Mark } from "@/components/chrome";
-import { clearAllDrafts } from "@/lib/dialer";
 
-export function AppHeader({ session }: { session: DialerSession }) {
-  const qc = useQueryClient();
+export function AppHeader({ session, onLogout }: { session: DialerSession; onLogout: () => void }) {
   const [, navigate] = useLocation();
-  const logout = useDialerLogout();
-  const finish = () => { clearAllDrafts(); qc.clear(); navigate("/login", { replace: true }); };
+  const logout = useMutation({ mutationFn: () => logoutFromCrm(session) });
+  const finish = () => { onLogout(); navigate("/login", { replace: true }); };
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">

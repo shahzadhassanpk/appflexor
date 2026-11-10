@@ -27,6 +27,24 @@ if (!basePath) {
   );
 }
 
+// Same proxy pattern as Appflexor, scoped to the Dialer artifact so requests
+// cannot accidentally reach the main Appflexor app's different upstream.
+const prefix = basePath.replace(/\/$/, '');
+const proxy = {
+  [`${prefix}/app/service`]: {
+    target: 'https://crm.step2agility.com',
+    changeOrigin: true,
+    secure: true,
+    rewrite: (url: string) => url.slice(prefix.length),
+  },
+  [`${prefix}/bpm/service`]: {
+    target: 'https://crm.step2agility.com',
+    changeOrigin: true,
+    secure: true,
+    rewrite: (url: string) => url.slice(prefix.length),
+  },
+};
+
 export default defineConfig({
   base: basePath,
   plugins: [
@@ -69,19 +87,7 @@ export default defineConfig({
     strictPort: true,
     host: '0.0.0.0',
     allowedHosts: true,
-    // Keep external CRM services inside this artifact's preview path.
-    // /dialer/app/service -> CRM /app/service (and likewise for BPM).
-    proxy: Object.fromEntries(
-      ['app', 'bpm'].map((service) => [
-        `${basePath.replace(/\/$/, '')}/${service}/service`,
-        {
-          target: 'https://crm.step2agility.com',
-          changeOrigin: true,
-          rewrite: (url: string) =>
-            url.slice(basePath.replace(/\/$/, '').length),
-        },
-      ]),
-    ),
+    proxy,
     fs: {
       strict: true,
     },
@@ -90,5 +96,6 @@ export default defineConfig({
     port,
     host: '0.0.0.0',
     allowedHosts: true,
+    proxy,
   },
 });

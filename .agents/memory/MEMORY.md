@@ -3,4 +3,4 @@
 - [Appflexor default theme](appflexor-default-theme.md) — default theme changed from "dark" to "light" in S2aApp.jsx to prevent black screen on fresh browser with empty localStorage.
 - [Inbox CSS location](inbox-css-location.md) — task inbox styles live in camunda/inbox-style.css; imported by both InboxListView.jsx and CommentBox.jsx.
 - [Login pillar alignment](login-pillar-alignment.md) — keep each responsive feature card centered below its matching process-flow circle.
-- [Dialer integration scope](dialer-integration-scope.md) — the Dialer POC must reuse Appflexor authentication and workflow tasks, not introduce separate accounts or lead storage.
+- [Dialer integration scope](dialer-integration-scope.md) — use Appflexor auth/tasks through browser calls and Vite proxy; no internal Dialer API server or separate accounts/lead storage.

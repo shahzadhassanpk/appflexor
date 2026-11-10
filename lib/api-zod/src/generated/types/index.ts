@@ -6,11 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export * from './dialerCompletion';
-export * from './dialerCredentials';
-export * from './dialerOutcome';
-export * from './dialerOutcomeStatus';
-export * from './dialerSession';
-export * from './dialerTask';
-export * from './dialerTaskList';
 export * from './healthStatus';

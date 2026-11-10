@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
-import {
-  useGetDialerTasks, getGetDialerTasksQueryKey,
-  useGetDialerAvailableTasks, getGetDialerAvailableTasksQueryKey,
-  type DialerSession,
-} from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { getTaskList, assignedTasksKey, availableTasksKey, type DialerSession } from "@/lib/crm";
 import { AlertTriangle, ChevronRight, PhoneOff, RefreshCw, Search, X } from "lucide-react";
 import { StatusPill } from "@/components/chrome";
 import { OUTCOMES, errMessage, formatDate, hasDraft, isOutcome, isOverdue, sanitizePhone } from "@/lib/dialer";
@@ -13,8 +10,8 @@ import { cn } from "@/lib/utils";
 type Filter = "ALL" | "HOT" | "RECALL" | "REJECTION" | "UNSET";
 
 export default function QueuePage({ session }: { session: DialerSession }) {
-  const q = useGetDialerTasks({ query: { queryKey: getGetDialerTasksQueryKey(), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true } });
-  const available = useGetDialerAvailableTasks({ query: { queryKey: getGetDialerAvailableTasksQueryKey(), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true } });
+  const q = useQuery({ queryKey: assignedTasksKey, queryFn: ({ signal }) => getTaskList(session, "assigned", signal), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true });
+  const available = useQuery({ queryKey: availableTasksKey, queryFn: ({ signal }) => getTaskList(session, "available", signal), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true });
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("ALL");
   const tasks = q.data?.tasks;

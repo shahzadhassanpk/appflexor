@@ -12,20 +12,27 @@ Vite proxies `/dialer/app/service` and `/dialer/bpm/service` to
 These development proxy paths are scoped to the Dialer, so the main Appflexor
 artifact is unaffected.
 
-The UI continues to use `/api/dialer/*` for server-side session protection.
-That API now targets the same CRM host directly, including in production where
-Vite's development proxy does not run. Upstream authentication tokens remain
-server-side.
+The browser calls these service URLs directly using `fetch`, with the same
+`AUTH_KEY` header and JSON request pattern as Appflexor. There are no
+`/api/dialer/*` endpoints and no Dialer API server. All transformation, task
+mapping, and session handling happens in the React app.
+
+Both `server.proxy` and `preview.proxy` are configured. **Static hosting does
+not run Vite's proxy.** The registered production service currently serves static
+files, so a published deployment needs matching web reverse-proxy routes for
+these two service paths before live API calls will work. No business-logic API
+server is needed; do not reintroduce one for the Dialer.
 
 ## API contracts reused from Appflexor
 
-The shared API server exposes `/api/dialer/*` and forwards only the supported
-operations to Appflexor:
+The browser sends the following operations through Vite's CRM proxy:
 
 - Login: `POST /app/service?service.key=login`, `{username,password}`.
   The canonical username is read using `masterKey.tenantData` / `sys.user.profile`.
-- Assigned active tasks: `POST /bpm/service?service.key=bpm.data`,
-  `{method:"GET",path:"/task?assignee=...&active=true&..."}`.
+- Assigned tasks: `POST /bpm/service?service.key=bpm.data`,
+  `{method:"GET",path:"/task?assignee=<username>",data:{}}`.
+- Available tasks: same service,
+  `{method:"GET",path:"/task?candidateGroup=DIALER_APP&unassigned=true",data:{}}`.
 - Lead variables: same service, `GET /task/{id}/variables?deserializeValues=false`.
 - Completion: same service, `POST /task/{id}/complete`,
   `{variables:{status:{value:"HOT",type:"String"},comments:{value:"...",type:"String"}}}`.
@@ -38,11 +45,14 @@ Appflexor's active `StepProcessor7`, rather than the separate Camunda 8
 
 ## Lead tasks
 
-The signed-in user's **assigned active tasks** with a usable phone variable are
-shown. Optionally enter a BPMN task definition key at sign-in to restrict to a
-specific dialing step. Unassigned/candidate tasks are not automatically claimed.
-For this POC, the queue scans the first 100 assigned tasks and indicates when more
-exist; completing tasks and refreshing advances the active queue.
+The **Assigned** list shows the signed-in user's tasks with a usable phone
+variable. The separate **Available** list shows unassigned tasks in the
+`DIALER_APP` candidate group. Available tasks are read-only; they are not
+automatically claimed. Optionally enter a BPMN task definition key at sign-in to
+filter the assigned list to a specific dialing step.
+For this POC, each queue scans the first 100 returned tasks and indicates when
+more exist. Both lists refresh periodically, on focus, and with their refresh
+buttons.
 
 Recognized variable aliases (case-insensitive):
 
@@ -55,19 +65,21 @@ Recognized variable aliases (case-insensitive):
 | Due date | Engine task `due`, then `due_date`, `dueDate`, `due` |
 
 For a new status/comment variable, use `status` / `comments`. Only HOT, RECALL,
-REJECTION are accepted. The API rechecks ownership immediately before completing.
+REJECTION are accepted. The client rechecks ownership immediately before completing;
+Appflexor remains responsible for enforcing access permissions on every request.
 Dialing opens a sanitized `tel:` link; the browser cannot observe whether a call
 was placed, answered or ended. Completion is always a separate explicit action.
 
 ## Sessions and installation
 
-- Appflexor tokens remain server-side. The browser receives only an opaque
-  HttpOnly, SameSite=Strict session cookie, valid for eight hours.
-- Sessions are **in memory for this POC**. Restarting/scaling the API server
-  requires users to sign in again. Use a shared durable session store before
-  multi-instance production use.
-- A secure first-party browser context is required for sign-in; use the app in
-  its own tab if your browser blocks cookies inside the preview iframe.
+- The Appflexor login API returns an `AUTH_KEY`. As a direct browser client,
+  the app must hold this token in JavaScript. It is kept in this app's
+  `sessionStorage` (not shared with Appflexor's local storage), so reloads in the
+  same tab keep the session. Passwords are never stored.
+- Sign-out clears the token, task cache and drafts, even if CRM logout fails.
+  An expired-session response returns the user to sign-in.
+- This architecture cannot use server-only HttpOnly token storage. Protect the
+  browser from untrusted scripts, and use HTTPS. Appflexor controls token expiry.
 - Publish over HTTPS and open `/dialer/` directly on a phone to install.
   Android/Chrome: Install app (or browser menu). iOS/Safari: Share → Add to Home Screen.
 - Production builds register a service worker scoped only to `/dialer/`.
@@ -80,6 +92,6 @@ was placed, answered or ended. Completion is always a separate explicit action.
 ## Checks
 
 - `pnpm --filter @workspace/dialer-pwa run typecheck`
-- `pnpm --filter @workspace/api-server run typecheck`
-- `scripts/node_modules/.bin/tsx --test artifacts/api-server/tests/dialer.test.ts`
-  (mocks only the external Appflexor boundary; never changes live tasks)
+- `PORT=23226 BASE_PATH=/dialer/ pnpm --filter @workspace/dialer-pwa run build`
+- For browser checks, intercept the two CRM service paths with synthetic
+  responses; do not complete live CRM tasks or use real credentials.

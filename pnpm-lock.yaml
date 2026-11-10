@@ -244,7 +244,7 @@ importers:
         version: 6.3.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tinymce@7.9.3)
       '@uiw/react-codemirror':
         specifier: ^4.25.10
-        version: 4.25.10(@codemirror/view@6.43.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 4.25.10(@codemirror/view@6.43.1)(codemirror@6.0.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@uiw/react-md-editor':
         specifier: ^4.1.1
         version: 4.1.1(@types/react@19.2.14)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -668,7 +668,7 @@ importers:
         version: 5.1.1(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@uiw/react-codemirror':
         specifier: ^4.19.11
-        version: 4.25.10(@codemirror/view@6.43.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        version: 4.25.10(@codemirror/view@6.43.1)(codemirror@6.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@uiw/react-md-editor':
         specifier: ^4.0.5
         version: 4.1.1(@types/react@18.3.31)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -1139,9 +1139,6 @@ importers:
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 5.2.0(vite@7.3.3(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4))
-      '@workspace/api-client-react':
-        specifier: workspace:*
-        version: link:../../lib/api-client-react
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -2610,6 +2607,7 @@ packages:
   '@plotly/mapbox-gl@1.13.4':
     resolution: {integrity: sha512-sR3/Pe5LqT/fhYgp4rT4aSFf1rTsxMbGiH6Hojc7PH36ny5Bn17iVFUjpzycafETURuFbLZUfjODO8LvSI+5zQ==}
     engines: {node: '>=6.4.0'}
+    deprecated: This package is deprecated as of August 2026. plotly.js v4 uses MapLibre for map traces — see https://github.com/maplibre/maplibre-gl-js.
 
   '@plotly/point-cluster@3.1.9':
     resolution: {integrity: sha512-MwaI6g9scKf68Orpr1pHZ597pYx9uP8UEFXLPbsCmuw3a84obwz6pnMXGc90VhgDNeNiLEdlmuK7CPo+5PIxXw==}
@@ -3778,6 +3776,7 @@ packages:
     resolution: {integrity: sha512-DzgSMwM5qzB7v1FIb4gEeriYt67iiay756/HIOM9mAbeOVK0MO7rqefHf0O5c0269pJKMW7AH9FjclExD23V9w==}
     peerDependencies:
       '@codemirror/view': '>=6.0.0'
+      codemirror: '>=6.0.0'
       react: 19.1.0
       react-dom: 19.1.0
 
@@ -11466,7 +11465,7 @@ snapshots:
 
   '@uiw/copy-to-clipboard@1.0.21': {}
 
-  '@uiw/react-codemirror@4.25.10(@codemirror/view@6.43.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+  '@uiw/react-codemirror@4.25.10(@codemirror/view@6.43.1)(codemirror@6.0.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       '@babel/runtime': 7.29.2
       '@codemirror/commands': 6.10.3
@@ -11478,7 +11477,7 @@ snapshots:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
 
-  '@uiw/react-codemirror@4.25.10(@codemirror/view@6.43.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@uiw/react-codemirror@4.25.10(@codemirror/view@6.43.1)(codemirror@6.0.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@babel/runtime': 7.29.2
       '@codemirror/commands': 6.10.3

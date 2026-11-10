@@ -1,17 +1,23 @@
 import { useState, type FormEvent } from "react";
 import { useLocation } from "wouter";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDialerLogin, getGetDialerSessionQueryKey } from "@workspace/api-client-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { loginToCrm, saveSession, type DialerSession } from "@/lib/crm";
 import { AlertCircle, ArrowRight, ChevronDown, Eye, EyeOff, Loader2 } from "lucide-react";
 import { InstallButton, Mark, OfflineBar } from "@/components/chrome";
 import { useOnline } from "@/hooks/use-device";
 import { clearAllDrafts, errMessage, errStatus } from "@/lib/dialer";
 
-export default function LoginPage() {
+export default function LoginPage({ onLogin }: { onLogin: (session: DialerSession) => void }) {
   const qc = useQueryClient();
   const [, navigate] = useLocation();
   const online = useOnline();
-  const login = useDialerLogin();
+  const login = useMutation({
+    mutationFn: async ({ data }: { data: { username: string; password: string; taskDefinitionKey?: string } }) => {
+      const session = await loginToCrm(data.username, data.password, data.taskDefinitionKey);
+      saveSession(session);
+      return session;
+    },
+  });
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [tdk, setTdk] = useState("");
@@ -31,7 +37,7 @@ export default function LoginPage() {
         setPassword("");
         qc.clear();
         clearAllDrafts();
-        qc.setQueryData(getGetDialerSessionQueryKey(), session);
+        onLogin(session);
         navigate("/", { replace: true });
       },
       onError: (err) => {

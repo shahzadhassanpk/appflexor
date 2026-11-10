@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  useGetDialerTask, useCompleteDialerTask, getGetDialerTaskQueryKey, getGetDialerTasksQueryKey,
+  getAssignedTask, completeAssignedTask, taskDetailKey, assignedTasksKey, availableTasksKey,
   type DialerSession, type DialerTaskList,
-} from "@workspace/api-client-react";
+} from "@/lib/crm";
 import { AlertTriangle, ArrowLeft, CalendarClock, Check, Loader2, Phone, PhoneOff } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -23,8 +23,11 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const online = useOnline();
-  const q = useGetDialerTask(id, { query: { enabled: !!id, queryKey: getGetDialerTaskQueryKey(id), retry: false, refetchOnWindowFocus: false } });
-  const complete = useCompleteDialerTask();
+  const q = useQuery({ enabled: !!id, queryKey: taskDetailKey(id), queryFn: ({ signal }) => getAssignedTask(session, id, signal), retry: false, refetchOnWindowFocus: false });
+  const complete = useMutation({
+    mutationFn: ({ id: taskId, data }: { id: string; data: { status: Outcome; comments: string } }) =>
+      completeAssignedTask(session, taskId, data.status, data.comments),
+  });
   const task = q.data;
 
   const [status, setStatus] = useState<Outcome | "">("");
@@ -64,9 +67,10 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
         if (!res.completed) { setSubmitError("Appflexor did not confirm completion. Your draft is kept; try again."); setConfirm(false); return; }
         done.current = true;
         removeDraft(session.username, task.id);
-        qc.setQueryData<DialerTaskList>(getGetDialerTasksQueryKey(), (old) => old ? { ...old, tasks: old.tasks.filter((t) => t.id !== task.id) } : old);
-        qc.removeQueries({ queryKey: getGetDialerTaskQueryKey(task.id) });
-        qc.invalidateQueries({ queryKey: getGetDialerTasksQueryKey() });
+        qc.setQueryData<DialerTaskList>(assignedTasksKey, (old) => old ? { ...old, tasks: old.tasks.filter((t) => t.id !== task.id) } : old);
+        qc.removeQueries({ queryKey: taskDetailKey(task.id) });
+        qc.invalidateQueries({ queryKey: assignedTasksKey });
+        qc.invalidateQueries({ queryKey: availableTasksKey });
         setConfirm(false);
         toast({ title: `${task.name || "Lead"} logged as ${OUTCOME_META[status].label}`, description: "Task completed in Appflexor." });
         navigate("/", { replace: true });
