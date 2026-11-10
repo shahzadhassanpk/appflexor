@@ -214,15 +214,24 @@ function findField(variables: Record<string, unknown>, aliases: readonly string[
   return { key: aliases[0], value: "" };
 }
 
+function taskDueDate(task: Record<string, unknown>, variables: Record<string, unknown>): string | null {
+  for (const field of ["due", "dueDate", "due_date"]) {
+    const value = task[field];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return findField(variables, FIELD_ALIASES.due, true).value || null;
+}
+
 function mapTask(task: Record<string, unknown>, variables: Record<string, unknown>): DialerTask {
+  const dueDate = taskDueDate(task, variables);
   return {
     id: String(task.id),
     name: findField(variables, FIELD_ALIASES.name, true).value || String(task.name ?? "Unnamed lead"),
     phone: findField(variables, FIELD_ALIASES.phone, true).value,
-    dueDate: typeof task.due === "string" ? task.due : findField(variables, FIELD_ALIASES.due).value || null,
+    dueDate,
     status: findField(variables, FIELD_ALIASES.status, true).value,
     comments: findField(variables, FIELD_ALIASES.comments).value,
-    recallDateTime: typeof task.due === "string" ? task.due : findField(variables, FIELD_ALIASES.due).value,
+    recallDateTime: dueDate ?? "",
     taskName: String(task.name ?? "Lead dialing"),
     created: typeof task.created === "string" ? task.created : null,
     businessKey: findField(variables, ["business_key", "businessKey"], true).value ||
@@ -416,8 +425,8 @@ export async function saveDialerLog(
       const path = `/task/${encodeURIComponent(task.id)}`;
       await bpmRequest(session, path, "PUT", { due: recallIso });
       const updatedTask = asObject(await bpmRequest(session, path));
-      if (typeof updatedTask.due !== "string" ||
-          new Date(updatedTask.due).getTime() !== new Date(recallIso).getTime()) {
+      const updatedDue = taskDueDate(updatedTask, {});
+      if (!updatedDue || new Date(updatedDue).getTime() !== new Date(recallIso).getTime()) {
         throw new CrmError(502, "Appflexor did not return the updated task due date.");
       }
     }
