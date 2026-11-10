@@ -294,6 +294,16 @@ export async function getTaskList(
         detailsError = error instanceof Error ? error.message : "Could not load task details.";
       }
       const lead = mapTask(task, variables);
+      // Some task-list responses omit a due date that the task-detail API
+      // already returns after a successful RECALL save.
+      if (kind === "assigned" && lead.status === "RECALL" && !lead.dueDate) {
+        const detail = asObject(await bpmRequest(session, `/task/${encodeURIComponent(task.id)}`, "GET", {}, signal));
+        if (detail.assignee !== session.username) {
+          throw new CrmError(403, "This task is no longer assigned to you. Refresh your queue.");
+        }
+        lead.dueDate = taskDueDate(detail, variables);
+        lead.recallDateTime = lead.dueDate ?? "";
+      }
       if (kind === "available") return { ...lead, ...(detailsError ? { detailsError } : {}) };
       return lead;
     }));

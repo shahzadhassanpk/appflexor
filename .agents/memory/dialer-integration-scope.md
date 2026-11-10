@@ -67,10 +67,14 @@ overrides the older choice to complete via `bpm.data`.
 a different Camunda 8 caller using the same service key. Never complete after a
 failed save or open a call after a failed claim.
 
-Treat the persisted task variable and the displayed queue badge as one Save
-requirement, not separate follow-up work.
+Treat persisted task values and their displayed queue values as one Save
+requirement, not separate follow-up work. This includes status, comments and
+the task due date, including after Refresh and a full page reload.
 
-**Why:** the user reported that the queue still showed Unset after a status save.
+**Why:** the user reported that the queue still showed Unset after a status save,
+and later reported No due date even though the due date had been set.
 
 **How to apply:** verify the variable readback before reporting success, then
 update the queue/detail state and filter counts without waiting for polling.
+Confirm the refreshed queue still displays the server-confirmed values; a
+temporary local cache update is not sufficient.

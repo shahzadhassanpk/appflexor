@@ -78,6 +78,35 @@ test("available task cards do not depend on phone variables", async (t) => {
   }
 });
 
+test("assigned tasks read due aliases and recover omitted RECALL due dates from details", async (t) => {
+  const due = "2027-04-05T13:45:00.000+0000";
+  const rows = [
+    { ...task, id: "due-task", assignee: session.username, due },
+    { ...task, id: "alias-task", assignee: session.username, due: "", dueDate: due },
+    { ...task, id: "snake-task", assignee: session.username, due: null, due_date: due },
+    { ...task, id: "omitted-task", assignee: session.username, due: null },
+  ];
+  let detailReads = 0;
+  t.mock.method(globalThis, "fetch", async (_url, options) => {
+    const body = JSON.parse(options.body);
+    if (body.path.startsWith("/task?assignee=")) return Response.json({ status: "SUCCESS", data: rows });
+    if (body.path === "/task/omitted-task") {
+      detailReads++;
+      return Response.json({ status: "SUCCESS", data: { ...rows[3], due } });
+    }
+    assert.match(body.path, /\/variables\?/);
+    return Response.json({ status: "SUCCESS", data: { status: { value: "RECALL" } } });
+  });
+  try {
+    const list = await getTaskList(session, "assigned");
+    assert.deepEqual(list.tasks.map(item => item.dueDate), [due, due, due, due]);
+    assert.deepEqual(list.tasks.map(item => item.recallDateTime), [due, due, due, due]);
+    assert.equal(detailReads, 1);
+  } finally {
+    t.mock.restoreAll();
+  }
+});
+
 test("claim, save and complete use the confirmed CRM contracts", async (t) => {
   const calls = [];
   const ownedTask = { ...task, assignee: session.username, processInstanceId: "process-1" };
@@ -206,7 +235,7 @@ test("changed saves upsert the same task-id dialer log", async (t) => {
     }
     if (body.path.includes("/variables?")) return Response.json({ status: "SUCCESS", data: variables });
     if (body.path.startsWith("/task?assignee=")) {
-      return Response.json({ status: "SUCCESS", data: [owned] });
+      return Response.json({ status: "SUCCESS", data: [{ ...owned, due: "", dueDate: owned.due }] });
     }
     assert.equal(body.path, `/task/${owned.id}`, "Saving must not call completion");
     return Response.json({ status: "SUCCESS", data: owned });

@@ -256,7 +256,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
             <ul className="mt-1 space-y-2">
               {visible.map((t, i) => {
                 const phone = sanitizePhone(t.phone);
-                const due = formatDate(t.dueDate);
+                const due = formatDate(t.dueDate, true);
                 const overdue = isOverdue(t.dueDate);
                 return (
                   <li key={t.id} className="rise" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
@@ -396,7 +396,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
         {available.data && available.data.tasks.length > 0 && (
           <ul data-testid="list-available-tasks" className="mt-4 space-y-2">
             {available.data.tasks.map((task, i) => {
-              const due = formatDate(task.dueDate);
+              const due = formatDate(task.dueDate, true);
               return (
                 <li key={task.id} data-testid={`card-available-${task.id}`} className="rise rounded-2xl border border-card-border bg-card p-3.5" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
                   <div className="flex items-start gap-3">

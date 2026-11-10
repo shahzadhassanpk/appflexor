@@ -41,6 +41,8 @@ The browser sends the following operations through Vite's CRM proxy:
   also requires a next-call date/time; save it as the task's `due` field through
   `bpm.data` PUT `/task/{id}`. It is not stored in a new task variable or log
   field; the task list displays it in the existing due-date slot.
+  The list recognizes `due`, `dueDate` and `due_date`; when an Assigned RECALL
+  row omits the date, it reads the task detail endpoint for the persisted due.
   After saving the record, `bpm.data` POST `/task/{id}/variables` sets
   `{modifications:{status:{value:"HOT",type:"String"},comments:{value:"...",type:"String"}}}`
   without completing. Both variables are read back before success is reported.
