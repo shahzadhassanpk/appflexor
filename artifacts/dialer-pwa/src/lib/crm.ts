@@ -15,6 +15,7 @@ export type DialerTask = {
   comments: string;
   taskName: string;
   created: string | null;
+  detailsError?: string;
 };
 
 export type DialerTaskList = {
@@ -248,9 +249,22 @@ export async function getTaskList(
       if (kind === "available" && task.assignee != null && task.assignee !== "") {
         throw new CrmError(502, "Appflexor returned an assigned task in the available queue.");
       }
-      const lead = mapTask(task, await variablesFor(session, task.id, signal));
       if (session.taskDefinitionKey && kind === "assigned" &&
           task.taskDefinitionKey !== session.taskDefinitionKey) return null;
+      let variables: Record<string, unknown> = {};
+      let detailsError: string | undefined;
+      try {
+        variables = await variablesFor(session, task.id, signal);
+      } catch (error) {
+        // Available task membership comes from the task API, not lead fields.
+        // Keep its basic card visible if optional variable enrichment fails.
+        if (kind !== "available" || signal?.aborted ||
+            (error instanceof DOMException && error.name === "AbortError") ||
+            (error instanceof CrmError && error.status === 401)) throw error;
+        detailsError = error instanceof Error ? error.message : "Could not load task details.";
+      }
+      const lead = mapTask(task, variables);
+      if (kind === "available") return { ...lead, ...(detailsError ? { detailsError } : {}) };
       return /^\+?[\d\s().-]+$/.test(lead.phone) && /\d/.test(lead.phone) ? lead : null;
     }));
     tasks.push(...batch.filter((task): task is DialerTask => task !== null));

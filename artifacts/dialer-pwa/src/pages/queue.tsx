@@ -195,7 +195,12 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                     <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-sm font-bold text-primary">{initials(task.name)}</div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">{task.name || "Unnamed lead"}</p>
-                      <p className="tabnum truncate text-[13px] text-foreground/80">{task.phone}</p>
+                      <p className="tabnum truncate text-[13px] text-foreground/80">{task.phone || "No phone number provided"}</p>
+                      {task.detailsError && (
+                        <p role="status" className="mt-1 text-xs text-destructive">
+                          Task details could not be loaded: {task.detailsError}
+                        </p>
+                      )}
                       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                         <StatusPill status={task.status} />
                         <span className="tabnum">{due ? `Due ${due}` : "No due date"}</span>
