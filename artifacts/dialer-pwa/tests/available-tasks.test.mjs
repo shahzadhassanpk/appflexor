@@ -85,6 +85,7 @@ test("claim, save and complete use the confirmed CRM contracts", async (t) => {
   let saveFails = false;
   let completeFails = true;
   let claimFails = true;
+  let statusFails = true;
   t.mock.method(globalThis, "fetch", async (url, options) => {
     const body = JSON.parse(options.body);
     const key = new URL(url, "http://example.test").searchParams.get("service.key");
@@ -105,6 +106,13 @@ test("claim, save and complete use the confirmed CRM contracts", async (t) => {
       return new Response(null, { status: 204 });
     }
     if (body.path.includes("/variables?")) return Response.json({ status: "SUCCESS", data: variables });
+    if (body.path === "/task/available-task/variables") {
+      assert.equal(body.method, "POST");
+      assert.deepEqual(body.data, { modifications: { status: { value: "HOT", type: "String" } } });
+      if (statusFails) return Response.json({ status: "FAILED", message: "Status update rejected" });
+      variables.status = { value: body.data.modifications.status.value };
+      return new Response(null, { status: 204 });
+    }
     if (body.path === "/process-instance/process-1") {
       return Response.json({ status: "SUCCESS", data: { businessKey: "LEAD-001" } });
     }
@@ -123,7 +131,15 @@ test("claim, save and complete use the confirmed CRM contracts", async (t) => {
     assert.equal(calls.filter(c => c.key === "complete.task").length, 0);
 
     saveFails = false;
+    await assert.rejects(completeDialerTask(session, claimed, "HOT", "Interested"), /log was saved, but updating the task status failed/);
+    assert.equal(calls.filter(c => c.key === "complete.task").length, 0,
+      "A failed status update must block completion");
+    const insertCountBeforeStatusRetry = calls.filter(c => c.key === "update.formData").length;
+    statusFails = false;
     await saveDialerLog(session, claimed, "HOT", "Interested");
+    assert.equal(variables.status.value, "HOT", "Save updates the process status variable");
+    assert.equal(calls.filter(c => c.key === "update.formData").length, insertCountBeforeStatusRetry,
+      "Retrying the status update does not duplicate the confirmed log");
     assert.equal(calls.filter(c => c.key === "complete.task").length, 0, "Save alone does not complete");
     const saved = calls.filter(c => c.key === "update.formData").at(-1).body;
     assert.deepEqual(saved, {

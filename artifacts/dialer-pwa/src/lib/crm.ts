@@ -359,24 +359,34 @@ export async function saveDialerLog(
   };
   const fingerprint = JSON.stringify(fields);
   const key = saveKey(session, task);
-  if (savedLogs.get(key) === fingerprint) return;
-  const payload = await postService("app", "update.formData", {
-    saveOrUpdate: "Yes",
-    data: [{
-      formId: "dialer_log",
-      entity: "dialer_log",
-      action: "update",
-      mode: "formData",
-      id: "new",
-      fileData: [],
-      formData: fields,
-    }],
-  }, session.authKey);
-  const object = asObject(payload);
-  if (String(object.C_STATUS ?? object.status ?? "").toUpperCase() !== "SUCCESS") {
-    throw new CrmError(502, "Appflexor did not confirm that the dialer log was saved. The task was not completed.");
+  if (savedLogs.get(key) !== fingerprint) {
+    const payload = await postService("app", "update.formData", {
+      saveOrUpdate: "Yes",
+      data: [{
+        formId: "dialer_log",
+        entity: "dialer_log",
+        action: "update",
+        mode: "formData",
+        id: "new",
+        fileData: [],
+        formData: fields,
+      }],
+    }, session.authKey);
+    const object = asObject(payload);
+    if (String(object.C_STATUS ?? object.status ?? "").toUpperCase() !== "SUCCESS") {
+      throw new CrmError(502, "Appflexor did not confirm that the dialer log was saved. The task was not completed.");
+    }
+    savedLogs.set(key, fingerprint);
   }
-  savedLogs.set(key, fingerprint);
+  try {
+    await bpmRequest(session, `/task/${encodeURIComponent(task.id)}/variables`, "POST", {
+      modifications: { status: { value: status, type: "String" } },
+    });
+  } catch (error) {
+    if (error instanceof CrmError && error.status === 401) throw error;
+    throw new CrmError(error instanceof CrmError ? error.status : 502,
+      `The dialer log was saved, but updating the task status failed. Retry Save to update the status without creating another identical log. The task was not completed. ${error instanceof Error ? error.message : ""}`);
+  }
 }
 
 export async function completeDialerTask(

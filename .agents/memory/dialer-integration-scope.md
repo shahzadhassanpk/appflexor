@@ -28,6 +28,7 @@ Agents must claim an Available task before opening its call dialog or dialing.
 Save creates a `dialer_log` record with only name, phone, status, comments and
 business_key; it must not complete the task. Complete saves the log first, then
 completes the task. Name and phone are read-only in the dialog.
+Save must also update the task's status variable, as explicitly requested by the user.
 
 **Why:** the user requires claim-before-call to prevent two agents calling the
 same lead, and explicitly confirmed `/app/service?service.key=update.formData`

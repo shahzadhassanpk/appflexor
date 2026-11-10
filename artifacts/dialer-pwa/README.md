@@ -38,6 +38,10 @@ The browser sends the following operations through Vite's CRM proxy:
 - Save: `POST /app/service?service.key=update.formData`. A new `dialer_log`
   entry (`id:"new"`, `action:"update"`, `mode:"formData"`, `saveOrUpdate:"Yes"`)
   contains only name, phone, status, comments and business_key in its formData.
+  After saving the record, `bpm.data` POST `/task/{id}/variables` sets
+  `{modifications:{status:{value:"HOT",type:"String"}}}` without completing.
+  A failed status update is reported explicitly; an unchanged retry reuses the
+  confirmed log and retries the variable update.
 - Completion: save first, then `POST /bpm/service?service.key=complete.task`,
   `{method:"POST",path:"/task/{id}/complete",data:{businessKey:"...",variables:{status:{value:"HOT"}}}}`.
 - Logout: `POST /app/service?service.key=logout`.
