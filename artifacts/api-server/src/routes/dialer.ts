@@ -134,28 +134,45 @@ router.post("/dialer/logout", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
+async function taskList(session: Session, path: string, assignment: "assigned" | "available") {
+  const response = await bpm(session.token, path);
+  if (!Array.isArray(response)) throw new DialerError(502, "Appflexor returned an invalid task list.");
+  const rows = response.slice(0, 100);
+  const tasks: ReturnType<typeof mapLead>[] = [];
+  // Bound upstream concurrency; do not silently skip variable-fetch failures.
+  for (let offset = 0; offset < rows.length; offset += 5) {
+    const batch = await Promise.all(rows.slice(offset, offset + 5).map(async raw => {
+      const task = asObject(raw);
+      if (!task.id) throw new DialerError(502, "Appflexor returned a task without an id.");
+      if (assignment === "assigned" && task.assignee !== session.username) {
+        throw new DialerError(502, "Appflexor returned a task outside your assignment.");
+      }
+      if (assignment === "available" && task.assignee != null && task.assignee !== "") {
+        throw new DialerError(502, "Appflexor returned an assigned task in the available queue.");
+      }
+      return mapLead(task, await variablesFor(session, String(task.id)));
+    }));
+    tasks.push(...batch.filter(task => /^\+?[\d\s().-]+$/.test(task.phone) && /\d/.test(task.phone)));
+  }
+  return { tasks, hasMore: response.length > 100, scannedCount: rows.length };
+}
+
 router.get("/dialer/tasks", async (req, res): Promise<void> => {
   try {
     const session = sessionFor(req);
-    const query = new URLSearchParams({
-      assignee: session.username, active: "true", sortBy: "dueDate", sortOrder: "asc",
-      firstResult: "0", maxResults: "101",
-    });
-    if (session.taskDefinitionKey) query.set("taskDefinitionKey", session.taskDefinitionKey);
-    const response = await bpm(session.token, `/task?${query}`);
-    if (!Array.isArray(response)) throw new DialerError(502, "Appflexor returned an invalid task list.");
-    const rows = response.slice(0, 100);
-    const tasks: ReturnType<typeof mapLead>[] = [];
-    // Bound upstream concurrency; do not silently skip variable-fetch failures.
-    for (let offset = 0; offset < rows.length; offset += 5) {
-      const batch = await Promise.all(rows.slice(offset, offset + 5).map(async raw => {
-        const task = asObject(raw);
-        if (!task.id || task.assignee !== session.username) throw new DialerError(502, "Appflexor returned a task outside your assignment.");
-        return mapLead(task, await variablesFor(session, String(task.id)));
-      }));
-      tasks.push(...batch.filter(task => /^\+?[\d\s().-]+$/.test(task.phone) && /\d/.test(task.phone)));
-    }
-    res.json(GetDialerTasksResponse.parse({ tasks, hasMore: response.length > 100, scannedCount: rows.length }));
+    const query = new URLSearchParams({ assignee: session.username });
+    res.json(GetDialerTasksResponse.parse(await taskList(session, `/task?${query}`, "assigned")));
+  } catch (error) { report(req, res, error); }
+});
+
+router.get("/dialer/tasks/available", async (req, res): Promise<void> => {
+  try {
+    const session = sessionFor(req);
+    res.json(GetDialerTasksResponse.parse(await taskList(
+      session,
+      "/task?candidateGroup=DIALER_APP&unassigned=true",
+      "available",
+    )));
   } catch (error) { report(req, res, error); }
 });
 

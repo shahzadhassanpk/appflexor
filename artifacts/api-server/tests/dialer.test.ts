@@ -9,6 +9,10 @@ const fixtureTask = {
   id: "dialer-test-task", assignee: "dialer-agent", name: "Call lead",
   taskDefinitionKey: "callLead", due: "2026-11-10T12:00:00Z", created: "2026-11-09T09:00:00Z",
 };
+const fixtureAvailableTask = {
+  id: "dialer-available-task", assignee: null, name: "Available lead",
+  taskDefinitionKey: "callLead", due: "2026-11-11T12:00:00Z", created: "2026-11-09T10:00:00Z",
+};
 const fixtureVariables = {
   lead_name: { value: "Test Lead", type: "String" },
   phone_number: { value: "+1 202 555 0100", type: "String" },
@@ -43,8 +47,11 @@ before(async () => {
     assert.equal(new Headers(init?.headers).get("AUTH_KEY"), "synthetic-upstream-test-token");
     if (request.path.startsWith("/task?")) {
       const query = new URL(request.path, "https://engine.test").searchParams;
-      assert.equal(query.get("assignee"), "dialer-agent");
-      assert.equal(query.get("taskDefinitionKey"), "callLead");
+      if (query.has("candidateGroup")) {
+        assert.equal(request.path, "/task?candidateGroup=DIALER_APP&unassigned=true");
+        return json({ data: [fixtureAvailableTask] });
+      }
+      assert.equal(request.path, "/task?assignee=dialer-agent");
       return json({ data: [fixtureTask] });
     }
     if (request.path.endsWith("/complete")) {
@@ -101,6 +108,16 @@ test("task queue uses assignment and maps live task variables into lead fields",
   assert.equal(body.tasks[0].name, "Test Lead");
   assert.equal(body.tasks[0].status, "RECALL");
   assert.equal(body.tasks[0].dueDate, fixtureTask.due);
+});
+test("available queue uses the DIALER_APP candidate group and only returns unassigned tasks", async () => {
+  const response = await request("/tasks/available");
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.tasks.length, 1);
+  assert.equal(body.tasks[0].id, fixtureAvailableTask.id);
+  assert.equal(body.tasks[0].name, "Test Lead");
+  assert.equal(body.tasks[0].phone, "+1 202 555 0100");
+  assert.equal(body.tasks[0].dueDate, fixtureAvailableTask.due);
 });
 test("detail and completion reject tasks owned by another user", async () => {
   wrongAssignee = true;

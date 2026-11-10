@@ -60,7 +60,7 @@ export default function LoginPage() {
             Call.<br />Log the outcome.<br /><span className="text-accent">Next lead.</span>
           </h1>
           <p className="rise mt-5 max-w-xs text-sm opacity-70" style={{ animationDelay: "120ms" }}>
-            Your assigned lead tasks, one tap from the phone dialer. Every call ends with Hot, Recall or Rejection.
+            Work assigned leads or browse unassigned tasks available to your dialing group. Every call ends with Hot, Recall or Rejection.
           </p>
         </section>
 
@@ -106,7 +106,7 @@ export default function LoginPage() {
                       autoCapitalize="none" spellCheck={false} placeholder="e.g. callLead"
                       className="tabnum h-11 w-full rounded-xl border border-input bg-card px-4 text-sm outline-none focus:border-accent focus:ring-4 focus:ring-accent/15" />
                   </Field>
-                  <p className="mt-1.5 text-xs text-muted-foreground">Restricts the queue to one BPMN task key. Leave blank for all assigned tasks that carry a phone number.</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">Restricts your assigned list to one BPMN task key. Leave blank for all assigned tasks that carry a phone number.</p>
                 </div>
               )}
             </div>

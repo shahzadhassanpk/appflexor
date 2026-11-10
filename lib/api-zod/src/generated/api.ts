@@ -50,6 +50,22 @@ export const GetDialerTasksResponse = zod.object({
 })
 
 
+export const GetDialerAvailableTasksResponse = zod.object({
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string(),
+  "dueDate": zod.string().nullable(),
+  "status": zod.string(),
+  "comments": zod.string(),
+  "taskName": zod.string(),
+  "created": zod.string().nullable()
+})),
+  "hasMore": zod.boolean(),
+  "scannedCount": zod.number()
+})
+
+
 export const GetDialerTaskParams = zod.object({
   "id": zod.coerce.string()
 })

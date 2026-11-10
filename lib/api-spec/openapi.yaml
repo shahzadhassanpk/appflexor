@@ -57,6 +57,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DialerTaskList"
+  /dialer/tasks/available:
+    get:
+      operationId: getDialerAvailableTasks
+      tags: [dialer]
+      responses:
+        "200":
+          description: Unassigned dialing tasks available to the DIALER_APP candidate group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DialerTaskList"
   /dialer/tasks/{id}:
     get:
       operationId: getDialerTask

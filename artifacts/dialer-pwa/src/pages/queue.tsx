@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
-import { useGetDialerTasks, getGetDialerTasksQueryKey, type DialerSession } from "@workspace/api-client-react";
+import {
+  useGetDialerTasks, getGetDialerTasksQueryKey,
+  useGetDialerAvailableTasks, getGetDialerAvailableTasksQueryKey,
+  type DialerSession,
+} from "@workspace/api-client-react";
 import { AlertTriangle, ChevronRight, PhoneOff, RefreshCw, Search, X } from "lucide-react";
 import { StatusPill } from "@/components/chrome";
 import { OUTCOMES, errMessage, formatDate, hasDraft, isOutcome, isOverdue, sanitizePhone } from "@/lib/dialer";
@@ -10,6 +14,7 @@ type Filter = "ALL" | "HOT" | "RECALL" | "REJECTION" | "UNSET";
 
 export default function QueuePage({ session }: { session: DialerSession }) {
   const q = useGetDialerTasks({ query: { queryKey: getGetDialerTasksQueryKey(), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true } });
+  const available = useGetDialerAvailableTasks({ query: { queryKey: getGetDialerAvailableTasksQueryKey(), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true } });
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("ALL");
   const tasks = q.data?.tasks;
@@ -34,7 +39,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-5">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <p className="tabnum text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Lead queue</p>
+          <p className="tabnum text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Assigned tasks</p>
           <h1 className="text-3xl font-extrabold tracking-tight">
             {q.data ? <><span data-testid="text-queue-count" className="tabnum">{counts.ALL}</span> to call</> : "Your calls"}
           </h1>
@@ -151,6 +156,68 @@ export default function QueuePage({ session }: { session: DialerSession }) {
           )}
         </>
       )}
+
+      <section aria-labelledby="available-heading" className="mt-10 border-t border-border pt-6">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="tabnum text-[11px] uppercase tracking-[0.2em] text-muted-foreground">DIALER_APP group</p>
+            <h2 id="available-heading" className="text-2xl font-extrabold tracking-tight">
+              Available <span className="tabnum text-muted-foreground">{available.data?.tasks.length ?? ""}</span>
+            </h2>
+          </div>
+          <button data-testid="button-refresh-available" onClick={() => available.refetch()} disabled={available.isFetching}
+            className="press flex h-9 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-semibold hover:bg-secondary">
+            <RefreshCw className={cn("h-3.5 w-3.5", available.isFetching && "animate-spin")} /> Refresh
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">Unassigned tasks available to the DIALER_APP candidate group.</p>
+
+        {available.isLoading && <QueueSkeleton />}
+        {available.isError && !available.data && (
+          <div data-testid="status-available-error" className="mt-4 rounded-2xl border border-destructive/25 bg-card p-5 text-center">
+            <p className="font-semibold">Could not load available tasks</p>
+            <p className="mt-1 text-sm text-muted-foreground">{errMessage(available.error)}</p>
+            <button data-testid="button-retry-available" onClick={() => available.refetch()} className="press mt-3 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Try again</button>
+          </div>
+        )}
+        {available.isError && available.data && (
+          <p className="mt-3 text-xs text-destructive">Refresh failed; showing the last loaded available list. {errMessage(available.error)}</p>
+        )}
+        {available.data && available.data.tasks.length === 0 && (
+          <p data-testid="status-available-empty" className="mt-4 rounded-2xl border border-dashed border-input px-5 py-8 text-center text-sm text-muted-foreground">
+            No unassigned tasks are available for this group right now.
+          </p>
+        )}
+        {available.data && available.data.tasks.length > 0 && (
+          <ul data-testid="list-available-tasks" className="mt-4 space-y-2">
+            {available.data.tasks.map((task, i) => {
+              const due = formatDate(task.dueDate);
+              return (
+                <li key={task.id} data-testid={`card-available-${task.id}`} className="rise rounded-2xl border border-card-border bg-card p-3.5" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-sm font-bold text-primary">{initials(task.name)}</div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-bold">{task.name || "Unnamed lead"}</p>
+                      <p className="tabnum truncate text-[13px] text-foreground/80">{task.phone}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                        <StatusPill status={task.status} />
+                        <span className="tabnum">{due ? `Due ${due}` : "No due date"}</span>
+                        {task.taskName && <span className="truncate">· {task.taskName}</span>}
+                      </div>
+                      {task.comments && <p className="mt-2 line-clamp-2 whitespace-pre-wrap text-xs text-muted-foreground">{task.comments}</p>}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {available.data?.hasMore && (
+          <p className="mt-3 text-center text-xs text-muted-foreground" data-testid="text-available-has-more">
+            More available tasks exist upstream.
+          </p>
+        )}
+      </section>
     </main>
   );
 }

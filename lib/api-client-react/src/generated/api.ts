@@ -312,6 +312,77 @@ export function useGetDialerTasks<TData = Awaited<ReturnType<typeof getDialerTas
 
 
 
+export const getGetDialerAvailableTasksUrl = () => {
+
+
+
+
+  return `/api/dialer/tasks/available`
+}
+
+export const getDialerAvailableTasks = async ( options?: RequestInit): Promise<DialerTaskList> => {
+
+  return customFetch<DialerTaskList>(getGetDialerAvailableTasksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDialerAvailableTasksQueryKey = () => {
+    return [
+    `/api/dialer/tasks/available`
+    ] as const;
+    }
+
+
+export const getGetDialerAvailableTasksQueryOptions = <TData = Awaited<ReturnType<typeof getDialerAvailableTasks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDialerAvailableTasks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDialerAvailableTasksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDialerAvailableTasks>>> = ({ signal }) => getDialerAvailableTasks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDialerAvailableTasks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDialerAvailableTasksQueryResult = NonNullable<Awaited<ReturnType<typeof getDialerAvailableTasks>>>
+export type GetDialerAvailableTasksQueryError = ErrorType<unknown>
+
+
+
+export function useGetDialerAvailableTasks<TData = Awaited<ReturnType<typeof getDialerAvailableTasks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDialerAvailableTasks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDialerAvailableTasksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getGetDialerTaskUrl = (id: string,) => {
 
 
