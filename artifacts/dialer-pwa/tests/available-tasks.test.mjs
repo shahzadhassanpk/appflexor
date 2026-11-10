@@ -26,6 +26,23 @@ test("available task cards do not depend on phone variables", async (t) => {
     { label: "no variables", variables: {} },
     { label: "unrecognized phone format", variables: { phone: { value: "not supplied" } } },
     { label: "valid lead variables", variables: { phone: { value: "+12025550100" } } },
+    {
+      label: "CRM name with empty phone",
+      variables: {
+        phone: { valueInfo: {}, type: "String", value: "" },
+        name: { valueInfo: {}, type: "String", value: "Demo Lead" },
+        auditPrevVars: { valueInfo: {}, type: "String", value: "{}" },
+      },
+      expectedName: "Demo Lead", expectedPhone: "",
+    },
+    {
+      label: "empty preferred fields fall back to name and phone",
+      variables: {
+        lead_name: { value: "  " }, phone_number: { value: null },
+        name: { value: "Demo Lead" }, phone: { value: "+12025550100" },
+      },
+      expectedName: "Demo Lead", expectedPhone: "+12025550100",
+    },
     { label: "variable service failure", failure: true },
   ]) {
     await t.test(scenario.label, async () => {
@@ -46,7 +63,8 @@ test("available task cards do not depend on phone variables", async (t) => {
       try {
         const result = await getTaskList(session, "available");
         assert.equal(result.tasks.length, 1);
-        assert.equal(result.tasks[0].name, "Call Customer");
+        assert.equal(result.tasks[0].name, scenario.expectedName ?? "Call Customer");
+        if ("expectedPhone" in scenario) assert.equal(result.tasks[0].phone, scenario.expectedPhone);
         assert.equal(result.tasks[0].id, task.id);
         assert.equal(result.scannedCount, 1);
         assert.equal(Boolean(result.tasks[0].detailsError), Boolean(scenario.failure));

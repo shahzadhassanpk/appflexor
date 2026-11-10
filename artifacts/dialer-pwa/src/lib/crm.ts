@@ -187,21 +187,25 @@ const FIELD_ALIASES = {
   due: ["due_date", "dueDate", "due"],
 } as const;
 
-function findField(variables: Record<string, unknown>, aliases: readonly string[]) {
+function findField(variables: Record<string, unknown>, aliases: readonly string[], skipEmpty = false) {
   const keys = Object.keys(variables);
-  const key = aliases.map(alias => keys.find(item => item.toLowerCase() === alias.toLowerCase()))
-    .find((item): item is string => item !== undefined);
-  if (!key) return { key: aliases[0], value: "" };
-  const raw = variables[key];
-  const value = Object.hasOwn(asObject(raw), "value") ? asObject(raw).value : raw;
-  return { key, value: typeof value === "string" || typeof value === "number" ? String(value) : "" };
+  for (const alias of aliases) {
+    const key = keys.find(item => item.toLowerCase() === alias.toLowerCase());
+    if (!key) continue;
+    const raw = variables[key];
+    const value = Object.hasOwn(asObject(raw), "value") ? asObject(raw).value : raw;
+    const text = typeof value === "string" || typeof value === "number" ? String(value) : "";
+    if (skipEmpty && !text.trim()) continue;
+    return { key, value: skipEmpty ? text.trim() : text };
+  }
+  return { key: aliases[0], value: "" };
 }
 
 function mapTask(task: Record<string, unknown>, variables: Record<string, unknown>): DialerTask {
   return {
     id: String(task.id),
-    name: findField(variables, FIELD_ALIASES.name).value || String(task.name ?? "Unnamed lead"),
-    phone: findField(variables, FIELD_ALIASES.phone).value,
+    name: findField(variables, FIELD_ALIASES.name, true).value || String(task.name ?? "Unnamed lead"),
+    phone: findField(variables, FIELD_ALIASES.phone, true).value,
     dueDate: typeof task.due === "string" ? task.due : findField(variables, FIELD_ALIASES.due).value || null,
     status: findField(variables, FIELD_ALIASES.status).value,
     comments: findField(variables, FIELD_ALIASES.comments).value,
