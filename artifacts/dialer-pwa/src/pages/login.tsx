@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { loginToCrm, saveSession, type DialerSession } from "@/lib/crm";
-import { AlertCircle, ArrowRight, ChevronDown, Eye, EyeOff, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { InstallButton, Mark, OfflineBar } from "@/components/chrome";
 import { useOnline } from "@/hooks/use-device";
 import { clearAllDrafts, errMessage, errStatus } from "@/lib/dialer";
@@ -12,17 +12,15 @@ export default function LoginPage({ onLogin }: { onLogin: (session: DialerSessio
   const [, navigate] = useLocation();
   const online = useOnline();
   const login = useMutation({
-    mutationFn: async ({ data }: { data: { username: string; password: string; taskDefinitionKey?: string } }) => {
-      const session = await loginToCrm(data.username, data.password, data.taskDefinitionKey);
+    mutationFn: async ({ data }: { data: { username: string; password: string } }) => {
+      const session = await loginToCrm(data.username, data.password);
       saveSession(session);
       return session;
     },
   });
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [tdk, setTdk] = useState("");
   const [show, setShow] = useState(false);
-  const [adv, setAdv] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = (e: FormEvent) => {
@@ -30,8 +28,7 @@ export default function LoginPage({ onLogin }: { onLogin: (session: DialerSessio
     if (login.isPending) return;
     if (!username.trim() || !password) { setError("Enter your Appflexor username and password."); return; }
     setError(null);
-    const data: { username: string; password: string; taskDefinitionKey?: string } = { username: username.trim(), password };
-    if (tdk.trim()) data.taskDefinitionKey = tdk.trim();
+    const data = { username: username.trim(), password };
     login.mutate({ data }, {
       onSuccess: (session) => {
         setPassword("");
@@ -99,23 +96,6 @@ export default function LoginPage({ onLogin }: { onLogin: (session: DialerSessio
                 </button>
               </div>
             </Field>
-
-            <div>
-              <button type="button" data-testid="button-advanced" onClick={() => setAdv((a) => !a)}
-                className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground">
-                Advanced <ChevronDown className={`h-3.5 w-3.5 transition-transform ${adv ? "rotate-180" : ""}`} />
-              </button>
-              {adv && (
-                <div className="rise mt-3">
-                  <Field label="Task definition key (optional)">
-                    <input data-testid="input-task-definition-key" value={tdk} onChange={(e) => setTdk(e.target.value)} maxLength={200}
-                      autoCapitalize="none" spellCheck={false} placeholder="e.g. callLead"
-                      className="tabnum h-11 w-full rounded-xl border border-input bg-card px-4 text-sm outline-none focus:border-accent focus:ring-4 focus:ring-accent/15" />
-                  </Field>
-                  <p className="mt-1.5 text-xs text-muted-foreground">Restricts your assigned list to one BPMN task key. Leave blank for all assigned tasks that carry a phone number.</p>
-                </div>
-              )}
-            </div>
 
             <button type="submit" data-testid="button-sign-in" disabled={login.isPending || !online}
               className="press flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-base font-bold text-primary-foreground shadow-[0_8px_20px_-8px_hsl(var(--primary)/.6)] disabled:opacity-50">

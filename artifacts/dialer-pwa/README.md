@@ -50,8 +50,7 @@ variable. The separate **Available** list shows unassigned tasks in the
 `DIALER_APP` candidate group, including tasks without a recognized phone variable.
 If variable enrichment fails, the basic available card remains visible with an
 explicit details warning. Available tasks are read-only; they are not
-automatically claimed. Optionally enter a BPMN task definition key at sign-in to
-filter the assigned list to a specific dialing step.
+automatically claimed. Available tasks appear above the assigned list.
 For this POC, each queue scans the first 100 returned tasks and indicates when
 more exist. Both lists refresh periodically, on focus, and with their refresh
 buttons.

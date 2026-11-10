@@ -32,8 +32,8 @@ export default function QueuePage({ session }: { session: DialerSession }) {
     });
   }, [tasks, search, filter]);
 
-  return (
-    <main className="mx-auto max-w-3xl px-4 pb-16 pt-5">
+  const assignedSection = (
+    <section aria-label="Assigned tasks" className="mt-10 border-t border-border pt-6">
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="tabnum text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Assigned tasks</p>
@@ -154,7 +154,12 @@ export default function QueuePage({ session }: { session: DialerSession }) {
         </>
       )}
 
-      <section aria-labelledby="available-heading" className="mt-10 border-t border-border pt-6">
+    </section>
+  );
+
+  return (
+    <main className="mx-auto max-w-3xl px-4 pb-16 pt-5">
+      <section aria-labelledby="available-heading">
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="tabnum text-[11px] uppercase tracking-[0.2em] text-muted-foreground">DIALER_APP group</p>
@@ -220,6 +225,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
           </p>
         )}
       </section>
+      {assignedSection}
     </main>
   );
 }
