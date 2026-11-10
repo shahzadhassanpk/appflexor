@@ -9,14 +9,30 @@ import { telHref } from "@/lib/dialer";
 import { StatusPill } from "@/components/chrome";
 import { errMessage, formatDate, isOutcome, isOverdue, sanitizePhone } from "@/lib/dialer";
 import { cn } from "@/lib/utils";
+import {
+  matchesQueueFilters, nextQueueTask, readTaskFilterPreference,
+  saveTaskFilterPreference, type TaskFilter as Filter,
+} from "@/lib/queue-selection";
 
-type Filter = "ALL" | "HOT" | "RECALL" | "REJECTION" | "UNSET";
+function browserSessionStorage(): Storage | null {
+  try {
+    return typeof window === "undefined" ? null : window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
 
 export default function QueuePage({ session }: { session: DialerSession }) {
   const q = useQuery({ queryKey: assignedTasksKey, queryFn: ({ signal }) => getTaskList(session, "assigned", signal), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true });
   const available = useQuery({ queryKey: availableTasksKey, queryFn: ({ signal }) => getTaskList(session, "available", signal), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true });
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<Filter>("ALL");
+  const [filter, setFilterState] = useState<Filter>(() => readTaskFilterPreference(
+    session.username, browserSessionStorage(),
+  ));
+  const setFilter = (next: Filter) => {
+    setFilterState(next);
+    saveTaskFilterPreference(session.username, next, browserSessionStorage());
+  };
   const tasks = q.data?.tasks;
   const qc = useQueryClient();
   const [dialogTask, setDialogTask] = useState<DialerTask | null>(null);
@@ -57,14 +73,18 @@ export default function QueuePage({ session }: { session: DialerSession }) {
       if (!navigator.onLine) throw new Error("You are offline. Reconnect and select the next task manually.");
       const assigned = await getTaskList(session, "assigned");
       if (!mounted.current) return;
-      const nextAssigned = assigned.tasks.find(t => t.id !== completedId && telHref(t.phone));
+      const nextAssigned = nextQueueTask(assigned.tasks, completedId, filter, search, tasks?.map(t => t.id));
       let next: DialerTask;
       if (nextAssigned) {
         next = await getAssignedTask(session, nextAssigned.id);
       } else {
+        if (filter !== "ALL") {
+          setNextNotice(`No more ${filter === "UNSET" ? "Unset" : filter === "REJECTION" ? "Rejection" : filter === "RECALL" ? "Recall" : "Hot"} tasks matching this list with dialable phone numbers. Auto-dial stopped.`);
+          return;
+        }
         const candidates = await getTaskList(session, "available");
         if (!mounted.current) return;
-        const candidate = candidates.tasks.find(t => t.id !== completedId && telHref(t.phone));
+        const candidate = nextQueueTask(candidates.tasks, completedId, filter, search);
         if (!candidate) {
           setNextNotice("No more tasks with dialable phone numbers. Auto-dial stopped.");
           return;
@@ -73,10 +93,18 @@ export default function QueuePage({ session }: { session: DialerSession }) {
         next = await claimAvailableTask(session, candidate.id);
       }
       if (!mounted.current) return;
+      if (!matchesQueueFilters(next, filter, search)) {
+        throw new Error("The next task no longer matches your selected status or search. Select another task from this list.");
+      }
       const tel = telHref(next.phone);
       if (!tel) throw new Error("The next task no longer has a dialable number. Select another task manually.");
       qc.setQueryData<DialerTaskList>(availableTasksKey, old => old ? { ...old, tasks: old.tasks.filter(t => t.id !== next.id) } : old);
-      qc.setQueryData<DialerTaskList>(assignedTasksKey, old => old ? { ...old, tasks: [next, ...old.tasks.filter(t => t.id !== next.id)] } : old);
+      qc.setQueryData<DialerTaskList>(assignedTasksKey, old => old ? {
+        ...old,
+        tasks: old.tasks.some(t => t.id === next.id)
+          ? old.tasks.map(t => t.id === next.id ? next : t)
+          : [...old.tasks, next],
+      } : old);
       setDialogTask(next);
       setDialogOpen(true);
       setDialHint("Auto-dial next is enabled. If your phone app did not open, tap Dial again.");
@@ -161,13 +189,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   }, [tasks]);
 
   const visible = useMemo(() => {
-    const s = search.trim().toLowerCase();
-    const sd = s.replace(/\D/g, "");
-    return (tasks ?? []).filter((t) => {
-      if (filter === "UNSET" ? !!t.status : filter !== "ALL" && t.status !== filter) return false;
-      if (!s) return true;
-      return t.name.toLowerCase().includes(s) || t.taskName.toLowerCase().includes(s) || (sd.length > 0 && t.phone.replace(/\D/g, "").includes(sd));
-    });
+    return (tasks ?? []).filter(t => matchesQueueFilters(t, filter, search));
   }, [tasks, search, filter]);
 
   const assignedSection = (

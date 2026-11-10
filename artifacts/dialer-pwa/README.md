@@ -72,7 +72,8 @@ without a phone number. The separate **Available** list shows unassigned tasks i
 If variable enrichment fails, the basic available card remains visible with an
 explicit details warning. Assigned and Available are separate tabs (Assigned
 is first and opens by default). Status filters appear as Unset, Recall, Hot,
-Rejections, All. Available has individual selection checkboxes, Select all,
+Rejections, All. The selected status filter is restored from session storage
+per user; Unset is the default. Available has individual selection checkboxes, Select all,
 and Claim selected; it has no Call buttons. Bulk claims use up to five concurrent
 atomic Camunda claim requests, report partial failures, and refresh both lists
 afterward. Claiming never opens the dialog or dialer. Select all covers the loaded
@@ -82,7 +83,11 @@ Save leaves it assigned; Complete saves first and only then completes.
 The call dialog has Manual / Auto-dial next radios (Manual by default). With
 auto-dial enabled, only confirmed completion starts the next call: prefer the
 next assigned task with a dialable number, otherwise claim an available one
-before dialing. Save, failed completion, no dialable tasks, claim conflicts and
+before dialing when the All status filter is selected. Auto-dial follows the
+selected status and search, preserving the displayed task sequence. With a
+specific status selected, it stops when that filtered Assigned queue is
+exhausted instead of switching status or claiming Available tasks.
+Save, failed completion, no dialable tasks, claim conflicts and
 offline errors never start another call. The preference lasts for the current
 queue session. Browsers may block automatic `tel:` navigation after an API
 request; the next task's dialog retains a direct Dial again link.

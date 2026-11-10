@@ -63,10 +63,13 @@ if assignment changed instead of silently claiming or completing it.
 
 The call dialog must offer a radio choice to auto-dial the next task only after
 successful completion. Default to Manual, and still claim any Available task
-before dialing it.
+before dialing it. Auto-dial must remain in the selected status and list
+sequence, including active search criteria. A specific status must stop when
+its Assigned queue is exhausted; only All retains the Available fallback.
 
 **Why:** the user requested an auto-dial-next-on-completion-success radio; Save
-and failed completion must not start another call.
+and failed completion must not start another call. The user later required
+auto-dial to remain in the same selected status sequence.
 
 **Why:** the user requires claim-before-call to prevent two agents calling the
 same lead, and explicitly confirmed `/app/service?service.key=update.formData`
