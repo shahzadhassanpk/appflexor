@@ -8,7 +8,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useOnline } from "@/hooks/use-device";
 import { useToast } from "@/hooks/use-toast";
-import { OUTCOME_META, errMessage, isOutcome, loadDraft, removeDraft, saveDraft, telHref, type Outcome } from "@/lib/dialer";
+import { OUTCOME_META, errMessage, isOutcome, loadDraft, removeDraft, saveDraft, telHref, toDateTimeLocal, type Outcome } from "@/lib/dialer";
 
 type Props = {
   session: DialerSession;
@@ -28,16 +28,19 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
   const online = useOnline();
   const [status, setStatus] = useState<Outcome | "">("");
   const [comments, setComments] = useState("");
+  const [recallDateTime, setRecallDateTime] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [savedNote, setSavedNote] = useState<string | null>(null);
   const initFor = useRef<string | null>(null);
   const done = useRef(false);
 
   const save = useMutation({
-    mutationFn: (v: { task: DialerTask; status: Outcome; comments: string }) => saveDialerLog(session, v.task, v.status, v.comments),
+    mutationFn: (v: { task: DialerTask; status: Outcome; comments: string; recallDateTime: string }) =>
+      saveDialerLog(session, v.task, v.status, v.comments, v.recallDateTime),
   });
   const complete = useMutation({
-    mutationFn: (v: { task: DialerTask; status: Outcome; comments: string }) => completeDialerTask(session, v.task, v.status, v.comments),
+    mutationFn: (v: { task: DialerTask; status: Outcome; comments: string; recallDateTime: string }) =>
+      completeDialerTask(session, v.task, v.status, v.comments, v.recallDateTime),
   });
   const busy = save.isPending || complete.isPending;
 
@@ -48,20 +51,27 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
     done.current = false;
     setError(null); setSavedNote(null);
     const d = loadDraft(session.username, task.id);
-    if (d) { setStatus(d.status); setComments(d.comments); }
-    else { setStatus(isOutcome(task.status) ? task.status : ""); setComments(task.comments ?? ""); }
+    if (d) {
+      setStatus(d.status); setComments(d.comments);
+      setRecallDateTime(d.recallDateTime || toDateTimeLocal(task.recallDateTime));
+    } else {
+      setStatus(isOutcome(task.status) ? task.status : "");
+      setComments(task.comments ?? "");
+      setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+    }
   }, [task, open, session.username]);
 
   useEffect(() => {
     if (!task || initFor.current !== task.id || done.current) return;
-    const pristine = status === (isOutcome(task.status) ? task.status : "") && comments === (task.comments ?? "");
+    const pristine = status === (isOutcome(task.status) ? task.status : "") &&
+      comments === (task.comments ?? "") && recallDateTime === toDateTimeLocal(task.recallDateTime);
     if (pristine) removeDraft(session.username, task.id);
-    else saveDraft(session.username, task.id, { status, comments });
+    else saveDraft(session.username, task.id, { status, comments, recallDateTime });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, comments, session.username]);
+  }, [status, comments, recallDateTime, session.username]);
 
   const tel = telHref(task?.phone);
-  const canAct = !!task && !!status && online && !busy;
+  const canAct = !!task && !!status && (status !== "RECALL" || !!recallDateTime) && online && !busy;
 
   const setOpen = (o: boolean) => {
     if (busy) return;
@@ -72,17 +82,22 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
   const doSave = () => {
     if (!task || !status || !canAct) return;
     setError(null); setSavedNote(null);
-    save.mutate({ task, status, comments }, {
+    save.mutate({ task, status, comments, recallDateTime }, {
       onSuccess: async () => {
         setSavedNote(`Call log saved as ${status}. Task stays assigned to you.`);
         // Cancel older reads before applying the confirmed write, so an
         // in-flight queue response cannot restore the previous Unset badge.
         await qc.cancelQueries({ queryKey: assignedTasksKey });
+        const savedRecallDateTime = status === "RECALL" ? new Date(recallDateTime).toISOString() : task.recallDateTime;
         qc.setQueryData<DialerTaskList>(assignedTasksKey, (old) => old ? {
           ...old,
-          tasks: old.tasks.map(t => t.id === task.id ? { ...t, status, comments } : t),
+          tasks: old.tasks.map(t => t.id === task.id ? {
+            ...t, status, comments, recallDateTime: savedRecallDateTime, dueDate: savedRecallDateTime,
+          } : t),
         } : old);
-        qc.setQueryData<DialerTask>(taskDetailKey(task.id), old => ({ ...(old ?? task), status, comments }));
+        qc.setQueryData<DialerTask>(taskDetailKey(task.id), old => ({
+          ...(old ?? task), status, comments, recallDateTime: savedRecallDateTime, dueDate: savedRecallDateTime,
+        }));
         qc.invalidateQueries({ queryKey: assignedTasksKey });
         toast({ title: "Call log saved", description: `${task.name || "Lead"} remains in your assigned tasks.` });
       },
@@ -93,7 +108,7 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
   const doComplete = () => {
     if (!task || !status || !canAct) return;
     setError(null); setSavedNote(null);
-    complete.mutate({ task, status, comments }, {
+    complete.mutate({ task, status, comments, recallDateTime }, {
       onSuccess: (res) => {
         if (!res.completed) { setError("Appflexor did not confirm completion. Your entries are kept; try again."); return; }
         done.current = true;
@@ -156,7 +171,12 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
               <div>
                 <label htmlFor="call-outcome" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Outcome</label>
                 <select id="call-outcome" data-testid="select-call-status" value={status} disabled={busy}
-                  onChange={(e) => { setStatus(isOutcome(e.target.value) ? e.target.value : ""); setSavedNote(null); }}
+                  onChange={(e) => {
+                    const nextStatus = isOutcome(e.target.value) ? e.target.value : "";
+                    setStatus(nextStatus);
+                    if (nextStatus === "RECALL" && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+                    setSavedNote(null);
+                  }}
                   className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base font-semibold outline-none focus:border-accent focus:ring-4 focus:ring-accent/15 disabled:opacity-60"
                   style={status ? { borderColor: `hsl(${OUTCOME_META[status].color})`, color: `hsl(${OUTCOME_META[status].color})` } : undefined}>
                   <option value="">Select outcome</option>
@@ -165,6 +185,17 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
                   <option value="REJECTION">REJECTION</option>
                 </select>
               </div>
+              {status === "RECALL" && (
+                <div>
+                  <label htmlFor="recall-date-time" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Next call date and time
+                  </label>
+                  <input id="recall-date-time" data-testid="input-recall-datetime" type="datetime-local"
+                    value={recallDateTime} disabled={busy} required
+                    onChange={e => { setRecallDateTime(e.target.value); setSavedNote(null); }}
+                    className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base outline-none focus:border-accent focus:ring-4 focus:ring-accent/15 disabled:opacity-60" />
+                </div>
+              )}
               <div>
                 <label htmlFor="call-comments" className="mb-1.5 flex justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Comments <span className="tabnum normal-case tracking-normal">{comments.length}/10000</span>

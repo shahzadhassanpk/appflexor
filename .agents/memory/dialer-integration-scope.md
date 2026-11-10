@@ -41,7 +41,10 @@ not id "new".
 **Why:** the user explicitly changed repeated saves to update one log per task
 rather than create another log each time.
 
-Save must also update the task's status and comments variables. Display saved
+Save must also update the task's status and comments variables. For RECALL, save
+the selected next-call date/time in the existing task due field through
+`bpm.data` PUT `/task/{id}`. Do not create a recall variable or log field.
+Display it using the existing due-date display in the task list. Display saved
 comments beneath Assigned task details, and label incomplete Assigned tasks
 Pending rather than Draft, as explicitly requested by the user.
 Assigned tasks must show a Call control that opens the native dialer with `tel:`,

@@ -137,7 +137,7 @@ test("claim, save and complete use the confirmed CRM contracts", async (t) => {
     assert.equal(calls.filter(c => c.key === "complete.task").length, 0);
 
     saveFails = false;
-    await assert.rejects(completeDialerTask(session, claimed, "HOT", "Interested"), /log was saved, but updating the task status or comments failed/);
+    await assert.rejects(completeDialerTask(session, claimed, "HOT", "Interested"), /log was saved, but updating task status, comments or due date failed/);
     assert.equal(calls.filter(c => c.key === "complete.task").length, 0,
       "A failed status update must block completion");
     const insertCountBeforeStatusRetry = calls.filter(c => c.key === "update.formData").length;
@@ -196,21 +196,77 @@ test("changed saves upsert the same task-id dialer log", async (t) => {
       records.set(entry.id, entry.formData);
       return Response.json({ C_STATUS: "SUCCESS" });
     }
-    if (body.path.endsWith("/variables")) {
+    if (body.path === `/task/${owned.id}/variables`) {
       Object.assign(variables, body.data.modifications);
       return new Response(null, { status: 204 });
     }
+    if (body.path === `/task/${owned.id}` && body.method === "PUT") {
+      owned.due = body.data.due;
+      return new Response(null, { status: 204 });
+    }
     if (body.path.includes("/variables?")) return Response.json({ status: "SUCCESS", data: variables });
+    if (body.path.startsWith("/task?assignee=")) {
+      return Response.json({ status: "SUCCESS", data: [owned] });
+    }
     assert.equal(body.path, `/task/${owned.id}`, "Saving must not call completion");
     return Response.json({ status: "SUCCESS", data: owned });
   });
   try {
     await saveDialerLog(session, owned, "HOT", "First call");
-    await saveDialerLog(session, owned, "RECALL", "Call tomorrow");
+    await saveDialerLog(session, owned, "RECALL", "Call tomorrow", "2027-04-05T13:45");
     assert.equal(requests.length, 2);
     assert.equal(records.size, 1);
     assert.equal(records.get(owned.id).status, "RECALL");
     assert.equal(records.get(owned.id).comments, "Call tomorrow");
+    assert.equal("recall_datetime" in records.get(owned.id), false,
+      "The recall date belongs in the task due field, not a new log field");
+    assert.equal(new Date(owned.due).getTime(), new Date("2027-04-05T13:45").getTime());
+    const listed = await getTaskList(session, "assigned");
+    assert.equal(listed.tasks[0].dueDate, owned.due);
+  } finally {
+    t.mock.restoreAll();
+  }
+});
+
+test("RECALL updates and verifies the task due date without adding a variable", async (t) => {
+  const recallTask = { ...task, id: "recall-task", assignee: session.username };
+  const recallTaskWithDue = { ...recallTask, due: null };
+  const recallVariables = {
+    name: { value: "Recall Lead" },
+    phone: { value: "+15550101111" },
+    comments: { value: "Call back" },
+    business_key: { value: "LEAD-RECALL" },
+  };
+  const savedRequests = [];
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    const body = JSON.parse(options.body);
+    const key = new URL(url, "http://example.test").searchParams.get("service.key");
+    if (key === "update.formData") {
+      savedRequests.push(body);
+      return Response.json({ C_STATUS: "SUCCESS" });
+    }
+    if (body.path === `/task/${recallTask.id}/variables`) {
+      assert.deepEqual(Object.keys(body.data.modifications).sort(), ["comments", "status"]);
+      Object.assign(recallVariables, body.data.modifications);
+      return new Response(null, { status: 204 });
+    }
+    if (body.path === `/task/${recallTask.id}` && body.method === "PUT") {
+      assert.deepEqual(Object.keys(body.data), ["due"]);
+      recallTaskWithDue.due = body.data.due;
+      return new Response(null, { status: 204 });
+    }
+    if (body.path === `/task/${recallTask.id}`) return Response.json({ status: "SUCCESS", data: recallTaskWithDue });
+    if (body.path.includes("/variables?")) return Response.json({ status: "SUCCESS", data: recallVariables });
+    return Response.json({ status: "SUCCESS", data: recallTaskWithDue });
+  });
+  try {
+    await saveDialerLog(session, recallTask, "RECALL", "Call back", "2027-04-05T13:45");
+    const log = savedRequests[0].data[0];
+    assert.equal(log.id, recallTask.id);
+    assert.equal("recall_datetime" in log.formData, false, "The log does not get a new recall field");
+    assert.equal(new Date(recallTaskWithDue.due).getTime(), new Date("2027-04-05T13:45").getTime());
+    assert.equal("recall_datetime" in recallVariables, false, "No recall task variable is created");
+    assert.equal(recallVariables.status.value, "RECALL");
   } finally {
     t.mock.restoreAll();
   }

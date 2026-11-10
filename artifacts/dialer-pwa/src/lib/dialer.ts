@@ -53,6 +53,15 @@ export function formatDate(v: string | null | undefined, withTime = false): stri
     : { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** Convert a CRM ISO timestamp to the value expected by datetime-local inputs. */
+export function toDateTimeLocal(v: string | null | undefined): string {
+  if (!v) return "";
+  const date = new Date(v);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
+}
+
 export function isOverdue(v: string | null | undefined): boolean {
   if (!v) return false;
   const d = new Date(v);
@@ -61,7 +70,7 @@ export function isOverdue(v: string | null | undefined): boolean {
 
 /* Drafts — sessionStorage only, keyed by user + task */
 const PREFIX = "dialer:draft:";
-export type Draft = { status: Outcome | ""; comments: string };
+export type Draft = { status: Outcome | ""; comments: string; recallDateTime: string };
 const key = (user: string, id: string) => `${PREFIX}${encodeURIComponent(user)}:${id}`;
 
 export function loadDraft(user: string, id: string): Draft | null {
@@ -69,7 +78,11 @@ export function loadDraft(user: string, id: string): Draft | null {
     const raw = sessionStorage.getItem(key(user, id));
     if (!raw) return null;
     const p = JSON.parse(raw);
-    return { status: isOutcome(p.status) ? p.status : "", comments: typeof p.comments === "string" ? p.comments : "" };
+    return {
+      status: isOutcome(p.status) ? p.status : "",
+      comments: typeof p.comments === "string" ? p.comments : "",
+      recallDateTime: typeof p.recallDateTime === "string" ? p.recallDateTime : "",
+    };
   } catch { return null; }
 }
 export function saveDraft(user: string, id: string, d: Draft) {

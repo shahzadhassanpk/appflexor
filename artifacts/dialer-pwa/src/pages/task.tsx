@@ -14,7 +14,7 @@ import { StatusPill } from "@/components/chrome";
 import { useOnline } from "@/hooks/use-device";
 import { useToast } from "@/hooks/use-toast";
 import {
-  OUTCOMES, OUTCOME_META, errMessage, errStatus, formatDate, isOutcome, isOverdue, loadDraft, removeDraft, saveDraft, telHref, type Outcome,
+  OUTCOMES, OUTCOME_META, errMessage, errStatus, formatDate, isOutcome, isOverdue, loadDraft, removeDraft, saveDraft, telHref, toDateTimeLocal, type Outcome,
 } from "@/lib/dialer";
 import { cn } from "@/lib/utils";
 
@@ -25,13 +25,14 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
   const online = useOnline();
   const q = useQuery({ enabled: !!id, queryKey: taskDetailKey(id), queryFn: ({ signal }) => getAssignedTask(session, id, signal), retry: false, refetchOnWindowFocus: false });
   const complete = useMutation({
-    mutationFn: ({ id: taskId, data }: { id: string; data: { status: Outcome; comments: string } }) =>
-      completeAssignedTask(session, taskId, data.status, data.comments),
+    mutationFn: ({ id: taskId, data }: { id: string; data: { status: Outcome; comments: string; recallDateTime: string } }) =>
+      completeAssignedTask(session, taskId, data.status, data.comments, data.recallDateTime),
   });
   const task = q.data;
 
   const [status, setStatus] = useState<Outcome | "">("");
   const [comments, setComments] = useState("");
+  const [recallDateTime, setRecallDateTime] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
@@ -42,27 +43,33 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
     if (!task || initFor.current === task.id) return;
     initFor.current = task.id;
     const d = loadDraft(session.username, task.id);
-    if (d) { setStatus(d.status); setComments(d.comments); setRestored(true); }
-    else { setStatus(isOutcome(task.status) ? task.status : ""); setComments(task.comments ?? ""); }
+    if (d) {
+      setStatus(d.status); setComments(d.comments);
+      setRecallDateTime(d.recallDateTime || toDateTimeLocal(task.recallDateTime)); setRestored(true);
+    } else {
+      setStatus(isOutcome(task.status) ? task.status : ""); setComments(task.comments ?? "");
+      setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+    }
   }, [task, session.username]);
 
   useEffect(() => {
     if (!task || initFor.current !== task.id || done.current) return;
-    const pristine = status === (isOutcome(task.status) ? task.status : "") && comments === (task.comments ?? "");
+    const pristine = status === (isOutcome(task.status) ? task.status : "") &&
+      comments === (task.comments ?? "") && recallDateTime === toDateTimeLocal(task.recallDateTime);
     if (pristine) removeDraft(session.username, task.id);
-    else saveDraft(session.username, task.id, { status, comments });
+    else saveDraft(session.username, task.id, { status, comments, recallDateTime });
     // task intentionally read for baseline only
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, comments, session.username]);
+  }, [status, comments, recallDateTime, session.username]);
 
   const tel = telHref(task?.phone);
   const unknownStatus = !!task?.status && !isOutcome(task.status);
-  const canSubmit = !!status && online && !complete.isPending && !!task;
+  const canSubmit = !!status && (status !== "RECALL" || !!recallDateTime) && online && !complete.isPending && !!task;
 
   const doComplete = () => {
     if (!task || !status || complete.isPending || !online) return;
     setSubmitError(null);
-    complete.mutate({ id: task.id, data: { status, comments } }, {
+    complete.mutate({ id: task.id, data: { status, comments, recallDateTime } }, {
       onSuccess: (res) => {
         if (!res.completed) { setSubmitError("Appflexor did not confirm completion. Your draft is kept; try again."); setConfirm(false); return; }
         done.current = true;
@@ -142,7 +149,11 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
           <div className="flex items-center justify-between rounded-xl bg-accent/10 px-3 py-2 text-xs text-foreground">
             <span>Draft restored from this session.</span>
             <button data-testid="button-discard-draft" className="font-semibold underline" onClick={() => {
-              removeDraft(session.username, task.id); setStatus(isOutcome(task.status) ? task.status : ""); setComments(task.comments ?? ""); setRestored(false);
+              removeDraft(session.username, task.id);
+              setStatus(isOutcome(task.status) ? task.status : "");
+              setComments(task.comments ?? "");
+              setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+              setRestored(false);
             }}>Discard</button>
           </div>
         )}
@@ -157,7 +168,11 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
           <label htmlFor="outcome" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Call outcome</label>
           <div className="relative">
             <select id="outcome" data-testid="select-status" value={status}
-              onChange={(e) => setStatus(isOutcome(e.target.value) ? e.target.value : "")}
+              onChange={(e) => {
+                const nextStatus = isOutcome(e.target.value) ? e.target.value : "";
+                setStatus(nextStatus);
+                if (nextStatus === "RECALL" && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+              }}
               className="h-13 w-full appearance-none rounded-xl border border-input bg-card px-4 py-3 pr-10 text-base font-semibold outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
               style={status ? { borderColor: `hsl(${OUTCOME_META[status].color})`, color: `hsl(${OUTCOME_META[status].color})` } : undefined}>
               <option value="">Select outcome</option>
@@ -169,7 +184,10 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
           </div>
           <div className="mt-2 grid grid-cols-3 gap-1.5" aria-hidden>
             {OUTCOMES.map((o) => (
-              <button key={o} type="button" tabIndex={-1} data-testid={`button-quick-${o.toLowerCase()}`} onClick={() => setStatus(o)}
+              <button key={o} type="button" tabIndex={-1} data-testid={`button-quick-${o.toLowerCase()}`} onClick={() => {
+                setStatus(o);
+                if (o === "RECALL" && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+              }}
                 className={cn("press rounded-lg border px-2 py-2 text-left transition-colors", status === o ? "border-transparent" : "border-border bg-card")}
                 style={status === o ? { background: `hsl(${OUTCOME_META[o].color} / .14)` } : undefined}>
                 <div className="text-[11px] font-bold" style={{ color: `hsl(${OUTCOME_META[o].color})` }}>{o}</div>
@@ -178,6 +196,17 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
             ))}
           </div>
         </div>
+
+        {status === "RECALL" && (
+          <div>
+            <label htmlFor="recall-date-time" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Next call date and time
+            </label>
+            <input id="recall-date-time" data-testid="input-recall-datetime" type="datetime-local"
+              value={recallDateTime} onChange={e => setRecallDateTime(e.target.value)} required
+              className="h-12 w-full rounded-xl border border-input bg-card px-4 text-base outline-none focus:border-accent focus:ring-4 focus:ring-accent/15" />
+          </div>
+        )}
 
         <div>
           <label htmlFor="comments" className="mb-2 flex justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">

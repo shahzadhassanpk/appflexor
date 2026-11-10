@@ -37,7 +37,10 @@ The browser sends the following operations through Vite's CRM proxy:
 - Claim: `bpm.data`, `{method:"POST",path:"/task/{id}/claim",data:{userId:"<username>"}}`.
 - Save: `POST /app/service?service.key=update.formData`. Upsert a `dialer_log`
   entry (`id:task.id`, `action:"update"`, `mode:"formData"`, `saveOrUpdate:"Yes"`)
-  contains only name, phone, status, comments and business_key in its formData.
+  with name, phone, status, comments and business_key in its formData. RECALL
+  also requires a next-call date/time; save it as the task's `due` field through
+  `bpm.data` PUT `/task/{id}`. It is not stored in a new task variable or log
+  field; the task list displays it in the existing due-date slot.
   After saving the record, `bpm.data` POST `/task/{id}/variables` sets
   `{modifications:{status:{value:"HOT",type:"String"},comments:{value:"...",type:"String"}}}`
   without completing. Both variables are read back before success is reported.
