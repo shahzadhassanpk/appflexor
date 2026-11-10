@@ -36,10 +36,11 @@ Save upserts a `dialer_log` record with only name, phone, status, comments and
 business_key; it must not complete the task. Complete saves the log first, then
 completes the task. Name and phone are read-only in the dialog.
 Use task.id as the dialer_log request record id with saveOrUpdate set to "Yes",
-not id "new".
+not id "new". Supply that identity both on the entry and inside formData.
 
 **Why:** the user explicitly changed repeated saves to update one log per task
-rather than create another log each time.
+rather than create another log each time, and reported that the upsert still
+did not update the log. Appflexor's save contract supplies both IDs.
 
 Save must also update the task's status and comments variables. For RECALL, save
 the selected next-call date/time in the existing task due field through
@@ -49,6 +50,16 @@ comments beneath Assigned task details, and label incomplete Assigned tasks
 Pending rather than Draft, as explicitly requested by the user.
 Assigned tasks must show a Call control that opens the native dialer with `tel:`,
 not only a navigation arrow.
+
+Treat Camunda task PUT as a full update, not a partial patch: preserve the
+freshly read writable task properties when changing due, especially assignment.
+Never automatically reclaim a task whose ownership changed during Save.
+
+**Why:** the user reported that Save reset the assignee after due-date saving
+was introduced. A due-only PUT omits the other mutable task attributes.
+
+**How to apply:** check ownership before and after the update and fail explicitly
+if assignment changed instead of silently claiming or completing it.
 
 The call dialog must offer a radio choice to auto-dial the next task only after
 successful completion. Default to Manual, and still claim any Available task

@@ -36,13 +36,17 @@ The browser sends the following operations through Vite's CRM proxy:
 - Lead variables: same service, `GET /task/{id}/variables?deserializeValues=false`.
 - Claim: `bpm.data`, `{method:"POST",path:"/task/{id}/claim",data:{userId:"<username>"}}`.
 - Save: `POST /app/service?service.key=update.formData`. Upsert a `dialer_log`
-  entry (`id:task.id`, `action:"update"`, `mode:"formData"`, `saveOrUpdate:"Yes"`)
+  entry (`id:task.id` and `formData.id:task.id`, `action:"update"`,
+  `mode:"formData"`, `saveOrUpdate:"Yes"`, default `datasource:""`)
   with name, phone, status, comments and business_key in its formData. RECALL
   also requires a next-call date/time; save it as the task's `due` field through
   `bpm.data` PUT `/task/{id}`. It is not stored in a new task variable or log
   field; the task list displays it in the existing due-date slot.
   The list recognizes `due`, `dueDate` and `due_date`; when an Assigned RECALL
   row omits the date, it reads the task detail endpoint for the persisted due.
+  Due-date PUT reads the current task first and preserves its writable
+  properties, including assignee, owner, name, description, priority and tenant.
+  It refuses a task assigned to someone else and checks assignment after PUT.
   After saving the record, `bpm.data` POST `/task/{id}/variables` sets
   `{modifications:{status:{value:"HOT",type:"String"},comments:{value:"...",type:"String"}}}`
   without completing. Both variables are read back before success is reported.
@@ -66,8 +70,9 @@ The **Assigned** list shows the signed-in user's tasks, including claimed tasks
 without a phone number. The separate **Available** list shows unassigned tasks in the
 `DIALER_APP` candidate group, including tasks without a recognized phone variable.
 If variable enrichment fails, the basic available card remains visible with an
-explicit details warning. Available and Assigned are separate tabs (Available
-opens by default). Available has individual selection checkboxes, Select all,
+explicit details warning. Assigned and Available are separate tabs (Assigned
+is first and opens by default). Status filters appear as Unset, Recall, Hot,
+Rejections, All. Available has individual selection checkboxes, Select all,
 and Claim selected; it has no Call buttons. Bulk claims use up to five concurrent
 atomic Camunda claim requests, report partial failures, and refresh both lists
 afterward. Claiming never opens the dialog or dialer. Select all covers the loaded

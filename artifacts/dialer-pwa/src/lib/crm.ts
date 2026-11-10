@@ -390,6 +390,7 @@ export async function saveDialerLog(
   const recallIso = status === "RECALL" ? recallDateTimeToIso(recallDateTime) : "";
   const current = await ownedTaskWithBusinessKey(session, task.id);
   const fields = {
+    id: task.id,
     name: current.name,
     phone: current.phone,
     status,
@@ -400,6 +401,7 @@ export async function saveDialerLog(
   const key = saveKey(session, task);
   if (savedLogs.get(key) !== fingerprint) {
     const payload = await postService("app", "update.formData", {
+      datasource: "",
       saveOrUpdate: "Yes",
       data: [{
         formId: "dialer_log",
@@ -433,8 +435,24 @@ export async function saveDialerLog(
     }
     if (status === "RECALL") {
       const path = `/task/${encodeURIComponent(task.id)}`;
-      await bpmRequest(session, path, "PUT", { due: recallIso });
+      const before = asObject(await bpmRequest(session, path));
+      if (before.assignee !== session.username) {
+        throw new CrmError(409, "This task is no longer assigned to you. Refresh before saving.");
+      }
+      // Camunda's PUT updates the full task, not just the supplied fields.
+      // Preserve all writable task properties; never reassign an unowned task.
+      const writableFields = [
+        "name", "description", "assignee", "owner", "delegationState",
+        "followUp", "priority", "parentTaskId", "caseInstanceId", "tenantId",
+      ];
+      const update = Object.fromEntries(writableFields
+        .filter(field => Object.hasOwn(before, field))
+        .map(field => [field, before[field]]));
+      await bpmRequest(session, path, "PUT", { ...update, due: recallIso });
       const updatedTask = asObject(await bpmRequest(session, path));
+      if (updatedTask.assignee !== session.username) {
+        throw new CrmError(409, "The due-date update did not preserve your task assignment. The task was not completed; refresh your queue.");
+      }
       const updatedDue = taskDueDate(updatedTask, {});
       if (!updatedDue || new Date(updatedDue).getTime() !== new Date(recallIso).getTime()) {
         throw new CrmError(502, "Appflexor did not return the updated task due date.");

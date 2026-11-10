@@ -185,11 +185,12 @@ test("claim, save and complete use the confirmed CRM contracts", async (t) => {
     assert.equal(calls.filter(c => c.key === "complete.task").length, 0, "Save alone does not complete");
     const saved = calls.filter(c => c.key === "update.formData").at(-1).body;
     assert.deepEqual(saved, {
+      datasource: "",
       saveOrUpdate: "Yes",
       data: [{
         formId: "dialer_log", entity: "dialer_log", action: "update",
         mode: "formData", id: task.id, fileData: [],
-        formData: { name: "Demo Lead", phone: "", status: "HOT", comments: "Interested", business_key: "LEAD-001" },
+        formData: { id: task.id, name: "Demo Lead", phone: "", status: "HOT", comments: "Interested", business_key: "LEAD-001" },
       }],
     });
     const successfulSaveCount = calls.filter(c => c.key === "update.formData").length;
@@ -221,8 +222,9 @@ test("changed saves upsert the same task-id dialer log", async (t) => {
       assert.equal(body.saveOrUpdate, "Yes");
       const entry = body.data[0];
       assert.equal(entry.id, owned.id);
+      assert.equal(entry.formData.id, owned.id, "Appflexor requires the same id inside formData");
       requests.push(entry);
-      records.set(entry.id, entry.formData);
+      records.set(entry.formData.id, entry.formData);
       return Response.json({ C_STATUS: "SUCCESS" });
     }
     if (body.path === `/task/${owned.id}/variables`) {
@@ -230,6 +232,7 @@ test("changed saves upsert the same task-id dialer log", async (t) => {
       return new Response(null, { status: 204 });
     }
     if (body.path === `/task/${owned.id}` && body.method === "PUT") {
+      assert.equal(body.data.assignee, session.username);
       owned.due = body.data.due;
       return new Response(null, { status: 204 });
     }
@@ -257,8 +260,52 @@ test("changed saves upsert the same task-id dialer log", async (t) => {
   }
 });
 
-test("RECALL updates and verifies the task due date without adding a variable", async (t) => {
-  const recallTask = { ...task, id: "recall-task", assignee: session.username };
+test("RECALL does not reclaim a reassigned task and rejects assignment loss", async (t) => {
+  for (const loseBeforePut of [true, false]) {
+    await t.test(loseBeforePut ? "ownership changed before PUT" : "ownership lost after PUT", async () => {
+      const owned = { ...task, id: `ownership-${loseBeforePut}`, assignee: session.username };
+      const variables = { business_key: { value: "LEAD-OWNER" } };
+      let reads = 0;
+      let puts = 0;
+      let completions = 0;
+      t.mock.method(globalThis, "fetch", async (url, options) => {
+        const body = JSON.parse(options.body);
+        if (url.includes("service.key=update.formData")) return Response.json({ C_STATUS: "SUCCESS" });
+        if (url.includes("service.key=complete.task")) { completions++; return new Response(null, { status: 204 }); }
+        if (body.path.includes("/variables?")) return Response.json({ data: variables, status: "SUCCESS" });
+        if (body.path.endsWith("/variables")) {
+          Object.assign(variables, body.data.modifications);
+          return new Response(null, { status: 204 });
+        }
+        if (body.method === "PUT") {
+          puts++;
+          owned.due = body.data.due;
+          owned.assignee = null;
+          return new Response(null, { status: 204 });
+        }
+        reads++;
+        if (loseBeforePut && reads === 2) owned.assignee = "another-agent";
+        return Response.json({ data: owned, status: "SUCCESS" });
+      });
+      try {
+        await assert.rejects(completeDialerTask(session, owned, "RECALL", "Later", "2027-04-05T13:45"),
+          loseBeforePut ? /no longer assigned to you/ : /did not preserve your task assignment/);
+        assert.equal(puts, loseBeforePut ? 0 : 1);
+        assert.equal(completions, 0);
+      } finally {
+        t.mock.restoreAll();
+      }
+    });
+  }
+});
+
+test("RECALL preserves assignment and writable task properties while updating due", async (t) => {
+  const recallTask = {
+    ...task, id: "recall-task", assignee: session.username,
+    owner: "original-owner", description: "Keep description", priority: 75,
+    delegationState: null, followUp: "2027-04-04T12:00:00.000+0000",
+    parentTaskId: null, caseInstanceId: null, tenantId: "test-tenant",
+  };
   const recallTaskWithDue = { ...recallTask, due: null };
   const recallVariables = {
     name: { value: "Recall Lead" },
@@ -280,8 +327,15 @@ test("RECALL updates and verifies the task due date without adding a variable", 
       return new Response(null, { status: 204 });
     }
     if (body.path === `/task/${recallTask.id}` && body.method === "PUT") {
-      assert.deepEqual(Object.keys(body.data), ["due"]);
-      recallTaskWithDue.due = body.data.due;
+      const { due, ...preserved } = body.data;
+      const expected = Object.fromEntries([
+        "name", "description", "assignee", "owner", "delegationState",
+        "followUp", "priority", "parentTaskId", "caseInstanceId", "tenantId",
+      ].map(key => [key, recallTask[key]]));
+      assert.deepEqual(preserved, expected);
+      // Model replacement semantics: missing fields would be reset to null.
+      for (const key of Object.keys(expected)) recallTaskWithDue[key] = body.data[key] ?? null;
+      recallTaskWithDue.due = due;
       return new Response(null, { status: 204 });
     }
     if (body.path === `/task/${recallTask.id}`) return Response.json({ status: "SUCCESS", data: recallTaskWithDue });
@@ -292,10 +346,14 @@ test("RECALL updates and verifies the task due date without adding a variable", 
     await saveDialerLog(session, recallTask, "RECALL", "Call back", "2027-04-05T13:45");
     const log = savedRequests[0].data[0];
     assert.equal(log.id, recallTask.id);
+    assert.equal(log.formData.id, recallTask.id);
     assert.equal("recall_datetime" in log.formData, false, "The log does not get a new recall field");
     assert.equal(new Date(recallTaskWithDue.due).getTime(), new Date("2027-04-05T13:45").getTime());
     assert.equal("recall_datetime" in recallVariables, false, "No recall task variable is created");
     assert.equal(recallVariables.status.value, "RECALL");
+    assert.equal(recallTaskWithDue.assignee, session.username);
+    assert.equal(recallTaskWithDue.owner, "original-owner");
+    assert.equal(recallTaskWithDue.priority, 75);
   } finally {
     t.mock.restoreAll();
   }

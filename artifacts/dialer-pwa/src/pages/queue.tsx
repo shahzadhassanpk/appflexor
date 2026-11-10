@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useOnline } from "@/hooks/use-device";
 import { telHref } from "@/lib/dialer";
 import { StatusPill } from "@/components/chrome";
-import { OUTCOMES, errMessage, formatDate, isOutcome, isOverdue, sanitizePhone } from "@/lib/dialer";
+import { errMessage, formatDate, isOutcome, isOverdue, sanitizePhone } from "@/lib/dialer";
 import { cn } from "@/lib/utils";
 
 type Filter = "ALL" | "HOT" | "RECALL" | "REJECTION" | "UNSET";
@@ -24,7 +24,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   const [dialHint, setDialHint] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimNotice, setClaimNotice] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("available");
+  const [activeTab, setActiveTab] = useState("assigned");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const online = useOnline();
   const availableIds = useMemo(() => available.data?.tasks.map(t => t.id) ?? [], [available.data]);
@@ -236,11 +236,11 @@ export default function QueuePage({ session }: { session: DialerSession }) {
               {search && <button data-testid="button-clear-search" onClick={() => setSearch("")} className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-lg hover:bg-muted" aria-label="Clear"><X className="h-4 w-4" /></button>}
             </div>
             <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none]">
-              {(["ALL", ...OUTCOMES, "UNSET"] as Filter[]).map((f) => (
+              {(["UNSET", "RECALL", "HOT", "REJECTION", "ALL"] as Filter[]).map((f) => (
                 <button key={f} data-testid={`button-filter-${f.toLowerCase()}`} onClick={() => setFilter(f)}
                   className={cn("press flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
                     filter === f ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary")}>
-                  {f === "ALL" ? "All" : f === "UNSET" ? "Unset" : f.charAt(0) + f.slice(1).toLowerCase()}
+                  {f === "ALL" ? "All" : f === "UNSET" ? "Unset" : f === "REJECTION" ? "Rejections" : f.charAt(0) + f.slice(1).toLowerCase()}
                   <span className="tabnum opacity-60">{counts[f]}</span>
                 </button>
               ))}
@@ -329,11 +329,11 @@ export default function QueuePage({ session }: { session: DialerSession }) {
       {nextNotice && <p role="status" data-testid="text-auto-dial-status" className="mb-4 rounded-xl border border-border bg-card px-4 py-3 text-sm">{nextNotice}</p>}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList aria-label="Task lists" className="mb-5 grid h-12 w-full grid-cols-2 rounded-xl">
-          <TabsTrigger value="available" data-testid="tab-available" className="h-10 rounded-lg">
-            Available <span className="tabnum ml-2">{available.data?.tasks.length ?? "…"}</span>
-          </TabsTrigger>
           <TabsTrigger value="assigned" data-testid="tab-assigned" className="h-10 rounded-lg">
             Assigned <span className="tabnum ml-2">{q.data?.tasks.length ?? "…"}</span>
+          </TabsTrigger>
+          <TabsTrigger value="available" data-testid="tab-available" className="h-10 rounded-lg">
+            Available <span className="tabnum ml-2">{available.data?.tasks.length ?? "…"}</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="available">
