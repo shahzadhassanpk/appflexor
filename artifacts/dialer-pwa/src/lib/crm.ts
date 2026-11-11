@@ -39,7 +39,6 @@ export class CrmError extends Error {
 }
 
 const SESSION_KEY = "appflexor-dialer-session-v1";
-const BASE_PATH = import.meta.env.BASE_URL;
 
 export function readSession(): DialerSession | null {
   try {
@@ -94,7 +93,7 @@ async function postService(
   let response: Response;
   try {
     response = await fetch(
-      `${BASE_PATH}${service}/service?service.key=${encodeURIComponent(serviceKey)}`,
+      `/${service}/service?service.key=${encodeURIComponent(serviceKey)}`,
       {
         method: "POST",
         headers: {
