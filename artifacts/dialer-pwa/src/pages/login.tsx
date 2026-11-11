@@ -12,15 +12,16 @@ export default function LoginPage({ onLogin }: { onLogin: (session: DialerSessio
   const [, navigate] = useLocation();
   const online = useOnline();
   const login = useMutation({
-    mutationFn: async ({ data }: { data: { username: string; password: string } }) => {
+    mutationFn: async ({ data, keepSignedIn }: { data: { username: string; password: string }; keepSignedIn: boolean }) => {
       const session = await loginToCrm(data.username, data.password);
-      saveSession(session);
+      saveSession(session, keepSignedIn);
       return session;
     },
   });
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = (e: FormEvent) => {
@@ -29,7 +30,7 @@ export default function LoginPage({ onLogin }: { onLogin: (session: DialerSessio
     if (!username.trim() || !password) { setError("Enter your Appflexor username and password."); return; }
     setError(null);
     const data = { username: username.trim(), password };
-    login.mutate({ data }, {
+    login.mutate({ data, keepSignedIn }, {
       onSuccess: (session) => {
         setPassword("");
         qc.clear();
@@ -96,6 +97,16 @@ export default function LoginPage({ onLogin }: { onLogin: (session: DialerSessio
                 </button>
               </div>
             </Field>
+
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={keepSignedIn}
+                onChange={(e) => setKeepSignedIn(e.target.checked)}
+                className="h-4 w-4 rounded border-input accent-primary"
+              />
+              <span>Keep me logged in on this device</span>
+            </label>
 
             <button type="submit" data-testid="button-sign-in" disabled={login.isPending || !online}
               className="press flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-base font-bold text-primary-foreground shadow-[0_8px_20px_-8px_hsl(var(--primary)/.6)] disabled:opacity-50">

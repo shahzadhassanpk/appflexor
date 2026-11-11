@@ -40,9 +40,9 @@ export class CrmError extends Error {
 
 const SESSION_KEY = "appflexor-dialer-session-v1";
 
-export function readSession(): DialerSession | null {
+function readStoredSession(storage: Storage): DialerSession | null {
   try {
-    const value: unknown = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "null");
+    const value: unknown = JSON.parse(storage.getItem(SESSION_KEY) ?? "null");
     if (!value || typeof value !== "object") return null;
     const session = value as Partial<DialerSession>;
     if (typeof session.username !== "string" || !session.username ||
@@ -54,15 +54,26 @@ export function readSession(): DialerSession | null {
   }
 }
 
-export function saveSession(session: DialerSession): void {
+export function readSession(): DialerSession | null {
+  let session: DialerSession | null = null;
+  try { session = readStoredSession(localStorage); } catch { /* Local storage may be blocked. */ }
+  if (session) return session;
+  try { return readStoredSession(sessionStorage); } catch { return null; }
+}
+
+export function saveSession(session: DialerSession, keepSignedIn = false): void {
+  const serialized = JSON.stringify(session);
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    const target = keepSignedIn ? localStorage : sessionStorage;
+    target.setItem(SESSION_KEY, serialized);
+    (keepSignedIn ? sessionStorage : localStorage).removeItem(SESSION_KEY);
   } catch {
-    throw new CrmError(400, "Browser session storage is unavailable. Allow site storage to sign in.");
+    throw new CrmError(400, "Browser storage is unavailable. Allow site storage to sign in.");
   }
 }
 
 export function clearSession(): void {
+  try { localStorage.removeItem(SESSION_KEY); } catch { /* Storage may be blocked. */ }
   try { sessionStorage.removeItem(SESSION_KEY); } catch { /* Storage may be blocked. */ }
 }
 
@@ -299,8 +310,8 @@ export async function getTaskList(
   signal?: AbortSignal,
 ): Promise<DialerTaskList> {
   const path = kind === "assigned"
-    ? `/task?assignee=${encodeURIComponent(session.username)}`
-    : "/task?candidateGroup=DIALER_APP&unassigned=true";
+    ? `/task?taskDefinitionKey=dialerApp&assignee=${encodeURIComponent(session.username)}`
+    : "/task?taskDefinitionKey=dialerApp&unassigned=true";
   const response = await bpmRequest(session, path, "GET", {}, signal);
   if (!Array.isArray(response)) throw new CrmError(502, "Appflexor returned an invalid task list.");
 
