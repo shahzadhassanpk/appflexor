@@ -1,13 +1,13 @@
 import type { DialerTask } from "./crm";
-import { telHref } from "./dialer";
+import { isOverdue, telHref } from "./dialer";
 
-export type TaskFilter = "ALL" | "HOT" | "RECALL" | "REJECTION" | "UNSET";
+export type TaskFilter = "ALL" | "HOT" | "RECALL" | "REJECTION" | "UNSET" | "OVERDUE";
 export const DEFAULT_TASK_FILTER: TaskFilter = "UNSET";
 const FILTER_STORAGE_PREFIX = "dialer:task-filter:";
 
 function isTaskFilter(value: unknown): value is TaskFilter {
   return value === "ALL" || value === "HOT" || value === "RECALL" ||
-    value === "REJECTION" || value === "UNSET";
+    value === "REJECTION" || value === "UNSET" || value === "OVERDUE";
 }
 
 export function readTaskFilterPreference(username: string, storage: Pick<Storage, "getItem"> | null): TaskFilter {
@@ -30,7 +30,7 @@ export function saveTaskFilterPreference(
 }
 
 export function matchesQueueFilters(task: DialerTask, filter: TaskFilter, search: string): boolean {
-  if (filter === "UNSET" ? !!task.status : filter !== "ALL" && task.status !== filter) return false;
+  if (filter === "OVERDUE" ? !isOverdue(task.dueDate) : filter === "UNSET" ? !!task.status : filter !== "ALL" && task.status !== filter) return false;
   const text = search.trim().toLowerCase();
   if (!text) return true;
   const digits = text.replace(/\D/g, "");

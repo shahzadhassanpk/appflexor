@@ -79,7 +79,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
         next = await getAssignedTask(session, nextAssigned.id);
       } else {
         if (filter !== "ALL") {
-          setNextNotice(`No more ${filter === "UNSET" ? "Unset" : filter === "REJECTION" ? "Rejection" : filter === "RECALL" ? "Recall" : "Hot"} tasks matching this list with dialable phone numbers. Auto-dial stopped.`);
+          setNextNotice(`No more ${filter === "OVERDUE" ? "Overdue" : filter === "UNSET" ? "Unset" : filter === "REJECTION" ? "Rejection" : filter === "RECALL" ? "Recall" : "Hot"} tasks matching this list with dialable phone numbers. Auto-dial stopped.`);
           return;
         }
         const candidates = await getTaskList(session, "available");
@@ -183,8 +183,8 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   };
 
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { ALL: 0, HOT: 0, RECALL: 0, REJECTION: 0, UNSET: 0 };
-    (tasks ?? []).forEach((t) => { c.ALL++; if (isOutcome(t.status)) c[t.status]++; else if (!t.status) c.UNSET++; });
+    const c: Record<Filter, number> = { ALL: 0, HOT: 0, RECALL: 0, REJECTION: 0, UNSET: 0, OVERDUE: 0 };
+    (tasks ?? []).forEach((t) => { c.ALL++; if (isOverdue(t.dueDate)) c.OVERDUE++; if (isOutcome(t.status)) c[t.status]++; else if (!t.status) c.UNSET++; });
     return c;
   }, [tasks]);
 
@@ -258,11 +258,11 @@ export default function QueuePage({ session }: { session: DialerSession }) {
               {search && <button data-testid="button-clear-search" onClick={() => setSearch("")} className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-lg hover:bg-muted" aria-label="Clear"><X className="h-4 w-4" /></button>}
             </div>
             <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none]">
-              {(["UNSET", "RECALL", "HOT", "REJECTION", "ALL"] as Filter[]).map((f) => (
+              {(["OVERDUE", "UNSET", "RECALL", "HOT", "REJECTION", "ALL"] as Filter[]).map((f) => (
                 <button key={f} data-testid={`button-filter-${f.toLowerCase()}`} onClick={() => setFilter(f)}
                   className={cn("press flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
                     filter === f ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary")}>
-                  {f === "ALL" ? "All" : f === "UNSET" ? "Unset" : f === "REJECTION" ? "Rejections" : f.charAt(0) + f.slice(1).toLowerCase()}
+                  {f === "ALL" ? "All" : f === "OVERDUE" ? "Overdue" : f === "UNSET" ? "Unset" : f === "REJECTION" ? "Rejections" : f.charAt(0) + f.slice(1).toLowerCase()}
                   <span className="tabnum opacity-60">{counts[f]}</span>
                 </button>
               ))}

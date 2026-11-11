@@ -254,6 +254,46 @@ async function variablesFor(session: DialerSession, id: string, signal?: AbortSi
   return asObject(result);
 }
 
+async function variablesForTasks(
+  session: DialerSession,
+  tasks: Record<string, unknown>[],
+  signal?: AbortSignal,
+): Promise<Map<string, { variables?: Record<string, unknown>; error?: unknown }>> {
+  if (!tasks.length) return new Map();
+  const keys = tasks.map(task => ({
+    key: `task_${String(task.id)}`,
+    request: {
+      method: "GET",
+      path: `/task/${encodeURIComponent(String(task.id))}/variables?deserializeValues=false`,
+      data: {},
+    },
+  }));
+  const response = asObject(await postService(
+    "bpm",
+    "multiKey.data",
+    { dataKeys: keys },
+    session.authKey,
+    signal,
+  ));
+  const results = new Map<string, { variables?: Record<string, unknown>; error?: unknown }>();
+  tasks.forEach(task => {
+    const id = String(task.id);
+    const key = `task_${id}`;
+    const envelope = asObject(response[key] ?? asObject(response.C_DATA)[key] ?? asObject(response.data)[key]);
+    const value = unwrap(envelope);
+    const valueObject = asObject(value);
+    const resultStatus = String(valueObject.type ?? valueObject.status ?? "");
+    if (/exception|error|failed|failure/i.test(resultStatus)) {
+      results.set(id, { error: new CrmError(502, String(valueObject.message ?? "Could not load task variables.")) });
+    } else if (Object.keys(valueObject).length) {
+      results.set(id, { variables: valueObject });
+    } else {
+      results.set(id, { error: new CrmError(502, "Appflexor returned invalid task variables.") });
+    }
+  });
+  return results;
+}
+
 export async function getTaskList(
   session: DialerSession,
   kind: "assigned" | "available",
@@ -265,50 +305,45 @@ export async function getTaskList(
   const response = await bpmRequest(session, path, "GET", {}, signal);
   if (!Array.isArray(response)) throw new CrmError(502, "Appflexor returned an invalid task list.");
 
-  const rows = response.slice(0, 100);
+  const rows = response.slice(0, 100).map(asObject);
+  rows.forEach(task => {
+    if (typeof task.id !== "string" || !task.id) {
+      throw new CrmError(502, "Appflexor returned a task without an id.");
+    }
+    if (kind === "assigned" && task.assignee !== session.username) {
+      throw new CrmError(502, "Appflexor returned a task outside your assignment.");
+    }
+    if (kind === "available" && task.assignee != null && task.assignee !== "") {
+      throw new CrmError(502, "Appflexor returned an assigned task in the available queue.");
+    }
+  });
+  const eligibleRows = rows.filter(task => !(session.taskDefinitionKey && kind === "assigned" && task.taskDefinitionKey !== session.taskDefinitionKey));
+  let variableResults: Map<string, { variables?: Record<string, unknown>; error?: unknown }>;
+  try {
+    variableResults = await variablesForTasks(session, eligibleRows, signal);
+  } catch (error) {
+    if (kind !== "available" || signal?.aborted ||
+        (error instanceof DOMException && error.name === "AbortError") ||
+        (error instanceof CrmError && error.status === 401)) throw error;
+    variableResults = new Map(eligibleRows.map(task => [String(task.id), { error }]));
+  }
   const tasks: DialerTask[] = [];
-  for (let offset = 0; offset < rows.length; offset += 5) {
-    const batch = await Promise.all(rows.slice(offset, offset + 5).map(async raw => {
-      const task = asObject(raw);
-      if (typeof task.id !== "string" || !task.id) {
-        throw new CrmError(502, "Appflexor returned a task without an id.");
-      }
-      if (kind === "assigned" && task.assignee !== session.username) {
-        throw new CrmError(502, "Appflexor returned a task outside your assignment.");
-      }
-      if (kind === "available" && task.assignee != null && task.assignee !== "") {
-        throw new CrmError(502, "Appflexor returned an assigned task in the available queue.");
-      }
-      if (session.taskDefinitionKey && kind === "assigned" &&
-          task.taskDefinitionKey !== session.taskDefinitionKey) return null;
-      let variables: Record<string, unknown> = {};
-      let detailsError: string | undefined;
-      try {
-        variables = await variablesFor(session, task.id, signal);
-      } catch (error) {
-        // Available task membership comes from the task API, not lead fields.
-        // Keep its basic card visible if optional variable enrichment fails.
-        if (kind !== "available" || signal?.aborted ||
-            (error instanceof DOMException && error.name === "AbortError") ||
-            (error instanceof CrmError && error.status === 401)) throw error;
-        detailsError = error instanceof Error ? error.message : "Could not load task details.";
-      }
+  eligibleRows.forEach(task => {
+      const result = variableResults.get(String(task.id));
+      if (result?.error && kind !== "available") throw result.error;
+      const variables = result?.variables || {};
+      const detailsError = result?.error instanceof Error ? result.error.message : undefined;
       const lead = mapTask(task, variables);
       // Some task-list responses omit a due date that the task-detail API
       // already returns after a successful RECALL save.
       if (kind === "assigned" && lead.status === "RECALL" && !lead.dueDate) {
-        const detail = asObject(await bpmRequest(session, `/task/${encodeURIComponent(task.id)}`, "GET", {}, signal));
-        if (detail.assignee !== session.username) {
-          throw new CrmError(403, "This task is no longer assigned to you. Refresh your queue.");
-        }
-        lead.dueDate = taskDueDate(detail, variables);
+        // The queue variables are already batched; task-level due dates are
+        // still read from the task response when available.
+        lead.dueDate = taskDueDate(task, variables);
         lead.recallDateTime = lead.dueDate ?? "";
       }
-      if (kind === "available") return { ...lead, ...(detailsError ? { detailsError } : {}) };
-      return lead;
-    }));
-    tasks.push(...batch.filter((task): task is DialerTask => task !== null));
-  }
+      tasks.push(kind === "available" ? { ...lead, ...(detailsError ? { detailsError } : {}) } : lead);
+  });
   return { tasks, hasMore: response.length > 100, scannedCount: rows.length };
 }
 

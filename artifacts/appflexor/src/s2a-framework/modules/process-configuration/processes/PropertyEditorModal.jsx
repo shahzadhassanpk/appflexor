@@ -87,6 +87,7 @@ export function PropertyEditorModal({
                             ))}
                         </div>
                         <a href="/app/user-management" target="_blank">Add New User or Group</a>
+                        <div className="form-text">Assignment is optional when candidate users or groups are defined in the BPMN process. Otherwise, an assignment is required.</div>
                     </div>
                     <div className="mb-1">
                         {isExprMode ? (

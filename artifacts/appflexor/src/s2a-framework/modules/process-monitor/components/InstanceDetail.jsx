@@ -46,7 +46,75 @@ export default function InstanceDetail({ instance, selectedTaskId, onClose, onRe
     const [externalTaskBusyId, setExternalTaskBusyId] = useState("");
     const [retryingExternalTask, setRetryingExternalTask] = useState(false);
     const [operationError, setOperationError] = useState("");
+    const identityDirectoryRef = useRef(null);
+    const definitionCandidatesRef = useRef(null);
     const incidents = instanceJobs.filter(job => job.exceptionMessage || job.retries === 0);
+
+    async function getIdentityDirectory() {
+        if (identityDirectoryRef.current) return identityDirectoryRef.current;
+        try {
+            const response = await axios.post(API_URL + "?service.key=masterKey.tenantData", {
+                dataKeys: [
+                    { serviceParams: "", dataKey: "groups", serviceKey: "sys.console.dir.group", mode: "formData" },
+                    { serviceParams: "", dataKey: "users", serviceKey: "sys.user.list", mode: "formData" },
+                ],
+            });
+            const data = response.data?.C_DATA || {};
+            const directory = {
+                groups: Object.fromEntries((data.groups || []).flatMap(group => {
+                    const code = group.code || group.group_code || group.groupCode || group.name || String(group.id);
+                    return [[String(group.id), code], [String(code), code]];
+                })),
+                users: Object.fromEntries((data.users || []).map(user => [
+                    String(user.username),
+                    String(user.username),
+                ])),
+            };
+            identityDirectoryRef.current = directory;
+            return directory;
+        } catch {
+            const emptyDirectory = { groups: {}, users: {} };
+            identityDirectoryRef.current = emptyDirectory;
+            return emptyDirectory;
+        }
+    }
+
+    async function getDefinitionCandidates() {
+        if (definitionCandidatesRef.current) return definitionCandidatesRef.current;
+        try {
+            const definitionXml = await camundaApi.getProcessDefinitionXml(instance.definitionId);
+            const document = new DOMParser().parseFromString(definitionXml?.bpmn20Xml || "", "application/xml");
+            const candidates = {};
+            document.querySelectorAll("[id]").forEach(element => {
+                const candidateGroups = element.getAttribute("camunda:candidateGroups") || element.getAttribute("candidateGroups") || "";
+                const candidateUsers = element.getAttribute("camunda:candidateUsers") || element.getAttribute("candidateUsers") || "";
+                if (candidateGroups || candidateUsers) {
+                    candidates[element.getAttribute("id")] = {
+                        groups: candidateGroups.split(",").map(value => value.trim()).filter(Boolean),
+                        users: candidateUsers.split(",").map(value => value.trim()).filter(Boolean),
+                    };
+                }
+            });
+            definitionCandidatesRef.current = candidates;
+            return candidates;
+        } catch {
+            definitionCandidatesRef.current = {};
+            return {};
+        }
+    }
+
+    function getCandidateDisplayValues(task, links, directory, definitionCandidates) {
+        const definition = definitionCandidates[task.taskDefinitionKey] || { groups: [], users: [] };
+        const groupIds = (links || []).filter(link => link.type === "candidate" && link.groupId).map(link => String(link.groupId));
+        const userIds = (links || []).filter(link => link.type === "candidate" && link.userId).map(link => String(link.userId));
+        const groupValues = groupIds.length
+            ? groupIds.map((groupId, index) => directory.groups[groupId] || definition.groups[index] || groupId)
+            : definition.groups;
+        const userValues = userIds.length
+            ? userIds.map((userId, index) => directory.users[userId] || definition.users[index] || userId)
+            : definition.users;
+        return { groupIds, userIds, groupValues, userValues };
+    }
 
     useEffect(() => {
         setTab(selectedTaskId ? "User Tasks" : "Variables");
@@ -55,6 +123,8 @@ export default function InstanceDetail({ instance, selectedTaskId, onClose, onRe
         setInstanceJobs([]);
         setExternalTasks([]);
         setExternalTasksLoading(false);
+        identityDirectoryRef.current = null;
+        definitionCandidatesRef.current = null;
     }, [instance, selectedTaskId]);
 
     useEffect(() => {
@@ -71,12 +141,20 @@ export default function InstanceDetail({ instance, selectedTaskId, onClose, onRe
                     }
                 } else if (tab === "User Tasks") {
                     const latestTasks = await camundaApi.getTasksByInstance(instance.id);
+                    const [directory, definitionCandidates] = await Promise.all([
+                        getIdentityDirectory(),
+                        getDefinitionCandidates(),
+                    ]);
                     const enrichedTasks = await Promise.all((latestTasks || []).map(async task => {
                         const links = await camundaApi.getTaskIdentityLinks(task.id).catch(() => []);
-                        const candidateGroups = (links || [])
-                            .filter(link => link.type === "candidate" && link.groupId)
-                            .map(link => link.groupId);
-                        return { ...task, candidateGroups, candidateGroup: candidateGroups.join(", ") };
+                        const { groupIds, userIds, groupValues, userValues } = getCandidateDisplayValues(task, links, directory, definitionCandidates);
+                        return {
+                            ...task,
+                            candidateGroups: groupIds,
+                            candidateGroup: groupValues.join(", "),
+                            candidateUsers: userIds,
+                            candidateUser: userValues.join(", "),
+                        };
                     }));
                     if (active) setTasks(enrichedTasks);
                 } else if (tab === "Jobs" || tab === "Incidents") {
@@ -144,17 +222,62 @@ export default function InstanceDetail({ instance, selectedTaskId, onClose, onRe
                 if (type === "group") await camundaApi.addTaskCandidateGroup(task.id, value);
                 else await camundaApi.assignTaskUser(task.id, value);
             } catch (error) { mutationError = error; }
-            const [updatedTask, identityLinks] = await Promise.all([
+            const [updatedTask, identityLinks, directory] = await Promise.all([
                 camundaApi.getTask(task.id),
                 camundaApi.getTaskIdentityLinks(task.id),
+                getIdentityDirectory(),
             ]);
-            const candidateGroups = (identityLinks || []).filter(link => link.type === "candidate" && link.groupId).map(link => link.groupId);
-            const assignmentUpdated = type === "group" ? candidateGroups.includes(value) : updatedTask?.assignee === value;
+            const definitionCandidates = await getDefinitionCandidates();
+            const { groupIds: candidateGroupIds, userIds: candidateUserIds, groupValues: candidateGroups, userValues: candidateUsers } = getCandidateDisplayValues(task, identityLinks, directory, definitionCandidates);
+            const assignmentUpdated = type === "group" ? candidateGroupIds.includes(value) : updatedTask?.assignee === value;
             if (mutationError && !assignmentUpdated) throw mutationError;
-            setTasks(previous => previous.map(item => item.id === task.id ? { ...item, ...updatedTask, candidateGroups, candidateGroup: candidateGroups.join(", ") } : item));
+            setTasks(previous => previous.map(item => item.id === task.id ? {
+                ...item,
+                ...updatedTask,
+                candidateGroups: candidateGroupIds,
+                candidateGroup: candidateGroups.join(", "),
+                candidateUsers: candidateUserIds,
+                candidateUser: candidateUsers.join(", "),
+            } : item));
             await onRefresh?.();
         } catch (error) { setOperationError(error.message || "Unable to assign task."); throw error; }
         finally { setBusy(false); }
+    }
+
+    async function updateTaskCandidates(task, candidateGroups, candidateUsers) {
+        setBusy(true); setOperationError("");
+        const splitValues = value => [...new Set(String(value || "").split(/[\n,;]/).map(item => item.trim()).filter(Boolean))];
+        try {
+            const currentLinks = await camundaApi.getTaskIdentityLinks(task.id);
+            const currentGroups = (currentLinks || []).filter(link => link.type === "candidate" && link.groupId).map(link => String(link.groupId));
+            const currentUsers = (currentLinks || []).filter(link => link.type === "candidate" && link.userId).map(link => String(link.userId));
+            const nextGroups = splitValues(candidateGroups);
+            const nextUsers = splitValues(candidateUsers);
+            await Promise.all([
+                ...currentGroups.filter(groupId => !nextGroups.includes(groupId)).map(groupId => camundaApi.deleteTaskIdentityLink(task.id, { groupId, type: "candidate" })),
+                ...currentUsers.filter(userId => !nextUsers.includes(userId)).map(userId => camundaApi.deleteTaskIdentityLink(task.id, { userId, type: "candidate" })),
+                ...nextGroups.filter(groupId => !currentGroups.includes(groupId)).map(groupId => camundaApi.addTaskCandidateGroup(task.id, groupId)),
+                ...nextUsers.filter(userId => !currentUsers.includes(userId)).map(userId => camundaApi.addTaskCandidateUser(task.id, userId)),
+            ]);
+            const [updatedLinks, directory, definitionCandidates] = await Promise.all([
+                camundaApi.getTaskIdentityLinks(task.id),
+                getIdentityDirectory(),
+                getDefinitionCandidates(),
+            ]);
+            const { groupIds, userIds, groupValues, userValues } = getCandidateDisplayValues(task, updatedLinks, directory, definitionCandidates);
+            setTasks(previous => previous.map(item => item.id === task.id ? {
+                ...item,
+                candidateGroups: groupIds,
+                candidateGroup: groupValues.join(", "),
+                candidateUsers: userIds,
+                candidateUser: userValues.join(", "),
+            } : item));
+            setCandidateEditorTask(null);
+            await onRefresh?.();
+        } catch (error) {
+            setOperationError(error.message || "Unable to update task candidates.");
+            throw error;
+        } finally { setBusy(false); }
     }
 
     async function changeTaskFormKey(formKey) {
@@ -308,7 +431,7 @@ export default function InstanceDetail({ instance, selectedTaskId, onClose, onRe
             <aside className="border-b border-slate-200 bg-white p-4 lg:border-b-0 lg:border-r"><div className="mb-5"><SlaBadge instance={instance} /></div><dl className="space-y-4 text-sm"><Meta label="Instance ID" value={instance.id} /><Meta label="Business Key" value={instance.businessKey || "—"} /><Meta label="Definition Version" value={instance.definition?.version || "—"} /><Meta label="Definition ID" value={instance.definitionId} /><Meta label="Definition Key" value={instance.definition?.key || "—"} /><Meta label="Definition Name" value={instance.definitionName || "—"} /><Meta label="Tenant ID" value={instance.tenantId || "—"} /><Meta label="Deployment ID" value={instance.definition?.deploymentId || "—"} /></dl></aside>
             <main className="min-w-0 bg-white"><div className="h-[360px] border-b border-slate-200 sm:h-[460px]">{diagramError ? <div className="grid h-full place-items-center text-sm text-red-600">{diagramError}</div> : <div ref={containerRef} className="h-full w-full" />}</div>
                 <div className="sticky top-[65px] z-10 flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3" role="tablist">{TABS.map(item => <button key={item} type="button" onClick={() => setTab(item)} className={`shrink-0 border-b-2 px-4 py-3 text-sm font-semibold ${tab === item ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500"}`}>{item}</button>)}</div>
-                <div className="p-4">{operationError && <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{operationError}</div>}{tab === "Variables" && <VariableManager variables={variables} busy={busy} onSave={saveVariable} onDelete={deleteVariable} />}{tab === "Incidents" && <List rows={incidents} empty="No open incidents." render={item => item.exceptionMessage || "Job retries exhausted"} />}{tab === "User Tasks" && <TaskManager tasks={tasks} busy={busy} onAssign={assignTask} onOpenForm={task => { setTaskForm(task); setTaskFormKey(task.formKey || task.form_key || ""); loadFormList(); }} />}{tab === "Jobs" && <JobTable rows={instanceJobs} onRetry={job => { setRetryCount(1); setRetryTarget(job); }} />}{tab === "External Tasks" && <ExternalTaskTable rows={externalTasks} loading={externalTasksLoading} busyId={externalTaskBusyId} onReleaseLock={releaseExternalTaskLock} onRetry={task => { setExternalRetryCount(Math.max(1, Number(task.retries) || 1)); setExternalRetryTarget(task); }} />}</div>
+                <div className="p-4">{operationError && <div role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{operationError}</div>}{tab === "Variables" && <VariableManager variables={variables} busy={busy} onSave={saveVariable} onDelete={deleteVariable} />}{tab === "Incidents" && <List rows={incidents} empty="No open incidents." render={item => item.exceptionMessage || "Job retries exhausted"} />}{tab === "User Tasks" && <TaskManager tasks={tasks} busy={busy} onAssign={assignTask} onUpdateCandidates={updateTaskCandidates} onOpenForm={task => { setTaskForm(task); setTaskFormKey(task.formKey || task.form_key || ""); loadFormList(); }} />}{tab === "Jobs" && <JobTable rows={instanceJobs} onRetry={job => { setRetryCount(1); setRetryTarget(job); }} />}{tab === "External Tasks" && <ExternalTaskTable rows={externalTasks} loading={externalTasksLoading} busyId={externalTaskBusyId} onReleaseLock={releaseExternalTaskLock} onRetry={task => { setExternalRetryCount(Math.max(1, Number(task.retries) || 1)); setExternalRetryTarget(task); }} />}</div>
             </main>
         </div>
         {retryTarget && <div className="fixed inset-0 z-[1100] grid place-items-center bg-slate-950/50 p-4" role="presentation"><section className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="retry-job-title"><div className="flex items-start gap-3 p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700"><i className="fa-solid fa-rotate-right" aria-hidden="true" /></span><div className="min-w-0"><h2 id="retry-job-title" className="mb-1 text-base font-bold text-slate-900">Retry failed job?</h2><p className="mb-1 text-sm text-slate-600">Set the retry count to make this job executable again.</p><p className="mb-0 break-all text-xs text-slate-500">{retryTarget.id}</p></div></div><div className="px-5 pb-5"><label className="block text-sm font-semibold text-slate-700">Retries<input type="number" min="1" step="1" value={retryCount} onChange={event => setRetryCount(event.target.value)} className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" /></label></div><div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3"><button type="button" disabled={retryingJob} onClick={() => setRetryTarget(null)} className="!rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Cancel</button><button type="button" disabled={retryingJob} onClick={retryFailedJob} className="!rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60"><i className={`fa-solid ${retryingJob ? "fa-spinner fa-spin" : "fa-rotate-right"} mr-2`} />{retryingJob ? "Retrying…" : "Retry job"}</button></div></section></div>}

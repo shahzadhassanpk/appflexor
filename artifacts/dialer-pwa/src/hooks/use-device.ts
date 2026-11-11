@@ -14,17 +14,43 @@ export function useOnline() {
 
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
+let deferredInstallPrompt: BIPEvent | null = null;
+let installCompleted = false;
+const installSubscribers = new Set<() => void>();
+let installEventsRegistered = false;
+
+function registerInstallEvents() {
+  if (installEventsRegistered || typeof window === "undefined") return;
+  installEventsRegistered = true;
+  window.addEventListener("beforeinstallprompt", event => {
+    event.preventDefault();
+    deferredInstallPrompt = event as BIPEvent;
+    installSubscribers.forEach(notify => notify());
+  });
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    installCompleted = true;
+    installSubscribers.forEach(notify => notify());
+  });
+}
+
 export function useInstall() {
-  const [evt, setEvt] = useState<BIPEvent | null>(null);
+  registerInstallEvents();
+  const [evt, setEvt] = useState<BIPEvent | null>(() => deferredInstallPrompt);
   const [installed, setInstalled] = useState(() =>
     typeof window !== "undefined" &&
     (window.matchMedia?.("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true));
   useEffect(() => {
-    const h = (e: Event) => { e.preventDefault(); setEvt(e as BIPEvent); };
-    const done = () => { setInstalled(true); setEvt(null); };
-    window.addEventListener("beforeinstallprompt", h);
-    window.addEventListener("appinstalled", done);
-    return () => { window.removeEventListener("beforeinstallprompt", h); window.removeEventListener("appinstalled", done); };
+    registerInstallEvents();
+    const sync = () => {
+      setEvt(deferredInstallPrompt);
+      if (installCompleted || window.matchMedia?.("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true) {
+        setInstalled(true);
+      }
+    };
+    installSubscribers.add(sync);
+    sync();
+    return () => { installSubscribers.delete(sync); };
   }, []);
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
   const isIOS = /iphone|ipad|ipod/i.test(ua) || (ua.includes("Macintosh") && typeof document !== "undefined" && "ontouchend" in document);

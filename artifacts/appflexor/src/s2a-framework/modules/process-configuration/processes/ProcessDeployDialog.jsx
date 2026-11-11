@@ -446,12 +446,15 @@ export function ProcessDeployDialog({
                 // Ensure group IDs are stored as strings so SearchableSelect
                 // value comparison works correctly (select value is always string).
                 setGroups(
-                    (d.groups || []).map(g => ({ value: String(g.id), label: g.name })),
+                    (d.groups || []).map(g => ({
+                        value: String(g.code || g.group_code || g.groupCode || g.name || g.id),
+                        label: g.code || g.group_code || g.groupCode || g.name || String(g.id),
+                    })),
                 );
                 setUsers(
                     (d.users || []).map(u => ({
                         value: u.username,
-                        label: `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.username,
+                        label: u.username,
                     })),
                 );
                 setFormList(
@@ -784,7 +787,7 @@ export function ProcessDeployDialog({
         if (type === "userTasks" && subType === "assignee") {
             // After camunda-bpmn-moddle re-import, values land on bo directly
             const grp = String(bo.candidateGroups || attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"] || "");
-            const usr = String(bo.assignee        || attrs["camunda:assignee"]        || attrs["activiti:assignee"]        || "");
+            const usr = String(bo.assignee || bo.candidateUsers || attrs["camunda:assignee"] || attrs["camunda:candidateUsers"] || attrs["activiti:assignee"] || attrs["activiti:candidateUsers"] || "");
             const val = grp !== "" ? grp : usr;
             const isExpr = /^\$\{|^#\{/.test(val);
             init = { assigneeType: isExpr ? "expression" : (grp !== "" ? "group" : "user"), assignee: val };
@@ -897,16 +900,24 @@ export function ProcessDeployDialog({
         if (!bo.$attrs) bo.$attrs = {};
 
         if (type === "userTasks" && subType === "assignee") {
+            if (!String(propForm.assignee || "").trim()) {
+                setPropModal(null);
+                return;
+            }
             if (propForm.assigneeType === "group") {
                 bo.candidateGroups = propForm.assignee;
                 bo.assignee = undefined;
+                bo.candidateUsers = undefined;
             } else {
                 bo.assignee = propForm.assignee;
                 bo.candidateGroups = undefined;
+                bo.candidateUsers = undefined;
             }
             // Clean up any legacy $attrs duplicates
             delete bo.$attrs["camunda:candidateGroups"];
+            delete bo.$attrs["camunda:candidateUsers"];
             delete bo.$attrs["activiti:candidateGroups"];
+            delete bo.$attrs["activiti:candidateUsers"];
             delete bo.$attrs["camunda:assignee"];
             delete bo.$attrs["activiti:assignee"];
 
@@ -1112,14 +1123,21 @@ export function ProcessDeployDialog({
         const attrs = bo.$attrs || {};
         // Convert to string to handle numeric IDs returned by the API
         const grp = String(bo.candidateGroups || attrs["camunda:candidateGroups"] || attrs["activiti:candidateGroups"] || "");
-        const usr = String(bo.assignee        || attrs["camunda:assignee"]        || attrs["activiti:assignee"]        || "");
-        if (grp) {
-            const found = groups.find(g => String(g.value) === grp);
-            return { label: found ? found.label : grp, type: "group" };
+        const assignedUser = String(bo.assignee || attrs["camunda:assignee"] || attrs["activiti:assignee"] || "");
+        const candidateUsr = String(bo.candidateUsers || attrs["camunda:candidateUsers"] || attrs["activiti:candidateUsers"] || "");
+        if (assignedUser) {
+            const found = users.find(u => u.value === assignedUser);
+            return { label: found ? found.label : assignedUser, type: "user" };
         }
-        if (usr) {
-            const found = users.find(u => u.value === usr);
-            return { label: found ? found.label : usr, type: "user" };
+        const split = value => value.split(",").map(item => item.trim()).filter(Boolean);
+        const groupLabels = split(grp).map(value => groups.find(g => String(g.value) === value)?.label || value);
+        const userLabels = split(candidateUsr).map(value => users.find(u => u.value === value)?.label || value);
+        if (groupLabels.length || userLabels.length) {
+            const label = [
+                groupLabels.length ? `Groups: ${groupLabels.join(", ")}` : "",
+                userLabels.length ? `Users: ${userLabels.join(", ")}` : "",
+            ].filter(Boolean).join(" | ");
+            return { label, type: groupLabels.length && userLabels.length ? "candidates" : groupLabels.length ? "group" : "user" };
         }
         return null;
     }
@@ -1274,7 +1292,7 @@ export function ProcessDeployDialog({
                                                 <td>
                                                     {assignee ? (
                                                         <span className="proc-assignee-chip">
-                                                            <i className={`fa-solid ${assignee.type === "group" ? "fa-users" : "fa-user"} me-1`} />
+                                                            <i className={`fa-solid ${assignee.type === "group" || assignee.type === "candidates" ? "fa-users" : "fa-user"} me-1`} />
                                                             {assignee.label}
                                                         </span>
                                                     ) : (

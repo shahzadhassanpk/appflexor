@@ -383,6 +383,7 @@ export default function RenderCustomActions({
             }
             //INTERNAL
             if (item.link_type === "PROCESS") {
+                debugger;
                 setProcessModal(true);
                 let obj = {};
                 item.hyper_parameters.forEach(item => {

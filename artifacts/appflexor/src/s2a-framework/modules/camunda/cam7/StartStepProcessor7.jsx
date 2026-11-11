@@ -71,13 +71,6 @@ function StartStepProcessor({
 
         if (actionType !== actions.complete) return true;
 
-        if (!slaSelection && !getDraftSlaVariables()) {
-            const message = "Select a service level agreement before starting this process.";
-            setStartNotice({ type: "danger", message });
-            toastEmitter(message, true, "error");
-            return false;
-        }
-
         const processKey =
             formDetails?.process_key || formDetails?.processKey || "";
         const formKey =

@@ -44,9 +44,9 @@ export function StatusPill({ status, className }: { status: string; className?: 
 
 export function InstallButton({ variant = "chip" }: { variant?: "chip" | "row" }) {
   const { canPrompt, isIOS, installed, prompt } = useInstall();
-  const [iosOpen, setIosOpen] = useState(false);
-  if (installed || (!canPrompt && !isIOS)) return null;
-  const onClick = () => (canPrompt ? void prompt() : setIosOpen(true));
+  const [helpOpen, setHelpOpen] = useState(false);
+  if (installed) return null;
+  const onClick = () => (canPrompt ? void prompt() : setHelpOpen(true));
   return (
     <>
       <button
@@ -57,18 +57,22 @@ export function InstallButton({ variant = "chip" }: { variant?: "chip" | "row" }
       >
         <Download className="h-3.5 w-3.5" /> Install app
       </button>
-      {iosOpen && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/40 p-3 sm:items-center" onClick={() => setIosOpen(false)}>
+      {helpOpen && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/40 p-3 sm:items-center" onClick={() => setHelpOpen(false)}>
           <div className="rise w-full max-w-sm rounded-2xl bg-card p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold">Add Dialer to Home Screen</h3>
-              <button data-testid="button-close-ios" onClick={() => setIosOpen(false)} className="rounded-full p-1.5 hover:bg-muted" aria-label="Close"><X className="h-4 w-4" /></button>
+              <h3 className="text-lg font-bold">{isIOS ? "Add Dialer to Home Screen" : "Install Dialer"}</h3>
+              <button data-testid="button-close-install-help" onClick={() => setHelpOpen(false)} className="rounded-full p-1.5 hover:bg-muted" aria-label="Close"><X className="h-4 w-4" /></button>
             </div>
-            <ol className="space-y-3 text-sm">
+            {isIOS ? <ol className="space-y-3 text-sm">
               <Step n={1}>Open this page in Safari.</Step>
               <Step n={2}>Tap <Share className="mx-1 inline h-4 w-4 align-[-3px]" /> Share in the toolbar.</Step>
               <Step n={3}>Choose <SquarePlus className="mx-1 inline h-4 w-4 align-[-3px]" /> Add to Home Screen, then Add.</Step>
-            </ol>
+            </ol> : <ol className="space-y-3 text-sm">
+              <Step n={1}>Open your browser menu.</Step>
+              <Step n={2}>Choose <Download className="mx-1 inline h-4 w-4 align-[-3px]" /> Install Dialer or Add to desktop.</Step>
+              <Step n={3}>Confirm the installation.</Step>
+            </ol>}
           </div>
         </div>
       )}

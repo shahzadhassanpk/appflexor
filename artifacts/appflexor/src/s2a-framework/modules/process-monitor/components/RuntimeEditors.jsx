@@ -29,12 +29,15 @@ function EditorModal({ editor, setEditor, busy, onSave }) {
     return <div className="fixed inset-0 z-[1090] grid place-items-center bg-slate-950/40 p-2 sm:p-3"><form onSubmit={submit} className="w-full max-w-3xl rounded-2xl bg-white p-4 shadow-2xl"><div className="mb-3 flex items-center justify-between"><h3 className="mb-0 text-lg font-bold">{editor.originalName ? "Edit" : "Add"} variable</h3><button type="button" onClick={() => setEditor(null)} className="grid h-9 w-9 place-items-center rounded-full bg-slate-100"><i className="fa-solid fa-xmark" /></button></div><div className="grid min-w-0 gap-3 sm:grid-cols-[2fr_1fr]"><label className="block min-w-0 text-sm font-semibold">Name<input required disabled={Boolean(editor.originalName)} value={editor.name} onChange={event => setEditor({ ...editor, name: event.target.value })} className="mt-1 block w-full max-w-none rounded-lg border border-slate-300 p-2.5 disabled:bg-slate-100" style={{ width: "100%" }} /></label><label className="block min-w-0 text-sm font-semibold">Type<select value={editor.type} onChange={event => setEditor({ ...editor, type: event.target.value })} className="mt-1 block w-full max-w-none rounded-lg border border-slate-300 p-2.5" style={{ width: "100%" }}>{TYPES.map(type => <option key={type}>{type}</option>)}</select></label><label className="block min-w-0 text-sm font-semibold sm:col-span-2">Value<textarea required value={editor.value} onChange={event => setEditor({ ...editor, value: event.target.value })} rows="8" className="mt-1 block w-full max-w-none rounded-lg border border-slate-300 p-2.5 font-monospace" style={{ width: "100%" }} /></label></div><div className="mt-4 flex justify-end gap-2"><button type="button" onClick={() => setEditor(null)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold">Cancel</button><button disabled={busy} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save</button></div></form></div>;
 }
 
-export function TaskManager({ tasks, busy, onAssign }) {
+export function TaskManager({ tasks, busy, onAssign, onUpdateCandidates }) {
     const [task, setTask] = useState(null);
+    const [candidateTask, setCandidateTask] = useState(null);
     const [sort, setSort] = useState({ key: "created", direction: "desc" });
     const columns = [
         { key: "name", label: "Activity" },
         { key: "assignee", label: "Assignee" },
+        { key: "candidateGroup", label: "Candidate Groups" },
+        { key: "candidateUser", label: "Candidate Users" },
         { key: "owner", label: "Owner" },
         { key: "created", label: "Creation Date" },
         { key: "due", label: "Due Date" },
@@ -58,6 +61,14 @@ export function TaskManager({ tasks, busy, onAssign }) {
     const renderValue = (item, key) => {
         const value = valueFor(item, key);
         if (key === "name") return value || "Unnamed activity";
+        if (key === "candidateGroup") return <span className="inline-flex items-center gap-1">
+            {value || "None"}
+            <button type="button" disabled={busy} onClick={() => setCandidateTask(item)}
+                title="Edit candidate groups and users" aria-label={`Edit candidates for ${item.name || item.taskDefinitionKey || item.id}`}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-indigo-600 hover:bg-indigo-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600 disabled:opacity-50 md:h-8 md:w-8">
+                <i className="fa-solid fa-pen" aria-hidden="true" />
+            </button>
+        </span>;
         if (key === "assignee") return <span className="inline-flex items-center gap-1">
             {value || "Unassigned"}
             <button type="button" disabled={busy} onClick={() => setTask(item)}
@@ -107,6 +118,7 @@ export function TaskManager({ tasks, busy, onAssign }) {
             </div>
         </>}
         {task && <RuntimeAssignmentDialog task={task} busy={busy} onClose={() => setTask(null)} onAssign={(type, value) => onAssign(task, type, value).then(() => setTask(null)).catch(() => { })} />}
+        {candidateTask && <CandidateEditorDialog task={candidateTask} busy={busy} onClose={() => setCandidateTask(null)} onSave={(groups, users) => onUpdateCandidates(candidateTask, groups, users).then(() => setCandidateTask(null)).catch(() => { })} />}
     </>;
 }
 
@@ -114,6 +126,30 @@ function RuntimeAssignmentDialog({ task, busy, onClose, onAssign }) {
     const [form, setForm] = useState({ assigneeType: "user", assignee: task.assignee || "" });
     const [options, setOptions] = useState({ users: [], groups: [] });
     const [loading, setLoading] = useState(true);
-    useEffect(() => { let active = true; axios.post(API_URL + "?service.key=masterKey.tenantData", { dataKeys: [{ serviceParams: "", dataKey: "groups", serviceKey: "sys.console.dir.group", mode: "formData" }, { serviceParams: "", dataKey: "users", serviceKey: "sys.user.list", mode: "formData" }] }).then(response => { if (active && response.data.C_STATUS === "SUCCESS") setOptions({ groups: (response.data.C_DATA.groups || []).map(group => ({ value: String(group.id), label: group.name })), users: (response.data.C_DATA.users || []).map(user => ({ value: user.username, label: `${user.firstname || ""} ${user.lastname || ""}`.trim() || user.username })) }); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, []);
+    useEffect(() => { let active = true; axios.post(API_URL + "?service.key=masterKey.tenantData", { dataKeys: [{ serviceParams: "", dataKey: "groups", serviceKey: "sys.console.dir.group", mode: "formData" }, { serviceParams: "", dataKey: "users", serviceKey: "sys.user.list", mode: "formData" }] }).then(response => { if (active && response.data.C_STATUS === "SUCCESS") setOptions({ groups: (response.data.C_DATA.groups || []).map(group => { const code = group.code || group.group_code || group.groupCode || group.name || group.id; return { value: String(code), label: String(code) }; }), users: (response.data.C_DATA.users || []).map(user => ({ value: user.username, label: user.username })) }); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, []);
     return <PropertyEditorModal propModal={{ type: "userTasks", subType: "assignee", title: task.name || task.taskDefinitionKey }} propForm={form} propLoading={loading || busy} refDataLoaded={!loading} groups={options.groups} users={options.users} formList={[]} aiAgents={[]} aiAgentTasks={[]} aiTasksLoading={false} onClose={onClose} onFormChange={setForm} onSave={() => { if (form.assignee) onAssign(form.assigneeType, form.assignee); }} onAgentChange={() => { }} zIndex={1090} />;
+}
+
+function CandidateEditorDialog({ task, busy, onClose, onSave }) {
+    const [form, setForm] = useState({
+        groups: task.candidateGroup || "",
+        users: task.candidateUser || "",
+    });
+    const submit = event => {
+        event.preventDefault();
+        onSave(form.groups, form.users);
+    };
+    return <div className="fixed inset-0 z-[1100] grid place-items-center bg-slate-950/50 p-4" role="presentation">
+        <form onSubmit={submit} className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="candidate-editor-title">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                <div><h2 id="candidate-editor-title" className="mb-1 text-base font-bold text-slate-900">Edit task candidates</h2><p className="mb-0 text-xs text-slate-500">{task.name || task.taskDefinitionKey || "User task"}</p></div>
+                <button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Close candidate editor"><i className="fa-solid fa-xmark" /></button>
+            </div>
+            <div className="grid gap-4 p-5">
+                <label className="block text-sm font-semibold text-slate-700">Candidate group codes<textarea rows="3" value={form.groups} onChange={event => setForm(previous => ({ ...previous, groups: event.target.value }))} placeholder="support, managers" className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" /><span className="mt-1 block text-xs font-normal text-slate-500">Separate multiple values with commas, semicolons, or new lines.</span></label>
+                <label className="block text-sm font-semibold text-slate-700">Candidate usernames<textarea rows="3" value={form.users} onChange={event => setForm(previous => ({ ...previous, users: event.target.value }))} placeholder="jane.doe, john.smith" className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" /></label>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3"><button type="button" onClick={onClose} className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button><button type="submit" disabled={busy} className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"><i className={`fa-solid ${busy ? "fa-spinner fa-spin" : "fa-check"} mr-1.5`} />{busy ? "Saving..." : "Save candidates"}</button></div>
+        </form>
+    </div>;
 }
