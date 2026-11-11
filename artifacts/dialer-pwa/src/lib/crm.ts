@@ -270,7 +270,7 @@ async function variablesForTasks(
   }));
   const response = asObject(await postService(
     "bpm",
-    "multiKey.data",
+    "bpm.multiKey.data",
     { dataKeys: keys },
     session.authKey,
     signal,
