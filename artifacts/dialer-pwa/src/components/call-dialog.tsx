@@ -71,7 +71,8 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
   }, [status, comments, recallDateTime, session.username]);
 
   const tel = telHref(task?.phone);
-  const canAct = !!task && !!status && (status !== "RECALL" || !!recallDateTime) && online && !busy;
+  const requiresSchedule = status === "RECALL" || status === "VISIT" || status === "DEMO";
+  const canAct = !!task && !!status && (!requiresSchedule || !!recallDateTime) && online && !busy;
   const canComplete = !!task && !!status && status !== "RECALL" && online && !busy;
 
   const setOpen = (o: boolean) => {
@@ -89,7 +90,7 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
         // Cancel older reads before applying the confirmed write, so an
         // in-flight queue response cannot restore the previous Unset badge.
         await qc.cancelQueries({ queryKey: assignedTasksKey });
-        const savedRecallDateTime = status === "RECALL" ? new Date(recallDateTime).toISOString() : task.recallDateTime;
+        const savedRecallDateTime = requiresSchedule ? new Date(recallDateTime).toISOString() : task.recallDateTime;
         qc.setQueryData<DialerTaskList>(assignedTasksKey, (old) => old ? {
           ...old,
           tasks: old.tasks.map(t => t.id === task.id ? {
@@ -175,23 +176,24 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
                   onChange={(e) => {
                     const nextStatus = isOutcome(e.target.value) ? e.target.value : "";
                     setStatus(nextStatus);
-                    if (nextStatus === "RECALL" && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+                            if ((nextStatus === "RECALL" || nextStatus === "VISIT" || nextStatus === "DEMO") && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
                     setSavedNote(null);
                   }}
                   className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base font-semibold outline-none focus:border-accent focus:ring-4 focus:ring-accent/15 disabled:opacity-60"
                   style={status ? { borderColor: `hsl(${OUTCOME_META[status].color})`, color: `hsl(${OUTCOME_META[status].color})` } : undefined}>
                   <option value="">Select outcome</option>
-                  <option value="HOT">HOT</option>
                   <option value="RECALL">RECALL</option>
+                  <option value="VISIT">VISIT</option>
+                  <option value="DEMO">DEMO</option>
                   <option value="REJECTION">REJECTION</option>
                   <option value="NO_ANSWER">NO ANSWER</option>
                   <option value="INVALID_NUMBER">INVALID NUMBER</option>
                 </select>
               </div>
-              {status === "RECALL" && (
+              {requiresSchedule && (
                 <div>
                   <label htmlFor="recall-date-time" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Next call date and time
+                    {status === "RECALL" ? "Next call date and time" : "Scheduled date and time"}
                   </label>
                   <input id="recall-date-time" data-testid="input-recall-datetime" type="datetime-local"
                     value={recallDateTime} disabled={busy} required

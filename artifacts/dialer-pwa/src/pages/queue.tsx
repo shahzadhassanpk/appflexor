@@ -22,9 +22,21 @@ function browserSessionStorage(): Storage | null {
   }
 }
 
-const queueFilters: Filter[] = ["OVERDUE", "UNSET", "RECALL", "HOT", "REJECTION", "NO_ANSWER", "INVALID_NUMBER", "ALL"];
-const mobileVisibleFilters: Filter[] = ["OVERDUE", "UNSET", "RECALL", "ALL"];
-const mobileOverflowFilters: Filter[] = queueFilters.filter((filter) => !mobileVisibleFilters.includes(filter));
+const queueFilters: Filter[] = ["UNSET", "OVERDUE", "VISIT", "DEMO", "RECALL", "REJECTION", "NO_ANSWER", "INVALID_NUMBER", "ALL"];
+const defaultMobileVisibleFilters: Filter[] = ["UNSET", "OVERDUE", "RECALL", "ALL"];
+
+function readMobileFilterPreference(username: string): Filter[] {
+  try {
+    const stored = window.localStorage.getItem(`dialer:mobile-visible-filters:${encodeURIComponent(username)}`);
+    if (!stored) return defaultMobileVisibleFilters;
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return defaultMobileVisibleFilters;
+    const valid = parsed.filter((filter): filter is Filter => queueFilters.includes(filter as Filter));
+    return valid.length > 0 ? [...new Set(valid)] : defaultMobileVisibleFilters;
+  } catch {
+    return defaultMobileVisibleFilters;
+  }
+}
 
 function filterLabel(filter: Filter) {
   return filter === "ALL" ? "All" : filter === "OVERDUE" ? "Overdue" : filter === "UNSET" ? "Unset" : filter === "REJECTION" ? "Rejections" : filter === "NO_ANSWER" ? "No Answer" : filter === "INVALID_NUMBER" ? "Invalid Number" : filter.charAt(0) + filter.slice(1).toLowerCase();
@@ -38,6 +50,31 @@ export default function QueuePage({ session }: { session: DialerSession }) {
     session.username, browserSessionStorage(),
   ));
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileVisibleFilters, setMobileVisibleFilters] = useState<Filter[]>(() => readMobileFilterPreference(session.username));
+  const [customizeMobileFilters, setCustomizeMobileFilters] = useState(false);
+  const orderedMobileVisibleFilters = queueFilters.filter((status) => mobileVisibleFilters.includes(status));
+  const mobileOverflowFilters = queueFilters.filter((status) => !mobileVisibleFilters.includes(status));
+
+  const toggleMobileVisibleFilter = (status: Filter) => {
+    setMobileVisibleFilters((current) => {
+      if (current.includes(status)) {
+        if (current.length === 1) return current;
+        return current.filter((item) => item !== status);
+      }
+      return [...current, status];
+    });
+  };
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        `dialer:mobile-visible-filters:${encodeURIComponent(session.username)}`,
+        JSON.stringify(mobileVisibleFilters),
+      );
+    } catch {
+      // Local storage may be unavailable in private browsing or restricted web views.
+    }
+  }, [mobileVisibleFilters, session.username]);
   const setFilter = (next: Filter) => {
     setFilterState(next);
     saveTaskFilterPreference(session.username, next, browserSessionStorage());
@@ -88,7 +125,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
         next = await getAssignedTask(session, nextAssigned.id);
       } else {
         if (filter !== "ALL") {
-          setNextNotice(`No more ${filter === "OVERDUE" ? "Overdue" : filter === "UNSET" ? "Unset" : filter === "REJECTION" ? "Rejection" : filter === "RECALL" ? "Recall" : "Hot"} tasks matching this list with dialable phone numbers. Auto-dial stopped.`);
+          setNextNotice(`No more ${filter === "OVERDUE" ? "Overdue" : filter === "UNSET" ? "Unset" : filter === "REJECTION" ? "Rejection" : filter === "RECALL" ? "Recall" : filter === "VISIT" ? "Visit" : filter === "DEMO" ? "Demo" : "Hot"} tasks matching this list with dialable phone numbers. Auto-dial stopped.`);
           return;
         }
         const candidates = await getTaskList(session, "available");
@@ -192,7 +229,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   };
 
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { ALL: 0, HOT: 0, RECALL: 0, REJECTION: 0, NO_ANSWER: 0, INVALID_NUMBER: 0, UNSET: 0, OVERDUE: 0 };
+    const c: Record<Filter, number> = { ALL: 0, RECALL: 0, VISIT: 0, DEMO: 0, REJECTION: 0, NO_ANSWER: 0, INVALID_NUMBER: 0, UNSET: 0, OVERDUE: 0 };
     (tasks ?? []).forEach((t) => { c.ALL++; if (isOverdue(t.dueDate)) c.OVERDUE++; if (isOutcome(t.status)) c[t.status]++; else if (!t.status) c.UNSET++; });
     return c;
   }, [tasks]);
@@ -268,7 +305,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
             </div>
             <div className="-mx-4 flex items-center gap-1.5 px-4">
               <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none]">
-                {mobileVisibleFilters.map((f) => (
+                {orderedMobileVisibleFilters.map((f) => (
                   <button key={`mobile-${f}`} data-testid={`button-filter-${f.toLowerCase()}`} onClick={() => setFilter(f)}
                     className={cn("press flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors sm:hidden",
                       filter === f ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary")}>
@@ -290,7 +327,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                   <MoreVertical className="h-4 w-4" />
                 </button>
                 {mobileFiltersOpen && (
-                  <div role="menu" aria-label="More status filters" className="absolute right-0 top-11 z-40 min-w-44 rounded-xl border border-border bg-card p-1.5 shadow-lg">
+                  <div role="menu" aria-label="More status filters" className="absolute right-0 top-11 z-40 min-w-52 rounded-xl border border-border bg-card p-1.5 shadow-lg">
                     {mobileOverflowFilters.map((f) => (
                       <button key={`overflow-${f}`} type="button" role="menuitem" data-testid={`button-filter-${f.toLowerCase()}-more`}
                         onClick={() => { setFilter(f); setMobileFiltersOpen(false); }}
@@ -299,6 +336,24 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                         {filterLabel(f)} <span className="tabnum ml-3 opacity-60">{counts[f]}</span>
                       </button>
                     ))}
+                    <div className="my-1 border-t border-border" />
+                    <button type="button" data-testid="button-customize-mobile-filters"
+                      onClick={() => setCustomizeMobileFilters(open => !open)}
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold hover:bg-secondary">
+                      Customize visible statuses
+                      <span aria-hidden="true">{customizeMobileFilters ? "−" : "+"}</span>
+                    </button>
+                    {customizeMobileFilters && (
+                      <div className="space-y-1 border-t border-border px-2 pb-1 pt-2" aria-label="Choose visible statuses">
+                        {queueFilters.map((status) => (
+                          <label key={`visible-${status}`} className="flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1.5 text-xs font-medium hover:bg-secondary">
+                            <input type="checkbox" checked={mobileVisibleFilters.includes(status)}
+                              onChange={() => toggleMobileVisibleFilter(status)} />
+                            <span>{filterLabel(status)}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

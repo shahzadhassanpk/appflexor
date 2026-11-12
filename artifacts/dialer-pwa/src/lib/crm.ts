@@ -346,7 +346,7 @@ export async function getTaskList(
       const lead = mapTask(task, variables);
       // Some task-list responses omit a due date that the task-detail API
       // already returns after a successful RECALL save.
-      if (kind === "assigned" && lead.status === "RECALL" && !lead.dueDate) {
+      if (kind === "assigned" && ["RECALL", "VISIT", "DEMO"].includes(lead.status) && !lead.dueDate) {
         // The queue variables are already batched; task-level due dates are
         // still read from the task response when available.
         lead.dueDate = taskDueDate(task, variables);
@@ -403,7 +403,7 @@ function validateLog(status: Outcome, comments: string) {
 function recallDateTimeToIso(value: string): string {
   const parsed = value ? new Date(value) : new Date(Number.NaN);
   if (!Number.isFinite(parsed.getTime())) {
-    throw new CrmError(400, "Choose a valid next-call date and time for a RECALL.");
+    throw new CrmError(400, "Choose a valid scheduled date and time for this status.");
   }
   const pad = (part: number) => String(part).padStart(2, "0");
   const offset = -parsed.getTimezoneOffset();
@@ -432,7 +432,7 @@ export async function saveDialerLog(
   recallDateTime = "",
 ): Promise<void> {
   validateLog(status, comments);
-  const recallIso = status === "RECALL" ? recallDateTimeToIso(recallDateTime) : "";
+  const recallIso = status === "RECALL" || status === "VISIT" || status === "DEMO" ? recallDateTimeToIso(recallDateTime) : "";
   const current = await ownedTaskWithBusinessKey(session, task.id);
   const fields = {
     id: task.id,
@@ -478,7 +478,7 @@ export async function saveDialerLog(
     if (findField(confirmed, ["comments"]).value !== comments) {
       throw new CrmError(502, "Appflexor did not return the saved comments when the task variables were reloaded.");
     }
-    if (status === "RECALL") {
+    if (status === "RECALL" || status === "VISIT" || status === "DEMO") {
       const path = `/task/${encodeURIComponent(task.id)}`;
       const before = asObject(await bpmRequest(session, path));
       if (before.assignee !== session.username) {

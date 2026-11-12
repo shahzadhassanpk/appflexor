@@ -1,9 +1,10 @@
-export const OUTCOMES = ["HOT", "RECALL", "REJECTION", "NO_ANSWER", "INVALID_NUMBER"] as const;
+export const OUTCOMES = ["RECALL", "VISIT", "DEMO", "REJECTION", "NO_ANSWER", "INVALID_NUMBER"] as const;
 export type Outcome = (typeof OUTCOMES)[number];
 
 export const OUTCOME_META: Record<Outcome, { label: string; hint: string; color: string }> = {
-  HOT: { label: "Hot", hint: "Interested, move forward", color: "var(--hot)" },
   RECALL: { label: "Recall", hint: "Call back later", color: "var(--recall)" },
+  VISIT: { label: "Visit", hint: "Schedule an in-person visit", color: "var(--accent)" },
+  DEMO: { label: "Demo", hint: "Schedule a product demo", color: "var(--primary)" },
   REJECTION: { label: "Rejection", hint: "Not interested", color: "var(--reject)" },
   NO_ANSWER: { label: "No Answer", hint: "Could not reach the lead", color: "var(--muted-foreground)" },
   INVALID_NUMBER: { label: "Invalid Number", hint: "Number is not usable", color: "var(--destructive)" },

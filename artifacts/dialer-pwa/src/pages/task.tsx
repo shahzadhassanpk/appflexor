@@ -64,10 +64,11 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
 
   const tel = telHref(task?.phone);
   const unknownStatus = !!task?.status && !isOutcome(task.status);
-  const canSubmit = !!status && status !== "RECALL" && online && !complete.isPending && !!task;
+  const requiresSchedule = status === "RECALL" || status === "VISIT" || status === "DEMO";
+  const canSubmit = !!status && (!requiresSchedule || !!recallDateTime) && online && !complete.isPending && !!task;
 
   const doComplete = () => {
-    if (!task || !status || status === "RECALL" || complete.isPending || !online) return;
+    if (!task || !status || complete.isPending || !online || (requiresSchedule && !recallDateTime)) return;
     setSubmitError(null);
     complete.mutate({ id: task.id, data: { status, comments, recallDateTime } }, {
       onSuccess: (res) => {
@@ -171,13 +172,14 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
               onChange={(e) => {
                 const nextStatus = isOutcome(e.target.value) ? e.target.value : "";
                 setStatus(nextStatus);
-                if (nextStatus === "RECALL" && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+                if ((nextStatus === "RECALL" || nextStatus === "VISIT" || nextStatus === "DEMO") && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
               }}
               className="h-13 w-full appearance-none rounded-xl border border-input bg-card px-4 py-3 pr-10 text-base font-semibold outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
               style={status ? { borderColor: `hsl(${OUTCOME_META[status].color})`, color: `hsl(${OUTCOME_META[status].color})` } : undefined}>
               <option value="">Select outcome</option>
-              <option value="HOT">HOT</option>
               <option value="RECALL">RECALL</option>
+              <option value="VISIT">Visit</option>
+              <option value="DEMO">Demo</option>
               <option value="REJECTION">REJECTION</option>
               <option value="NO_ANSWER">No Answer</option>
               <option value="INVALID_NUMBER">Invalid Number</option>
@@ -188,7 +190,7 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
             {OUTCOMES.map((o) => (
               <button key={o} type="button" tabIndex={-1} data-testid={`button-quick-${o.toLowerCase()}`} onClick={() => {
                 setStatus(o);
-                if (o === "RECALL" && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+                if ((o === "RECALL" || o === "VISIT" || o === "DEMO") && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
               }}
                 className={cn("press rounded-lg border px-2 py-2 text-left transition-colors", status === o ? "border-transparent" : "border-border bg-card")}
                 style={status === o ? { background: `hsl(${OUTCOME_META[o].color} / .14)` } : undefined}>
@@ -199,10 +201,10 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
           </div>
         </div>
 
-        {status === "RECALL" && (
+        {requiresSchedule && (
           <div>
             <label htmlFor="recall-date-time" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Next call date and time
+              {status === "RECALL" ? "Next call date and time" : "Scheduled date and time"}
             </label>
             <input id="recall-date-time" data-testid="input-recall-datetime" type="datetime-local"
               value={recallDateTime} onChange={e => setRecallDateTime(e.target.value)} required
