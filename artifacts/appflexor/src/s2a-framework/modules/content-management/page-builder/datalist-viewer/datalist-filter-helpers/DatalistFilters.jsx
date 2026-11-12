@@ -886,6 +886,15 @@ const datalistDataTypes = {
             formFields,
         ) => CHECKLIST(column, datalist_type, dynamicLists, formFields),
     },
+    multiSelect: {
+        code: "multiSelect",
+        operation: (
+            column,
+            { type, datalist_type },
+            dynamicLists,
+            formFields,
+        ) => CHECKLIST(column, datalist_type, dynamicLists, formFields),
+    },
     expression: {
         code: "expression",
         operation: (column, { type, datalist_type }) =>
@@ -1275,21 +1284,27 @@ const CHECKLIST = (column, datalistType, lists, formFields) => {
                 }),
             filter: (a, b, c) => filterByMultiValue(a, b, c, column),
             Cell: ({ value }) => {
-                if (value) {
-                    const newValue = JSON.parse(value);
-                    if (newValue)
-                        return (
-                            <div className="s2a-checklist-items">
-                                {newValue.map(item => {
-                                    return (
-                                        <span className="badge s2a-badge">
-                                            {resultList[item]}
-                                        </span>
-                                    );
-                                })}
-                            </div>
-                        );
+                if (!value) return null;
+
+                let values = value;
+                if (typeof value === "string") {
+                    try {
+                        values = JSON.parse(value);
+                    } catch (error) {
+                        values = value.split(";").filter(Boolean);
+                    }
                 }
+                if (!Array.isArray(values)) values = [values];
+
+                return (
+                    <div className="s2a-checklist-items">
+                        {values.map((item, index) => (
+                            <span className="badge s2a-badge" key={`${item}-${index}`}>
+                                {resultList[item] ?? item}
+                            </span>
+                        ))}
+                    </div>
+                );
             },
         };
     } else {

@@ -50,6 +50,7 @@ export default function DataListForm(props) {
         handleAction,
         saveData,
         handleSelectedForms,
+        refreshFormList,
         setShowModal,
         clearFields,
         error,
@@ -121,6 +122,17 @@ export default function DataListForm(props) {
     const summaryCardModalRef = useRef(null);
     const [serviceParamId, setServiceParamId] = useState("");
     const [summaryCardId, setSummaryCardId] = useState("");
+    const [refreshingFormList, setRefreshingFormList] = useState(false);
+
+    async function handleRefreshFormList() {
+        if (!refreshFormList || refreshingFormList) return;
+        setRefreshingFormList(true);
+        try {
+            await refreshFormList();
+        } finally {
+            setRefreshingFormList(false);
+        }
+    }
 
     useEffect(() => {
         if (selectedItem?.form_id) {
@@ -707,8 +719,8 @@ export default function DataListForm(props) {
                                                 <>
                                                     <div className="col-12 form-group">
                                                         <div className="row">
-                                                            <div className="col-sm-5">
-                                                                <label className="fw-bold">
+                                                            <div className="col-sm-12 d-flex align-items-center justify-content-between">
+                                                                <label className="fw-bold mb-0">
                                                                     Default
                                                                     Form&nbsp;
                                                                     {
@@ -717,6 +729,16 @@ export default function DataListForm(props) {
                                                                         </span>
                                                                     }
                                                                 </label>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-link p-0"
+                                                                    style={{ color: "var(--font-color, #212529)" }}
+                                                                    title="Refresh form list"
+                                                                    aria-label="Refresh form list"
+                                                                    onClick={handleRefreshFormList}
+                                                                    disabled={!refreshFormList || refreshingFormList}>
+                                                                    <i className={`fa fa-refresh ${refreshingFormList ? "fa-spin" : ""}`} />
+                                                                </button>
                                                             </div>
                                                             <div className="col-sm-7">
                                                                 <div

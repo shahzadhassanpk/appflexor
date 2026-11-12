@@ -755,15 +755,25 @@ const SchemaManagement = props => {
         }
     };
 
+    const persistSelectedInstance = () => {
+        const updatedInstances = instances.map(item =>
+            item.id === selectedInstance.id ? selectedInstance : item,
+        );
+        setInstances(updatedInstances);
+        updatedInSession("instances", updatedInstances);
+        return updatedInstances;
+    };
+
     const saveInstances = (message, msgType) => {
         if (typeof localStorage !== "undefined") {
-            const updatedInstance = instances.map(item =>
-                item.id === selectedInstance.id ? selectedInstance : item,
-            );
-            setInstances(updatedInstance);
-            updatedInSession("instances", updatedInstance);
+            persistSelectedInstance();
             toastEmitter(message, true, msgType);
         }
+    };
+
+    const runAndSaveQuery = () => {
+        persistSelectedInstance();
+        runQuery(selectedInstance?.queries);
     };
 
     const updatedInstance = () => {
@@ -1071,9 +1081,7 @@ const SchemaManagement = props => {
                             </span>
                             <span
                                 className="btn btn-sm button-theme"
-                                onClick={() =>
-                                    runQuery(selectedInstance?.queries)
-                                }>
+                                onClick={runAndSaveQuery}>
                                 {/* onClick={() => runQuery(sqlQuery)}> */}
                                 <i className="fa-solid fa-play px-1"></i> Run
                             </span>

@@ -996,6 +996,7 @@ export default function DataListTableById(props) {
             var components = makeFormComponents();
             const requiredFilterTypes = [
                 "checklist",
+                "multiSelect",
                 "radio",
                 "select",
                 "checkbox",

@@ -641,7 +641,7 @@ function DataList(props) {
             };
         }
 
-        axios
+        return axios
             .post(API_URL + "?service.key=masterKey.tenantData", dataRequest)
             .then(async response => {
                 if (response.data.C_STATUS === "UNAUTHORIZED") {
@@ -2174,6 +2174,7 @@ function DataList(props) {
                                     handleAction={handleAction}
                                     saveData={saveData}
                                     handleSelectedForms={handleSelectedForms}
+                                    refreshFormList={() => getData()}
                                     setShowModal={setShowModal}
                                     setDesignMode={setDesignMode}
                                     clearFields={clearFields}
