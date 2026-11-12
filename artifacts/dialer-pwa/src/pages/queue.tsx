@@ -327,7 +327,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span data-testid={`text-name-${t.id}`} className="truncate font-bold">{t.name || "Unnamed lead"}</span>
-                          <span data-testid={`text-pending-${t.id}`} className="shrink-0 rounded bg-accent/15 px-1.5 text-[10px] font-bold uppercase text-accent">Pending</span>
+                          {/* <span data-testid={`text-pending-${t.id}`} className="shrink-0 rounded bg-accent/15 px-1.5 text-[10px] font-bold uppercase text-accent">Pending</span> */}
                         </div>
                         <div data-testid={`text-phone-${t.id}`} className={cn("tabnum truncate text-[13px]", phone ? "text-foreground/80" : "text-destructive")}>
                           {t.phone || "No phone"}{!phone && t.phone ? " (invalid)" : ""}
