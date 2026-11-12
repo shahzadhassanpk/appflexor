@@ -51,6 +51,7 @@ const SiteAdministration = () => {
     const [channels, setChannels] = useState([]);
     const [tabs, setTabs] = useState([]);
     const [activeTab, setActiveTab] = useState("SITES");
+    const [loadedTabs, setLoadedTabs] = useState(() => new Set());
 
     const appContext = useContext(AppContext);
     const { channel, featuresSubscription } = appContext;
@@ -72,6 +73,7 @@ const SiteAdministration = () => {
 
             setActiveTab(initialTab.code);
             setTabs(withActiveInitialTab);
+            setLoadedTabs(new Set([initialTab.code]));
         }
     }, [featuresSubscription, TABS]);
 
@@ -125,6 +127,10 @@ const SiteAdministration = () => {
 
         setActiveTab(activetab);
         setTabs(updatedTabs);
+        setLoadedTabs(previous => {
+            if (previous.has(activetab)) return previous;
+            return new Set(previous).add(activetab);
+        });
     }
 
     return (
@@ -151,11 +157,11 @@ const SiteAdministration = () => {
                         <div className="container">
                             <ul className="nav nav-tabs">
                                 {tabs.length > 0 &&
-                                    tabs.map((tab, index) => {
+                                    tabs.map(tab => {
                                         return (
                                             <li
                                                 className="nav-item"
-                                                key={index}>
+                                                key={tab.code}>
                                                 <button
                                                     className={`nav-link ${tab.active === "true"
                                                             ? "active"
@@ -164,11 +170,7 @@ const SiteAdministration = () => {
                                                     data-bs-toggle="tab"
                                                     data-bs-target={`#${tab.code}`}
                                                     type="button"
-                                                    onClick={event =>
-                                                        handleTabsChange(
-                                                            tab.code,
-                                                        )
-                                                    }>
+                                                    onClick={() => handleTabsChange(tab.code)}>
                                                     {tab.name}
                                                 </button>
                                             </li>
@@ -200,19 +202,18 @@ const SiteAdministration = () => {
                                                     message={`Loading ${activeTab}`}
                                                 />
                                             }>
-                                            <CreateComponent
-                                                key={activeTab}
-                                                component={tabs?.find(
-                                                    tab =>
-                                                        tab.code === activeTab,
-                                                )}
-                                                componentList={
-                                                    componentRegistry
-                                                }
-                                                channel={channel}
-                                                channels={channels}
-                                                activeTab={activeTab}
-                                            />
+                                            {tabs
+                                                .filter(tab => loadedTabs.has(tab.code))
+                                                .map(tab => (
+                                                    <CreateComponent
+                                                        key={tab.code}
+                                                        component={tab}
+                                                        componentList={componentRegistry}
+                                                        channel={channel}
+                                                        channels={channels}
+                                                        activeTab={activeTab}
+                                                    />
+                                                ))}
                                         </Suspense>
                                     ) : (
                                         <NotAuthorized />
@@ -242,7 +243,9 @@ function CreateComponent({
                 id={component.code}>
                 {React.createElement(componentList[component.code], {
                     key: component.code,
-                    activeTab,
+                    // Keep each child activation value stable so its initial
+                    // data-fetch effect does not run again on tab switches.
+                    activeTab: component.code,
                     channel,
                     channels,
                 })}

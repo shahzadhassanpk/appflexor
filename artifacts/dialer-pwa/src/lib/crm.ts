@@ -396,7 +396,7 @@ function saveKey(session: DialerSession, task: DialerTask) {
 
 function validateLog(status: Outcome, comments: string) {
   if (!isOutcome(status) || comments.length > 10000) {
-    throw new CrmError(400, "Choose HOT, RECALL or REJECTION and provide comments of up to 10000 characters.");
+    throw new CrmError(400, "Choose a valid call outcome and provide comments of up to 10000 characters.");
   }
 }
 

@@ -508,7 +508,7 @@ export default function RenderCustomActions({
                 </div>
             )}
             {!item.hyper_target && item.link_type === "PROCESS" && (
-                <div onClick={() => startProcessInstance(item, record)}>
+                <div className="datalist-actions-cell datalist-custom-font dropdown-item" onClick={() => startProcessInstance(item, record)}>
                     {item && (
                         <ShowAs show_as={item.show_as}>
                             <Interweave content={item.title}></Interweave>
@@ -519,7 +519,7 @@ export default function RenderCustomActions({
             {item.hyper_target === "current_window" && (
                 <>
                     {item.link_type === "URL" && (
-                        <div
+                        <div className="datalist-actions-cell datalist-custom-font dropdown-item"
                             onClick={event => {
                                 event.preventDefault();
                                 let _url = replaceVariablesInUrl(
@@ -546,7 +546,7 @@ export default function RenderCustomActions({
                         </div>
                     )}
                     {item.link_type === "FORM" && (
-                        <div
+                        <div className="datalist-actions-cell datalist-custom-font dropdown-item"
                             onClick={event => {
                                 event.preventDefault();
                                 let _url = replaceVariablesInUrl(
@@ -572,7 +572,7 @@ export default function RenderCustomActions({
                         </div>
                     )}
                     {item.link_type === "PROCESS" && (
-                        <div onClick={() => startProcessInstance(item, record)}>
+                        <div className="datalist-actions-cell datalist-custom-font dropdown-item" onClick={() => startProcessInstance(item, record)}>
                             {item && (
                                 <ShowAs show_as={item.show_as}>
                                     <Interweave
@@ -582,7 +582,7 @@ export default function RenderCustomActions({
                         </div>
                     )}
                     {item.link_type === "DATALIST" && (
-                        <div onClick={() => handleExternalDatalist("_self")}>
+                        <div className="datalist-actions-cell datalist-custom-font dropdown-item" onClick={() => handleExternalDatalist("_self")}>
                             {item && (
                                 <ShowAs show_as={item.show_as}>
                                     <Interweave
@@ -597,7 +597,7 @@ export default function RenderCustomActions({
 
                 <>
                     {item.link_type === "URL" && (
-                        <div
+                        <div className="datalist-actions-cell datalist-custom-font dropdown-item"
                             onClick={event => {
                                 event.preventDefault();
                                 let _url = replaceVariablesInUrl(
@@ -630,7 +630,7 @@ export default function RenderCustomActions({
                         </div>
                     )}
                     {item.link_type === "FORM" && (
-                        <div
+                        <div className="datalist-actions-cell datalist-custom-font dropdown-item"
                             onClick={event => {
                                 event.preventDefault();
                                 let _url = replaceVariablesInUrl(
@@ -657,7 +657,7 @@ export default function RenderCustomActions({
                         </div>
                     )}
                     {item.link_type === "DATALIST" && (
-                        <div onClick={() => handleExternalDatalist("_blank")}>
+                        <div className="datalist-actions-cell datalist-custom-font dropdown-item" onClick={() => handleExternalDatalist("_blank")}>
                             {item && (
                                 <ShowAs show_as={item.show_as}>
                                     <Interweave
@@ -672,7 +672,7 @@ export default function RenderCustomActions({
                 <>
                     {item.link_type === "FORM" && (
                         <>
-                            <div className="form-custom-action"
+                            <div className="form-custom-action datalist-actions-cell datalist-custom-font dropdown-item"
                                 onClick={event => {
                                     event.preventDefault();
                                     let _url = replaceVariablesInUrl(
@@ -711,7 +711,7 @@ export default function RenderCustomActions({
                     )}
                     {item.link_type === "DATALIST" && (
                         <>
-                            <div className="form-custom-action"
+                            <div className="form-custom-action datalist-actions-cell datalist-custom-font dropdown-item"
                                 onClick={event => {
                                     event.preventDefault();
                                     let _url = replaceVariablesInUrl(
@@ -750,7 +750,7 @@ export default function RenderCustomActions({
                     )}
                     {item.link_type === "PROCESS" && (
                         <>
-                            <div
+                            <div className="datalist-actions-cell datalist-custom-font dropdown-item"
                                 onClick={() =>
                                     startProcessInstance(item, record, true)
                                 }>
@@ -767,14 +767,14 @@ export default function RenderCustomActions({
                 </>
             )}
             {item.hyper_target === "aside" && (
-                <div onClick={() => sideForm(item, params, "aside")}>
+                <div className="datalist-actions-cell datalist-custom-font dropdown-item" onClick={() => sideForm(item, params, "aside")}>
                     <ShowAs show_as={item.show_as}>
                         <Interweave content={item.title}></Interweave>
                     </ShowAs>
                 </div>
             )}
             {item.hyper_target === "switch" && (
-                <div onClick={() => sideForm(item, "switch")}>
+                <div className="datalist-actions-cell datalist-custom-font dropdown-item" onClick={() => sideForm(item, "switch")}>
                     <ShowAs show_as={item.show_as}>
                         <Interweave content={item.title}></Interweave>
                     </ShowAs>

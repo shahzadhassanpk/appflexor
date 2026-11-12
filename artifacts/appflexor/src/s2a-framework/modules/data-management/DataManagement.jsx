@@ -56,6 +56,7 @@ const componentRegistry = {
 export default function DataManagement() {
     const [tabs, setTabs] = useState([]);
     const [activeTab, setActiveTab] = useState("");
+    const [loadedTabs, setLoadedTabs] = useState(() => new Set());
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -74,6 +75,7 @@ export default function DataManagement() {
 
             setActiveTab(initialTab.code);
             setTabs(withActiveInitialTab);
+            setLoadedTabs(new Set([initialTab.code]));
         }
     }, [TABS]);
 
@@ -89,6 +91,10 @@ export default function DataManagement() {
 
         setActiveTab(activetab);
         setTabs(updatedTabs);
+        setLoadedTabs(previous => {
+            if (previous.has(activetab)) return previous;
+            return new Set(previous).add(activetab);
+        });
     }
 
     return (
@@ -113,7 +119,7 @@ export default function DataManagement() {
                         <ul className="nav nav-tabs">
                             {tabs.map(tab => {
                                 return (
-                                    <li className="nav-item">
+                                    <li key={tab.code} className="nav-item">
                                         <button
                                             className={`nav-link ${tab.active === "true"
                                                     ? "active"
@@ -122,9 +128,7 @@ export default function DataManagement() {
                                             data-bs-toggle="tab"
                                             data-bs-target={`#${tab.code}`}
                                             type="button"
-                                            onClick={event =>
-                                                handleTabsChange(tab.code)
-                                            }>
+                                            onClick={() => handleTabsChange(tab.code)}>
                                             {tab.name}
                                         </button>
                                     </li>
@@ -136,31 +140,18 @@ export default function DataManagement() {
                                 <Loading message={`Loading ${activeTab}`} />
                             }>
                             <div className="tab-content">
-                                {
-                                    // tabs.length > 0 ? (
-                                    //     tabs.map((tab, index) => {
-                                    //         return (
-                                    //             <CreateComponent
-                                    //                 key={index}
-                                    //                 component={tab}
-                                    //                 componentList={componentRegistry}
-                                    //                 activeTab={activeTab}
-                                    //             />
-                                    //         );
-                                    //     })
-                                    activeTab ? (
-                                        <CreateComponent
-                                            key={activeTab}
-                                            component={tabs.find(
-                                                tab => tab.code === activeTab,
-                                            )}
-                                            componentList={componentRegistry}
-                                            activeTab={activeTab}
-                                        />
-                                    ) : (
-                                        <NotAuthorized />
-                                    )
-                                }
+                                {activeTab ? (
+                                    tabs
+                                        .filter(tab => loadedTabs.has(tab.code))
+                                        .map(tab => (
+                                            <CreateComponent
+                                                key={tab.code}
+                                                component={tab}
+                                                componentList={componentRegistry}
+                                                activeTab={activeTab}
+                                            />
+                                        ))
+                                ) : <NotAuthorized />}
                             </div>
                         </Suspense>
                     </div>
@@ -179,7 +170,10 @@ function CreateComponent({ component, componentList, activeTab }) {
                 id={component.code}>
                 {React.createElement(componentList[component.code], {
                     key: component.code,
-                    activeTab,
+                    // Keep the child activation value stable after its first mount.
+                    // Passing the parent active tab here would make tab-dependent
+                    // effects fetch again every time the user switches back.
+                    activeTab: component.code,
                 })}
             </div>
         );

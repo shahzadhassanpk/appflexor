@@ -1,13 +1,14 @@
 import type { DialerTask } from "./crm";
 import { isOverdue, telHref } from "./dialer";
 
-export type TaskFilter = "ALL" | "HOT" | "RECALL" | "REJECTION" | "UNSET" | "OVERDUE";
+export type TaskFilter = "ALL" | "HOT" | "RECALL" | "REJECTION" | "NO_ANSWER" | "INVALID_NUMBER" | "UNSET" | "OVERDUE";
 export const DEFAULT_TASK_FILTER: TaskFilter = "UNSET";
 const FILTER_STORAGE_PREFIX = "dialer:task-filter:";
 
 function isTaskFilter(value: unknown): value is TaskFilter {
   return value === "ALL" || value === "HOT" || value === "RECALL" ||
-    value === "REJECTION" || value === "UNSET" || value === "OVERDUE";
+    value === "REJECTION" || value === "NO_ANSWER" || value === "INVALID_NUMBER" ||
+    value === "UNSET" || value === "OVERDUE";
 }
 
 export function readTaskFilterPreference(username: string, storage: Pick<Storage, "getItem"> | null): TaskFilter {

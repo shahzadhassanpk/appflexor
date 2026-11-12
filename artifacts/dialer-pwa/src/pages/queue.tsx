@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTaskList, getAssignedTask, claimAvailableTask, claimTask, assignedTasksKey, availableTasksKey, taskDetailKey, type DialerSession, type DialerTask, type DialerTaskList } from "@/lib/crm";
-import { AlertTriangle, Loader2, Phone, PhoneOff, RefreshCw, Search, X } from "lucide-react";
+import { AlertTriangle, Loader2, MoreVertical, Phone, PhoneOff, RefreshCw, Search, X } from "lucide-react";
 import { CallDialog } from "@/components/call-dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useOnline } from "@/hooks/use-device";
@@ -22,6 +22,14 @@ function browserSessionStorage(): Storage | null {
   }
 }
 
+const queueFilters: Filter[] = ["OVERDUE", "UNSET", "RECALL", "HOT", "REJECTION", "NO_ANSWER", "INVALID_NUMBER", "ALL"];
+const mobileVisibleFilters: Filter[] = ["OVERDUE", "UNSET", "RECALL", "ALL"];
+const mobileOverflowFilters: Filter[] = queueFilters.filter((filter) => !mobileVisibleFilters.includes(filter));
+
+function filterLabel(filter: Filter) {
+  return filter === "ALL" ? "All" : filter === "OVERDUE" ? "Overdue" : filter === "UNSET" ? "Unset" : filter === "REJECTION" ? "Rejections" : filter === "NO_ANSWER" ? "No Answer" : filter === "INVALID_NUMBER" ? "Invalid Number" : filter.charAt(0) + filter.slice(1).toLowerCase();
+}
+
 export default function QueuePage({ session }: { session: DialerSession }) {
   const q = useQuery({ queryKey: assignedTasksKey, queryFn: ({ signal }) => getTaskList(session, "assigned", signal), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true });
   const available = useQuery({ queryKey: availableTasksKey, queryFn: ({ signal }) => getTaskList(session, "available", signal), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true });
@@ -29,6 +37,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   const [filter, setFilterState] = useState<Filter>(() => readTaskFilterPreference(
     session.username, browserSessionStorage(),
   ));
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const setFilter = (next: Filter) => {
     setFilterState(next);
     saveTaskFilterPreference(session.username, next, browserSessionStorage());
@@ -183,7 +192,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   };
 
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { ALL: 0, HOT: 0, RECALL: 0, REJECTION: 0, UNSET: 0, OVERDUE: 0 };
+    const c: Record<Filter, number> = { ALL: 0, HOT: 0, RECALL: 0, REJECTION: 0, NO_ANSWER: 0, INVALID_NUMBER: 0, UNSET: 0, OVERDUE: 0 };
     (tasks ?? []).forEach((t) => { c.ALL++; if (isOverdue(t.dueDate)) c.OVERDUE++; if (isOutcome(t.status)) c[t.status]++; else if (!t.status) c.UNSET++; });
     return c;
   }, [tasks]);
@@ -257,15 +266,42 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                 className="h-11 w-full rounded-xl border border-input bg-card pl-10 pr-10 text-[15px] outline-none focus:border-accent focus:ring-4 focus:ring-accent/15" />
               {search && <button data-testid="button-clear-search" onClick={() => setSearch("")} className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-lg hover:bg-muted" aria-label="Clear"><X className="h-4 w-4" /></button>}
             </div>
-            <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none]">
-              {(["OVERDUE", "UNSET", "RECALL", "HOT", "REJECTION", "ALL"] as Filter[]).map((f) => (
-                <button key={f} data-testid={`button-filter-${f.toLowerCase()}`} onClick={() => setFilter(f)}
-                  className={cn("press flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
-                    filter === f ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary")}>
-                  {f === "ALL" ? "All" : f === "OVERDUE" ? "Overdue" : f === "UNSET" ? "Unset" : f === "REJECTION" ? "Rejections" : f.charAt(0) + f.slice(1).toLowerCase()}
-                  <span className="tabnum opacity-60">{counts[f]}</span>
+            <div className="-mx-4 flex items-center gap-1.5 px-4">
+              <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none]">
+                {mobileVisibleFilters.map((f) => (
+                  <button key={`mobile-${f}`} data-testid={`button-filter-${f.toLowerCase()}`} onClick={() => setFilter(f)}
+                    className={cn("press flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors sm:hidden",
+                      filter === f ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary")}>
+                    {filterLabel(f)} <span className="tabnum opacity-60">{counts[f]}</span>
+                  </button>
+                ))}
+                {queueFilters.map((f) => (
+                  <button key={`desktop-${f}`} data-testid={`button-filter-${f.toLowerCase()}`} onClick={() => setFilter(f)}
+                    className={cn("press hidden shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors sm:flex",
+                      filter === f ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary")}>
+                    {filterLabel(f)} <span className="tabnum opacity-60">{counts[f]}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="relative shrink-0 sm:hidden">
+                <button type="button" aria-label="More status filters" aria-haspopup="menu" aria-expanded={mobileFiltersOpen}
+                  data-testid="button-more-filters" onClick={() => setMobileFiltersOpen(open => !open)}
+                  className="press grid h-9 w-9 place-items-center rounded-full border border-border bg-card hover:bg-secondary">
+                  <MoreVertical className="h-4 w-4" />
                 </button>
-              ))}
+                {mobileFiltersOpen && (
+                  <div role="menu" aria-label="More status filters" className="absolute right-0 top-11 z-40 min-w-44 rounded-xl border border-border bg-card p-1.5 shadow-lg">
+                    {mobileOverflowFilters.map((f) => (
+                      <button key={`overflow-${f}`} type="button" role="menuitem" data-testid={`button-filter-${f.toLowerCase()}-more`}
+                        onClick={() => { setFilter(f); setMobileFiltersOpen(false); }}
+                        className={cn("flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold hover:bg-secondary",
+                          filter === f && "bg-secondary")}>
+                        {filterLabel(f)} <span className="tabnum ml-3 opacity-60">{counts[f]}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

@@ -64,10 +64,10 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
 
   const tel = telHref(task?.phone);
   const unknownStatus = !!task?.status && !isOutcome(task.status);
-  const canSubmit = !!status && (status !== "RECALL" || !!recallDateTime) && online && !complete.isPending && !!task;
+  const canSubmit = !!status && status !== "RECALL" && online && !complete.isPending && !!task;
 
   const doComplete = () => {
-    if (!task || !status || complete.isPending || !online) return;
+    if (!task || !status || status === "RECALL" || complete.isPending || !online) return;
     setSubmitError(null);
     complete.mutate({ id: task.id, data: { status, comments, recallDateTime } }, {
       onSuccess: (res) => {
@@ -179,6 +179,8 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
               <option value="HOT">HOT</option>
               <option value="RECALL">RECALL</option>
               <option value="REJECTION">REJECTION</option>
+              <option value="NO_ANSWER">No Answer</option>
+              <option value="INVALID_NUMBER">Invalid Number</option>
             </select>
             <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">▾</span>
           </div>
@@ -190,7 +192,7 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
               }}
                 className={cn("press rounded-lg border px-2 py-2 text-left transition-colors", status === o ? "border-transparent" : "border-border bg-card")}
                 style={status === o ? { background: `hsl(${OUTCOME_META[o].color} / .14)` } : undefined}>
-                <div className="text-[11px] font-bold" style={{ color: `hsl(${OUTCOME_META[o].color})` }}>{o}</div>
+                <div className="text-[11px] font-bold" style={{ color: `hsl(${OUTCOME_META[o].color})` }}>{OUTCOME_META[o].label}</div>
                 <div className="text-[10px] leading-tight text-muted-foreground">{OUTCOME_META[o].hint}</div>
               </button>
             ))}

@@ -72,6 +72,7 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
 
   const tel = telHref(task?.phone);
   const canAct = !!task && !!status && (status !== "RECALL" || !!recallDateTime) && online && !busy;
+  const canComplete = !!task && !!status && status !== "RECALL" && online && !busy;
 
   const setOpen = (o: boolean) => {
     if (busy) return;
@@ -106,7 +107,7 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
   };
 
   const doComplete = () => {
-    if (!task || !status || !canAct) return;
+    if (!task || !status || !canComplete) return;
     setError(null); setSavedNote(null);
     complete.mutate({ task, status, comments, recallDateTime }, {
       onSuccess: (res) => {
@@ -183,6 +184,8 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
                   <option value="HOT">HOT</option>
                   <option value="RECALL">RECALL</option>
                   <option value="REJECTION">REJECTION</option>
+                  <option value="NO_ANSWER">NO ANSWER</option>
+                  <option value="INVALID_NUMBER">INVALID NUMBER</option>
                 </select>
               </div>
               {status === "RECALL" && (
@@ -234,7 +237,7 @@ export function CallDialog({ session, task, open, onOpenChange, dialHint, autoDi
                   className="press flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-card font-bold disabled:opacity-40">
                   {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save
                 </button>
-                <button type="button" data-testid="button-call-complete" disabled={!canAct} onClick={doComplete}
+                <button type="button" data-testid="button-call-complete" disabled={!canComplete} onClick={doComplete}
                   className="press flex h-12 items-center justify-center gap-2 rounded-xl bg-primary font-bold text-primary-foreground disabled:opacity-40">
                   {complete.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Complete
                 </button>
