@@ -14,7 +14,7 @@ import { StatusPill } from "@/components/chrome";
 import { useOnline } from "@/hooks/use-device";
 import { useToast } from "@/hooks/use-toast";
 import {
-  OUTCOMES, OUTCOME_META, errMessage, errStatus, formatDate, isOutcome, isOverdue, loadDraft, removeDraft, saveDraft, telHref, toDateTimeLocal, type Outcome,
+  OUTCOMES, OUTCOME_META, errMessage, errStatus, formatDate, isOutcome, isOverdue, isScheduledOutcome, loadDraft, removeDraft, saveDraft, telHref, toDateTimeLocal, type Outcome,
 } from "@/lib/dialer";
 import { cn } from "@/lib/utils";
 
@@ -45,10 +45,10 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
     const d = loadDraft(session.username, task.id);
     if (d) {
       setStatus(d.status); setComments(d.comments);
-      setRecallDateTime(d.recallDateTime || toDateTimeLocal(task.recallDateTime)); setRestored(true);
+      setRecallDateTime(isScheduledOutcome(d.status) ? d.recallDateTime || toDateTimeLocal(task.recallDateTime) : ""); setRestored(true);
     } else {
       setStatus(isOutcome(task.status) ? task.status : ""); setComments(task.comments ?? "");
-      setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+      setRecallDateTime(isScheduledOutcome(task.status) ? toDateTimeLocal(task.recallDateTime) : "");
     }
   }, [task, session.username]);
 
@@ -64,7 +64,7 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
 
   const tel = telHref(task?.phone);
   const unknownStatus = !!task?.status && !isOutcome(task.status);
-  const requiresSchedule = status === "RECALL" || status === "VISIT" || status === "DEMO";
+  const requiresSchedule = isScheduledOutcome(status);
   const canSubmit = !!status && (!requiresSchedule || !!recallDateTime) && online && !complete.isPending && !!task;
 
   const doComplete = () => {
@@ -153,7 +153,7 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
               removeDraft(session.username, task.id);
               setStatus(isOutcome(task.status) ? task.status : "");
               setComments(task.comments ?? "");
-              setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+              setRecallDateTime(isScheduledOutcome(task.status) ? toDateTimeLocal(task.recallDateTime) : "");
               setRestored(false);
             }}>Discard</button>
           </div>
@@ -172,25 +172,35 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
               onChange={(e) => {
                 const nextStatus = isOutcome(e.target.value) ? e.target.value : "";
                 setStatus(nextStatus);
-                if ((nextStatus === "RECALL" || nextStatus === "VISIT" || nextStatus === "DEMO") && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+                if (isScheduledOutcome(nextStatus)) {
+                  if (!recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+                } else {
+                  setRecallDateTime("");
+                }
               }}
               className="h-13 w-full appearance-none rounded-xl border border-input bg-card px-4 py-3 pr-10 text-base font-semibold outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
               style={status ? { borderColor: `hsl(${OUTCOME_META[status].color})`, color: `hsl(${OUTCOME_META[status].color})` } : undefined}>
               <option value="">Select outcome</option>
               <option value="RECALL">RECALL</option>
-              <option value="VISIT">Visit</option>
               <option value="DEMO">Demo</option>
-              <option value="REJECTION">REJECTION</option>
-              <option value="NO_ANSWER">No Answer</option>
-              <option value="INVALID_NUMBER">Invalid Number</option>
+              <option value="VISIT">Visit</option>
+              {task.isAdmin && <>
+                <option value="BOARD">Board</option>
+                <option value="COLD">Cold</option>
+                <option value="CLOSE">Close</option>
+              </>}
             </select>
             <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">▾</span>
           </div>
           <div className="mt-2 grid grid-cols-3 gap-1.5" aria-hidden>
-            {OUTCOMES.map((o) => (
+            {OUTCOMES.filter((o) => task.isAdmin || !["BOARD", "COLD", "CLOSE"].includes(o)).map((o) => (
               <button key={o} type="button" tabIndex={-1} data-testid={`button-quick-${o.toLowerCase()}`} onClick={() => {
                 setStatus(o);
-                if ((o === "RECALL" || o === "VISIT" || o === "DEMO") && !recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+                if (isScheduledOutcome(o)) {
+                  if (!recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+                } else {
+                  setRecallDateTime("");
+                }
               }}
                 className={cn("press rounded-lg border px-2 py-2 text-left transition-colors", status === o ? "border-transparent" : "border-border bg-card")}
                 style={status === o ? { background: `hsl(${OUTCOME_META[o].color} / .14)` } : undefined}>

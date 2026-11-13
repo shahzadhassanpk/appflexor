@@ -22,7 +22,8 @@ function browserSessionStorage(): Storage | null {
   }
 }
 
-const queueFilters: Filter[] = ["UNSET", "OVERDUE", "VISIT", "DEMO", "RECALL", "REJECTION", "NO_ANSWER", "INVALID_NUMBER", "ALL"];
+const queueFilters: Filter[] = ["UNSET", "OVERDUE", "RECALL", "DEMO", "VISIT", "BOARD", "COLD", "CLOSE", "ALL"];
+const adminOnlyFilters: Filter[] = ["BOARD", "COLD", "CLOSE"];
 const defaultMobileVisibleFilters: Filter[] = ["UNSET", "OVERDUE", "RECALL", "ALL"];
 
 function readMobileFilterPreference(username: string): Filter[] {
@@ -39,12 +40,13 @@ function readMobileFilterPreference(username: string): Filter[] {
 }
 
 function filterLabel(filter: Filter) {
-  return filter === "ALL" ? "All" : filter === "OVERDUE" ? "Overdue" : filter === "UNSET" ? "Unset" : filter === "REJECTION" ? "Rejections" : filter === "NO_ANSWER" ? "No Answer" : filter === "INVALID_NUMBER" ? "Invalid Number" : filter.charAt(0) + filter.slice(1).toLowerCase();
+  return filter === "ALL" ? "All" : filter === "OVERDUE" ? "Overdue" : filter === "UNSET" ? "Unset" : filter.charAt(0) + filter.slice(1).toLowerCase();
 }
 
 export default function QueuePage({ session }: { session: DialerSession }) {
   const q = useQuery({ queryKey: assignedTasksKey, queryFn: ({ signal }) => getTaskList(session, "assigned", signal), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true });
   const available = useQuery({ queryKey: availableTasksKey, queryFn: ({ signal }) => getTaskList(session, "available", signal), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true });
+  const tasks = q.data?.tasks;
   const [search, setSearch] = useState("");
   const [filter, setFilterState] = useState<Filter>(() => readTaskFilterPreference(
     session.username, browserSessionStorage(),
@@ -52,8 +54,11 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileVisibleFilters, setMobileVisibleFilters] = useState<Filter[]>(() => readMobileFilterPreference(session.username));
   const [customizeMobileFilters, setCustomizeMobileFilters] = useState(false);
-  const orderedMobileVisibleFilters = queueFilters.filter((status) => mobileVisibleFilters.includes(status));
-  const mobileOverflowFilters = queueFilters.filter((status) => !mobileVisibleFilters.includes(status));
+  const hasAdminTasks = (tasks ?? []).some((task) => task.isAdmin) ||
+    (available.data?.tasks ?? []).some((task) => task.isAdmin);
+  const visibleQueueFilters = queueFilters.filter((status) => hasAdminTasks || !adminOnlyFilters.includes(status));
+  const orderedMobileVisibleFilters = visibleQueueFilters.filter((status) => mobileVisibleFilters.includes(status));
+  const mobileOverflowFilters = visibleQueueFilters.filter((status) => !mobileVisibleFilters.includes(status));
 
   const toggleMobileVisibleFilter = (status: Filter) => {
     setMobileVisibleFilters((current) => {
@@ -79,7 +84,6 @@ export default function QueuePage({ session }: { session: DialerSession }) {
     setFilterState(next);
     saveTaskFilterPreference(session.username, next, browserSessionStorage());
   };
-  const tasks = q.data?.tasks;
   const qc = useQueryClient();
   const [dialogTask, setDialogTask] = useState<DialerTask | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -125,7 +129,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
         next = await getAssignedTask(session, nextAssigned.id);
       } else {
         if (filter !== "ALL") {
-          setNextNotice(`No more ${filter === "OVERDUE" ? "Overdue" : filter === "UNSET" ? "Unset" : filter === "REJECTION" ? "Rejection" : filter === "RECALL" ? "Recall" : filter === "VISIT" ? "Visit" : filter === "DEMO" ? "Demo" : "Hot"} tasks matching this list with dialable phone numbers. Auto-dial stopped.`);
+          setNextNotice(`No more ${filter === "OVERDUE" ? "Overdue" : filter === "UNSET" ? "Unset" : filter.charAt(0) + filter.slice(1).toLowerCase()} tasks matching this list with dialable phone numbers. Auto-dial stopped.`);
           return;
         }
         const candidates = await getTaskList(session, "available");
@@ -229,7 +233,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   };
 
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { ALL: 0, RECALL: 0, VISIT: 0, DEMO: 0, REJECTION: 0, NO_ANSWER: 0, INVALID_NUMBER: 0, UNSET: 0, OVERDUE: 0 };
+    const c: Record<Filter, number> = { ALL: 0, RECALL: 0, DEMO: 0, VISIT: 0, BOARD: 0, COLD: 0, CLOSE: 0, UNSET: 0, OVERDUE: 0 };
     (tasks ?? []).forEach((t) => { c.ALL++; if (isOverdue(t.dueDate)) c.OVERDUE++; if (isOutcome(t.status)) c[t.status]++; else if (!t.status) c.UNSET++; });
     return c;
   }, [tasks]);
@@ -345,7 +349,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                     </button>
                     {customizeMobileFilters && (
                       <div className="space-y-1 border-t border-border px-2 pb-1 pt-2" aria-label="Choose visible statuses">
-                        {queueFilters.map((status) => (
+                        {visibleQueueFilters.map((status) => (
                           <label key={`visible-${status}`} className="flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1.5 text-xs font-medium hover:bg-secondary">
                             <input type="checkbox" checked={mobileVisibleFilters.includes(status)}
                               onChange={() => toggleMobileVisibleFilter(status)} />

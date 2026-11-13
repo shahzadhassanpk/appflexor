@@ -1,17 +1,21 @@
-export const OUTCOMES = ["RECALL", "VISIT", "DEMO", "REJECTION", "NO_ANSWER", "INVALID_NUMBER"] as const;
+export const OUTCOMES = ["RECALL", "DEMO", "VISIT", "BOARD", "COLD", "CLOSE"] as const;
 export type Outcome = (typeof OUTCOMES)[number];
 
 export const OUTCOME_META: Record<Outcome, { label: string; hint: string; color: string }> = {
   RECALL: { label: "Recall", hint: "Call back later", color: "var(--recall)" },
-  VISIT: { label: "Visit", hint: "Schedule an in-person visit", color: "var(--accent)" },
   DEMO: { label: "Demo", hint: "Schedule a product demo", color: "var(--primary)" },
-  REJECTION: { label: "Rejection", hint: "Not interested", color: "var(--reject)" },
-  NO_ANSWER: { label: "No Answer", hint: "Could not reach the lead", color: "var(--muted-foreground)" },
-  INVALID_NUMBER: { label: "Invalid Number", hint: "Number is not usable", color: "var(--destructive)" },
+  VISIT: { label: "Visit", hint: "Schedule an in-person visit", color: "var(--accent)" },
+  BOARD: { label: "Board", hint: "Move to the board", color: "var(--primary)" },
+  COLD: { label: "Cold", hint: "No current interest", color: "var(--muted-foreground)" },
+  CLOSE: { label: "Close", hint: "Close the opportunity", color: "var(--destructive)" },
 };
 
 export function isOutcome(v: unknown): v is Outcome {
   return typeof v === "string" && (OUTCOMES as readonly string[]).includes(v);
+}
+
+export function isScheduledOutcome(v: unknown): boolean {
+  return v === "RECALL" || v === "DEMO" || v === "VISIT";
 }
 
 /** Leading + allowed, then digits, spaces, ( ) - only. Returns null if not a usable number. */

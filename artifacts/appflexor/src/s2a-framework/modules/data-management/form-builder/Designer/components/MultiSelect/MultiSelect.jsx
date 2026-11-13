@@ -203,8 +203,29 @@ function MultiSelect(props) {
                     mapValue = props.component.data.mapValue;
                 }
 
-                const newValuesStr = props.formData[key];
-                const newValuesArr = newValuesStr?.split(";");
+                const rawValue = props.formData[key];
+                let values = rawValue;
+
+                if (typeof rawValue === "string") {
+                    try {
+                        const parsedValue = JSON.parse(rawValue);
+                        values = Array.isArray(parsedValue) ? parsedValue : rawValue.split(";");
+                    } catch (error) {
+                        values = rawValue.split(";");
+                    }
+                } else if (!Array.isArray(rawValue)) {
+                    values = rawValue === undefined || rawValue === null ? [] : [rawValue];
+                }
+
+                const newValuesArr = values
+                    .flatMap(value => {
+                        if (value && typeof value === "object") {
+                            return value[mapValue] ?? value.value ?? [];
+                        }
+                        return String(value).split(";");
+                    })
+                    .map(value => String(value).trim())
+                    .filter(Boolean);
 
                 let defaultSelection = getArrayByValues(
                     newValuesArr,

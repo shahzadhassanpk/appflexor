@@ -4,6 +4,7 @@ export type DialerSession = {
   username: string;
   authKey: string;
   taskDefinitionKey: string;
+  candidateGroups?: string[];
 };
 
 export type DialerTask = {
@@ -19,6 +20,7 @@ export type DialerTask = {
   detailsError?: string;
   businessKey?: string;
   processInstanceId?: string;
+  isAdmin?: boolean;
 };
 
 export type DialerTaskList = {
@@ -31,7 +33,10 @@ export type DialerCompletion = { id: string; completed: boolean };
 
 export class CrmError extends Error {
   data: { error: string };
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
     super(message);
     this.name = "CrmError";
     this.data = { error: message };
@@ -45,9 +50,14 @@ function readStoredSession(storage: Storage): DialerSession | null {
     const value: unknown = JSON.parse(storage.getItem(SESSION_KEY) ?? "null");
     if (!value || typeof value !== "object") return null;
     const session = value as Partial<DialerSession>;
-    if (typeof session.username !== "string" || !session.username ||
-        typeof session.authKey !== "string" || !session.authKey ||
-        typeof session.taskDefinitionKey !== "string") return null;
+    if (
+      typeof session.username !== "string" ||
+      !session.username ||
+      typeof session.authKey !== "string" ||
+      !session.authKey ||
+      typeof session.taskDefinitionKey !== "string"
+    )
+      return null;
     return session as DialerSession;
   } catch {
     return null;
@@ -56,30 +66,52 @@ function readStoredSession(storage: Storage): DialerSession | null {
 
 export function readSession(): DialerSession | null {
   let session: DialerSession | null = null;
-  try { session = readStoredSession(localStorage); } catch { /* Local storage may be blocked. */ }
+  try {
+    session = readStoredSession(localStorage);
+  } catch {
+    /* Local storage may be blocked. */
+  }
   if (session) return session;
-  try { return readStoredSession(sessionStorage); } catch { return null; }
+  try {
+    return readStoredSession(sessionStorage);
+  } catch {
+    return null;
+  }
 }
 
-export function saveSession(session: DialerSession, keepSignedIn = false): void {
+export function saveSession(
+  session: DialerSession,
+  keepSignedIn = false,
+): void {
   const serialized = JSON.stringify(session);
   try {
     const target = keepSignedIn ? localStorage : sessionStorage;
     target.setItem(SESSION_KEY, serialized);
     (keepSignedIn ? sessionStorage : localStorage).removeItem(SESSION_KEY);
   } catch {
-    throw new CrmError(400, "Browser storage is unavailable. Allow site storage to sign in.");
+    throw new CrmError(
+      400,
+      "Browser storage is unavailable. Allow site storage to sign in.",
+    );
   }
 }
 
 export function clearSession(): void {
-  try { localStorage.removeItem(SESSION_KEY); } catch { /* Storage may be blocked. */ }
-  try { sessionStorage.removeItem(SESSION_KEY); } catch { /* Storage may be blocked. */ }
+  try {
+    localStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* Storage may be blocked. */
+  }
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* Storage may be blocked. */
+  }
 }
 
 function asObject(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
+    ? (value as Record<string, unknown>)
     : {};
 }
 
@@ -91,7 +123,8 @@ function unwrap(value: unknown): unknown {
 }
 
 function signalExpiredSession(): void {
-  if (typeof window !== "undefined") window.dispatchEvent(new Event("dialer:unauthorized"));
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event("dialer:unauthorized"));
 }
 
 async function postService(
@@ -117,12 +150,19 @@ async function postService(
       },
     );
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new CrmError(0, "Cannot reach Appflexor. Check your connection and try again.");
+    if (error instanceof DOMException && error.name === "AbortError")
+      throw error;
+    throw new CrmError(
+      0,
+      "Cannot reach Appflexor. Check your connection and try again.",
+    );
   }
   if (response.status === 401 || response.status === 403) {
     if (authKey) signalExpiredSession();
-    throw new CrmError(401, "Your Appflexor session has expired or access was denied. Sign in again.");
+    throw new CrmError(
+      401,
+      "Your Appflexor session has expired or access was denied. Sign in again.",
+    );
   }
 
   const text = await response.text();
@@ -134,29 +174,106 @@ async function postService(
   }
   const envelopes = [asObject(payload)];
   let inner = unwrap(payload);
-  for (let depth = 0; depth < 3 && inner && typeof inner === "object" && !Array.isArray(inner); depth++) {
+  for (
+    let depth = 0;
+    depth < 3 && inner && typeof inner === "object" && !Array.isArray(inner);
+    depth++
+  ) {
     envelopes.push(asObject(inner));
     const next = unwrap(inner);
     if (next === inner) break;
     inner = next;
   }
-  const failureStatuses = ["UNAUTHORIZED", "UNAUTHORISED", "FAIL", "FAILED", "FAILURE", "ERROR"];
-  const object = envelopes.find(item =>
-    failureStatuses.includes(String(item.C_STATUS ?? item.status ?? "").toUpperCase())) ?? envelopes[0];
-  const statusText = String(object.C_STATUS ?? object.status ?? "").toUpperCase();
-  const unauthorized = response.status === 401 || response.status === 403 ||
-    statusText === "UNAUTHORIZED" || statusText === "UNAUTHORISED";
+  const failureStatuses = [
+    "UNAUTHORIZED",
+    "UNAUTHORISED",
+    "FAIL",
+    "FAILED",
+    "FAILURE",
+    "ERROR",
+  ];
+  const object =
+    envelopes.find((item) =>
+      failureStatuses.includes(
+        String(item.C_STATUS ?? item.status ?? "").toUpperCase(),
+      ),
+    ) ?? envelopes[0];
+  const statusText = String(
+    object.C_STATUS ?? object.status ?? "",
+  ).toUpperCase();
+  const unauthorized =
+    response.status === 401 ||
+    response.status === 403 ||
+    statusText === "UNAUTHORIZED" ||
+    statusText === "UNAUTHORISED";
   if (unauthorized && authKey) signalExpiredSession();
-  if (!response.ok || unauthorized ||
-      ["FAIL", "FAILED", "FAILURE", "ERROR"].includes(statusText)) {
-    const message = String(object.C_MESSAGE ?? object.message ??
-      (unauthorized ? "Your Appflexor session has expired. Sign in again." : "Appflexor could not process this request."));
+  if (
+    !response.ok ||
+    unauthorized ||
+    ["FAIL", "FAILED", "FAILURE", "ERROR"].includes(statusText)
+  ) {
+    const message = String(
+      object.C_MESSAGE ??
+        object.message ??
+        (unauthorized
+          ? "Your Appflexor session has expired. Sign in again."
+          : "Appflexor could not process this request."),
+    );
     throw new CrmError(
-      unauthorized || serviceKey === "login" ? 401 : response.ok ? 502 : response.status,
+      unauthorized || serviceKey === "login"
+        ? 401
+        : response.ok
+          ? 502
+          : response.status,
       message.slice(0, 500),
     );
   }
   return payload;
+}
+
+function normalizeCandidateGroups(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : [value];
+  return [...new Set(values.flatMap(item => {
+    if (typeof item === "string" || typeof item === "number") {
+      return String(item).split(",").map(group => group.trim()).filter(Boolean);
+    }
+    const object = asObject(item);
+    const group = object.candidate_group ?? object.candidateGroup ?? object.group ??
+      object.group_code ?? object.groupCode ?? object.code ?? object.name ?? object.id;
+    return typeof group === "string" || typeof group === "number" ? [String(group)] : [];
+  }))];
+}
+
+const candidateGroupCache = new Map<string, string[]>();
+const candidateGroupRequests = new Map<string, Promise<string[]>>();
+
+function loadCandidateGroups(authKey: string): Promise<string[]> {
+  const cached = candidateGroupCache.get(authKey);
+  if (cached) return Promise.resolve(cached);
+
+  const pending = candidateGroupRequests.get(authKey);
+  if (pending) return pending;
+
+  const request = postService("app", "masterKey.tenantData", {
+    dataKeys: [{
+      serviceParams: "",
+      dataKey: "candidate_group",
+      serviceKey: "dialer.user.group",
+      mode: "formData",
+    }],
+  }, authKey).then(payload => {
+    const response = asObject(unwrap(payload));
+    const groups = normalizeCandidateGroups(
+      response.candidate_group ?? response.candidateGroups ?? response.groups ?? response.data ?? unwrap(payload),
+    );
+    candidateGroupCache.set(authKey, groups);
+    return groups;
+  }).finally(() => {
+    candidateGroupRequests.delete(authKey);
+  });
+
+  candidateGroupRequests.set(authKey, request);
+  return request;
 }
 
 export async function loginToCrm(
@@ -164,21 +281,43 @@ export async function loginToCrm(
   password: string,
   taskDefinitionKey = "",
 ): Promise<DialerSession> {
-  const payload = asObject(await postService("app", "login", { username, password }));
+  const payload = asObject(
+    await postService("app", "login", { username, password }),
+  );
   const authKey = asObject(payload.C_DATA).AUTH_KEY ?? payload.AUTH_KEY;
   if (typeof authKey !== "string" || !authKey) {
     throw new CrmError(401, "Appflexor did not return a valid login session.");
   }
 
-  const profile = asObject(unwrap(await postService("app", "masterKey.tenantData", {
-    dataKeys: [{ serviceParams: "", dataKey: "profile", serviceKey: "sys.user.profile", mode: "formData" }],
-  }, authKey)));
-  const firstProfile = Array.isArray(profile.profile) ? asObject(profile.profile[0]) : {};
-  const canonicalUsername = typeof firstProfile.username === "string" && firstProfile.username
-    ? firstProfile.username
-    : username;
+  const profile = asObject(
+    unwrap(
+      await postService(
+        "app",
+        "masterKey.tenantData",
+        {
+          dataKeys: [
+            {
+              serviceParams: "",
+              dataKey: "profile",
+              serviceKey: "sys.user.profile",
+              mode: "formData",
+            },
+          ],
+        },
+        authKey,
+      ),
+    ),
+  );
+  const firstProfile = Array.isArray(profile.profile)
+    ? asObject(profile.profile[0])
+    : {};
+  const canonicalUsername =
+    typeof firstProfile.username === "string" && firstProfile.username
+      ? firstProfile.username
+      : username;
 
-  return { username: canonicalUsername, authKey, taskDefinitionKey };
+  const candidateGroups = await loadCandidateGroups(authKey);
+  return { username: canonicalUsername, authKey, taskDefinitionKey, candidateGroups };
 }
 
 async function bpmRequest(
@@ -188,55 +327,100 @@ async function bpmRequest(
   data: unknown = {},
   signal?: AbortSignal,
 ): Promise<unknown> {
-  const result = unwrap(await postService(
-    "bpm",
-    "bpm.data",
-    { method, path, data },
-    session.authKey,
-    signal,
-  ));
+  const result = unwrap(
+    await postService(
+      "bpm",
+      "bpm.data",
+      { method, path, data },
+      session.authKey,
+      signal,
+    ),
+  );
   const object = asObject(result);
   if (typeof object.type === "string" && /exception|error/i.test(object.type)) {
-    throw new CrmError(502, String(object.message ?? "The process engine rejected this request.").slice(0, 500));
+    throw new CrmError(
+      502,
+      String(
+        object.message ?? "The process engine rejected this request.",
+      ).slice(0, 500),
+    );
   }
   return result;
 }
 
 const FIELD_ALIASES = {
-  name: ["lead_name", "leadName", "customer_name", "customerName", "full_name", "fullName", "name"],
-  phone: ["phone_number", "phoneNumber", "phone", "mobile_number", "mobileNumber", "mobile", "contact_number", "contactNumber"],
+  name: [
+    "lead_name",
+    "leadName",
+    "customer_name",
+    "customerName",
+    "full_name",
+    "fullName",
+    "name",
+  ],
+  phone: [
+    "phone_number",
+    "phoneNumber",
+    "phone",
+    "mobile_number",
+    "mobileNumber",
+    "mobile",
+    "contact_number",
+    "contactNumber",
+  ],
   status: ["status", "lead_status", "leadStatus", "call_status", "callStatus"],
   comments: ["comments", "comment", "call_comments", "callComments", "notes"],
+  isAdmin: ["isAdmin", "is_admin", "admin"],
   due: ["due_date", "dueDate", "due"],
 } as const;
 
-function findField(variables: Record<string, unknown>, aliases: readonly string[], skipEmpty = false) {
+function findField(
+  variables: Record<string, unknown>,
+  aliases: readonly string[],
+  skipEmpty = false,
+) {
   const keys = Object.keys(variables);
   for (const alias of aliases) {
-    const key = keys.find(item => item.toLowerCase() === alias.toLowerCase());
+    const key = keys.find((item) => item.toLowerCase() === alias.toLowerCase());
     if (!key) continue;
     const raw = variables[key];
-    const value = Object.hasOwn(asObject(raw), "value") ? asObject(raw).value : raw;
-    const text = typeof value === "string" || typeof value === "number" ? String(value) : "";
+    const value = Object.hasOwn(asObject(raw), "value")
+      ? asObject(raw).value
+      : raw;
+    const text =
+      typeof value === "string" || typeof value === "number" || typeof value === "boolean"
+        ? String(value)
+        : "";
     if (skipEmpty && !text.trim()) continue;
     return { key, value: skipEmpty ? text.trim() : text };
   }
   return { key: aliases[0], value: "" };
 }
 
-function taskDueDate(task: Record<string, unknown>, variables: Record<string, unknown>): string | null {
+function taskDueDate(
+  task: Record<string, unknown>,
+  variables: Record<string, unknown>,
+): string | null {
+  const variableDueDate = findField(variables, ["dueDate", "due_date"], true).value;
+  if (variableDueDate) return variableDueDate;
+
   for (const field of ["due", "dueDate", "due_date"]) {
     const value = task[field];
     if (typeof value === "string" && value.trim()) return value.trim();
   }
-  return findField(variables, FIELD_ALIASES.due, true).value || null;
+  return findField(variables, ["due"], true).value || null;
 }
 
-function mapTask(task: Record<string, unknown>, variables: Record<string, unknown>): DialerTask {
+function mapTask(
+  task: Record<string, unknown>,
+  variables: Record<string, unknown>,
+): DialerTask {
   const dueDate = taskDueDate(task, variables);
   return {
     id: String(task.id),
-    name: findField(variables, FIELD_ALIASES.name, true).value || String(task.name ?? "Unnamed lead"),
+    name:
+      findField(variables, FIELD_ALIASES.name, true).value ||
+      String(task.name ?? "Unnamed lead"),
     phone: findField(variables, FIELD_ALIASES.phone, true).value,
     dueDate,
     status: findField(variables, FIELD_ALIASES.status, true).value,
@@ -244,13 +428,24 @@ function mapTask(task: Record<string, unknown>, variables: Record<string, unknow
     recallDateTime: dueDate ?? "",
     taskName: String(task.name ?? "Lead dialing"),
     created: typeof task.created === "string" ? task.created : null,
-    businessKey: findField(variables, ["business_key", "businessKey"], true).value ||
+    businessKey:
+      findField(variables, ["business_key", "businessKey"], true).value ||
       (typeof task.businessKey === "string" ? task.businessKey : ""),
-    processInstanceId: typeof task.processInstanceId === "string" ? task.processInstanceId : undefined,
+    processInstanceId:
+      typeof task.processInstanceId === "string"
+        ? task.processInstanceId
+        : undefined,
+    isAdmin: ["true", "1", "yes"].includes(
+      findField(variables, FIELD_ALIASES.isAdmin).value.toLowerCase(),
+    ),
   };
 }
 
-async function variablesFor(session: DialerSession, id: string, signal?: AbortSignal) {
+async function variablesFor(
+  session: DialerSession,
+  id: string,
+  signal?: AbortSignal,
+) {
   const result = await bpmRequest(
     session,
     `/task/${encodeURIComponent(id)}/variables?deserializeValues=false`,
@@ -268,9 +463,11 @@ async function variablesForTasks(
   session: DialerSession,
   tasks: Record<string, unknown>[],
   signal?: AbortSignal,
-): Promise<Map<string, { variables?: Record<string, unknown>; error?: unknown }>> {
+): Promise<
+  Map<string, { variables?: Record<string, unknown>; error?: unknown }>
+> {
   if (!tasks.length) return new Map();
-  const keys = tasks.map(task => ({
+  const keys = tasks.map((task) => ({
     key: `task_${String(task.id)}`,
     request: {
       method: "GET",
@@ -278,27 +475,43 @@ async function variablesForTasks(
       data: {},
     },
   }));
-  const response = asObject(await postService(
-    "bpm",
-    "bpm.multiKey.data",
-    { dataKeys: keys },
-    session.authKey,
-    signal,
-  ));
-  const results = new Map<string, { variables?: Record<string, unknown>; error?: unknown }>();
-  tasks.forEach(task => {
+  const response = asObject(
+    await postService(
+      "bpm",
+      "bpm.multiKey.data",
+      { dataKeys: keys },
+      session.authKey,
+      signal,
+    ),
+  );
+  const results = new Map<
+    string,
+    { variables?: Record<string, unknown>; error?: unknown }
+  >();
+  tasks.forEach((task) => {
     const id = String(task.id);
     const key = `task_${id}`;
-    const envelope = asObject(response[key] ?? asObject(response.C_DATA)[key] ?? asObject(response.data)[key]);
+    const envelope = asObject(
+      response[key] ??
+        asObject(response.C_DATA)[key] ??
+        asObject(response.data)[key],
+    );
     const value = unwrap(envelope);
     const valueObject = asObject(value);
     const resultStatus = String(valueObject.type ?? valueObject.status ?? "");
     if (/exception|error|failed|failure/i.test(resultStatus)) {
-      results.set(id, { error: new CrmError(502, String(valueObject.message ?? "Could not load task variables.")) });
+      results.set(id, {
+        error: new CrmError(
+          502,
+          String(valueObject.message ?? "Could not load task variables."),
+        ),
+      });
     } else if (Object.keys(valueObject).length) {
       results.set(id, { variables: valueObject });
     } else {
-      results.set(id, { error: new CrmError(502, "Appflexor returned invalid task variables.") });
+      results.set(id, {
+        error: new CrmError(502, "Appflexor returned invalid task variables."),
+      });
     }
   });
   return results;
@@ -309,50 +522,116 @@ export async function getTaskList(
   kind: "assigned" | "available",
   signal?: AbortSignal,
 ): Promise<DialerTaskList> {
-  const path = kind === "assigned"
-    ? `/task?taskDefinitionKey=dialerApp&assignee=${encodeURIComponent(session.username)}`
-    : "/task?taskDefinitionKey=dialerApp&unassigned=true";
-  const response = await bpmRequest(session, path, "GET", {}, signal);
-  if (!Array.isArray(response)) throw new CrmError(502, "Appflexor returned an invalid task list.");
+  const candidateGroups = session.candidateGroups?.length
+    ? session.candidateGroups
+    : await loadCandidateGroups(session.authKey);
+  if (!candidateGroups.length) {
+    return { tasks: [], hasMore: false, scannedCount: 0 };
+  }
+
+  const candidateGroupFilter = { candidateGroups: candidateGroups };
+  const path = kind === "assigned" ? `/task` : "/task";
+  const allFilter = {
+    unassigned: true,
+    ...candidateGroupFilter,
+    processVariables: [
+      {
+        name: "application",
+        operator: "eq",
+        value: "DIALER",
+      },
+    ],
+  };
+  const assignedFilter = {
+    assignee: session.username,
+    // ...candidateGroupFilter,
+    processVariables: [
+      {
+        name: "application",
+        operator: "eq",
+        value: "DIALER",
+      },
+    ],
+  };
+  const response = await bpmRequest(
+    session,
+    path,
+    "POST",
+    kind === "assigned" ? assignedFilter : allFilter,
+    signal,
+  );
+  if (!Array.isArray(response))
+    throw new CrmError(502, "Appflexor returned an invalid task list.");
 
   const rows = response.slice(0, 100).map(asObject);
-  rows.forEach(task => {
+  rows.forEach((task) => {
     if (typeof task.id !== "string" || !task.id) {
       throw new CrmError(502, "Appflexor returned a task without an id.");
     }
     if (kind === "assigned" && task.assignee !== session.username) {
-      throw new CrmError(502, "Appflexor returned a task outside your assignment.");
+      throw new CrmError(
+        502,
+        "Appflexor returned a task outside your assignment.",
+      );
     }
     if (kind === "available" && task.assignee != null && task.assignee !== "") {
-      throw new CrmError(502, "Appflexor returned an assigned task in the available queue.");
+      throw new CrmError(
+        502,
+        "Appflexor returned an assigned task in the available queue.",
+      );
     }
   });
-  const eligibleRows = rows.filter(task => !(session.taskDefinitionKey && kind === "assigned" && task.taskDefinitionKey !== session.taskDefinitionKey));
-  let variableResults: Map<string, { variables?: Record<string, unknown>; error?: unknown }>;
+  const eligibleRows = rows.filter(
+    (task) =>
+      !(
+        session.taskDefinitionKey &&
+        kind === "assigned" &&
+        task.taskDefinitionKey !== session.taskDefinitionKey
+      ),
+  );
+  let variableResults: Map<
+    string,
+    { variables?: Record<string, unknown>; error?: unknown }
+  >;
   try {
     variableResults = await variablesForTasks(session, eligibleRows, signal);
   } catch (error) {
-    if (kind !== "available" || signal?.aborted ||
-        (error instanceof DOMException && error.name === "AbortError") ||
-        (error instanceof CrmError && error.status === 401)) throw error;
-    variableResults = new Map(eligibleRows.map(task => [String(task.id), { error }]));
+    if (
+      kind !== "available" ||
+      signal?.aborted ||
+      (error instanceof DOMException && error.name === "AbortError") ||
+      (error instanceof CrmError && error.status === 401)
+    )
+      throw error;
+    variableResults = new Map(
+      eligibleRows.map((task) => [String(task.id), { error }]),
+    );
   }
   const tasks: DialerTask[] = [];
-  eligibleRows.forEach(task => {
-      const result = variableResults.get(String(task.id));
-      if (result?.error && kind !== "available") throw result.error;
-      const variables = result?.variables || {};
-      const detailsError = result?.error instanceof Error ? result.error.message : undefined;
-      const lead = mapTask(task, variables);
-      // Some task-list responses omit a due date that the task-detail API
-      // already returns after a successful RECALL save.
-      if (kind === "assigned" && ["RECALL", "VISIT", "DEMO"].includes(lead.status) && !lead.dueDate) {
-        // The queue variables are already batched; task-level due dates are
-        // still read from the task response when available.
-        lead.dueDate = taskDueDate(task, variables);
-        lead.recallDateTime = lead.dueDate ?? "";
-      }
-      tasks.push(kind === "available" ? { ...lead, ...(detailsError ? { detailsError } : {}) } : lead);
+  eligibleRows.forEach((task) => {
+    const result = variableResults.get(String(task.id));
+    if (result?.error && kind !== "available") throw result.error;
+    const variables = result?.variables || {};
+    const detailsError =
+      result?.error instanceof Error ? result.error.message : undefined;
+    const lead = mapTask(task, variables);
+    // Some task-list responses omit a due date that the task-detail API
+    // already returns after a successful RECALL save.
+    if (
+      kind === "assigned" &&
+      ["RECALL", "VISIT", "DEMO"].includes(lead.status) &&
+      !lead.dueDate
+    ) {
+      // The queue variables are already batched; task-level due dates are
+      // still read from the task response when available.
+      lead.dueDate = taskDueDate(task, variables);
+      lead.recallDateTime = lead.dueDate ?? "";
+    }
+    tasks.push(
+      kind === "available"
+        ? { ...lead, ...(detailsError ? { detailsError } : {}) }
+        : lead,
+    );
   });
   return { tasks, hasMore: response.length > 100, scannedCount: rows.length };
 }
@@ -362,27 +641,49 @@ export async function getAssignedTask(
   id: string,
   signal?: AbortSignal,
 ): Promise<DialerTask> {
-  const raw = asObject(await bpmRequest(session, `/task/${encodeURIComponent(id)}`, "GET", {}, signal));
+  const raw = asObject(
+    await bpmRequest(
+      session,
+      `/task/${encodeURIComponent(id)}`,
+      "GET",
+      {},
+      signal,
+    ),
+  );
   if (!raw.id) throw new CrmError(404, "This task is no longer available.");
-  if (raw.assignee !== session.username ||
-      (session.taskDefinitionKey && raw.taskDefinitionKey !== session.taskDefinitionKey)) {
+  if (
+    raw.assignee !== session.username ||
+    (session.taskDefinitionKey &&
+      raw.taskDefinitionKey !== session.taskDefinitionKey)
+  ) {
     throw new CrmError(403, "This dialing task is not assigned to you.");
   }
   return mapTask(raw, await variablesFor(session, id, signal));
 }
 
-export async function claimTask(session: DialerSession, id: string): Promise<void> {
+export async function claimTask(
+  session: DialerSession,
+  id: string,
+): Promise<void> {
   // Camunda's atomic claim operation arbitrates races between agents.
-  await bpmRequest(session, `/task/${encodeURIComponent(id)}/claim`, "POST", { userId: session.username });
+  await bpmRequest(session, `/task/${encodeURIComponent(id)}/claim`, "POST", {
+    userId: session.username,
+  });
 }
 
-export async function claimAvailableTask(session: DialerSession, id: string): Promise<DialerTask> {
+export async function claimAvailableTask(
+  session: DialerSession,
+  id: string,
+): Promise<DialerTask> {
   await claimTask(session, id);
   try {
     return await getAssignedTask(session, id);
   } catch (error) {
     if (error instanceof CrmError && error.status === 401) throw error;
-    throw new CrmError(502, `The task was claimed, but its details could not be loaded. Refresh Assigned to reopen it. ${error instanceof Error ? error.message : ""}`);
+    throw new CrmError(
+      502,
+      `The task was claimed, but its details could not be loaded. Refresh Assigned to reopen it. ${error instanceof Error ? error.message : ""}`,
+    );
   }
 }
 
@@ -396,30 +697,50 @@ function saveKey(session: DialerSession, task: DialerTask) {
 
 function validateLog(status: Outcome, comments: string) {
   if (!isOutcome(status) || comments.length > 10000) {
-    throw new CrmError(400, "Choose a valid call outcome and provide comments of up to 10000 characters.");
+    throw new CrmError(
+      400,
+      "Choose a valid call outcome and provide comments of up to 10000 characters.",
+    );
   }
 }
 
 function recallDateTimeToIso(value: string): string {
   const parsed = value ? new Date(value) : new Date(Number.NaN);
   if (!Number.isFinite(parsed.getTime())) {
-    throw new CrmError(400, "Choose a valid scheduled date and time for this status.");
+    throw new CrmError(
+      400,
+      "Choose a valid scheduled date and time for this status.",
+    );
   }
   const pad = (part: number) => String(part).padStart(2, "0");
   const offset = -parsed.getTimezoneOffset();
   const zone = `${offset >= 0 ? "+" : "-"}${pad(Math.floor(Math.abs(offset) / 60))}${pad(Math.abs(offset) % 60)}`;
-  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}` +
-    `T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}.000${zone}`;
+  return (
+    `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}` +
+    `T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}.000${zone}`
+  );
 }
 
-async function ownedTaskWithBusinessKey(session: DialerSession, id: string): Promise<DialerTask> {
+async function ownedTaskWithBusinessKey(
+  session: DialerSession,
+  id: string,
+): Promise<DialerTask> {
   const task = await getAssignedTask(session, id);
   if (!task.businessKey && task.processInstanceId) {
-    const instance = asObject(await bpmRequest(session, `/process-instance/${encodeURIComponent(task.processInstanceId)}`));
-    task.businessKey = typeof instance.businessKey === "string" ? instance.businessKey : "";
+    const instance = asObject(
+      await bpmRequest(
+        session,
+        `/process-instance/${encodeURIComponent(task.processInstanceId)}`,
+      ),
+    );
+    task.businessKey =
+      typeof instance.businessKey === "string" ? instance.businessKey : "";
   }
   if (!task.businessKey) {
-    throw new CrmError(400, "This task has no business key. Add business_key/businessKey to its variables or set the process instance business key before saving.");
+    throw new CrmError(
+      400,
+      "This task has no business key. Add business_key/businessKey to its variables or set the process instance business key before saving.",
+    );
   }
   return task;
 }
@@ -432,7 +753,10 @@ export async function saveDialerLog(
   recallDateTime = "",
 ): Promise<void> {
   validateLog(status, comments);
-  const recallIso = status === "RECALL" || status === "VISIT" || status === "DEMO" ? recallDateTimeToIso(recallDateTime) : "";
+  const recallIso =
+    status === "RECALL" || status === "VISIT" || status === "DEMO"
+      ? recallDateTimeToIso(recallDateTime)
+      : "";
   const current = await ownedTaskWithBusinessKey(session, task.id);
   const fields = {
     id: task.id,
@@ -445,68 +769,80 @@ export async function saveDialerLog(
   const fingerprint = JSON.stringify(fields);
   const key = saveKey(session, task);
   if (savedLogs.get(key) !== fingerprint) {
-    const payload = await postService("app", "update.formData", {
-      datasource: "",
-      saveOrUpdate: "Yes",
-      data: [{
-        formId: "dialer_log",
-        entity: "dialer_log",
-        action: "update",
-        mode: "formData",
-        id: task.id,
-        fileData: [],
-        formData: fields,
-      }],
-    }, session.authKey);
+    const payload = await postService(
+      "app",
+      "update.formData",
+      {
+        datasource: "",
+        saveOrUpdate: "Yes",
+        data: [
+          {
+            formId: "dialer_log",
+            entity: "dialer_log",
+            action: "update",
+            mode: "formData",
+            id: task.id,
+            fileData: [],
+            formData: fields,
+          },
+        ],
+      },
+      session.authKey,
+    );
     const object = asObject(payload);
-    if (String(object.C_STATUS ?? object.status ?? "").toUpperCase() !== "SUCCESS") {
-      throw new CrmError(502, "Appflexor did not confirm that the dialer log was saved. The task was not completed.");
+    if (
+      String(object.C_STATUS ?? object.status ?? "").toUpperCase() !== "SUCCESS"
+    ) {
+      throw new CrmError(
+        502,
+        "Appflexor did not confirm that the dialer log was saved. The task was not completed.",
+      );
     }
     savedLogs.set(key, fingerprint);
   }
   try {
-    await bpmRequest(session, `/task/${encodeURIComponent(task.id)}/variables`, "POST", {
-      modifications: {
-        status: { value: status, type: "String" },
-        comments: { value: comments, type: "String" },
+    const modifications: Record<string, { value: string; type: string }> = {
+      status: { value: status, type: "String" },
+      comments: { value: comments, type: "String" },
+    };
+    modifications.dueDate = { value: recallIso, type: "String" };
+
+    await bpmRequest(
+      session,
+      `/task/${encodeURIComponent(task.id)}/variables`,
+      "POST",
+      {
+        modifications,
       },
-    });
+    );
     const confirmed = await variablesFor(session, task.id);
     if (findField(confirmed, ["status"], true).value !== status) {
-      throw new CrmError(502, "Appflexor did not return the saved status when the task variables were reloaded.");
+      throw new CrmError(
+        502,
+        "Appflexor did not return the saved status when the task variables were reloaded.",
+      );
     }
     if (findField(confirmed, ["comments"]).value !== comments) {
-      throw new CrmError(502, "Appflexor did not return the saved comments when the task variables were reloaded.");
+      throw new CrmError(
+        502,
+        "Appflexor did not return the saved comments when the task variables were reloaded.",
+      );
     }
-    if (status === "RECALL" || status === "VISIT" || status === "DEMO") {
-      const path = `/task/${encodeURIComponent(task.id)}`;
-      const before = asObject(await bpmRequest(session, path));
-      if (before.assignee !== session.username) {
-        throw new CrmError(409, "This task is no longer assigned to you. Refresh before saving.");
-      }
-      // Camunda's PUT updates the full task, not just the supplied fields.
-      // Preserve all writable task properties; never reassign an unowned task.
-      const writableFields = [
-        "name", "description", "assignee", "owner", "delegationState",
-        "followUp", "priority", "parentTaskId", "caseInstanceId", "tenantId",
-      ];
-      const update = Object.fromEntries(writableFields
-        .filter(field => Object.hasOwn(before, field))
-        .map(field => [field, before[field]]));
-      await bpmRequest(session, path, "PUT", { ...update, due: recallIso });
-      const updatedTask = asObject(await bpmRequest(session, path));
-      if (updatedTask.assignee !== session.username) {
-        throw new CrmError(409, "The due-date update did not preserve your task assignment. The task was not completed; refresh your queue.");
-      }
-      const updatedDue = taskDueDate(updatedTask, {});
-      if (!updatedDue || new Date(updatedDue).getTime() !== new Date(recallIso).getTime()) {
-        throw new CrmError(502, "Appflexor did not return the updated task due date.");
+    if (recallIso) {
+      const savedDueDate = findField(confirmed, ["dueDate", "due_date"], true).value;
+      if (!savedDueDate || new Date(savedDueDate).getTime() !== new Date(recallIso).getTime()) {
+        throw new CrmError(
+          502,
+          "Appflexor did not return the updated dueDate task variable.",
+        );
       }
     }
   } catch (error) {
     if (error instanceof CrmError && error.status === 401) throw error;
-    throw new CrmError(error instanceof CrmError ? error.status : 502,
-      `The dialer log was saved, but updating task status, comments or due date failed. Retry Save to update the task without creating another identical log. The task was not completed. ${error instanceof Error ? error.message : ""}`);
+    throw new CrmError(
+      error instanceof CrmError ? error.status : 502,
+      `The dialer log was saved, but updating task status, comments or due date failed. Retry Save to update the task without creating another identical log. The task was not completed. ${error instanceof Error ? error.message : ""}`,
+    );
   }
 }
 
@@ -520,32 +856,55 @@ export async function completeDialerTask(
   await saveDialerLog(session, task, status, comments, recallDateTime);
   try {
     const current = await ownedTaskWithBusinessKey(session, task.id);
-    const payload = await postService("bpm", "complete.task", {
-      path: `/task/${encodeURIComponent(task.id)}/complete`,
-      method: "POST",
-      data: {
-        businessKey: current.businessKey,
-        variables: { status: { value: status } },
+    const payload = await postService(
+      "bpm",
+      "complete.task",
+      {
+        path: `/task/${encodeURIComponent(task.id)}/complete`,
+        method: "POST",
+        data: {
+          businessKey: current.businessKey,
+          variables: { status: { value: status } },
+        },
       },
-    }, session.authKey);
+      session.authKey,
+    );
     const result = asObject(unwrap(payload));
-    if (typeof result.type === "string" && /exception|error/i.test(result.type)) {
-      throw new CrmError(502, String(result.message ?? "The process engine rejected completion."));
+    if (
+      typeof result.type === "string" &&
+      /exception|error/i.test(result.type)
+    ) {
+      throw new CrmError(
+        502,
+        String(result.message ?? "The process engine rejected completion."),
+      );
     }
   } catch (error) {
     if (error instanceof CrmError && error.status === 401) throw error;
-    throw new CrmError(error instanceof CrmError ? error.status : 502,
-      `The dialer log was saved, but task completion failed. Your task remains assigned; retry Complete without changing the fields to reuse the saved log. ${error instanceof Error ? error.message : ""}`);
+    throw new CrmError(
+      error instanceof CrmError ? error.status : 502,
+      `The dialer log was saved, but task completion failed. Your task remains assigned; retry Complete without changing the fields to reuse the saved log. ${error instanceof Error ? error.message : ""}`,
+    );
   }
   savedLogs.delete(saveKey(session, task));
   return { id: task.id, completed: true };
 }
 
 export async function completeAssignedTask(
-  session: DialerSession, id: string, status: Outcome, comments: string, recallDateTime = "",
+  session: DialerSession,
+  id: string,
+  status: Outcome,
+  comments: string,
+  recallDateTime = "",
 ): Promise<DialerCompletion> {
   const task = await getAssignedTask(session, id);
-  return completeDialerTask(session, task, status, comments, recallDateTime || task.recallDateTime);
+  return completeDialerTask(
+    session,
+    task,
+    status,
+    comments,
+    recallDateTime || task.recallDateTime,
+  );
 }
 
 export async function logoutFromCrm(session: DialerSession): Promise<void> {
