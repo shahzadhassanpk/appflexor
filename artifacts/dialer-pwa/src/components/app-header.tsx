@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { logoutFromCrm, type DialerSession } from "@/lib/crm";
 import { Loader2, LogOut } from "lucide-react";
 import { InstallButton, Mark } from "@/components/chrome";
+import { ProductHelpDialog } from "@/components/product-help-dialog";
 
 export function AppHeader({ session, onLogout }: { session: DialerSession; onLogout: () => void }) {
   const [, navigate] = useLocation();
@@ -19,6 +20,7 @@ export function AppHeader({ session, onLogout }: { session: DialerSession; onLog
           </div>
         </div>
         <InstallButton />
+        <ProductHelpDialog />
         <button data-testid="button-logout" disabled={logout.isPending}
           onClick={() => logout.mutate(undefined, { onSettled: finish })}
           className="press grid h-10 w-10 place-items-center rounded-full hover:bg-secondary" aria-label="Sign out">

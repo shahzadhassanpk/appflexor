@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { QRCodeSVG } from "qrcode.react";
 import {
   AlertTriangle,
   Check,
   Loader2,
+  MapPin,
   Phone,
   PhoneOff,
   Save,
@@ -27,11 +29,14 @@ import {
 } from "@/components/ui/dialog";
 import { useOnline } from "@/hooks/use-device";
 import { useToast } from "@/hooks/use-toast";
+import { OutcomeReasonGuide } from "@/components/chrome";
 import {
   OUTCOME_META,
   errMessage,
   isOutcome,
   isScheduledOutcome,
+  googleMapsHref,
+  reasonsForOutcome,
   loadDraft,
   removeDraft,
   saveDraft,
@@ -66,6 +71,7 @@ export function CallDialog({
   const { toast } = useToast();
   const online = useOnline();
   const [status, setStatus] = useState<Outcome | "">("");
+  const [reason, setReason] = useState("");
   const [comments, setComments] = useState("");
   const [recallDateTime, setRecallDateTime] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -77,15 +83,24 @@ export function CallDialog({
     mutationFn: (v: {
       task: DialerTask;
       status: Outcome;
+      reason: string;
       comments: string;
       recallDateTime: string;
     }) =>
-      saveDialerLog(session, v.task, v.status, v.comments, v.recallDateTime),
+      saveDialerLog(
+        session,
+        v.task,
+        v.status,
+        v.comments,
+        v.recallDateTime,
+        v.reason,
+      ),
   });
   const complete = useMutation({
     mutationFn: (v: {
       task: DialerTask;
       status: Outcome;
+      reason: string;
       comments: string;
       recallDateTime: string;
     }) =>
@@ -95,6 +110,7 @@ export function CallDialog({
         v.status,
         v.comments,
         v.recallDateTime,
+        v.reason,
       ),
   });
   const busy = save.isPending || complete.isPending;
@@ -109,6 +125,7 @@ export function CallDialog({
     const d = loadDraft(session.username, task.id);
     if (d) {
       setStatus(d.status);
+      setReason(d.reason || "");
       setComments(d.comments);
       setRecallDateTime(
         isScheduledOutcome(d.status)
@@ -117,9 +134,12 @@ export function CallDialog({
       );
     } else {
       setStatus(isOutcome(task.status) ? task.status : "");
+      setReason(task.reason ?? "");
       setComments(task.comments ?? "");
       setRecallDateTime(
-        isScheduledOutcome(task.status) ? toDateTimeLocal(task.recallDateTime) : "",
+        isScheduledOutcome(task.status)
+          ? toDateTimeLocal(task.recallDateTime)
+          : "",
       );
     }
   }, [task, open, session.username]);
@@ -134,22 +154,25 @@ export function CallDialog({
     else
       saveDraft(session.username, task.id, {
         status,
+        reason,
         comments,
         recallDateTime,
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, comments, recallDateTime, session.username]);
+  }, [status, reason, comments, recallDateTime, session.username]);
 
   const tel = telHref(task?.phone);
   const requiresSchedule = isScheduledOutcome(status);
+  const requiresReason = reasonsForOutcome(status).length > 0;
   const canAct =
     !!task &&
     !!status &&
     (!requiresSchedule || !!recallDateTime) &&
+    (!requiresReason || !!reason) &&
     online &&
     !busy;
   const canComplete =
-    !!task && !!status && status !== "RECALL" && online && !busy;
+    !!task && !!status && (!requiresReason || !!reason) && online && !busy;
 
   const setOpen = (o: boolean) => {
     if (busy) return;
@@ -162,7 +185,7 @@ export function CallDialog({
     setError(null);
     setSavedNote(null);
     save.mutate(
-      { task, status, comments, recallDateTime },
+      { task, status, reason, comments, recallDateTime },
       {
         onSuccess: async () => {
           setSavedNote(
@@ -183,6 +206,7 @@ export function CallDialog({
                       ? {
                           ...t,
                           status,
+                          reason,
                           comments,
                           recallDateTime: savedRecallDateTime,
                           dueDate: savedRecallDateTime,
@@ -195,6 +219,7 @@ export function CallDialog({
           qc.setQueryData<DialerTask>(taskDetailKey(task.id), (old) => ({
             ...(old ?? task),
             status,
+            reason,
             comments,
             recallDateTime: savedRecallDateTime,
             dueDate: savedRecallDateTime,
@@ -221,7 +246,7 @@ export function CallDialog({
     setError(null);
     setSavedNote(null);
     complete.mutate(
-      { task, status, comments, recallDateTime },
+      { task, status, reason, comments, recallDateTime },
       {
         onSuccess: (res) => {
           if (!res.completed) {
@@ -293,33 +318,67 @@ export function CallDialog({
                   Record the outcome. Closing keeps the task assigned to you.
                 </DialogDescription>
               </DialogHeader>
-              <div className="mt-4 grid gap-2">
-                <label
-                  className="text-[10px] font-semibold uppercase tracking-wider opacity-60"
-                  htmlFor="call-name"
-                >
-                  Name
-                </label>
-                <input
-                  id="call-name"
-                  data-testid="input-call-name"
-                  readOnly
-                  value={task.name || "Unnamed lead"}
-                  className="h-10 rounded-lg bg-sidebar-accent px-3 text-sm font-bold outline-none"
-                />
-                <label
-                  className="text-[10px] font-semibold uppercase tracking-wider opacity-60"
-                  htmlFor="call-phone"
-                >
-                  Phone
-                </label>
-                <input
-                  id="call-phone"
-                  data-testid="input-call-phone"
-                  readOnly
-                  value={task.phone || "No phone number"}
-                  className="tabnum h-10 rounded-lg bg-sidebar-accent px-3 text-sm outline-none"
-                />
+              <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                <div className="min-w-0 space-y-2">
+                  <label
+                    className="block text-[10px] font-semibold uppercase tracking-wider opacity-60"
+                    htmlFor="call-name"
+                  >
+                    Name
+                  </label>
+                  <input
+                    id="call-name"
+                    data-testid="input-call-name"
+                    readOnly
+                    value={task.name || "Unnamed lead"}
+                    className="h-8 w-full rounded-lg bg-sidebar-accent px-2.5 text-xs font-bold outline-none"
+                  />
+                  <label
+                    className="block text-[10px] font-semibold uppercase tracking-wider opacity-60"
+                    htmlFor="call-phone"
+                  >
+                    Phone
+                  </label>
+                  <input
+                    id="call-phone"
+                    data-testid="input-call-phone"
+                    readOnly
+                    value={task.phone || "No phone number"}
+                    className="tabnum h-8 w-full rounded-lg bg-sidebar-accent px-2.5 text-xs outline-none"
+                  />
+                  <label
+                    className="block text-[10px] font-semibold uppercase tracking-wider opacity-60"
+                    htmlFor="call-address"
+                  >
+                    Address
+                  </label>
+                  <input
+                    id="call-address"
+                    data-testid="input-call-address"
+                    readOnly
+                    value={task.address || "No address"}
+                    className="h-8 w-full rounded-lg bg-sidebar-accent px-2.5 text-xs outline-none"
+                  />
+                  {googleMapsHref(task.address, task.name) && (
+                    <a
+                      href={googleMapsHref(task.address, task.name)!}
+                      target="_blank"
+                      rel="noreferrer"
+                      data-testid="link-call-address-map"
+                      className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-sidebar-foreground underline-offset-2 hover:underline"
+                    >
+                      <MapPin className="h-3.5 w-3.5" /> Open in Google Maps
+                    </a>
+                  )}
+                </div>
+                <div className="rounded-xl bg-white p-2 text-center shadow-sm" title={tel ? "Scan to call" : "No phone number available"}>
+                  {tel ? (
+                    <QRCodeSVG value={tel} size={82} bgColor="#ffffff" fgColor="#111827" level="M" />
+                  ) : (
+                    <div className="grid h-[82px] w-[82px] place-items-center text-[9px] font-semibold text-gray-400">No number</div>
+                  )}
+                  <span className="mt-1 block text-[9px] font-bold uppercase tracking-wider text-gray-500">Scan to call</span>
+                </div>
               </div>
             </div>
             {tel ? (
@@ -349,12 +408,10 @@ export function CallDialog({
                 </p>
               )}
               <div>
-                <label
-                  htmlFor="call-outcome"
-                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-                >
-                  Outcome
-                </label>
+                <div className="mb-1.5 flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <label htmlFor="call-outcome">Outcome</label>
+                  <OutcomeReasonGuide />
+                </div>
                 <select
                   id="call-outcome"
                   data-testid="select-call-status"
@@ -365,8 +422,10 @@ export function CallDialog({
                       ? e.target.value
                       : "";
                     setStatus(nextStatus);
+                    setReason("");
                     if (isScheduledOutcome(nextStatus)) {
-                      if (!recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
+                      if (!recallDateTime)
+                        setRecallDateTime(toDateTimeLocal(task.recallDateTime));
                     } else {
                       setRecallDateTime("");
                     }
@@ -387,6 +446,7 @@ export function CallDialog({
                   <option value="DEMO">DEMO</option>
                   <option value="VISIT">VISIT</option>
                   <option value="COLD">COLD</option>
+                  <option value="REJECTION">REJECTION</option>
                   <option value="CLOSE">CLOSE</option>
                   {task?.isAdmin && (
                     <>
@@ -418,6 +478,32 @@ export function CallDialog({
                     }}
                     className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base outline-none focus:border-accent focus:ring-4 focus:ring-accent/15 disabled:opacity-60"
                   />
+                </div>
+              )}
+              {reasonsForOutcome(status).length > 0 && (
+                <div>
+                  <label
+                    htmlFor="call-reason"
+                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    Reason
+                  </label>
+                  <select
+                    id="call-reason"
+                    data-testid="select-call-reason"
+                    value={reason}
+                    required
+                    disabled={busy}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base outline-none focus:border-accent focus:ring-4 focus:ring-accent/15 disabled:opacity-60"
+                  >
+                    <option value="">Select reason</option>
+                    {reasonsForOutcome(status).map(([code, label]) => (
+                      <option key={code} value={code}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
               <div>

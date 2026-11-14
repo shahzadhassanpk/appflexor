@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
-import { Download, Share, SquarePlus, WifiOff, X } from "lucide-react";
+import { Download, HelpCircle, Share, SquarePlus, WifiOff, X } from "lucide-react";
 import { useInstall, useOnline } from "@/hooks/use-device";
-import { OUTCOME_META, isOutcome } from "@/lib/dialer";
+import { OUTCOMES, OUTCOME_META, isOutcome, reasonsForOutcome } from "@/lib/dialer";
 import { cn } from "@/lib/utils";
 
 export function Mark({ className }: { className?: string }) {
@@ -38,6 +38,63 @@ export function StatusPill({ status, className }: { status: string; className?: 
     >
       <span className="h-1.5 w-1.5 rounded-full" style={{ background: known ? `hsl(${OUTCOME_META[status].color})` : "currentColor" }} />
       {status}
+    </span>
+  );
+}
+
+export function OutcomeReasonGuide() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        data-testid="button-outcome-help"
+        aria-label="Show outcome and reason guide"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="press inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <HelpCircle className="h-4 w-4" />
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Outcome and reason guide"
+          className="absolute left-0 top-8 z-30 w-[min(21rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 text-left normal-case tracking-normal text-foreground shadow-xl"
+        >
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold">Outcome guide</p>
+              <p className="mt-0.5 text-[11px] font-normal text-muted-foreground">Choose the reason that best explains the outcome.</p>
+            </div>
+            <button
+              type="button"
+              aria-label="Close outcome guide"
+              onClick={() => setOpen(false)}
+              className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="space-y-2 pr-1">
+            {OUTCOMES.map((outcome) => (
+              <div key={outcome} className="rounded-xl bg-muted/60 px-3 py-2">
+                <div className="text-xs font-bold" style={{ color: `hsl(${OUTCOME_META[outcome].color})` }}>
+                  {OUTCOME_META[outcome].label}
+                </div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {reasonsForOutcome(outcome).map(([code, label]) => (
+                    <span key={code} className="rounded-md border border-border bg-background px-1.5 py-1 text-[10px] font-medium text-muted-foreground" title={code}>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </span>
   );
 }

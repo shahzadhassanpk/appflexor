@@ -824,7 +824,7 @@ export function ProcessDeployDialog({
 
             } else if (isAppServiceTopic(topic)) {
                 // New App Service format
-                const appServiceKey = meta.service || getAppServiceKeyFromTopic(topic) || "get.formData";
+                const appServiceKey = meta.service || getAppServiceKeyFromTopic(topic) || "";
                 const appConfig     = meta.serviceConfig || {};
                 const reserved = new Set(["appflexor.worker.meta"]);
                 const params = Array.isArray(meta.params)
@@ -862,7 +862,7 @@ export function ProcessDeployDialog({
 
             } else if (ip["s2aAppServiceKey"] || attrs["s2aAppServiceKey"]) {
                 // Legacy App Service (topic: app.service.api)
-                const appServiceKey = ip["s2aAppServiceKey"] || attrs["s2aAppServiceKey"] || "get.formData";
+                const appServiceKey = ip["s2aAppServiceKey"] || attrs["s2aAppServiceKey"] || "";
                 let appConfig = {};
                 const rawCfg = ip["s2aAppServiceConfig"] || attrs["s2aAppServiceConfig"] || "";
                 try { if (rawCfg) appConfig = JSON.parse(rawCfg); } catch (_) { /* keep empty */ }
@@ -932,7 +932,7 @@ export function ProcessDeployDialog({
 
             // Auto-generate title from current form state (mirrors computeAutoTitle in PropertyEditorModal)
             function computeAutoTitle() {
-                const svcKey = propForm.appServiceKey || "get.formData";
+                const svcKey = propForm.appServiceKey || "";
                 const cfg    = propForm.appConfig    || {};
                 if (propForm.serviceType === "ai") {
                     const agentLabel = aiAgents.find(a => a.value === propForm.agentKey)?.label || propForm.agentKey || "";
@@ -982,7 +982,7 @@ export function ProcessDeployDialog({
 
             } else if (propForm.serviceType === "app") {
                 bo.topic = getAppServiceTopic();
-                meta.service = propForm.appServiceKey || "get.formData";
+                meta.service = propForm.appServiceKey || "";
                 meta.serviceConfig = getAppServiceConfig(propForm.appConfig || {}, meta.service);
                 const appParams = (propForm.params || []).filter(param => param.key?.trim());
                 if (appParams.length) meta.params = appParams;

@@ -11,9 +11,11 @@ export type DialerTask = {
   id: string;
   name: string;
   phone: string;
+  address: string;
   dueDate: string | null;
   status: string;
   comments: string;
+  reason?: string;
   recallDateTime: string;
   taskName: string;
   created: string | null;
@@ -368,8 +370,16 @@ const FIELD_ALIASES = {
     "contact_number",
     "contactNumber",
   ],
+  address: [
+    "address",
+    "full_address",
+    "fullAddress",
+    "street_address",
+    "streetAddress",
+  ],
   status: ["status", "lead_status", "leadStatus", "call_status", "callStatus"],
   comments: ["comments", "comment", "call_comments", "callComments", "notes"],
+  reason: ["reason", "reason_code", "reasonCode"],
   isAdmin: ["isAdmin", "is_admin", "admin"],
   due: ["due_date", "dueDate", "due"],
 } as const;
@@ -422,9 +432,11 @@ function mapTask(
       findField(variables, FIELD_ALIASES.name, true).value ||
       String(task.name ?? "Unnamed lead"),
     phone: findField(variables, FIELD_ALIASES.phone, true).value,
+    address: findField(variables, FIELD_ALIASES.address, true).value,
     dueDate,
     status: findField(variables, FIELD_ALIASES.status, true).value,
     comments: findField(variables, FIELD_ALIASES.comments).value,
+    reason: findField(variables, FIELD_ALIASES.reason).value,
     recallDateTime: dueDate ?? "",
     taskName: String(task.name ?? "Lead dialing"),
     created: typeof task.created === "string" ? task.created : null,
@@ -619,7 +631,7 @@ export async function getTaskList(
     // already returns after a successful RECALL save.
     if (
       kind === "assigned" &&
-      ["RECALL", "VISIT", "DEMO"].includes(lead.status) &&
+      ["VISIT", "DEMO"].includes(lead.status) &&
       !lead.dueDate
     ) {
       // The queue variables are already batched; task-level due dates are
@@ -669,6 +681,13 @@ export async function claimTask(
   await bpmRequest(session, `/task/${encodeURIComponent(id)}/claim`, "POST", {
     userId: session.username,
   });
+}
+
+export async function unclaimTask(
+  session: DialerSession,
+  id: string,
+): Promise<void> {
+  await bpmRequest(session, `/task/${encodeURIComponent(id)}/unclaim`, "POST", {});
 }
 
 export async function claimAvailableTask(
@@ -751,10 +770,11 @@ export async function saveDialerLog(
   status: Outcome,
   comments: string,
   recallDateTime = "",
+  reason = "",
 ): Promise<void> {
   validateLog(status, comments);
   const recallIso =
-    status === "RECALL" || status === "VISIT" || status === "DEMO"
+    status === "VISIT" || status === "DEMO"
       ? recallDateTimeToIso(recallDateTime)
       : "";
   const current = await ownedTaskWithBusinessKey(session, task.id);
@@ -764,6 +784,7 @@ export async function saveDialerLog(
     phone: current.phone,
     status,
     comments,
+    reason,
     business_key: current.businessKey,
   };
   const fingerprint = JSON.stringify(fields);
@@ -804,6 +825,7 @@ export async function saveDialerLog(
     const modifications: Record<string, { value: string; type: string }> = {
       status: { value: status, type: "String" },
       comments: { value: comments, type: "String" },
+      reason: { value: reason, type: "String" },
     };
     modifications.dueDate = { value: recallIso, type: "String" };
 
@@ -827,6 +849,9 @@ export async function saveDialerLog(
         502,
         "Appflexor did not return the saved comments when the task variables were reloaded.",
       );
+    }
+    if (findField(confirmed, ["reason", "reason_code", "reasonCode"]).value !== reason) {
+      throw new CrmError(502, "Appflexor did not return the saved reason when the task variables were reloaded.");
     }
     if (recallIso) {
       const savedDueDate = findField(confirmed, ["dueDate", "due_date"], true).value;
@@ -852,8 +877,9 @@ export async function completeDialerTask(
   status: Outcome,
   comments: string,
   recallDateTime = "",
+  reason = "",
 ): Promise<DialerCompletion> {
-  await saveDialerLog(session, task, status, comments, recallDateTime);
+  await saveDialerLog(session, task, status, comments, recallDateTime, reason);
   try {
     const current = await ownedTaskWithBusinessKey(session, task.id);
     const payload = await postService(
@@ -896,6 +922,7 @@ export async function completeAssignedTask(
   status: Outcome,
   comments: string,
   recallDateTime = "",
+  reason = "",
 ): Promise<DialerCompletion> {
   const task = await getAssignedTask(session, id);
   return completeDialerTask(
@@ -904,6 +931,7 @@ export async function completeAssignedTask(
     status,
     comments,
     recallDateTime || task.recallDateTime,
+    reason,
   );
 }
 

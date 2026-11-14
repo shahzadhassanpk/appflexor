@@ -10,11 +10,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { StatusPill } from "@/components/chrome";
+import { OutcomeReasonGuide, StatusPill } from "@/components/chrome";
 import { useOnline } from "@/hooks/use-device";
 import { useToast } from "@/hooks/use-toast";
 import {
-  OUTCOMES, OUTCOME_META, errMessage, errStatus, formatDate, isOutcome, isOverdue, isScheduledOutcome, loadDraft, removeDraft, saveDraft, telHref, toDateTimeLocal, type Outcome,
+  OUTCOMES, OUTCOME_META, errMessage, errStatus, formatDate, isOutcome, isOverdue, isScheduledOutcome, loadDraft, reasonsForOutcome, removeDraft, saveDraft, telHref, toDateTimeLocal, type Outcome,
 } from "@/lib/dialer";
 import { cn } from "@/lib/utils";
 
@@ -25,12 +25,13 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
   const online = useOnline();
   const q = useQuery({ enabled: !!id, queryKey: taskDetailKey(id), queryFn: ({ signal }) => getAssignedTask(session, id, signal), retry: false, refetchOnWindowFocus: false });
   const complete = useMutation({
-    mutationFn: ({ id: taskId, data }: { id: string; data: { status: Outcome; comments: string; recallDateTime: string } }) =>
-      completeAssignedTask(session, taskId, data.status, data.comments, data.recallDateTime),
+    mutationFn: ({ id: taskId, data }: { id: string; data: { status: Outcome; reason: string; comments: string; recallDateTime: string } }) =>
+      completeAssignedTask(session, taskId, data.status, data.comments, data.recallDateTime, data.reason),
   });
   const task = q.data;
 
   const [status, setStatus] = useState<Outcome | "">("");
+  const [reason, setReason] = useState("");
   const [comments, setComments] = useState("");
   const [recallDateTime, setRecallDateTime] = useState("");
   const [confirm, setConfirm] = useState(false);
@@ -44,10 +45,10 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
     initFor.current = task.id;
     const d = loadDraft(session.username, task.id);
     if (d) {
-      setStatus(d.status); setComments(d.comments);
+      setStatus(d.status); setReason(d.reason || ""); setComments(d.comments);
       setRecallDateTime(isScheduledOutcome(d.status) ? d.recallDateTime || toDateTimeLocal(task.recallDateTime) : ""); setRestored(true);
     } else {
-      setStatus(isOutcome(task.status) ? task.status : ""); setComments(task.comments ?? "");
+      setStatus(isOutcome(task.status) ? task.status : ""); setReason(task.reason ?? ""); setComments(task.comments ?? "");
       setRecallDateTime(isScheduledOutcome(task.status) ? toDateTimeLocal(task.recallDateTime) : "");
     }
   }, [task, session.username]);
@@ -57,20 +58,21 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
     const pristine = status === (isOutcome(task.status) ? task.status : "") &&
       comments === (task.comments ?? "") && recallDateTime === toDateTimeLocal(task.recallDateTime);
     if (pristine) removeDraft(session.username, task.id);
-    else saveDraft(session.username, task.id, { status, comments, recallDateTime });
+    else saveDraft(session.username, task.id, { status, reason, comments, recallDateTime });
     // task intentionally read for baseline only
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, comments, recallDateTime, session.username]);
+  }, [status, reason, comments, recallDateTime, session.username]);
 
   const tel = telHref(task?.phone);
   const unknownStatus = !!task?.status && !isOutcome(task.status);
   const requiresSchedule = isScheduledOutcome(status);
-  const canSubmit = !!status && (!requiresSchedule || !!recallDateTime) && online && !complete.isPending && !!task;
+  const requiresReason = reasonsForOutcome(status).length > 0;
+  const canSubmit = !!status && (!requiresSchedule || !!recallDateTime) && (!requiresReason || !!reason) && online && !complete.isPending && !!task;
 
   const doComplete = () => {
-    if (!task || !status || complete.isPending || !online || (requiresSchedule && !recallDateTime)) return;
+    if (!task || !status || complete.isPending || !online || (requiresSchedule && !recallDateTime) || (requiresReason && !reason)) return;
     setSubmitError(null);
-    complete.mutate({ id: task.id, data: { status, comments, recallDateTime } }, {
+    complete.mutate({ id: task.id, data: { status, reason, comments, recallDateTime } }, {
       onSuccess: (res) => {
         if (!res.completed) { setSubmitError("Appflexor did not confirm completion. Your draft is kept; try again."); setConfirm(false); return; }
         done.current = true;
@@ -152,6 +154,7 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
             <button data-testid="button-discard-draft" className="font-semibold underline" onClick={() => {
               removeDraft(session.username, task.id);
               setStatus(isOutcome(task.status) ? task.status : "");
+              setReason(task.reason ?? "");
               setComments(task.comments ?? "");
               setRecallDateTime(isScheduledOutcome(task.status) ? toDateTimeLocal(task.recallDateTime) : "");
               setRestored(false);
@@ -166,12 +169,16 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
         )}
 
         <div>
-          <label htmlFor="outcome" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Call outcome</label>
+          <div className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <label htmlFor="outcome">Call outcome</label>
+            <OutcomeReasonGuide />
+          </div>
           <div className="relative">
             <select id="outcome" data-testid="select-status" value={status}
               onChange={(e) => {
                 const nextStatus = isOutcome(e.target.value) ? e.target.value : "";
                 setStatus(nextStatus);
+                setReason("");
                 if (isScheduledOutcome(nextStatus)) {
                   if (!recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
                 } else {
@@ -187,15 +194,17 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
               {task.isAdmin && <>
                 <option value="BOARD">Board</option>
                 <option value="COLD">Cold</option>
+                <option value="REJECTION">Rejection</option>
                 <option value="CLOSE">Close</option>
               </>}
             </select>
             <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">▾</span>
           </div>
           <div className="mt-2 grid grid-cols-3 gap-1.5" aria-hidden>
-            {OUTCOMES.filter((o) => task.isAdmin || !["BOARD", "COLD", "CLOSE"].includes(o)).map((o) => (
+            {OUTCOMES.filter((o) => task.isAdmin || !["BOARD", "COLD", "REJECTION", "CLOSE"].includes(o)).map((o) => (
               <button key={o} type="button" tabIndex={-1} data-testid={`button-quick-${o.toLowerCase()}`} onClick={() => {
                 setStatus(o);
+                setReason("");
                 if (isScheduledOutcome(o)) {
                   if (!recallDateTime) setRecallDateTime(toDateTimeLocal(task.recallDateTime));
                 } else {
@@ -219,6 +228,18 @@ export default function TaskPage({ id, session }: { id: string; session: DialerS
             <input id="recall-date-time" data-testid="input-recall-datetime" type="datetime-local"
               value={recallDateTime} onChange={e => setRecallDateTime(e.target.value)} required
               className="h-12 w-full rounded-xl border border-input bg-card px-4 text-base outline-none focus:border-accent focus:ring-4 focus:ring-accent/15" />
+          </div>
+        )}
+
+        {reasonsForOutcome(status).length > 0 && (
+          <div>
+            <label htmlFor="reason" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Reason</label>
+            <select id="reason" data-testid="select-reason" value={reason} onChange={e => setReason(e.target.value)}
+              required
+              className="h-12 w-full rounded-xl border border-input bg-card px-4 text-base outline-none focus:border-accent focus:ring-4 focus:ring-accent/15">
+              <option value="">Select reason</option>
+              {reasonsForOutcome(status).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+            </select>
           </div>
         )}
 

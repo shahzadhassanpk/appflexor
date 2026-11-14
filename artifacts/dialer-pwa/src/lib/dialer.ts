@@ -1,4 +1,4 @@
-export const OUTCOMES = ["RECALL", "DEMO", "VISIT", "BOARD", "COLD", "CLOSE"] as const;
+export const OUTCOMES = ["RECALL", "DEMO", "VISIT", "BOARD", "COLD", "REJECTION", "CLOSE"] as const;
 export type Outcome = (typeof OUTCOMES)[number];
 
 export const OUTCOME_META: Record<Outcome, { label: string; hint: string; color: string }> = {
@@ -7,15 +7,59 @@ export const OUTCOME_META: Record<Outcome, { label: string; hint: string; color:
   VISIT: { label: "Visit", hint: "Schedule an in-person visit", color: "var(--accent)" },
   BOARD: { label: "Board", hint: "Move to the board", color: "var(--primary)" },
   COLD: { label: "Cold", hint: "No current interest", color: "var(--muted-foreground)" },
+  REJECTION: { label: "Rejection", hint: "Explicitly rejected adoption or operational change", color: "var(--destructive)" },
   CLOSE: { label: "Close", hint: "Close the opportunity", color: "var(--destructive)" },
 };
+
+export type OutcomeReason = readonly [code: string, label: string];
+
+export const REASON_CODES: Partial<Record<Outcome, readonly OutcomeReason[]>> = {
+  RECALL: [
+    ["NO_ANSWER", "No answer"],
+    ["BUSY", "Busy / Working"],
+    ["CALL_LATER", "Call later"],
+    ["CALLBACK_SCHEDULED", "Callback scheduled"],
+    ["GATEKEEPER", "Call center / Gatekeeper"],
+  ],
+  DEMO: [
+    ["DEMO_REQUESTED", "Demo requested"],
+    ["DEMO_SCHEDULED", "Demo scheduled"],
+  ],
+  VISIT: [
+    ["VISIT_REQUESTED", "Visit requested"],
+    ["VISIT_SCHEDULED", "Visit scheduled"],
+  ],
+  COLD: [
+    ["NO_CURRENT_NEED", "No current need"],
+    ["NOT_INTERESTED", "Not interested currently"],
+    ["FUTURE_INTEREST", "Potential future interest"],
+  ],
+  REJECTION: [
+    ["SATISFIED_WITH_EXISTING_SYSTEM", "Satisfied with existing system"],
+    ["PREFER_MANUAL_PROCESSES", "Prefer manual processes"],
+    ["NO_PERCEIVED_BUSINESS_VALUE", "No perceived business value"],
+    ["BUDGET_COST_CONCERNS", "Budget / Cost concerns"],
+    ["COMPLEXITY_STAFF_RESISTANCE", "Complexity / Staff resistance"],
+    ["SECURITY_INTEGRATION_CONCERNS", "Security / Integration concerns"],
+  ],
+  CLOSE: [
+    ["REJECTED", "Explicit rejection"],
+    ["DO_NOT_CONTACT", "Do not contact"],
+    ["INVALID_LEAD", "Invalid lead"],
+  ],
+  BOARD: [["MANUAL_REVIEW", "Manual review"]],
+};
+
+export function reasonsForOutcome(status: unknown): readonly OutcomeReason[] {
+  return isOutcome(status) ? REASON_CODES[status] ?? [] : [];
+}
 
 export function isOutcome(v: unknown): v is Outcome {
   return typeof v === "string" && (OUTCOMES as readonly string[]).includes(v);
 }
 
 export function isScheduledOutcome(v: unknown): boolean {
-  return v === "RECALL" || v === "DEMO" || v === "VISIT";
+  return v === "DEMO" || v === "VISIT";
 }
 
 /** Leading + allowed, then digits, spaces, ( ) - only. Returns null if not a usable number. */
@@ -31,6 +75,13 @@ export function sanitizePhone(raw: string | null | undefined): string | null {
 export function telHref(raw: string | null | undefined): string | null {
   const s = sanitizePhone(raw);
   return s ? `tel:${s}` : null;
+}
+
+export function googleMapsHref(address: string | null | undefined, name?: string | null): string | null {
+  const addressValue = address?.trim();
+  const nameValue = name?.trim();
+  const value = addressValue && nameValue ? `${nameValue}, ${addressValue}` : addressValue;
+  return value ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}` : null;
 }
 
 export function errStatus(e: unknown): number | undefined {
@@ -77,7 +128,7 @@ export function isOverdue(v: string | null | undefined): boolean {
 
 /* Drafts — sessionStorage only, keyed by user + task */
 const PREFIX = "dialer:draft:";
-export type Draft = { status: Outcome | ""; comments: string; recallDateTime: string };
+export type Draft = { status: Outcome | ""; reason: string; comments: string; recallDateTime: string };
 const key = (user: string, id: string) => `${PREFIX}${encodeURIComponent(user)}:${id}`;
 
 export function loadDraft(user: string, id: string): Draft | null {
@@ -87,6 +138,7 @@ export function loadDraft(user: string, id: string): Draft | null {
     const p = JSON.parse(raw);
     return {
       status: isOutcome(p.status) ? p.status : "",
+      reason: typeof p.reason === "string" ? p.reason : "",
       comments: typeof p.comments === "string" ? p.comments : "",
       recallDateTime: typeof p.recallDateTime === "string" ? p.recallDateTime : "",
     };

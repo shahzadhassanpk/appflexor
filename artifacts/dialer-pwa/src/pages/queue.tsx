@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTaskList, getAssignedTask, claimAvailableTask, claimTask, assignedTasksKey, availableTasksKey, taskDetailKey, type DialerSession, type DialerTask, type DialerTaskList } from "@/lib/crm";
-import { AlertTriangle, Loader2, MoreVertical, Phone, PhoneOff, RefreshCw, Search, X } from "lucide-react";
+import { getTaskList, getAssignedTask, claimAvailableTask, claimTask, unclaimTask, assignedTasksKey, availableTasksKey, taskDetailKey, type DialerSession, type DialerTask, type DialerTaskList } from "@/lib/crm";
+import { AlertTriangle, Loader2, MapPin, MoreVertical, Phone, PhoneOff, RefreshCw, Search, X } from "lucide-react";
 import { CallDialog } from "@/components/call-dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useOnline } from "@/hooks/use-device";
-import { telHref } from "@/lib/dialer";
+import { googleMapsHref, telHref } from "@/lib/dialer";
 import { StatusPill } from "@/components/chrome";
 import { errMessage, formatDate, isOutcome, isOverdue, sanitizePhone } from "@/lib/dialer";
 import { cn } from "@/lib/utils";
@@ -22,8 +22,8 @@ function browserSessionStorage(): Storage | null {
   }
 }
 
-const queueFilters: Filter[] = ["UNSET", "OVERDUE", "RECALL", "DEMO", "VISIT", "BOARD", "COLD", "CLOSE", "ALL"];
-const adminOnlyFilters: Filter[] = ["BOARD", "COLD", "CLOSE"];
+const queueFilters: Filter[] = ["UNSET", "OVERDUE", "RECALL", "DEMO", "VISIT", "BOARD", "COLD", "REJECTION", "CLOSE", "ALL"];
+const adminOnlyFilters: Filter[] = ["BOARD", "COLD", "REJECTION", "CLOSE"];
 const defaultMobileVisibleFilters: Filter[] = ["UNSET", "OVERDUE", "RECALL", "ALL"];
 
 function readMobileFilterPreference(username: string): Filter[] {
@@ -48,6 +48,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   const available = useQuery({ queryKey: availableTasksKey, queryFn: ({ signal }) => getTaskList(session, "available", signal), retry: false, refetchInterval: 60_000, refetchOnWindowFocus: true });
   const tasks = q.data?.tasks;
   const [search, setSearch] = useState("");
+  const [availableSearch, setAvailableSearch] = useState("");
   const [filter, setFilterState] = useState<Filter>(() => readTaskFilterPreference(
     session.username, browserSessionStorage(),
   ));
@@ -94,6 +95,10 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const online = useOnline();
   const availableIds = useMemo(() => available.data?.tasks.map(t => t.id) ?? [], [available.data]);
+  const visibleAvailableTasks = useMemo(
+    () => (available.data?.tasks ?? []).filter(task => matchesQueueFilters(task, "ALL", availableSearch)),
+    [available.data, availableSearch],
+  );
   const selectedIds = availableIds.filter(id => selected.has(id));
   const allSelected = availableIds.length > 0 && selectedIds.length === availableIds.length;
   useEffect(() => {
@@ -207,6 +212,19 @@ export default function QueuePage({ session }: { session: DialerSession }) {
     },
     onError: error => setClaimError(errMessage(error, "Could not claim the selected tasks.")),
   });
+  const unclaim = useMutation({
+    mutationFn: (id: string) => unclaimTask(session, id),
+    onSuccess: (_value, id) => {
+      setClaimError(null);
+      setClaimNotice("Task unclaimed and returned to Available.");
+      qc.setQueryData<DialerTaskList>(assignedTasksKey, old =>
+        old ? { ...old, tasks: old.tasks.filter(task => task.id !== id) } : old,
+      );
+      qc.invalidateQueries({ queryKey: availableTasksKey });
+      qc.invalidateQueries({ queryKey: assignedTasksKey });
+    },
+    onError: error => setClaimError(errMessage(error, "Could not unclaim the task.")),
+  });
 
   const claimSelected = () => {
     if (!online || claim.isPending || advancingRef.current || selectedIds.length === 0) return;
@@ -233,7 +251,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   };
 
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { ALL: 0, RECALL: 0, DEMO: 0, VISIT: 0, BOARD: 0, COLD: 0, CLOSE: 0, UNSET: 0, OVERDUE: 0 };
+    const c: Record<Filter, number> = { ALL: 0, RECALL: 0, DEMO: 0, VISIT: 0, BOARD: 0, COLD: 0, REJECTION: 0, CLOSE: 0, UNSET: 0, OVERDUE: 0 };
     (tasks ?? []).forEach((t) => { c.ALL++; if (isOverdue(t.dueDate)) c.OVERDUE++; if (isOutcome(t.status)) c[t.status]++; else if (!t.status) c.UNSET++; });
     return c;
   }, [tasks]);
@@ -303,7 +321,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
           <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-30 -mx-4 mt-4 space-y-2.5 bg-background/90 px-4 pb-3 pt-2 backdrop-blur-md">
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input data-testid="input-search" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone or task"
+              <input data-testid="input-search" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone, address or task"
                 className="h-11 w-full rounded-xl border border-input bg-card pl-10 pr-10 text-[15px] outline-none focus:border-accent focus:ring-4 focus:ring-accent/15" />
               {search && <button data-testid="button-clear-search" onClick={() => setSearch("")} className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-lg hover:bg-muted" aria-label="Clear"><X className="h-4 w-4" /></button>}
             </div>
@@ -391,6 +409,9 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                         <div data-testid={`text-phone-${t.id}`} className={cn("tabnum truncate text-[13px]", phone ? "text-foreground/80" : "text-destructive")}>
                           {t.phone || "No phone"}{!phone && t.phone ? " (invalid)" : ""}
                         </div>
+                        <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+                          <span data-testid={`text-address-${t.id}`} className="truncate">{t.address || "No address"}</span>
+                        </div>
                         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                           <StatusPill status={t.status} />
                           <span data-testid={`text-due-${t.id}`} className={cn("tabnum", overdue && "font-semibold text-destructive")}>
@@ -405,6 +426,14 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                         )}
                       </div>
                       </button>
+                      <div className="flex shrink-0 items-center gap-2">
+                      {googleMapsHref(t.address, t.name) && (
+                        <a href={googleMapsHref(t.address, t.name)!} target="_blank" rel="noreferrer"
+                          data-testid={`link-address-map-${t.id}`} aria-label={`Open ${t.name || "task"} address in Google Maps`}
+                          className="press inline-flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-xs font-bold text-primary hover:bg-secondary">
+                          <MapPin className="h-3.5 w-3.5" /> <span>Map</span>
+                        </a>
+                      )}
                       {phone ? (
                         <a href={telHref(t.phone)!} data-testid={`button-call-assigned-${t.id}`}
                           onClick={(event) => {
@@ -414,16 +443,28 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                           aria-disabled={advancing}
                           tabIndex={advancing ? -1 : undefined}
                           aria-label={`Call ${t.name}`}
-                          className="press flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground">
+                          className="press flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground">
                           <Phone className="h-4 w-4" /> Call
                         </a>
                       ) : (
                         <button type="button" disabled data-testid={`button-call-assigned-${t.id}`}
                           title="No dialable phone number"
-                          className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground opacity-40">
+                          className="flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground opacity-40">
                           <PhoneOff className="h-4 w-4" /> Call
                         </button>
                       )}
+                        <button
+                          type="button"
+                          data-testid={`button-unclaim-${t.id}`}
+                          onClick={() => unclaim.mutate(t.id)}
+                          disabled={!online || unclaim.isPending || claim.isPending || advancing}
+                          className="press flex h-10 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-bold text-muted-foreground hover:bg-secondary disabled:opacity-40"
+                          title="Return this task to Available"
+                        >
+                          {unclaim.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                          Unclaim
+                        </button>
+                      </div>
                     </div>
                   </li>
                 );
@@ -468,6 +509,30 @@ export default function QueuePage({ session }: { session: DialerSession }) {
           </button>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">Unassigned tasks available to the DIALER_APP candidate group.</p>
+        {available.data && available.data.tasks.length > 0 && (
+          <div className="relative mt-4">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              data-testid="input-available-search"
+              type="search"
+              value={availableSearch}
+              onChange={event => setAvailableSearch(event.target.value)}
+              placeholder="Search name, phone, address or task"
+              className="h-11 w-full rounded-xl border border-input bg-card pl-10 pr-10 text-[15px] outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
+            />
+            {availableSearch && (
+              <button
+                type="button"
+                data-testid="button-clear-available-search"
+                onClick={() => setAvailableSearch("")}
+                className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-lg hover:bg-muted"
+                aria-label="Clear available task search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
         {availableIds.length > 0 && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-3">
             <label className="flex min-h-10 cursor-pointer items-center gap-2 text-sm font-semibold">
@@ -510,9 +575,14 @@ export default function QueuePage({ session }: { session: DialerSession }) {
             No unassigned tasks are available for this group right now.
           </p>
         )}
-        {available.data && available.data.tasks.length > 0 && (
+        {available.data && available.data.tasks.length > 0 && visibleAvailableTasks.length === 0 && (
+          <div data-testid="status-available-no-matches" className="mt-4 rounded-2xl border border-dashed border-input px-5 py-8 text-center text-sm text-muted-foreground">
+            No available tasks match your search.
+          </div>
+        )}
+        {available.data && visibleAvailableTasks.length > 0 && (
           <ul data-testid="list-available-tasks" className="mt-4 space-y-2">
-            {available.data.tasks.map((task, i) => {
+            {visibleAvailableTasks.map((task, i) => {
               const due = formatDate(task.dueDate, true);
               return (
                 <li key={task.id} data-testid={`card-available-${task.id}`} className="rise rounded-2xl border border-card-border bg-card p-3.5" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
@@ -530,6 +600,16 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">{task.name || "Unnamed lead"}</p>
                       <p className="tabnum truncate text-[13px] text-foreground/80">{task.phone || "No phone number provided"}</p>
+                      <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+                        <span className="truncate">{task.address || "No address"}</span>
+                        {googleMapsHref(task.address, task.name) && (
+                          <a href={googleMapsHref(task.address, task.name)!} target="_blank" rel="noreferrer"
+                            data-testid={`link-available-address-map-${task.id}`} aria-label={`Open ${task.name || "task"} address in Google Maps`}
+                            className="inline-flex shrink-0 items-center gap-1 font-semibold text-primary hover:underline">
+                            <MapPin className="h-3.5 w-3.5" /> <span>Map</span>
+                          </a>
+                        )}
+                      </div>
                       {task.detailsError && (
                         <p role="status" className="mt-1 text-xs text-destructive">
                           Task details could not be loaded: {task.detailsError}

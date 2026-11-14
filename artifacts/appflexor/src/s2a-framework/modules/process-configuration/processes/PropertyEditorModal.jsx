@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
 import { SearchableSelect } from "./SearchableSelect";
 
@@ -29,6 +29,11 @@ export function PropertyEditorModal({
     onRefreshReferenceData,
     zIndex = 1100,
 }) {
+    const [expandedServiceParam, setExpandedServiceParam] = useState(null);
+    const [validationError, setValidationError] = useState("");
+    useEffect(() => {
+        setValidationError("");
+    }, [propModal]);
     if (!propModal) return null;
     const { type, subType } = propModal;
 
@@ -209,7 +214,7 @@ export function PropertyEditorModal({
             }
 
             const cfg    = propForm.appConfig    || {};
-            const svcKey = propForm.appServiceKey || "get.formData";
+            const svcKey = propForm.appServiceKey || "";
 
             function setCfg(patch) {
                 onFormChange(p => ({
@@ -307,7 +312,7 @@ export function PropertyEditorModal({
                                 <tr>
                                     <th>{keyLabel}</th>
                                     <th>Service Params</th>
-                                    <th>
+                                    <th style={{ width: "9rem" }}>
                                         <div>Result Variable {hasDuplicateResult && (
                                             <span className="text-danger small text-none mt-1" role="alert">
                                                - must be unique.
@@ -330,12 +335,22 @@ export function PropertyEditorModal({
                                             />
                                         </td>
                                         <td>
-                                            <input
-                                                className="form-control form-control-sm font-monospace proc-payload-val-input"
-                                                value={row.serviceParams}
-                                                onChange={e => updateServiceRow(i, { serviceParams: e.target.value })}
-                                                placeholder="static value or ${expression}"
-                                            />
+                                            <div className="d-flex align-items-center gap-1">
+                                                <input
+                                                    className="form-control form-control-sm font-monospace proc-payload-val-input"
+                                                    value={row.serviceParams}
+                                                    onChange={e => updateServiceRow(i, { serviceParams: e.target.value })}
+                                                    placeholder="static value or ${expression}"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-secondary btn-sm proc-payload-expand-btn"
+                                                    onClick={() => setExpandedServiceParam({ index: i })}
+                                                    title="Expand service params editor"
+                                                    aria-label={`Expand service params editor for row ${i + 1}`}>
+                                                    <i className="fa-solid fa-expand" aria-hidden="true" />
+                                                </button>
+                                            </div>
                                         </td>
                                         <td>
                                             {(() => {
@@ -374,6 +389,38 @@ export function PropertyEditorModal({
                         <p className="proc-payload-hint mt-1 mb-0">
                             Saved in <code>serviceConfig.dataKeys</code> as a JSON array. Values support process engine expressions.
                         </p>
+                        {expandedServiceParam && serviceRows[expandedServiceParam.index] && (
+                            <div className="proc-payload-overlay" role="dialog" aria-modal="true" aria-label="Expanded service params editor">
+                                <div className="proc-payload-overlay-card">
+                                    <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                                        <div>
+                                            <div className="fw-semibold">Service Params</div>
+                                            <div className="small text-muted">Use a static value or process expression.</div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="btn-close"
+                                            onClick={() => setExpandedServiceParam(null)}
+                                            aria-label="Close expanded service params editor"
+                                        />
+                                    </div>
+                                    <textarea
+                                        autoFocus
+                                        className="form-control font-monospace"
+                                        value={serviceRows[expandedServiceParam.index].serviceParams}
+                                        onChange={e => updateServiceRow(expandedServiceParam.index, { serviceParams: e.target.value })}
+                                        placeholder="static value or ${expression}"
+                                        rows={10}
+                                        style={{ minHeight: "12rem", resize: "both" }}
+                                    />
+                                    <div className="d-flex justify-content-end mt-3">
+                                        <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpandedServiceParam(null)}>
+                                            Done
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             }
@@ -492,8 +539,8 @@ export function PropertyEditorModal({
                             onClick={() => onFormChange(p => ({
                                 ...p,
                                 serviceType:    "app",
-                                appServiceKey:  p.appServiceKey  || "get.formData",
-                                appConfig:      p.appConfig      || defaultAppConfig(p.appServiceKey || "get.formData"),
+                                appServiceKey:  p.appServiceKey || "",
+                                appConfig:      p.appConfig || defaultAppConfig(p.appServiceKey || ""),
                             }))}>
                             <i className="fa-solid fa-server me-1" />App Service
                         </button>
@@ -556,13 +603,15 @@ export function PropertyEditorModal({
                                     className="form-control form-control-sm"
                                     value={svcKey}
                                     onChange={e => {
-                                        const key = e.target.value;
+                                        const key = e.currentTarget.value;
+                                        setValidationError("");
                                         onFormChange(p => ({
                                             ...p,
                                             appServiceKey: key,
                                             appConfig:     defaultAppConfig(key),
                                         }));
                                     }}>
+                                    <option value="">Select service...</option>
                                     <option value="get.formData">API Query</option>
                                     <option value="update.formData">API Trigger</option>
                                     <option value="send.email">Send Email</option>
@@ -782,6 +831,29 @@ export function PropertyEditorModal({
         return "Edit properties";
     }
 
+    function validateBeforeSave() {
+        if (type === "serviceTasks" && propForm.serviceType === "app") {
+            const service = String(propForm.appServiceKey || "").trim();
+            if (!service) {
+                setValidationError("Select an API service before applying this configuration.");
+                return false;
+            }
+
+            const config = propForm.appConfig || {};
+            const rows = Array.isArray(config.dataKeys) ? config.dataKeys :
+                Array.isArray(config.services) ? config.services : [];
+            const hasServiceKey = rows.length
+                ? rows.some(row => String(row?.serviceKey || row?.emailKey || row?.formId || "").trim())
+                : Boolean(String(config.serviceKey || config.emailKey || config.formId || "").trim());
+            if (!hasServiceKey) {
+                setValidationError("Enter at least one service key before applying this configuration.");
+                return false;
+            }
+        }
+        setValidationError("");
+        return true;
+    }
+
     return (
         <Modal
             show={!!propModal}
@@ -800,6 +872,11 @@ export function PropertyEditorModal({
             </Modal.Header>
             <Modal.Body>
                 {renderForm()}
+                {validationError && (
+                    <div className="alert alert-danger py-2 mb-0 mt-3" role="alert">
+                        <i className="fa-solid fa-circle-exclamation me-2" />{validationError}
+                    </div>
+                )}
             </Modal.Body>
             <Modal.Footer className="py-2">
                 <button className="btn button-theme btn-sm" onClick={onClose}>
@@ -807,7 +884,9 @@ export function PropertyEditorModal({
                 </button>
                 <button
                     className="btn button-theme btn-sm"
-                    onClick={onSave}
+                    onClick={() => {
+                        if (validateBeforeSave()) onSave();
+                    }}
                     disabled={propLoading || hasDuplicateAppServiceResults()}>
                     <i className="fa-solid fa-check pe-1" />Apply
                 </button>
