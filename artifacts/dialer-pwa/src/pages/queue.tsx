@@ -395,9 +395,9 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                 const overdue = isOverdue(t.dueDate);
                 return (
                   <li key={t.id} className="rise" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
-                    <div className="group flex w-full items-center gap-3 rounded-2xl border border-card-border bg-card p-3.5 transition-shadow hover:shadow-[0_6px_20px_-12px_hsl(var(--primary)/.5)]">
+                    <div className="group flex w-full flex-col items-stretch gap-3 rounded-2xl border border-card-border bg-card p-3.5 transition-shadow hover:shadow-[0_6px_20px_-12px_hsl(var(--primary)/.5)] sm:flex-row sm:items-center">
                       <button type="button" onClick={() => openAssigned(t.id)} disabled={!!openingId || advancing} data-testid={`card-task-${t.id}`}
-                        className="press flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-70">
+                        className="press flex min-w-0 w-full flex-1 items-center gap-3 text-left disabled:opacity-70">
                       <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-sm font-bold text-primary">
                         {initials(t.name)}
                       </div>
@@ -426,7 +426,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                         )}
                       </div>
                       </button>
-                      <div className="flex shrink-0 items-center gap-2">
+                      <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
                       {googleMapsHref(t.address, t.name) && (
                         <a href={googleMapsHref(t.address, t.name)!} target="_blank" rel="noreferrer"
                           data-testid={`link-address-map-${t.id}`} aria-label={`Open ${t.name || "task"} address in Google Maps`}
