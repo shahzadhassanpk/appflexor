@@ -381,10 +381,13 @@ export default function QueuePage({ session }: { session: DialerSession }) {
     <section aria-label="Assigned tasks">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <p className="tabnum text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Assigned tasks</p>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            {q.data ? <><span data-testid="text-queue-count" className="tabnum">{counts.ALL}</span> to call</> : "Your calls"}
-          </h1>
+          {/* <p className="tabnum text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Assigned tasks</p> */}
+          <h2 id="available-heading" className="text-2xl font-extrabold tracking-tight">
+              {q.data ? <>Assigned <span className="tabnum text-muted-foreground">{counts.ALL ?? ""}</span></> : "Your calls"}
+            </h2>
+          {/* <h1 className="text-2xl font-extrabold tracking-tight">             
+            {q.data ? <><span data-testid="text-queue-count" className="tabnum">Assigned {counts.ALL}</span></> : "Your calls"}
+          </h1> */}
         </div>
         <div className="flex items-center gap-2">
           <label className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
@@ -665,7 +668,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
       <section aria-labelledby="available-heading">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <p className="tabnum text-[11px] uppercase tracking-[0.2em] text-muted-foreground">DIALER_APP group</p>
+            {/* <p className="tabnum text-[11px] uppercase tracking-[0.2em] text-muted-foreground">DIALER_APP group</p> */}
             <h2 id="available-heading" className="text-2xl font-extrabold tracking-tight">
               Available <span className="tabnum text-muted-foreground">{available.data?.tasks.length ?? ""}</span>
             </h2>
