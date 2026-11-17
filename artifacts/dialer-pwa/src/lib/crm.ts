@@ -5,6 +5,12 @@ export type DialerSession = {
   authKey: string;
   taskDefinitionKey: string;
   candidateGroups?: string[];
+  candidateUsers?: CandidateUser[];
+};
+
+export type CandidateUser = {
+  candidateGroup: string;
+  username: string;
 };
 
 export type DialerTask = {
@@ -246,14 +252,31 @@ function normalizeCandidateGroups(value: unknown): string[] {
   }))];
 }
 
-const candidateGroupCache = new Map<string, string[]>();
-const candidateGroupRequests = new Map<string, Promise<string[]>>();
+function normalizeCandidateUsers(value: unknown): CandidateUser[] {
+  const values = Array.isArray(value) ? value : [value];
+  const users = values.flatMap(item => {
+    const object = asObject(item);
+    const candidateGroup = object.CANDIDATE_GROUP ?? object.candidate_group ?? object.candidateGroup ?? object.group ?? object.group_code ?? object.groupCode;
+    const username = object.USERNAME ?? object.username ?? object.userName ?? object.user;
+    return (typeof candidateGroup === "string" || typeof candidateGroup === "number") &&
+      (typeof username === "string" || typeof username === "number")
+      ? [{ candidateGroup: String(candidateGroup).trim(), username: String(username).trim() }]
+      : [];
+  }).filter(user => user.candidateGroup && user.username);
+  return users.filter((user, index, all) => all.findIndex(item =>
+    item.candidateGroup === user.candidateGroup && item.username === user.username,
+  ) === index);
+}
 
-function loadCandidateGroups(authKey: string): Promise<string[]> {
-  const cached = candidateGroupCache.get(authKey);
+type CandidateDirectory = { groups: string[]; users: CandidateUser[] };
+const candidateDirectoryCache = new Map<string, CandidateDirectory>();
+const candidateDirectoryRequests = new Map<string, Promise<CandidateDirectory>>();
+
+function loadCandidateDirectory(authKey: string): Promise<CandidateDirectory> {
+  const cached = candidateDirectoryCache.get(authKey);
   if (cached) return Promise.resolve(cached);
 
-  const pending = candidateGroupRequests.get(authKey);
+  const pending = candidateDirectoryRequests.get(authKey);
   if (pending) return pending;
 
   const request = postService("app", "masterKey.tenantData", {
@@ -262,20 +285,40 @@ function loadCandidateGroups(authKey: string): Promise<string[]> {
       dataKey: "candidate_group",
       serviceKey: "dialer.user.group",
       mode: "formData",
+    },
+    {
+      serviceParams: "",
+      dataKey: "candidate_users",
+      serviceKey: "dialer.users",
+      mode: "formData",
     }],
   }, authKey).then(payload => {
     const response = asObject(unwrap(payload));
     const groups = normalizeCandidateGroups(
       response.candidate_group ?? response.candidateGroups ?? response.groups ?? response.data ?? unwrap(payload),
     );
-    candidateGroupCache.set(authKey, groups);
-    return groups;
+    const users = normalizeCandidateUsers(
+      response.candidate_users ?? response.candidateUsers ?? response.users ?? response.data ?? unwrap(payload),
+    );
+    const directory = { groups, users };
+    candidateDirectoryCache.set(authKey, directory);
+    return directory;
   }).finally(() => {
-    candidateGroupRequests.delete(authKey);
+    candidateDirectoryRequests.delete(authKey);
   });
 
-  candidateGroupRequests.set(authKey, request);
+  candidateDirectoryRequests.set(authKey, request);
   return request;
+}
+
+function loadCandidateGroups(authKey: string): Promise<string[]> {
+  return loadCandidateDirectory(authKey).then(directory => directory.groups);
+}
+
+export async function getCandidateUsers(session: DialerSession): Promise<CandidateUser[]> {
+  const directory = await loadCandidateDirectory(session.authKey);
+  const groups = new Set(session.candidateGroups ?? directory.groups);
+  return directory.users.filter(user => groups.size === 0 || groups.has(user.candidateGroup));
 }
 
 export async function loginToCrm(
@@ -318,8 +361,14 @@ export async function loginToCrm(
       ? firstProfile.username
       : username;
 
-  const candidateGroups = await loadCandidateGroups(authKey);
-  return { username: canonicalUsername, authKey, taskDefinitionKey, candidateGroups };
+  const directory = await loadCandidateDirectory(authKey);
+  return {
+    username: canonicalUsername,
+    authKey,
+    taskDefinitionKey,
+    candidateGroups: directory.groups,
+    candidateUsers: directory.users,
+  };
 }
 
 async function bpmRequest(
@@ -677,9 +726,17 @@ export async function claimTask(
   session: DialerSession,
   id: string,
 ): Promise<void> {
+  await assignTask(session, id, session.username);
+}
+
+export async function assignTask(
+  session: DialerSession,
+  id: string,
+  userId: string,
+): Promise<void> {
   // Camunda's atomic claim operation arbitrates races between agents.
   await bpmRequest(session, `/task/${encodeURIComponent(id)}/claim`, "POST", {
-    userId: session.username,
+    userId,
   });
 }
 
