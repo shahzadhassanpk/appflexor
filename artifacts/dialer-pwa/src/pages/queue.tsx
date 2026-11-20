@@ -34,6 +34,7 @@ function readAutoRefreshPreference(username: string): boolean {
 const queueFilters: Filter[] = ["UNSET", "OVERDUE", "RECALL", "DEMO", "VISIT", "BOARD", "COLD", "REJECTION", "CLOSE", "ALL"];
 const adminOnlyFilters: Filter[] = ["BOARD", "COLD", "REJECTION", "CLOSE"];
 const defaultMobileVisibleFilters: Filter[] = ["UNSET", "OVERDUE", "RECALL", "ALL"];
+const defaultDesktopVisibleFilters: Filter[] = ["ALL", "UNSET", "OVERDUE", "DEMO", "VISIT"];
 
 function readMobileFilterPreference(username: string): Filter[] {
   try {
@@ -67,6 +68,8 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   const tasks = q.data?.tasks;
   const [search, setSearch] = useState("");
   const [availableSearch, setAvailableSearch] = useState("");
+  const [availableFilter, setAvailableFilter] = useState<Filter>("ALL");
+  const [availableFiltersOpen, setAvailableFiltersOpen] = useState(false);
   const [filter, setFilterState] = useState<Filter>(() => readTaskFilterPreference(
     session.username, browserSessionStorage(),
   ));
@@ -78,6 +81,10 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   const visibleQueueFilters = queueFilters.filter((status) => hasAdminTasks || !adminOnlyFilters.includes(status));
   const orderedMobileVisibleFilters = visibleQueueFilters.filter((status) => mobileVisibleFilters.includes(status));
   const mobileOverflowFilters = visibleQueueFilters.filter((status) => !mobileVisibleFilters.includes(status));
+  const orderedDesktopVisibleFilters = defaultDesktopVisibleFilters.filter((status) => visibleQueueFilters.includes(status));
+  const desktopOverflowFilters = visibleQueueFilters.filter((status) => !defaultDesktopVisibleFilters.includes(status));
+  const orderedAvailableFilters = [...defaultDesktopVisibleFilters, ...visibleQueueFilters]
+    .filter((status, index, filters) => visibleQueueFilters.includes(status) && filters.indexOf(status) === index);
 
   const toggleMobileVisibleFilter = (status: Filter) => {
     setMobileVisibleFilters((current) => {
@@ -130,8 +137,8 @@ export default function QueuePage({ session }: { session: DialerSession }) {
   }, [candidateUsersQuery.data, session.candidateGroups, session.candidateUsers]);
   const online = useOnline();
   const visibleAvailableTasks = useMemo(
-    () => sortTasksByName((available.data?.tasks ?? []).filter(task => matchesQueueFilters(task, "ALL", availableSearch))),
-    [available.data, availableSearch],
+    () => sortTasksByName((available.data?.tasks ?? []).filter(task => matchesQueueFilters(task, availableFilter, availableSearch))),
+    [available.data, availableFilter, availableSearch],
   );
   // Bulk actions intentionally operate only on tasks currently visible after search/filtering.
   const availableIds = useMemo(() => visibleAvailableTasks.map(task => task.id), [visibleAvailableTasks]);
@@ -373,6 +380,12 @@ export default function QueuePage({ session }: { session: DialerSession }) {
     return c;
   }, [tasks]);
 
+  const availableCounts = useMemo(() => {
+    const c: Record<Filter, number> = { ALL: 0, RECALL: 0, DEMO: 0, VISIT: 0, BOARD: 0, COLD: 0, REJECTION: 0, CLOSE: 0, UNSET: 0, OVERDUE: 0 };
+    (available.data?.tasks ?? []).forEach((t) => { c.ALL++; if (isOverdue(t.dueDate)) c.OVERDUE++; if (isOutcome(t.status)) c[t.status]++; else if (!t.status) c.UNSET++; });
+    return c;
+  }, [available.data]);
+
   const visible = useMemo(() => {
     return sortTasksByName((tasks ?? []).filter(t => matchesQueueFilters(t, filter, search)));
   }, [tasks, search, filter]);
@@ -463,7 +476,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                     {filterLabel(f)} <span className="tabnum opacity-60">{counts[f]}</span>
                   </button>
                 ))}
-                {queueFilters.map((f) => (
+                {orderedDesktopVisibleFilters.map((f) => (
                   <button key={`desktop-${f}`} data-testid={`button-filter-${f.toLowerCase()}`} onClick={() => setFilter(f)}
                     className={cn("press hidden shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors sm:flex",
                       filter === f ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary")}>
@@ -471,7 +484,7 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                   </button>
                 ))}
               </div>
-              <div className="relative shrink-0 sm:hidden">
+              <div className="relative shrink-0">
                 <button type="button" aria-label="More status filters" aria-haspopup="menu" aria-expanded={mobileFiltersOpen}
                   data-testid="button-more-filters" onClick={() => setMobileFiltersOpen(open => !open)}
                   className="press grid h-9 w-9 place-items-center rounded-full border border-border bg-card hover:bg-secondary">
@@ -480,22 +493,31 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                 {mobileFiltersOpen && (
                   <div role="menu" aria-label="More status filters" className="absolute right-0 top-11 z-40 min-w-52 rounded-xl border border-border bg-card p-1.5 shadow-lg">
                     {mobileOverflowFilters.map((f) => (
-                      <button key={`overflow-${f}`} type="button" role="menuitem" data-testid={`button-filter-${f.toLowerCase()}-more`}
+                      <button key={`mobile-overflow-${f}`} type="button" role="menuitem" data-testid={`button-filter-${f.toLowerCase()}-more`}
                         onClick={() => { setFilter(f); setMobileFiltersOpen(false); }}
-                        className={cn("flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold hover:bg-secondary",
+                        className={cn("flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold hover:bg-secondary sm:hidden",
                           filter === f && "bg-secondary")}>
                         {filterLabel(f)} <span className="tabnum ml-3 opacity-60">{counts[f]}</span>
                       </button>
                     ))}
-                    <div className="my-1 border-t border-border" />
+                    {desktopOverflowFilters.map((f) => (
+                      <button key={`desktop-overflow-${f}`} type="button" role="menuitem" data-testid={`button-filter-${f.toLowerCase()}-desktop-more`}
+                        onClick={() => { setFilter(f); setMobileFiltersOpen(false); }}
+                        className={cn("hidden w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold hover:bg-secondary sm:flex",
+                          filter === f && "bg-secondary")}>
+                        {filterLabel(f)} <span className="tabnum ml-3 opacity-60">{counts[f]}</span>
+                      </button>
+                    ))}
+                    <div className="my-1 border-t border-border sm:hidden" />
                     <button type="button" data-testid="button-customize-mobile-filters"
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold hover:bg-secondary sm:hidden"
                       onClick={() => setCustomizeMobileFilters(open => !open)}
-                      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold hover:bg-secondary">
+                    >
                       Customize visible statuses
                       <span aria-hidden="true">{customizeMobileFilters ? "−" : "+"}</span>
                     </button>
                     {customizeMobileFilters && (
-                      <div className="space-y-1 border-t border-border px-2 pb-1 pt-2" aria-label="Choose visible statuses">
+                      <div className="space-y-1 border-t border-border px-2 pb-1 pt-2 sm:hidden" aria-label="Choose visible statuses">
                         {visibleQueueFilters.map((status) => (
                           <label key={`visible-${status}`} className="flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1.5 text-xs font-medium hover:bg-secondary">
                             <input type="checkbox" checked={mobileVisibleFilters.includes(status)}
@@ -710,6 +732,40 @@ export default function QueuePage({ session }: { session: DialerSession }) {
                 <X className="h-4 w-4" />
               </button>
             )}
+          </div>
+        )}
+        {available.data && available.data.tasks.length > 0 && (
+          <div className="mt-3 flex items-center gap-1.5">
+            <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none]">
+              {orderedAvailableFilters.map((f) => (
+                <button key={`available-filter-${f}`} type="button" data-testid={`button-available-filter-${f.toLowerCase()}`}
+                  onClick={() => setAvailableFilter(f)}
+                  className={cn("press flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                    defaultDesktopVisibleFilters.includes(f) ? "" : "sm:hidden",
+                    availableFilter === f ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-secondary")}>
+                  {filterLabel(f)} <span className="tabnum opacity-60">{availableCounts[f]}</span>
+                </button>
+              ))}
+              <div className="relative hidden shrink-0 sm:block">
+                <button type="button" aria-label="More available status filters" aria-haspopup="menu" aria-expanded={availableFiltersOpen}
+                  data-testid="button-more-available-filters" onClick={() => setAvailableFiltersOpen(open => !open)}
+                  className="press grid h-9 w-9 place-items-center rounded-full border border-border bg-card hover:bg-secondary">
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+                {availableFiltersOpen && (
+                  <div role="menu" aria-label="More available status filters" className="absolute right-0 top-11 z-40 min-w-52 rounded-xl border border-border bg-card p-1.5 shadow-lg">
+                    {desktopOverflowFilters.map((f) => (
+                      <button key={`available-overflow-${f}`} type="button" role="menuitem" data-testid={`button-available-filter-${f.toLowerCase()}-more`}
+                        onClick={() => { setAvailableFilter(f); setAvailableFiltersOpen(false); }}
+                        className={cn("flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold hover:bg-secondary",
+                          availableFilter === f && "bg-secondary")}>
+                        {filterLabel(f)} <span className="tabnum ml-3 opacity-60">{availableCounts[f]}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
         {availableIds.length > 0 && (
